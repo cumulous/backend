@@ -10,5 +10,9 @@
     "type": "git",
     "url": "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/ecs-scheduler"
   },
-  "author": "Denis Loginov <dloginov@mit.edu>"
+  "author": "Denis Loginov <dloginov@mit.edu>",
+  "dependencies": {
+    "ts-node": "^1.6.1",
+    "typescript": "^2.0.6"
+  }
 }
