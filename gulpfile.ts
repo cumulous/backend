@@ -59,7 +59,8 @@ gulp.task('test', ['coverage'], () => {
       }),
     }));
   if (watching) {
-    test.on('error', function() {
+    test.on('error', function(error: Error) {
+      console.error(error.stack);
       this.emit('end');
     });
   }
