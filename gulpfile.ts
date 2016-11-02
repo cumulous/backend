@@ -1,4 +1,3 @@
-const argv = require('yargs').argv;
 const gulp = require('gulp');
 const istanbul = require('gulp-istanbul');
 const jasmineTest = require('gulp-jasmine');
@@ -16,7 +15,10 @@ const paths = {
 	coverage: () => paths.reports + '/coverage',
 };
 
+let watching = false;
+
 gulp.task('watch', () => {
+  watching = true;
   gulp.watch(paths.src, ['test']);
   gulp.watch(paths.specs, ['test']);
 });
@@ -25,7 +27,7 @@ const remapCoverageFiles = () => {
   const reports: { [key: string]: string } = {
     'html': paths.coverage(),
   };
-  if (argv.verbose) {
+  if (!watching) {
     reports['text-summary'] = null;
   }
   return gulp
@@ -48,18 +50,25 @@ gulp.task('coverage', () => {
 });
 
 gulp.task('test', ['coverage'], () => {
-  return gulp
+  let test = gulp
     .src(paths.specs)
     .pipe(jasmineTest({
       reporter: new reporters.TerminalReporter({
-        verbosity: argv.verbose ? 3 : 2,
+        verbosity: watching ? 2 : 3,
         color: true,
       }),
-    }))
+    }));
+  if (watching) {
+    test.on('error', function() {
+      this.emit('end');
+    });
+  }
+  test
     .pipe(istanbul.writeReports({
       dir: paths.coverage(),
       reporters: ['json'],
-    })).on('end', remapCoverageFiles);
+    }))
+    .on('end', remapCoverageFiles);
 });
 
 gulp.task('default', ['watch', 'test']);
