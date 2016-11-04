@@ -9,13 +9,15 @@ const ts = require('gulp-typescript');
 const tsProject = ts.createProject('tsconfig.json');
 
 const paths = {
-	src: ['src/!(*.spec).ts'],
-	specs: ['src/*.spec.ts'],
-	reports: 'reports',
-	coverage: () => paths.reports + '/coverage',
+  bin: 'bin',
+  src: 'src/!(*.spec).ts',
+  specs: 'src/*.spec.ts',
+  reports: 'reports',
+  coverage: () => paths.reports + '/coverage',
 };
 
 let watching = false;
+let failed = false;
 
 gulp.task('watch', () => {
   watching = true;
@@ -23,51 +25,62 @@ gulp.task('watch', () => {
   gulp.watch(paths.specs, ['test']);
 });
 
+const handleError = function(error: Error) {
+  error.stack && console.error(error.stack);
+  failed = true;
+  watching || process.exit(1);
+  this.emit('end');
+};
+
+gulp.task('compile', () => {
+  failed = false;
+  return tsProject.src()
+    .pipe(sourcemaps.init())
+    .pipe(tsProject())
+    .on('error', handleError)
+    .js
+    .pipe(sourcemaps.write())
+    .pipe(gulp.dest(paths.bin));
+});
+
 const remapCoverageFiles = () => {
   const reports: { [key: string]: string } = {
     'html': paths.coverage(),
   };
-  if (!watching) {
-    reports['text-summary'] = null;
-  }
-  return gulp
+  watching || (reports['text-summary'] = null);
+  return failed || gulp
     .src(paths.coverage() + '/coverage-final.json')
     .pipe(remapIstanbul({
       reports: reports,
     }));
 };
 
-gulp.task('coverage', () => {
-    return tsProject.src()
-      .pipe(sourcemaps.init())
-      .pipe(tsProject()).js
-      .pipe(sourcemaps.write())
-      .pipe(gulp.dest(paths.coverage()))
-      .pipe(istanbul({
-        includeUntested: true,
-      }))
-      .pipe(istanbul.hookRequire());
+let coverageVariable: string;
+
+gulp.task('coverage', ['compile'], () => {
+  coverageVariable = '$$cov_' + new Date().getTime() + '$$';
+  return failed || gulp
+    .src(paths.bin + '/!(*.spec).js')
+    .pipe(istanbul({
+      coverageVariable: coverageVariable,
+    }))
+    .pipe(istanbul.hookRequire());
 });
 
 gulp.task('test', ['coverage'], () => {
-  let test = gulp
-    .src(paths.specs)
-    .pipe(jasmineTest({
+  return failed || gulp
+    .src(paths.bin + '/*.spec.js')
+    .pipe(jasmineTest(watching ? {} : {
       reporter: new reporters.TerminalReporter({
-        verbosity: watching ? 2 : 3,
+        verbosity: 3,
         color: true,
       }),
-    }));
-  if (watching) {
-    test.on('error', function(error: Error) {
-      console.error(error.stack);
-      this.emit('end');
-    });
-  }
-  test
+    }))
+    .on('error', handleError)
     .pipe(istanbul.writeReports({
       dir: paths.coverage(),
       reporters: ['json'],
+      coverageVariable: coverageVariable,
     }))
     .on('end', remapCoverageFiles);
 });

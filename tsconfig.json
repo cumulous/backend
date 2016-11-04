@@ -5,7 +5,7 @@
     "noImplicitAny": true,
     "pretty": true
   },
-  "files": [
-    "src/scheduler.ts"
+  "include": [
+    "src/*.ts"
   ]
 }
