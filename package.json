@@ -1,7 +1,8 @@
 {
-  "name": "ecs-scheduler",
   "version": "1.0.0",
-  "description": "Custom scheduler for ECS clusters on AWS",
+  "description": "A serverless backend for managing AWS Batch jobs and data on S3",
+  "license": "UNLICENSED",
+  "private": true,
   "scripts": {
     "server": "lite-server",
     "start": "run-p server",
