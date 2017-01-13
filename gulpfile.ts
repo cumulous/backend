@@ -68,9 +68,10 @@ gulp.task('coverage', ['compile'], () => {
 });
 
 gulp.task('test', ['coverage'], () => {
+  const silent = watching && !process.env['LOG_LEVEL'];
   return failed || gulp
     .src(paths.bin + '/*.spec.js')
-    .pipe(jasmineTest(watching ? {} : {
+    .pipe(jasmineTest(silent ? {} : {
       reporter: new reporters.TerminalReporter({
         verbosity: 3,
         color: true,
