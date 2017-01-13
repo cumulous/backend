@@ -4,26 +4,31 @@
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
+    "build": "run-s 'rm -- app/*' tsc copy:configs build:modules clean:app",
+    "clean:app": "rimraf app/*.spec.js app/package.json",
+    "copy:configs": "copyfiles -f package.json sam.yaml src/*.sh app/",
+    "build:modules": "npm i --prod --prefix app/",
+    "package": "run-s build && aws cloudformation package --template-file app/sam.yaml --output-template-file app/sam.yaml",
+    "deploy": "aws cloudformation deploy --template-file app/sam.yaml --capabilities CAPABILITY_IAM",
+    "rm": "rimraf",
     "server": "lite-server",
     "start": "run-p server",
     "test": "run-s test:e2e test:unit:once",
     "test:e2e": "cucumberjs --compiler ts:ts-node/register",
     "test:unit": "gulp",
-    "test:unit:once": "gulp test --verbose"
+    "test:unit:once": "gulp test --verbose",
+    "tsc": "tsc"
   },
   "repository": {
     "type": "git",
     "url": "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/ecs-scheduler"
   },
   "author": "Denis Loginov <dloginov@mit.edu>",
-  "dependencies": {
-    "ts-node": "^1.6.1",
-    "typescript": "^2.0.6"
-  },
   "devDependencies": {
-    "@types/cucumber": "0.0.33",
+    "@types/cucumber": "^0.0.33",
     "@types/jasmine": "^2.5.37",
     "@types/node": "^6.0.46",
+    "copyfiles": "^1.0.0",
     "cucumber": "^1.3.1",
     "gulp": "^3.9.1",
     "gulp-istanbul": "^1.1.1",
@@ -33,6 +38,9 @@
     "jasmine-reporters": "^2.2.0",
     "lite-server": "^2.2.2",
     "npm-run-all": "^3.1.1",
-    "remap-istanbul": "^0.7.0"
+    "remap-istanbul": "^0.7.0",
+    "rimraf": "^2.5.4",
+    "ts-node": "^1.7.0",
+    "typescript": "^2.0.10"
   }
 }

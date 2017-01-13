@@ -2,6 +2,7 @@
   "compilerOptions": {
     "module": "commonjs",
     "target": "ES5",
+    "outDir": "app",
     "noImplicitAny": true,
     "pretty": true
   },
