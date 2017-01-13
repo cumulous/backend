@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  SSHKeyName:
+    Type: String
+    MinLength: 1
+  SSHKeyS3Bucket:
+    Type: String
+    MinLength: 1
+  SSHKeyS3Path:
+    Type: String
+    MinLength: 1
+
+Resources:
+  InstancesInitFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: instances.init
+      Runtime: nodejs4.3
+      Timeout: 60
+      Environment:
+        Variables:
+          SSH_KEY_NAME: !Ref SSHKeyName
+          SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
+          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
+      Events:
+        InstanceRunning:
+          Type: CloudWatchEvent
+          Properties:
+            Pattern:
+              source:
+                - aws.ec2
+              detail-type:
+                - EC2 Instance State-change Notification
+              detail:
+                state:
+                  - running
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            Effect: Allow
+            Action:
+              - ec2:AttachVolume
+              - ec2:CreateVolume
+              - ec2:DeleteVolume
+              - ec2:DescribeInstances
+              - ec2:DescribeVolumes
+              - ec2:ModifyInstanceAttribute
+            Resource: '*'
+        - Version: 2012-10-17
+          Statement:
+            Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource: !Join
+              - ''
+              - - 'arn:aws:s3:::'
+                - !Ref SSHKeyS3Bucket
+                - /
+                - !Ref SSHKeyS3Path

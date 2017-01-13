@@ -12,6 +12,7 @@ const paths = {
   bin: 'bin',
   src: 'src/!(*.spec).ts',
   specs: 'src/*.spec.ts',
+  scripts: ['src/*.sh'],
   reports: 'reports',
   coverage: () => paths.reports + '/coverage',
 };
@@ -34,6 +35,9 @@ const handleError = function(error: Error) {
 
 gulp.task('compile', () => {
   failed = false;
+  gulp
+    .src(paths.scripts)
+    .pipe(gulp.dest(paths.bin));
   return tsProject.src()
     .pipe(sourcemaps.init())
     .pipe(tsProject())
