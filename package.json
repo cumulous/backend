@@ -6,10 +6,10 @@
   "scripts": {
     "build": "run-s 'rm -- app/*' tsc copy:configs build:modules clean:app",
     "clean:app": "rimraf app/*.spec.js app/package.json",
-    "copy:configs": "copyfiles -f package.json sam.yaml src/*.sh app/",
+    "copy:configs": "copyfiles -f package.json src/*.sh app/",
     "build:modules": "npm i --prod --prefix app/",
-    "package": "run-s build && aws cloudformation package --template-file app/sam.yaml --output-template-file app/sam.yaml",
-    "deploy": "aws cloudformation deploy --template-file app/sam.yaml --capabilities CAPABILITY_IAM",
+    "package": "run-s build && aws cloudformation package --template-file templates/sam.yaml --output-template-file bin/sam.yaml",
+    "deploy": "aws cloudformation deploy --template-file bin/sam.yaml --capabilities CAPABILITY_IAM",
     "rm": "rimraf",
     "server": "lite-server",
     "start": "run-p server",
