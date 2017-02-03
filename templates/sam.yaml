@@ -13,17 +13,59 @@ Parameters:
     MinLength: 1
 
 Resources:
-  InstancesInitFunction:
+  CreateStateMachine:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: instances.init
+      CodeUri: ../app
+      Handler: states.createStateMachine
       Runtime: nodejs4.3
-      Timeout: 60
+      Timeout: 5
       Environment:
         Variables:
-          SSH_KEY_NAME: !Ref SSHKeyName
-          SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
-          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
+          AWS_ACCOUNT: !Ref AWS::AccountId
+          STACK_NAME: !Ref AWS::StackName
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: cloudformation:DescribeStackResource
+            Resource:
+              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*
+          - Effect: Allow
+            Action: states:CreateStateMachine
+            Resource:
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*_${AWS::StackName}
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource:
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
+
+  ExecuteStateMachine:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: states.executeStateMachine
+      Runtime: nodejs4.3
+      Environment:
+        Variables:
+          AWS_ACCOUNT: !Ref AWS::AccountId
+          STACK_NAME: !Ref AWS::StackName
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: states:StartExecution
+            Resource:
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*_${AWS::StackName}
+
+  InstancesInit:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.init
+      Runtime: nodejs4.3
+      Environment:
+        Variables:
+          AWS_ACCOUNT: !Ref AWS::AccountId
+          STACK_NAME: !Ref AWS::StackName
       Events:
         InstanceRunning:
           Type: CloudWatchEvent
@@ -37,25 +79,156 @@ Resources:
                 state:
                   - running
       Policies:
-        - Version: 2012-10-17
-          Statement:
-            Effect: Allow
-            Action:
-              - ec2:AttachVolume
-              - ec2:CreateVolume
-              - ec2:DeleteVolume
-              - ec2:DescribeInstances
-              - ec2:DescribeVolumes
-              - ec2:ModifyInstanceAttribute
+        Statement:
+          - Effect: Allow
+            Action: states:StartExecution
+            Resource:
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*_${AWS::StackName}
+
+  DescribeInstance:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.describeInstance
+      Runtime: nodejs4.3
+      Timeout: 5
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: ec2:DescribeInstances
             Resource: '*'
-        - Version: 2012-10-17
-          Statement:
-            Effect: Allow
-            Action:
-              - s3:GetObject
-            Resource: !Join
-              - ''
-              - - 'arn:aws:s3:::'
-                - !Ref SSHKeyS3Bucket
-                - /
-                - !Ref SSHKeyS3Path
+
+  CheckSSHKeyName:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.checkSSHKeyName
+      Runtime: nodejs4.3
+      Environment:
+        Variables:
+          SSH_KEY_NAME: !Ref SSHKeyName
+
+  CalculateVolumeSizes:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.calculateVolumeSizes
+      Runtime: nodejs4.3
+
+  CreateVolumes:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.createVolumes
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: ec2:CreateVolume
+            Resource: '*'
+
+  WaitForVolumesAvailable:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.waitForVolumesAvailable
+      Runtime: nodejs4.3
+      Timeout: 20
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: ec2:DescribeVolumes
+            Resource: '*'
+
+  CalculateVolumeDevices:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.calculateVolumeDevices
+      Runtime: nodejs4.3
+
+  AttachVolumes:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.attachVolumes
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: ec2:AttachVolume
+            Resource: '*'
+
+  DetachVolumes:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.detachVolumes
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: ec2:DetachVolume
+            Resource: '*'
+
+  DeleteVolumes:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.deleteVolumes
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: ec2:DeleteVolume
+            Resource: '*'
+
+  DeleteVolumesOnTermination:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.deleteVolumesOnTermination
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: ec2:ModifyInstanceAttribute
+            Resource: '*'
+
+  TransferInitScript:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.transferInitScript
+      Runtime: nodejs4.3
+      Timeout: 10
+      Environment:
+        Variables:
+          SSH_KEY_NAME: !Ref SSHKeyName
+          SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
+          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: s3:GetObject
+            Resource:
+              - !Sub arn:aws:s3:::${SSHKeyS3Bucket}/${SSHKeyS3Path}
+
+  ExecuteInitScript:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.executeInitScript
+      Runtime: nodejs4.3
+      Timeout: 15
+      Environment:
+        Variables:
+          SSH_KEY_NAME: !Ref SSHKeyName
+          SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
+          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: s3:GetObject
+            Resource:
+              - !Sub arn:aws:s3:::${SSHKeyS3Bucket}/${SSHKeyS3Path}
