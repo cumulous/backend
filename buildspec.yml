@@ -1,0 +1,15 @@
+version: 0.1
+phases:
+  install:
+    commands:
+      - npm install
+  pre_build:
+    commands:
+      - npm run test:unit:once
+  build:
+    commands:
+      - npm run package -- --s3-bucket ${ARTIFACT_BUCKET} --s3-prefix lambda
+artifacts:
+  files:
+    - bin/sam.yaml
+  discard-paths: yes
