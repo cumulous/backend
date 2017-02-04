@@ -2,11 +2,21 @@ Parameters:
   RepoName:
     Type: String
     Default: serverless-backend
+  NotificationEmail:
+    Type: String
+    AllowedPattern: ^[\w\.-]+@[\w\.-]+\.[a-z\.]{2,6}$
 
 Resources:
   ArtifactsBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
+
+  PipelineNotification:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint: !Ref NotificationEmail
+          Protocol: email
 
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
@@ -73,6 +83,15 @@ Resources:
               InputArtifacts:
                 - Name: Deploy
               RunOrder: 1
+            - Name: ApproveChangeSet
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Provider: Manual
+                Version: 1
+              Configuration:
+                NotificationArn: !Ref PipelineNotification
+              RunOrder: 2
             -
               Name: Deploy
               ActionTypeId:
@@ -84,7 +103,7 @@ Resources:
                 ActionMode: CHANGE_SET_EXECUTE
                 ChangeSetName: Deploy
                 StackName: !Sub ${RepoName}-beta
-              RunOrder: 2
+              RunOrder: 3
 
   BuildProject:
     Type: AWS::CodeBuild::Project
@@ -154,6 +173,11 @@ Resources:
                   - iam:PassRole
                 Resource:
                   - !GetAtt DeployRole.Arn
+              - Effect: Allow
+                Action:
+                  - sns:Publish
+                Resource:
+                  - !Ref PipelineNotification
 
   BuildRole:
     Type: AWS::IAM::Role
