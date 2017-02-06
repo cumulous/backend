@@ -306,6 +306,7 @@ Resources:
                   - lambda:UpdateFunctionConfiguration
                   - lambda:DeleteFunction
                   - lambda:AddPermission
+                  - lambda:RemovePermission
                 Resource:
                   - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${RepoName}-beta-*
                   - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${RepoName}-release-*
