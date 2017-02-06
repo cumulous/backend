@@ -5,12 +5,13 @@
     "outDir": "app",
     "lib": [
       "es5",
+      "es2015.core",
       "es2015.promise"
     ],
     "noImplicitAny": true,
     "pretty": true
   },
   "include": [
-    "src/*.ts"
+    "src/**/*.ts"
   ]
 }

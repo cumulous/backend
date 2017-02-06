@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "build": "run-s 'rm -- app/*' tsc copy:configs build:modules clean:app",
-    "clean:app": "rimraf app/*.spec.js app/package.json",
+    "clean:app": "rimraf app/*.spec.js app/package.json app/fixtures",
     "copy:configs": "copyfiles -f package.json src/*.sh app/",
     "build:modules": "npm i --prod --prefix app/",
     "package": "run-s build && aws cloudformation package --template-file templates/sam.yaml --output-template-file bin/sam.yaml",
@@ -25,11 +25,14 @@
   },
   "author": "Denis Loginov <dloginov@mit.edu>",
   "dependencies": {
-    "ssh2": "^0.5.4"
+    "json-stable-stringify": "^1.0.1",
+    "ssh2": "^0.5.4",
+    "winston": "^2.3.0"
   },
   "devDependencies": {
     "@types/cucumber": "^0.0.33",
     "@types/jasmine": "^2.5.37",
+    "@types/json-stable-stringify": "^1.0.29",
     "@types/node": "^6.0.46",
     "@types/ssh2": "^0.5.35",
     "@types/winston": "^2.2.0",
@@ -47,7 +50,6 @@
     "remap-istanbul": "^0.7.0",
     "rimraf": "^2.5.4",
     "ts-node": "^1.7.0",
-    "typescript": "^2.0.10",
-    "winston": "^2.3.0"
+    "typescript": "^2.0.10"
   }
 }

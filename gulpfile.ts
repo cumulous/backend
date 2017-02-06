@@ -12,7 +12,7 @@ const paths = {
   bin: 'bin',
   src: 'src/!(*.spec).ts',
   specs: 'src/*.spec.ts',
-  scripts: ['src/*.sh'],
+  conf: ['src/**/*.json'],
   reports: 'reports',
   coverage: () => paths.reports + '/coverage',
 };
@@ -22,6 +22,7 @@ let failed = false;
 
 gulp.task('watch', () => {
   watching = true;
+  gulp.watch(paths.conf, ['test']);
   gulp.watch(paths.src, ['test']);
   gulp.watch(paths.specs, ['test']);
 });
@@ -36,7 +37,7 @@ const handleError = function(error: Error) {
 gulp.task('compile', () => {
   failed = false;
   gulp
-    .src(paths.scripts)
+    .src(paths.conf)
     .pipe(gulp.dest(paths.bin));
   return tsProject.src()
     .pipe(sourcemaps.init())

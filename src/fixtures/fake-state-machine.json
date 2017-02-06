@@ -1,0 +1,25 @@
+{
+  "Comment": "Fake-State-Machine-v1.1",
+  "StartAt": "FakeState",
+  "States": {
+    "FakeState": {
+      "Type": "Task",
+      "Resource": "function:FakeFunction",
+      "Next": "FakeState2"
+    },
+    "FakeState2": {
+      "Type": "Task",
+      "Resource": "function:FakeFunction2",
+      "Next": "FakeActivity"
+    },
+    "FakeActivity": {
+      "Type": "Task",
+      "Resource": "activity:FakeActivity",
+      "Next": "FakeFail"
+    },
+    "FakeFail": {
+      "Type": "Fail",
+      "Cause": "natural"
+    }
+  }
+}
