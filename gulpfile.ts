@@ -12,7 +12,7 @@ const paths = {
   bin: 'bin',
   src: 'src/!(*.spec).ts',
   specs: 'src/*.spec.ts',
-  conf: ['src/**/*.json'],
+  conf: ['src/**/*.json', 'templates/*.json'],
   reports: 'reports',
   coverage: () => paths.reports + '/coverage',
 };
