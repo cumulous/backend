@@ -104,6 +104,53 @@ Resources:
                 ChangeSetName: Deploy
                 StackName: !Sub ${RepoName}-beta
               RunOrder: 3
+        -
+          Name: Release
+          Actions:
+            -
+              Name: CreateChangeSet
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: 1
+              Configuration:
+                ActionMode: CHANGE_SET_REPLACE
+                ChangeSetName: Deploy
+                StackName: !Sub ${RepoName}-release
+                Capabilities: CAPABILITY_IAM
+                TemplatePath: Deploy::sam.yaml
+                RoleArn: !GetAtt DeployRole.Arn
+                ParameterOverrides: !Sub |
+                  {
+                    "SSHKeyName": "${RepoName}-release",
+                    "SSHKeyS3Bucket": "${ArtifactsBucket}",
+                    "SSHKeyS3Path" : "secrets/${RepoName}-release.pem"
+                  }
+              InputArtifacts:
+                - Name: Deploy
+              RunOrder: 1
+            - Name: ApproveChangeSet
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Provider: Manual
+                Version: 1
+              Configuration:
+                NotificationArn: !Ref PipelineNotification
+              RunOrder: 2
+            -
+              Name: Deploy
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Provider: CloudFormation
+                Version: 1
+              Configuration:
+                ActionMode: CHANGE_SET_EXECUTE
+                ChangeSetName: Deploy
+                StackName: !Sub ${RepoName}-release
+              RunOrder: 3
 
   BuildProject:
     Type: AWS::CodeBuild::Project
