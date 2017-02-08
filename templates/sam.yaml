@@ -2,6 +2,9 @@ AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
+  EncryptionKeyId:
+    Type: String
+    MinLength: 1
   SSHKeyName:
     Type: String
     MinLength: 1
@@ -11,8 +14,21 @@ Parameters:
   SSHKeyS3Path:
     Type: String
     MinLength: 1
+  SSHKeyPutRoleArn:
+    Type: String
+    MinLength: 1
+  SSHKeyGetRoleArn:
+    Type: String
+    MinLength: 1
 
 Resources:
+  SendCloudFormationResponse:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: cloudformation.sendResponse
+      Runtime: nodejs4.3
+
   CreateStateMachine:
     Type: AWS::Serverless::Function
     Properties:
@@ -83,7 +99,7 @@ Resources:
           - Effect: Allow
             Action: states:StartExecution
             Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*_${AWS::StackName}
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-Init-*_${AWS::StackName}
 
   DescribeInstance:
     Type: AWS::Serverless::Function
@@ -97,6 +113,67 @@ Resources:
           - Effect: Allow
             Action: ec2:DescribeInstances
             Resource: '*'
+
+  SetupSSHKeyResource:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SetupSSHKey.Arn
+
+  SetupSSHKey:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - CreateKeyPair
+      - DeleteKeyPair
+      - SendCloudFormationResponse
+    Properties:
+      CodeUri: ../app
+      Handler: instances.setupSSHKey
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: lambda:InvokeFunction
+            Resource:
+              - !GetAtt CreateStateMachine.Arn
+          - Effect: Allow
+            Action: states:StartExecution
+            Resource:
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-SetupSSHKey-*_${AWS::StackName}
+
+  CreateKeyPair:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.createKeyPair
+      Runtime: nodejs4.3
+      Environment:
+        Variables:
+          ENCRYPTION_KEY_ID: !Ref EncryptionKeyId
+          SSH_KEY_NAME: !Ref SSHKeyName
+          SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
+          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
+      Role: !Ref SSHKeyPutRoleArn
+
+  DeleteKeyPair:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.createKeyPair
+      Runtime: nodejs4.3
+      Environment:
+        Variables:
+          SSH_KEY_NAME: !Ref SSHKeyName
+          SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
+          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: ec2:DeleteKeyPair
+            Resource: '*'
+          - Effect: Allow
+            Action: s3:DeleteObject
+            Resource:
+              - !Sub arn:aws:s3:::${SSHKeyS3Bucket}/${SSHKeyS3Path}
 
   CheckSSHKeyName:
     Type: AWS::Serverless::Function
@@ -207,12 +284,7 @@ Resources:
           SSH_KEY_NAME: !Ref SSHKeyName
           SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: s3:GetObject
-            Resource:
-              - !Sub arn:aws:s3:::${SSHKeyS3Bucket}/${SSHKeyS3Path}
+      Role: !Ref SSHKeyGetRoleArn
 
   ExecuteInitScript:
     Type: AWS::Serverless::Function
@@ -226,9 +298,4 @@ Resources:
           SSH_KEY_NAME: !Ref SSHKeyName
           SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: s3:GetObject
-            Resource:
-              - !Sub arn:aws:s3:::${SSHKeyS3Bucket}/${SSHKeyS3Path}
+      Role: !Ref SSHKeyGetRoleArn

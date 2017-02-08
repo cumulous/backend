@@ -1,0 +1,84 @@
+{
+  "Comment": "Instances-SetupSSHKey-v1_0_0",
+  "StartAt": "ChooseEventType",
+  "States": {
+    "ChooseEventType": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.RequestType",
+          "StringEquals": "Create",
+          "Next": "SetCreateKeyPair"
+        },
+        {
+          "Variable": "$.RequestType",
+          "StringEquals": "Update",
+          "Next": "CreateKeyPair"
+        },
+        {
+          "Variable": "$.RequestType",
+          "StringEquals": "Delete",
+          "Next": "DeleteKeyPair"
+        }
+      ],
+      "Default": "Fail"
+    },
+    "SetCreateKeyPair": {
+      "Type": "Pass",
+      "ResultPath": "$.CreateKeyPair",
+      "Result": true,
+      "Next": "DeleteKeyPair"
+    },
+    "DeleteKeyPair": {
+      "Type": "Task",
+      "ResultPath": null,
+      "Resource": "function:DeleteKeyPair",
+      "Next": "CheckCreateKeyPair",
+      "Catch": [{
+        "ErrorEquals": [ "States.ALL" ],
+        "ResultPath": null,
+        "Next": "Fail"
+      }]
+    },
+    "CheckCreateKeyPair": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.CreateKeyPair",
+          "BooleanEquals": true,
+          "Next": "CreateKeyPair"
+        }
+      ],
+      "Default": "Succeed"
+    },
+    "CreateKeyPair": {
+      "Type": "Task",
+      "ResultPath": null,
+      "Resource": "function:CreateKeyPair",
+      "Next": "Succeed",
+      "Catch": [{
+        "ErrorEquals": [ "States.ALL" ],
+        "ResultPath": null,
+        "Next": "Fail"
+      }]
+    },
+    "Fail": {
+      "Type": "Pass",
+      "ResultPath": "$.Status",
+      "Result": "FAILED",
+      "Next": "End"
+    },
+    "Succeed": {
+      "Type": "Pass",
+      "ResultPath": "$.Status",
+      "Result": "SUCCESS",
+      "Next": "End"
+    },
+    "End": {
+      "Type": "Task",
+      "ResultPath": null,
+      "Resource": "function:SendCloudFormationResponse",
+      "End": true
+    }
+  }
+}

@@ -76,9 +76,12 @@ Resources:
                 RoleArn: !GetAtt DeployRole.Arn
                 ParameterOverrides: !Sub |
                   {
+                    "EncryptionKeyId": "${EncryptionKey}",
                     "SSHKeyName": "${RepoName}-beta",
                     "SSHKeyS3Bucket": "${ArtifactsBucket}",
-                    "SSHKeyS3Path" : "secrets/${RepoName}-beta.pem"
+                    "SSHKeyS3Path" : "secrets/${RepoName}-beta.pem",
+                    "SSHKeyPutRole": { "Fn::GetAtt": ["SSHKeyPutRole", "Arn"] },
+                    "SSHKeyGetRole": { "Fn::GetAtt": ["SSHKeyGetRole", "Arn"] }
                   }
               InputArtifacts:
                 - Name: Deploy
@@ -123,9 +126,12 @@ Resources:
                 RoleArn: !GetAtt DeployRole.Arn
                 ParameterOverrides: !Sub |
                   {
+                    "EncryptionKeyId": "${EncryptionKey}",
                     "SSHKeyName": "${RepoName}-release",
                     "SSHKeyS3Bucket": "${ArtifactsBucket}",
-                    "SSHKeyS3Path" : "secrets/${RepoName}-release.pem"
+                    "SSHKeyS3Path" : "secrets/${RepoName}-release.pem",
+                    "SSHKeyPutRole": { "Fn::GetAtt": ["SSHKeyPutRole", "Arn"] },
+                    "SSHKeyGetRole": { "Fn::GetAtt": ["SSHKeyGetRole", "Arn"] }
                   }
               InputArtifacts:
                 - Name: Deploy
@@ -168,6 +174,58 @@ Resources:
           - Name: ARTIFACT_BUCKET
             Value: !Ref ArtifactsBucket
       ServiceRole: !Ref BuildRole
+
+  EncryptionKeyAlias:
+    Type: AWS::KMS::Alias
+    Properties:
+      AliasName: !Sub alias/${RepoName}
+      TargetKeyId: !Ref EncryptionKey
+
+  EncryptionKey:
+    Type: AWS::KMS::Key
+    Properties:
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Ref AWS::AccountId
+            Action:
+              - kms:Create*
+              - kms:Describe*
+              - kms:Enable*
+              - kms:List*
+              - kms:Put*
+              - kms:Update*
+              - kms:Revoke*
+              - kms:Disable*
+              - kms:Get*
+              - kms:Delete*
+              - kms:ScheduleKeyDeletion
+              - kms:CancelKeyDeletion
+            Resource: '*'
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt SSHKeyPutRole.Arn
+            Action:
+              - kms:GenerateDataKey
+            Condition:
+              StringEquals:
+                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
+              StringLike:
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${ArtifactsBucket}/secrets/*.pem
+            Resource: '*'
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt SSHKeyGetRole.Arn
+            Action:
+              - kms:Decrypt
+            Condition:
+              StringEquals:
+                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
+              StringLike:
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${ArtifactsBucket}/secrets/*.pem
+            Resource: '*'
 
   PipelineRole:
     Type: AWS::IAM::Role
@@ -288,7 +346,7 @@ Resources:
                   - iam:DetachRolePolicy
                 Condition:
                   ArnEquals:
-                    "iam:PolicyArn": arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+                    'iam:PolicyArn': arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
                 Resource:
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-beta-*
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-release-*
@@ -324,6 +382,53 @@ Resources:
                 Action:
                   - ec2:DescribeKeyPairs
                 Resource: '*'
+
+  SSHKeyPutRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SSHKeyPutPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: ec2:CreateKeyPair
+                Resource: '*'
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${ArtifactsBucket}/secrets/*.pem
+
+  SSHKeyGetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SSHKeyGetPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource:
+                  - !Sub arn:aws:s3:::${ArtifactsBucket}/secrets/*.pem
 
 Outputs:
   PipelineUrl:
