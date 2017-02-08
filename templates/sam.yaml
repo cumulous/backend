@@ -14,10 +14,10 @@ Parameters:
   SSHKeyS3Path:
     Type: String
     MinLength: 1
-  SSHKeyPutRoleArn:
+  SSHKeyPutRole:
     Type: String
     MinLength: 1
-  SSHKeyGetRoleArn:
+  SSHKeyGetRole:
     Type: String
     MinLength: 1
 
@@ -152,7 +152,7 @@ Resources:
           SSH_KEY_NAME: !Ref SSHKeyName
           SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
-      Role: !Ref SSHKeyPutRoleArn
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyPutRole}
 
   DeleteSSHKey:
     Type: AWS::Serverless::Function
@@ -284,7 +284,7 @@ Resources:
           SSH_KEY_NAME: !Ref SSHKeyName
           SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
-      Role: !Ref SSHKeyGetRoleArn
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
 
   ExecuteInitScript:
     Type: AWS::Serverless::Function
@@ -298,4 +298,4 @@ Resources:
           SSH_KEY_NAME: !Ref SSHKeyName
           SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
-      Role: !Ref SSHKeyGetRoleArn
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
