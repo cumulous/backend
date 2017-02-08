@@ -80,8 +80,8 @@ Resources:
                     "SSHKeyName": "${RepoName}-beta",
                     "SSHKeyS3Bucket": "${ArtifactsBucket}",
                     "SSHKeyS3Path" : "secrets/${RepoName}-beta.pem",
-                    "SSHKeyPutRole": { "Fn::GetAtt": ["SSHKeyPutRole", "Arn"] },
-                    "SSHKeyGetRole": { "Fn::GetAtt": ["SSHKeyGetRole", "Arn"] }
+                    "SSHKeyPutRoleArn": { "Fn::GetAtt": ["SSHKeyPutRole", "Arn"] },
+                    "SSHKeyGetRoleArn": { "Fn::GetAtt": ["SSHKeyGetRole", "Arn"] }
                   }
               InputArtifacts:
                 - Name: Deploy
@@ -130,8 +130,8 @@ Resources:
                     "SSHKeyName": "${RepoName}-release",
                     "SSHKeyS3Bucket": "${ArtifactsBucket}",
                     "SSHKeyS3Path" : "secrets/${RepoName}-release.pem",
-                    "SSHKeyPutRole": { "Fn::GetAtt": ["SSHKeyPutRole", "Arn"] },
-                    "SSHKeyGetRole": { "Fn::GetAtt": ["SSHKeyGetRole", "Arn"] }
+                    "SSHKeyPutRoleArn": { "Fn::GetAtt": ["SSHKeyPutRole", "Arn"] },
+                    "SSHKeyGetRoleArn": { "Fn::GetAtt": ["SSHKeyGetRole", "Arn"] }
                   }
               InputArtifacts:
                 - Name: Deploy
