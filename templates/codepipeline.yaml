@@ -342,6 +342,12 @@ Resources:
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-release-*
               - Effect: Allow
                 Action:
+                  - iam:PassRole
+                Resource:
+                  - !GetAtt SSHKeyPutRole.Arn
+                  - !GetAtt SSHKeyGetRole.Arn
+              - Effect: Allow
+                Action:
                   - iam:AttachRolePolicy
                   - iam:DetachRolePolicy
                 Condition:
