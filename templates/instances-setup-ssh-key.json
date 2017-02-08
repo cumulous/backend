@@ -8,53 +8,53 @@
         {
           "Variable": "$.RequestType",
           "StringEquals": "Create",
-          "Next": "SetCreateKeyPair"
+          "Next": "SetCreateSSHKey"
         },
         {
           "Variable": "$.RequestType",
           "StringEquals": "Update",
-          "Next": "CreateKeyPair"
+          "Next": "CreateSSHKey"
         },
         {
           "Variable": "$.RequestType",
           "StringEquals": "Delete",
-          "Next": "DeleteKeyPair"
+          "Next": "DeleteSSHKey"
         }
       ],
       "Default": "Fail"
     },
-    "SetCreateKeyPair": {
+    "SetCreateSSHKey": {
       "Type": "Pass",
-      "ResultPath": "$.CreateKeyPair",
+      "ResultPath": "$.createSSHKey",
       "Result": true,
-      "Next": "DeleteKeyPair"
+      "Next": "DeleteSSHKey"
     },
-    "DeleteKeyPair": {
+    "DeleteSSHKey": {
       "Type": "Task",
       "ResultPath": null,
-      "Resource": "function:DeleteKeyPair",
-      "Next": "CheckCreateKeyPair",
+      "Resource": "function:DeleteSSHKey",
+      "Next": "CheckCreateSSHKey",
       "Catch": [{
         "ErrorEquals": [ "States.ALL" ],
         "ResultPath": null,
         "Next": "Fail"
       }]
     },
-    "CheckCreateKeyPair": {
+    "CheckCreateSSHKey": {
       "Type": "Choice",
       "Choices": [
         {
-          "Variable": "$.CreateKeyPair",
+          "Variable": "$.createSSHKey",
           "BooleanEquals": true,
-          "Next": "CreateKeyPair"
+          "Next": "CreateSSHKey"
         }
       ],
       "Default": "Succeed"
     },
-    "CreateKeyPair": {
+    "CreateSSHKey": {
       "Type": "Task",
       "ResultPath": null,
-      "Resource": "function:CreateKeyPair",
+      "Resource": "function:CreateSSHKey",
       "Next": "Succeed",
       "Catch": [{
         "ErrorEquals": [ "States.ALL" ],

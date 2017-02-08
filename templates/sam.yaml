@@ -122,8 +122,8 @@ Resources:
   SetupSSHKey:
     Type: AWS::Serverless::Function
     DependsOn:
-      - CreateKeyPair
-      - DeleteKeyPair
+      - CreateSSHKey
+      - DeleteSSHKey
       - SendCloudFormationResponse
     Properties:
       CodeUri: ../app
@@ -140,11 +140,11 @@ Resources:
             Resource:
               - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-SetupSSHKey-*_${AWS::StackName}
 
-  CreateKeyPair:
+  CreateSSHKey:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../app
-      Handler: instances.createKeyPair
+      Handler: instances.createSSHKey
       Runtime: nodejs4.3
       Environment:
         Variables:
@@ -154,11 +154,11 @@ Resources:
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Ref SSHKeyPutRoleArn
 
-  DeleteKeyPair:
+  DeleteSSHKey:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../app
-      Handler: instances.createKeyPair
+      Handler: instances.deleteSSHKey
       Runtime: nodejs4.3
       Environment:
         Variables:
