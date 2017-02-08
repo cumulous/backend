@@ -72,6 +72,26 @@ Resources:
             Resource:
               - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*_${AWS::StackName}
 
+  SetupInstancesInitResource:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SetupInstancesInit.Arn
+
+  SetupInstancesInit:
+    Type: AWS::Serverless::Function
+    DependsOn:
+      - SendCloudFormationResponse
+    Properties:
+      CodeUri: ../app
+      Handler: instances.setupInstancesInit
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: lambda:InvokeFunction
+            Resource:
+              - !GetAtt CreateStateMachine.Arn
+
   InstancesInit:
     Type: AWS::Serverless::Function
     Properties:
