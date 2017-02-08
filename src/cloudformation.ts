@@ -2,10 +2,11 @@ import * as requestPromise from 'request-promise';
 
 import { Callback, Dict } from './types';
 
+export type CloudFormationRequestType = 'Create' | 'Update' | 'Delete';
 type CustomResourceStatus = 'SUCCESS' | 'FAILED';
 
 export class CloudFormationRequest {
-  RequestType: 'Create' | 'Update' | 'Delete';
+  RequestType: CloudFormationRequestType;
   ResponseURL: string;
   StackId: string;
   RequestId: string;
@@ -20,7 +21,7 @@ export class CloudFormationRequest {
   Data?: Dict<any>;
 }
 
-export function sendCloudFormationResponse(event: CloudFormationRequest, context: any, callback: Callback) {
+export function sendResponse(event: CloudFormationRequest, context: any, callback: Callback) {
   requestPromise.post({
     uri: event.ResponseURL,
     body: {

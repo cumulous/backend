@@ -1,10 +1,10 @@
 import * as requestPromise from 'request-promise';
 
-import { CloudFormationRequest, sendCloudFormationResponse } from './cloudformation';
+import { CloudFormationRequest, sendResponse } from './cloudformation';
 import { testError} from './fixtures/support';
 import { Callback, Dict } from './types';
 
-describe('sendCloudFormationResponse()', () => {
+describe('sendResponse()', () => {
   const fakeRequestType = 'Update';
   const fakeResponseUri = 'https://pre-signed-S3-url-for-fake-response';
   const fakeStackId = 'fake-stack';
@@ -45,7 +45,7 @@ describe('sendCloudFormationResponse()', () => {
 
   describe('calls', () => {
     it('requestPromise.post() once with correct parameters', (done: Callback) => {
-      sendCloudFormationResponse(fakeRequest, null, () => {
+      sendResponse(fakeRequest, null, () => {
         expect(spyOnRequestPromisePost).toHaveBeenCalledWith({
           uri: fakeResponseUri,
           body: {
@@ -65,12 +65,12 @@ describe('sendCloudFormationResponse()', () => {
 
     it('callback with an error if requestPromise.post() returns an error', (done: Callback) => {
       spyOnRequestPromisePost.and.returnValue(Promise.reject('requestPromise.post()'));
-      testError(sendCloudFormationResponse, fakeRequest, done);
+      testError(sendResponse, fakeRequest, done);
     });
   });
 
   it('does not produce an error when called with correct parameters ' +
      'and requestPromise.post() does not return an error', (done: Callback) => {
-    testError(sendCloudFormationResponse, fakeRequest, done, false);
+    testError(sendResponse, fakeRequest, done, false);
   });
 });

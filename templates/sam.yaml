@@ -13,13 +13,6 @@ Parameters:
     MinLength: 1
 
 Resources:
-  SendCloudFormationResponse:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../app
-      Handler: cloudformation.sendCloudFormationResponse
-      Runtime: nodejs4.3
-
   CreateStateMachine:
     Type: AWS::Serverless::Function
     Properties:
