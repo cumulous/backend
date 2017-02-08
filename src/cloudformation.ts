@@ -2,11 +2,8 @@ import * as requestPromise from 'request-promise';
 
 import { Callback, Dict } from './types';
 
-export type CloudFormationRequestType = 'Create' | 'Update' | 'Delete';
-type CustomResourceStatus = 'SUCCESS' | 'FAILED';
-
-export class CloudFormationRequest {
-  RequestType: CloudFormationRequestType;
+export interface Request {
+  RequestType: 'Create' | 'Update' | 'Delete';
   ResponseURL: string;
   StackId: string;
   RequestId: string;
@@ -15,13 +12,15 @@ export class CloudFormationRequest {
   PhysicalResourceId?: string;
   ResourceProperties?: Dict<any>;
   OldResourceProperties: Dict<any>;
+};
 
-  Status: CustomResourceStatus;
+export interface Response {
+  Status: 'SUCCESS' | 'FAILED';
   Reason?: string;
   Data?: Dict<any>;
-}
+};
 
-export function sendResponse(event: CloudFormationRequest, context: any, callback: Callback) {
+export function sendResponse(event: Request & Response, context: any, callback: Callback) {
   requestPromise.post({
     uri: event.ResponseURL,
     body: {
@@ -35,4 +34,4 @@ export function sendResponse(event: CloudFormationRequest, context: any, callbac
     },
   }).then(() => callback())
     .catch(callback);
-}
+};

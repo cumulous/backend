@@ -1,6 +1,6 @@
 import * as requestPromise from 'request-promise';
 
-import { CloudFormationRequest, sendResponse } from './cloudformation';
+import { Request, Response, sendResponse } from './cloudformation';
 import { testError} from './fixtures/support';
 import { Callback, Dict } from './types';
 
@@ -15,7 +15,7 @@ describe('sendResponse()', () => {
   const fakeResponseStatus = 'FAILED';
   const fakeResponseReason = 'Fake reason';
 
-  let fakeRequest: CloudFormationRequest;
+  let fakeEvent: Request & Response;
   let fakeResponseData: Dict<any>;
 
   let spyOnRequestPromisePost: jasmine.Spy;
@@ -24,7 +24,7 @@ describe('sendResponse()', () => {
     fakeResponseData = {
       fake: 'data',
     };
-    fakeRequest = {
+    fakeEvent = {
       RequestType: fakeRequestType,
       ResponseURL: fakeResponseUri,
       StackId: fakeStackId,
@@ -45,7 +45,7 @@ describe('sendResponse()', () => {
 
   describe('calls', () => {
     it('requestPromise.post() once with correct parameters', (done: Callback) => {
-      sendResponse(fakeRequest, null, () => {
+      sendResponse(fakeEvent, null, () => {
         expect(spyOnRequestPromisePost).toHaveBeenCalledWith({
           uri: fakeResponseUri,
           body: {
@@ -65,12 +65,12 @@ describe('sendResponse()', () => {
 
     it('callback with an error if requestPromise.post() returns an error', (done: Callback) => {
       spyOnRequestPromisePost.and.returnValue(Promise.reject('requestPromise.post()'));
-      testError(sendResponse, fakeRequest, done);
+      testError(sendResponse, fakeEvent, done);
     });
   });
 
   it('does not produce an error when called with correct parameters ' +
      'and requestPromise.post() does not return an error', (done: Callback) => {
-    testError(sendResponse, fakeRequest, done, false);
+    testError(sendResponse, fakeEvent, done, false);
   });
 });
