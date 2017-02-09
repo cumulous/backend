@@ -261,9 +261,8 @@ describe('createSSHKey()', () => {
   });
 
   const causeDuplicateKeyError = () => {
-    const err = Error('key pair already exists');
-    (err as any).code = 'InvalidKeyPair.Duplicate';
-    spyOnEC2CreateKeyPair.and.returnValue(fakeReject(err));
+    spyOnEC2CreateKeyPair.and.returnValue(fakeReject(Object.assign(
+      Error('key pair already exists'), { code: 'InvalidKeyPair.Duplicate' })));
   };
 
   describe('calls', () => {
@@ -344,9 +343,8 @@ describe('deleteSSHKey()', () => {
   });
 
   const causeKeyNotFoundError = () => {
-    const err = Error('key pair does not exist');
-    (err as any).code = 'InvalidKeyPair.NotFound';
-    spyOnEC2DeleteKeyPair.and.returnValue(fakeReject(err));
+    spyOnEC2DeleteKeyPair.and.returnValue(fakeReject(Object.assign(
+      Error('key pair does not exist'), { code: 'InvalidKeyPair.NotFound' })));
   };
 
   describe('calls', () => {
