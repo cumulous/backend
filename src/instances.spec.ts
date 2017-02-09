@@ -217,15 +217,21 @@ describe('createSSHKey()', () => {
 
   beforeEach(() => {
     process.env[envNames.encryptionKeyId] = fakeEncryptionKeyId;
+    process.env[envNames.sshKeyName] = fakeSSHKeyName;
     process.env[envNames.sshKeyS3Bucket] = fakeSSHKeyS3Bucket;
     process.env[envNames.sshKeyS3Path] = fakeSSHKeyS3Path;
-    process.env[envNames.sshUser] = fakeSSHUser;
 
     spyOnEC2CreateKeyPair = spyOn(ec2, 'createKeyPair')
       .and.returnValue(fakeResolve({ KeyMaterial: fakeSSHKey }));
     spyOnS3PutObject = spyOn(s3, 'putObject')
       .and.returnValue(fakeResolve());
   });
+
+  const causeDuplicateKeyError = () => {
+    const err = Error('key pair already exists');
+    (err as any).code = 'InvalidKeyPair.Duplicate';
+    spyOnEC2CreateKeyPair.and.returnValue(fakeReject(err));
+  };
 
   describe('calls', () => {
     it('ec2.createKeyPair() once with correct parameters', (done: Callback) => {
@@ -252,7 +258,7 @@ describe('createSSHKey()', () => {
     });
 
     describe('callback with an error if', () => {
-      it('ec2.createKeyPair() produces an error', (done: Callback) => {
+      it('ec2.createKeyPair() produces an unrecoverable error', (done: Callback) => {
         spyOnEC2CreateKeyPair.and.returnValue(fakeReject('ec2.createKeyPair()'));
         testError(createSSHKey, null, done);
       });
@@ -262,16 +268,29 @@ describe('createSSHKey()', () => {
       });
     });
 
-    it('callback without an error if AWS does not produce an error', (done: Callback) => {
-      testError(createSSHKey, null, done, false);
+    describe('callback without an error if', () => {
+      it('AWS does not produce an error', (done: Callback) => {
+        testError(createSSHKey, null, done, false);
+      });
+      it('ec2.createKeyPair() produces "InvalidKeyPair.Duplicate" error', (done: Callback) => {
+        causeDuplicateKeyError();
+        testError(createSSHKey, null, done, false);
+      });
     });
   });
 
-  it('does not call s3.putObject() if ec2.createKeyPair() produces an error', (done: Callback) => {
-    spyOnEC2CreateKeyPair.and.returnValue(fakeReject('ec2.createKeyPair()'));
-    createSSHKey(null, null, () => {
-      expect(spyOnS3PutObject).not.toHaveBeenCalled();
-      done();
+  describe('does not call s3.putObject() if ec2.createKeyPair() produces', () => {
+    afterEach((done: Callback) => {
+      createSSHKey(null, null, () => {
+        expect(spyOnS3PutObject).not.toHaveBeenCalled();
+        done();
+      });
+    });
+    it('an unrecoverable error', () => {
+      spyOnEC2CreateKeyPair.and.returnValue(fakeReject('ec2.createKeyPair()'));
+    });
+    it('"InvalidKeyPair.Duplicate" error', () => {
+      causeDuplicateKeyError();
     });
   });
 });

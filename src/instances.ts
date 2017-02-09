@@ -1,3 +1,4 @@
+import { AWSError } from 'aws-sdk/lib/error';
 import { EC2, S3, StepFunctions } from 'aws-sdk';
 import * as stringify from 'json-stable-stringify';
 import { Client as SSHClient, ClientChannel as SSHClientChannel, SFTPWrapper } from 'ssh2';
@@ -57,7 +58,8 @@ export function createSSHKey(event: any, context: any, callback: Callback) {
   createKeyPair()
     .then(putSSHKey)
     .then(() => callback())
-    .catch(callback);
+    .catch((err: AWSError) =>
+      callback(err.code === 'InvalidKeyPair.Duplicate' ? null : err));
 }
 
 function createKeyPair() {
