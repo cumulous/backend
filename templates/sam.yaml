@@ -29,18 +29,11 @@ Resources:
       Handler: cloudformation.sendResponse
       Runtime: nodejs4.3
 
-  CreateStateMachine:
-    Type: AWS::Serverless::Function
+  CreateStateMachinePolicy:
+    Type: AWS::IAM::ManagedPolicy
     Properties:
-      CodeUri: ../app
-      Handler: states.createStateMachine
-      Runtime: nodejs4.3
-      Timeout: 5
-      Environment:
-        Variables:
-          AWS_ACCOUNT: !Ref AWS::AccountId
-          STACK_NAME: !Ref AWS::StackName
-      Policies:
+      PolicyDocument:
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
             Action: cloudformation:DescribeStackResource
@@ -54,6 +47,19 @@ Resources:
             Action: iam:PassRole
             Resource:
               - !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
+
+  CreateStateMachine:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: states.createStateMachine
+      Runtime: nodejs4.3
+      Timeout: 5
+      Environment:
+        Variables:
+          AWS_ACCOUNT: !Ref AWS::AccountId
+          STACK_NAME: !Ref AWS::StackName
+      Policies: !Ref CreateStateMachinePolicy
 
   ExecuteStateMachine:
     Type: AWS::Serverless::Function
@@ -85,12 +91,7 @@ Resources:
       CodeUri: ../app
       Handler: instances.setupInstancesInit
       Runtime: nodejs4.3
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: lambda:InvokeFunction
-            Resource:
-              - !GetAtt CreateStateMachine.Arn
+      Policies: !Ref CreateStateMachinePolicy
 
   InstancesInit:
     Type: AWS::Serverless::Function
@@ -150,15 +151,13 @@ Resources:
       Handler: instances.setupSSHKey
       Runtime: nodejs4.3
       Policies:
-        Statement:
-          - Effect: Allow
-            Action: lambda:InvokeFunction
-            Resource:
-              - !GetAtt CreateStateMachine.Arn
-          - Effect: Allow
-            Action: states:StartExecution
-            Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-SetupSSHKey-*_${AWS::StackName}
+        - !Ref CreateStateMachinePolicy
+        -
+          Statement:
+            - Effect: Allow
+              Action: states:StartExecution
+              Resource:
+                - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-SetupSSHKey-*_${AWS::StackName}
 
   CreateSSHKey:
     Type: AWS::Serverless::Function
