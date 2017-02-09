@@ -59,7 +59,7 @@ Resources:
         Variables:
           AWS_ACCOUNT: !Ref AWS::AccountId
           STACK_NAME: !Ref AWS::StackName
-      Policies: !Ref CreateStateMachinePolicy
+      Policies: !Select [1, !Split ['/', !Ref CreateStateMachinePolicy]]
 
   ExecuteStateMachine:
     Type: AWS::Serverless::Function
