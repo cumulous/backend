@@ -3,7 +3,8 @@ import { Client as SSHClient } from 'ssh2';
 
 import * as cloudformation from './cloudformation';
 import { envNames } from './env';
-import { ec2, s3, stepFunctions, defaults, volumeType, initScriptFile, init, describeInstance,
+import { ec2, s3, stepFunctions, defaults, volumeType,
+         setupInstancesInit, initScriptFile, init, describeInstance,
          setupSSHKey, createSSHKey, deleteSSHKey, checkSSHKeyName, calculateVolumeSizes,
          createVolumes, waitForVolumesAvailable, calculateVolumeDevices, attachVolumes,
          detachVolumes, deleteVolumes, deleteVolumesOnTermination,
@@ -41,6 +42,45 @@ beforeEach(() => {
   fakeVolumeSizes = [133, 133];
   fakeVolumeIds = ['vol-abcd01', 'vol-abcd10'];
   fakeVolumeDevices = ['/dev/sdf', '/dev/sdg'];
+});
+
+describe('setupInstancesInit()', () => {
+  let fakeRequest: any;
+
+  let spyOnCreateStateMachine: jasmine.Spy;
+
+  beforeEach(() => {
+    fakeRequest = {
+      RequestId: 'fake-request-1234-abcd',
+    };
+
+    spyOnCreateStateMachine = spyOn(states, 'createStateMachine')
+      .and.callFake((definition: any, context: any, callback: Callback) => callback());
+  });
+
+  describe('calls', () => {
+    it('states.createStateMachine() once with correct parameters', (done: Callback) => {
+      setupInstancesInit(fakeRequest, null, () => {
+        expect(spyOnCreateStateMachine).toHaveBeenCalledWith(
+          initDefinition, null, jasmine.any(Function));
+        expect(spyOnCreateStateMachine).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+
+    describe('callback with an error if', () => {
+      it('states.createStateMachine() produces an error', (done: Callback) => {
+        spyOnCreateStateMachine.and.callFake((definition: any, context: any, callback: Callback) =>
+          callback(Error('states.createStateMachine()')));
+        testError(setupInstancesInit, fakeRequest, done);
+      });
+    });
+
+    it('callback without an error if states.createStateMachine() does not produce an error',
+        (done: Callback) => {
+      testError(setupInstancesInit, fakeRequest, done, false);
+    });
+  });
 });
 
 describe('init()', () => {
@@ -135,21 +175,14 @@ describe('describeInstance()', () => {
 });
 
 describe('setupSSHKey()', () => {
-  let fakeRequest: cloudformation.Request;
+  let fakeRequest: any;
 
   let spyOnCreateStateMachine: jasmine.Spy;
   let spyOnExecuteStateMachine: jasmine.Spy;
 
   beforeEach(() => {
     fakeRequest = {
-      RequestType: 'Create',
-      ResponseURL: 'https://pre-signed-S3-url-for-fake-response',
-      StackId: 'fake-stack',
       RequestId: 'fake-request-abcd-1234',
-      ResourceType: 'custom:fake-response-type',
-      LogicalResourceId: 'fake-logical-resource-id',
-      PhysicalResourceId: 'fake-physical-resource-id-1234-abcd',
-      OldResourceProperties: {},
     };
 
     spyOnCreateStateMachine = spyOn(states, 'createStateMachine')

@@ -28,6 +28,10 @@ export const ec2 = new EC2();
 export const s3 = new S3();
 export const stepFunctions = new StepFunctions();
 
+export function setupInstancesInit(event: cloudformation.Request, context: any, callback: Callback) {
+  createStateMachine(initDefinition, null, callback);
+}
+
 export function init(event: any, context: any, callback: Callback) {
   executeStateMachine({
     logicalName: initDefinition.Comment,
@@ -50,7 +54,7 @@ export function setupSSHKey(event: cloudformation.Request, context: any, callbac
     executeStateMachine({
       logicalName: setupSSHKeyDefinition.Comment,
       input: event,
-    }, context, callback);
+    }, null, callback);
   });
 }
 

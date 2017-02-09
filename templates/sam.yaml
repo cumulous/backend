@@ -91,6 +91,10 @@ Resources:
       CodeUri: ../app
       Handler: instances.setupInstancesInit
       Runtime: nodejs4.3
+      Environment:
+        Variables:
+          AWS_ACCOUNT: !Ref AWS::AccountId
+          STACK_NAME: !Ref AWS::StackName
       Policies: !Ref CreateStateMachinePolicy
 
   InstancesInit:
