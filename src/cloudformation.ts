@@ -21,8 +21,7 @@ export interface Response {
 };
 
 export function sendResponse(event: Request & Response, context: any, callback: Callback) {
-  requestPromise.post({
-    uri: event.ResponseURL,
+  requestPromise.post(event.ResponseURL, {
     body: {
       Status: event.Status,
       Reason: event.Reason,

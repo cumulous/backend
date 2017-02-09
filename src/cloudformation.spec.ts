@@ -46,8 +46,7 @@ describe('sendResponse()', () => {
   describe('calls', () => {
     it('requestPromise.post() once with correct parameters', (done: Callback) => {
       sendResponse(fakeEvent, null, () => {
-        expect(spyOnRequestPromisePost).toHaveBeenCalledWith({
-          uri: fakeResponseUri,
+        expect(spyOnRequestPromisePost).toHaveBeenCalledWith(fakeResponseUri, {
           body: {
             Status: fakeResponseStatus,
             Reason: fakeResponseReason,
