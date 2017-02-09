@@ -614,7 +614,7 @@ describe('', () => {
   let spyOnSSHClientEnd: jasmine.Spy;
 
   beforeEach(() => {
-    fakeSSHKey = Buffer.alloc(16);
+    fakeSSHKey = new Buffer(16);
 
     process.env[envNames.sshKeyS3Bucket] = fakeSSHKeyS3Bucket;
     process.env[envNames.sshKeyS3Path] = fakeSSHKeyS3Path;
