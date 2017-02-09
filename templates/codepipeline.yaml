@@ -363,6 +363,7 @@ Resources:
                 Action:
                   - iam:CreatePolicy
                   - iam:GetPolicy
+                  - iam:ListPolicyVersions
                   - iam:DeletePolicy
                 Resource:
                   - !Sub arn:aws:iam::${AWS::AccountId}:policy/${RepoName}-beta-*
