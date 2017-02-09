@@ -53,6 +53,30 @@ export function setupSSHKey(event: cloudformation.Request, context: any, callbac
   });
 }
 
+export function createSSHKey(event: any, context: any, callback: Callback) {
+  createKeyPair()
+    .then(putSSHKey)
+    .then(() => callback())
+    .catch(callback);
+}
+
+function createKeyPair() {
+  return ec2.createKeyPair({
+    KeyName: process.env[envNames.sshKeyName],
+  }).promise()
+    .then(data => data.KeyMaterial);
+}
+
+function putSSHKey(key: string) {
+  return s3.putObject({
+    Bucket: process.env[envNames.sshKeyS3Bucket],
+    Key: process.env[envNames.sshKeyS3Path],
+    Body: key,
+    SSEKMSKeyId: process.env[envNames.encryptionKeyId],
+    ServerSideEncryption: 'aws:kms',
+  }).promise();
+}
+
 export function checkSSHKeyName(keyName: string, context: any, callback: Callback) {
   if (process.env[envNames.sshKeyName] == null) {
     callback(Error(envNames.sshKeyName + ' is missing from the environment'));

@@ -3,8 +3,8 @@ import { Client as SSHClient } from 'ssh2';
 
 import * as cloudformation from './cloudformation';
 import { envNames } from './env';
-import { ec2, s3, stepFunctions, defaults, volumeType, initScriptFile,
-         init, describeInstance, setupSSHKey, checkSSHKeyName, calculateVolumeSizes,
+import { ec2, s3, stepFunctions, defaults, volumeType, initScriptFile, init, describeInstance,
+         setupSSHKey, createSSHKey, checkSSHKeyName, calculateVolumeSizes,
          createVolumes, waitForVolumesAvailable, calculateVolumeDevices, attachVolumes,
          detachVolumes, deleteVolumes, deleteVolumesOnTermination,
          transferInitScript, executeInitScript } from './instances';
@@ -24,6 +24,7 @@ const fakeInstanceId = 'i-abcd1234';
 const fakeInstanceType = 'r4.2xlarge';
 const fakeInstanceAddress = 'EC2-fake.compute-1.amazonaws.com';
 const fakeAvailabilityZone = 'us-east-1a';
+const fakeEncryptionKeyId = 'fake-encryption-key';
 const fakeSSHKeyName = 'fake-ssh-key';
 const fakeSSHKeyS3Bucket = 'fake-ssh-key-bucket';
 const fakeSSHKeyS3Path = 'fake-ssh-key-path/key.pem';
@@ -176,16 +177,6 @@ describe('setupSSHKey()', () => {
         done();
       });
     });
-    it('cloudformation.executeStateMachine() once with correct parameters', (done: Callback) => {
-      setupSSHKey(fakeRequest, null, () => {
-        expect(spyOnExecuteStateMachine).toHaveBeenCalledWith({
-          logicalName: setupSSHKeyDefinition.Comment,
-          input: fakeRequest,
-        }, null, jasmine.any(Function));
-        expect(spyOnExecuteStateMachine).toHaveBeenCalledTimes(1);
-        done();
-      });
-    });
 
     describe('callback with an error if', () => {
       it('states.createStateMachine() produces an error', (done: Callback) => {
@@ -214,6 +205,73 @@ describe('setupSSHKey()', () => {
 
     it('callback with an error when called with correct parameters', (done: Callback) => {
       testError(setupSSHKey, fakeRequest, done, false);
+    });
+  });
+});
+
+describe('createSSHKey()', () => {
+  const fakeSSHKey = 'FAKE-KEY-MATERIAL';
+
+  let spyOnEC2CreateKeyPair: jasmine.Spy;
+  let spyOnS3PutObject: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.encryptionKeyId] = fakeEncryptionKeyId;
+    process.env[envNames.sshKeyS3Bucket] = fakeSSHKeyS3Bucket;
+    process.env[envNames.sshKeyS3Path] = fakeSSHKeyS3Path;
+    process.env[envNames.sshUser] = fakeSSHUser;
+
+    spyOnEC2CreateKeyPair = spyOn(ec2, 'createKeyPair')
+      .and.returnValue(fakeResolve({ KeyMaterial: fakeSSHKey }));
+    spyOnS3PutObject = spyOn(s3, 'putObject')
+      .and.returnValue(fakeResolve());
+  });
+
+  describe('calls', () => {
+    it('ec2.createKeyPair() once with correct parameters', (done: Callback) => {
+      createSSHKey(null, null, () => {
+        expect(spyOnEC2CreateKeyPair).toHaveBeenCalledWith({
+          KeyName: fakeSSHKeyName,
+        });
+        expect(spyOnEC2CreateKeyPair).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+    it('s3.putObject() once with correct parameters', (done: Callback) => {
+      createSSHKey(null, null, () => {
+        expect(spyOnS3PutObject).toHaveBeenCalledWith({
+          Bucket: fakeSSHKeyS3Bucket,
+          Key: fakeSSHKeyS3Path,
+          Body: fakeSSHKey,
+          SSEKMSKeyId: fakeEncryptionKeyId,
+          ServerSideEncryption: 'aws:kms',
+        });
+        expect(spyOnS3PutObject).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+
+    describe('callback with an error if', () => {
+      it('ec2.createKeyPair() produces an error', (done: Callback) => {
+        spyOnEC2CreateKeyPair.and.returnValue(fakeReject('ec2.createKeyPair()'));
+        testError(createSSHKey, null, done);
+      });
+      it('s3.putObject() produces an error', (done: Callback) => {
+        spyOnS3PutObject.and.returnValue(fakeReject('s3.putObject()'));
+        testError(createSSHKey, null, done);
+      });
+    });
+
+    it('callback without an error if AWS does not produce an error', (done: Callback) => {
+      testError(createSSHKey, null, done, false);
+    });
+  });
+
+  it('does not call s3.putObject() if ec2.createKeyPair() produces an error', (done: Callback) => {
+    spyOnEC2CreateKeyPair.and.returnValue(fakeReject('ec2.createKeyPair()'));
+    createSSHKey(null, null, () => {
+      expect(spyOnS3PutObject).not.toHaveBeenCalled();
+      done();
     });
   });
 });

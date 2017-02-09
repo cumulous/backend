@@ -1,6 +1,7 @@
 export const envNames = {
   AWSRegion: 'AWS_REGION',
   AWSAccount: 'AWS_ACCOUNT',
+  encryptionKeyId: 'ENCRYPTION_KEY_ID',
   stackName: 'STACK_NAME',
   sshKeyName: 'SSH_KEY_NAME',
   sshKeyS3Bucket: 'SSH_KEY_S3_BUCKET',
