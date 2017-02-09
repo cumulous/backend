@@ -2,8 +2,9 @@ import { EC2, S3, StepFunctions } from 'aws-sdk';
 import * as stringify from 'json-stable-stringify';
 import { Client as SSHClient, ClientChannel as SSHClientChannel, SFTPWrapper } from 'ssh2';
 
+import * as cloudformation from './cloudformation';
 import { envNames } from './env';
-import { executeStateMachine } from './states';
+import { createStateMachine, executeStateMachine } from './states';
 import { log } from './log';
 import { testEmpty } from './helpers';
 import { Callback } from './types';
@@ -11,7 +12,8 @@ import { Callback } from './types';
 // shim to be replaced with a DB lookup
 const instanceTypes = require('./instance-types.json');
 
-const statesDefinition = require('./instances-init.json');
+const initDefinition = require('./instances-init.json');
+const setupSSHKeyDefinition = require('./instances-setup-ssh-key.json');
 
 export const defaults = {
   sshUser: 'ec2-user',
@@ -27,7 +29,7 @@ export const stepFunctions = new StepFunctions();
 
 export function init(event: any, context: any, callback: Callback) {
   executeStateMachine({
-    logicalName: statesDefinition.Comment,
+    logicalName: initDefinition.Comment,
     input: event,
   }, context, callback);
 }
@@ -39,6 +41,16 @@ export function describeInstance(instanceId: string, context: any, callback: Cal
     .then(instances =>
       callback(null, instances.Reservations[0].Instances[0]))
     .catch(callback);
+}
+
+export function setupSSHKey(event: cloudformation.Request, context: any, callback: Callback) {
+  createStateMachine(setupSSHKeyDefinition, null, (err?: Error) => {
+    if (err) return callback(err);
+    executeStateMachine({
+      logicalName: setupSSHKeyDefinition.Comment,
+      input: event,
+    }, context, callback);
+  });
 }
 
 export function checkSSHKeyName(keyName: string, context: any, callback: Callback) {

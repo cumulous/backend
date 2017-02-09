@@ -1,9 +1,10 @@
 import * as stringify from 'json-stable-stringify';
 import { Client as SSHClient } from 'ssh2';
 
+import * as cloudformation from './cloudformation';
 import { envNames } from './env';
 import { ec2, s3, stepFunctions, defaults, volumeType, initScriptFile,
-         init, describeInstance, checkSSHKeyName, calculateVolumeSizes,
+         init, describeInstance, setupSSHKey, checkSSHKeyName, calculateVolumeSizes,
          createVolumes, waitForVolumesAvailable, calculateVolumeDevices, attachVolumes,
          detachVolumes, deleteVolumes, deleteVolumesOnTermination,
          transferInitScript, executeInitScript } from './instances';
@@ -16,7 +17,8 @@ if (!process.env['LOG_LEVEL']) {
   log.remove(log.transports.Console);
 }
 
-const statesDefinition = require('./instances-init.json');
+const initDefinition = require('./instances-init.json');
+const setupSSHKeyDefinition = require('./instances-setup-ssh-key.json');
 
 const fakeInstanceId = 'i-abcd1234';
 const fakeInstanceType = 'r4.2xlarge';
@@ -65,7 +67,7 @@ describe('init()', () => {
   it('calls states.executeStateMachine() with correct parameters', (done: Callback) => {
     init(fakeEvent, null, () => {
       expect(spyOnExecuteStateMachine).toHaveBeenCalledWith({
-        logicalName: statesDefinition.Comment,
+        logicalName: initDefinition.Comment,
         input: fakeEvent,
       }, null, jasmine.any(Function));
       done();
@@ -128,6 +130,91 @@ describe('describeInstance()', () => {
   it('does not produce an error when called with correct parameters ' +
      'and EC2.describeInstances() returns non-empty list', (done: Callback) => {
     testError(describeInstance, fakeInstanceId, done, false);
+  });
+});
+
+describe('setupSSHKey()', () => {
+  let fakeRequest: cloudformation.Request;
+
+  let spyOnCreateStateMachine: jasmine.Spy;
+  let spyOnExecuteStateMachine: jasmine.Spy;
+
+  beforeEach(() => {
+    fakeRequest = {
+      RequestType: 'Create',
+      ResponseURL: 'https://pre-signed-S3-url-for-fake-response',
+      StackId: 'fake-stack',
+      RequestId: 'fake-request-abcd-1234',
+      ResourceType: 'custom:fake-response-type',
+      LogicalResourceId: 'fake-logical-resource-id',
+      PhysicalResourceId: 'fake-physical-resource-id-1234-abcd',
+      OldResourceProperties: {},
+    };
+
+    spyOnCreateStateMachine = spyOn(states, 'createStateMachine')
+      .and.callFake((definition: any, context: any, callback: Callback) => callback());
+    spyOnExecuteStateMachine = spyOn(states, 'executeStateMachine')
+      .and.callFake((definition: any, context: any, callback: Callback) => callback());
+  });
+
+  describe('calls', () => {
+    it('states.createStateMachine() once with correct parameters', (done: Callback) => {
+      setupSSHKey(fakeRequest, null, () => {
+        expect(spyOnCreateStateMachine).toHaveBeenCalledWith(
+          setupSSHKeyDefinition, null, jasmine.any(Function));
+        expect(spyOnCreateStateMachine).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+    it('states.executeStateMachine() once with correct parameters', (done: Callback) => {
+      setupSSHKey(fakeRequest, null, () => {
+        expect(spyOnExecuteStateMachine).toHaveBeenCalledWith({
+          logicalName: setupSSHKeyDefinition.Comment,
+          input: fakeRequest,
+        }, null, jasmine.any(Function));
+        expect(spyOnExecuteStateMachine).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+    it('cloudformation.executeStateMachine() once with correct parameters', (done: Callback) => {
+      setupSSHKey(fakeRequest, null, () => {
+        expect(spyOnExecuteStateMachine).toHaveBeenCalledWith({
+          logicalName: setupSSHKeyDefinition.Comment,
+          input: fakeRequest,
+        }, null, jasmine.any(Function));
+        expect(spyOnExecuteStateMachine).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+
+    describe('callback with an error if', () => {
+      it('states.createStateMachine() produces an error', (done: Callback) => {
+        spyOnCreateStateMachine.and.callFake((definition: any, context: any, callback: Callback) =>
+          callback(Error('states.createStateMachine()')));
+        testError(setupSSHKey, fakeRequest, done);
+      });
+      it('states.executeStateMachine() produces an error', (done: Callback) => {
+        spyOnExecuteStateMachine.and.callFake((definition: any, context: any, callback: Callback) =>
+          callback(Error('states.executeStateMachine()')));
+        testError(setupSSHKey, fakeRequest, done);
+      });
+    });
+  });
+
+  describe('does not call', () => {
+    it('states.executeStateMachine() if states.createStateMachine() produces an error',
+        (done: Callback) => {
+      spyOnCreateStateMachine.and.callFake((definition: any, context: any, callback: Callback) =>
+          callback(Error('states.createStateMachine()')));
+      setupSSHKey(fakeRequest, null, () => {
+        expect(spyOnExecuteStateMachine).not.toHaveBeenCalled();
+        done();
+      });
+    });
+
+    it('callback with an error when called with correct parameters', (done: Callback) => {
+      testError(setupSSHKey, fakeRequest, done, false);
+    });
   });
 });
 
