@@ -362,6 +362,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - iam:CreatePolicy
+                  - iam:GetPolicy
                   - iam:DeletePolicy
                 Resource:
                   - !Sub arn:aws:iam::${AWS::AccountId}:policy/${RepoName}-beta-*
