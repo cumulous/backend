@@ -4,7 +4,7 @@ import { Client as SSHClient } from 'ssh2';
 import * as cloudformation from './cloudformation';
 import { envNames } from './env';
 import { ec2, s3, stepFunctions, defaults, volumeType, initScriptFile, init, describeInstance,
-         setupSSHKey, createSSHKey, checkSSHKeyName, calculateVolumeSizes,
+         setupSSHKey, createSSHKey, deleteSSHKey, checkSSHKeyName, calculateVolumeSizes,
          createVolumes, waitForVolumesAvailable, calculateVolumeDevices, attachVolumes,
          detachVolumes, deleteVolumes, deleteVolumesOnTermination,
          transferInitScript, executeInitScript } from './instances';
@@ -291,6 +291,86 @@ describe('createSSHKey()', () => {
     });
     it('"InvalidKeyPair.Duplicate" error', () => {
       causeDuplicateKeyError();
+    });
+  });
+});
+
+describe('deleteSSHKey()', () => {
+  let spyOnEC2DeleteKeyPair: jasmine.Spy;
+  let spyOnS3DeleteObject: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.sshKeyName] = fakeSSHKeyName;
+    process.env[envNames.sshKeyS3Bucket] = fakeSSHKeyS3Bucket;
+    process.env[envNames.sshKeyS3Path] = fakeSSHKeyS3Path;
+
+    spyOnEC2DeleteKeyPair = spyOn(ec2, 'deleteKeyPair')
+      .and.returnValue(fakeResolve());
+    spyOnS3DeleteObject = spyOn(s3, 'deleteObject')
+      .and.returnValue(fakeResolve());
+  });
+
+  const causeKeyNotFoundError = () => {
+    const err = Error('key pair does not exist');
+    (err as any).code = 'InvalidKeyPair.NotFound';
+    spyOnEC2DeleteKeyPair.and.returnValue(fakeReject(err));
+  };
+
+  describe('calls', () => {
+    it('ec2.deleteKeyPair() once with correct parameters', (done: Callback) => {
+      deleteSSHKey(null, null, () => {
+        expect(spyOnEC2DeleteKeyPair).toHaveBeenCalledWith({
+          KeyName: fakeSSHKeyName,
+        });
+        expect(spyOnEC2DeleteKeyPair).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+    it('s3.deleteObject() once with correct parameters', (done: Callback) => {
+      deleteSSHKey(null, null, () => {
+        expect(spyOnS3DeleteObject).toHaveBeenCalledWith({
+          Bucket: fakeSSHKeyS3Bucket,
+          Key: fakeSSHKeyS3Path,
+        });
+        expect(spyOnS3DeleteObject).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+
+    describe('callback with an error if', () => {
+      it('ec2.deleteKeyPair() produces an unrecoverable error', (done: Callback) => {
+        spyOnEC2DeleteKeyPair.and.returnValue(fakeReject('ec2.deleteKeyPair()'));
+        testError(deleteSSHKey, null, done);
+      });
+      it('s3.deleteObject() produces an error', (done: Callback) => {
+        spyOnS3DeleteObject.and.returnValue(fakeReject('s3.deleteObject()'));
+        testError(deleteSSHKey, null, done);
+      });
+    });
+
+    describe('callback without an error if', () => {
+      it('AWS does not produce an error', (done: Callback) => {
+        testError(deleteSSHKey, null, done, false);
+      });
+      it('ec2.deleteKeyPair() produces "InvalidKeyPair.NotFound" error', (done: Callback) => {
+        causeKeyNotFoundError();
+        testError(deleteSSHKey, null, done, false);
+      });
+    });
+  });
+
+  describe('does not call s3.deleteObject() if ec2.deleteKeyPair() produces', () => {
+    afterEach((done: Callback) => {
+      deleteSSHKey(null, null, () => {
+        expect(spyOnS3DeleteObject).not.toHaveBeenCalled();
+        done();
+      });
+    });
+    it('an unrecoverable error', () => {
+      spyOnEC2DeleteKeyPair.and.returnValue(fakeReject('ec2.deleteKeyPair()'));
+    });
+    it('"InvalidKeyPair.NotFound" error', () => {
+      causeKeyNotFoundError();
     });
   });
 });

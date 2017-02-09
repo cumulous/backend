@@ -79,6 +79,27 @@ function putSSHKey(key: string) {
   }).promise();
 }
 
+export function deleteSSHKey(event: any, context: any, callback: Callback) {
+  deleteKeyPair()
+    .then(deleteSSHKeyObject)
+    .then(() => callback())
+    .catch((err: AWSError) =>
+      callback(err.code === 'InvalidKeyPair.NotFound' ? null : err));
+}
+
+function deleteKeyPair() {
+  return ec2.deleteKeyPair({
+    KeyName: process.env[envNames.sshKeyName],
+  }).promise();
+}
+
+function deleteSSHKeyObject() {
+  return s3.deleteObject({
+    Bucket: process.env[envNames.sshKeyS3Bucket],
+    Key: process.env[envNames.sshKeyS3Path],
+  }).promise();
+}
+
 export function checkSSHKeyName(keyName: string, context: any, callback: Callback) {
   if (process.env[envNames.sshKeyName] == null) {
     callback(Error(envNames.sshKeyName + ' is missing from the environment'));
