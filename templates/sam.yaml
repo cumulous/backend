@@ -74,13 +74,13 @@ Resources:
 
   SetupInstancesInitResource:
     Type: AWS::CloudFormation::CustomResource
+    DependsOn:
+      - SendCloudFormationResponse
     Properties:
       ServiceToken: !GetAtt SetupInstancesInit.Arn
 
   SetupInstancesInit:
     Type: AWS::Serverless::Function
-    DependsOn:
-      - SendCloudFormationResponse
     Properties:
       CodeUri: ../app
       Handler: instances.setupInstancesInit
@@ -136,15 +136,15 @@ Resources:
 
   SetupSSHKeyResource:
     Type: AWS::CloudFormation::CustomResource
+    DependsOn:
+      - CreateSSHKey
+      - DeleteSSHKey
+      - SendCloudFormationResponse
     Properties:
       ServiceToken: !GetAtt SetupSSHKey.Arn
 
   SetupSSHKey:
     Type: AWS::Serverless::Function
-    DependsOn:
-      - CreateSSHKey
-      - DeleteSSHKey
-      - SendCloudFormationResponse
     Properties:
       CodeUri: ../app
       Handler: instances.setupSSHKey
