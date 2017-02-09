@@ -351,11 +351,21 @@ Resources:
                   - iam:AttachRolePolicy
                   - iam:DetachRolePolicy
                 Condition:
-                  ArnEquals:
-                    'iam:PolicyArn': arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+                  ArnLike:
+                    'iam:PolicyArn':
+                      - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+                      - !Sub arn:aws:iam::${AWS::AccountId}:policy/${RepoName}-beta-*
+                      - !Sub arn:aws:iam::${AWS::AccountId}:policy/${RepoName}-release-*
                 Resource:
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-beta-*
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-release-*
+              - Effect: Allow
+                Action:
+                  - iam:CreatePolicy
+                  - iam:DeletePolicy
+                Resource:
+                  - !Sub arn:aws:iam::${AWS::AccountId}:policy/${RepoName}-beta-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:policy/${RepoName}-release-*
               - Effect: Allow
                 Action:
                   - s3:GetObject
