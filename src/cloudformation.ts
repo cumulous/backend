@@ -35,3 +35,15 @@ export function sendResponse(event: Request & Response, context: any, callback: 
   }).then(() => callback())
     .catch(callback);
 };
+
+export function sendOnError(request: Request, err: Error, callback: Callback) {
+  if (err) {
+    const event: any = Object.assign(request, {
+      Status: 'FAILED',
+      Reason: err.message,
+    });
+    this.sendResponse(event, null, () => callback(err));
+  } else {
+    callback();
+  }
+}

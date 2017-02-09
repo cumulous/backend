@@ -48,6 +48,7 @@ describe('setupInstancesInit()', () => {
   let fakeRequest: any;
 
   let spyOnCreateStateMachine: jasmine.Spy;
+  let spyOnCloudFormationSendResponse: jasmine.Spy;
 
   beforeEach(() => {
     fakeRequest = {
@@ -56,6 +57,8 @@ describe('setupInstancesInit()', () => {
 
     spyOnCreateStateMachine = spyOn(states, 'createStateMachine')
       .and.callFake((definition: any, context: any, callback: Callback) => callback());
+    spyOnCloudFormationSendResponse = spyOn(cloudformation, 'sendResponse')
+      .and.callFake((event: any, context: any, callback: Callback) => callback());
   });
 
   describe('calls', () => {
@@ -68,12 +71,26 @@ describe('setupInstancesInit()', () => {
       });
     });
 
-    describe('callback with an error if', () => {
-      it('states.createStateMachine() produces an error', (done: Callback) => {
-        spyOnCreateStateMachine.and.callFake((definition: any, context: any, callback: Callback) =>
-          callback(Error('states.createStateMachine()')));
-        testError(setupInstancesInit, fakeRequest, done);
+    it('cloudformation.sendResponse() once with an error ' +
+        'if states.createStateMachine() produces an error', (done: Callback) => {
+      spyOnCreateStateMachine.and.callFake((definition: any, context: any, callback: Callback) =>
+        callback(Error('states.createStateMachine()')));
+      setupInstancesInit(fakeRequest, null, () => {
+        expect(spyOnCloudFormationSendResponse).toHaveBeenCalledWith(
+          Object.assign(fakeRequest, {
+            Status: 'FAILED',
+            Reason: jasmine.any(String),
+          }), null, jasmine.any(Function));
+        expect(spyOnCloudFormationSendResponse).toHaveBeenCalledTimes(1);
+        done();
       });
+    });
+
+    it('callback with an error if states.createStateMachine() produces an error',
+        (done: Callback) => {
+      spyOnCreateStateMachine.and.callFake((definition: any, context: any, callback: Callback) =>
+        callback(Error('states.createStateMachine()')));
+      testError(setupInstancesInit, fakeRequest, done);
     });
 
     it('callback without an error if states.createStateMachine() does not produce an error',
@@ -179,6 +196,7 @@ describe('setupSSHKey()', () => {
 
   let spyOnCreateStateMachine: jasmine.Spy;
   let spyOnExecuteStateMachine: jasmine.Spy;
+  let spyOnCloudFormationSendResponse: jasmine.Spy;
 
   beforeEach(() => {
     fakeRequest = {
@@ -189,6 +207,8 @@ describe('setupSSHKey()', () => {
       .and.callFake((definition: any, context: any, callback: Callback) => callback());
     spyOnExecuteStateMachine = spyOn(states, 'executeStateMachine')
       .and.callFake((definition: any, context: any, callback: Callback) => callback());
+    spyOnCloudFormationSendResponse = spyOn(cloudformation, 'sendResponse')
+      .and.callFake((event: any, context: any, callback: Callback) => callback());
   });
 
   describe('calls', () => {
@@ -208,6 +228,28 @@ describe('setupSSHKey()', () => {
         }, null, jasmine.any(Function));
         expect(spyOnExecuteStateMachine).toHaveBeenCalledTimes(1);
         done();
+      });
+    });
+
+    describe('cloudformation.sendResponse() once with an error if', () => {
+      it('states.createStateMachine() produces an error', () => {
+        spyOnCreateStateMachine.and.callFake((definition: any, context: any, callback: Callback) =>
+          callback(Error('states.createStateMachine()')));
+      });
+      it('states.executeStateMachine() produces an error', () => {
+        spyOnExecuteStateMachine.and.callFake((definition: any, context: any, callback: Callback) =>
+          callback(Error('states.executeStateMachine()')));
+      });
+      afterEach((done: Callback) => {
+        setupSSHKey(fakeRequest, null, () => {
+          expect(spyOnCloudFormationSendResponse).toHaveBeenCalledWith(
+            Object.assign(fakeRequest, {
+              Status: 'FAILED',
+              Reason: jasmine.any(String),
+            }), null, jasmine.any(Function));
+          expect(spyOnCloudFormationSendResponse).toHaveBeenCalledTimes(1);
+          done();
+        });
       });
     });
 
