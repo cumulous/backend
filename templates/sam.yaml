@@ -301,7 +301,6 @@ Resources:
       Timeout: 10
       Environment:
         Variables:
-          SSH_KEY_NAME: !Ref SSHKeyName
           SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
@@ -315,7 +314,6 @@ Resources:
       Timeout: 15
       Environment:
         Variables:
-          SSH_KEY_NAME: !Ref SSHKeyName
           SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
