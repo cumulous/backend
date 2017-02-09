@@ -1,5 +1,6 @@
 import * as requestPromise from 'request-promise';
 
+import { log } from './log';
 import { Callback, Dict } from './types';
 
 export interface Request {
@@ -21,6 +22,7 @@ export interface Response {
 };
 
 export function sendResponse(event: Request & Response, context: any, callback: Callback) {
+  log.info(JSON.stringify(event));
   requestPromise.post(event.ResponseURL, {
     body: {
       Status: event.Status,
