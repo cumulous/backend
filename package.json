@@ -26,8 +26,6 @@
   "author": "Denis Loginov <dloginov@mit.edu>",
   "dependencies": {
     "json-stable-stringify": "^1.0.1",
-    "request": "^2.79.0",
-    "request-promise": "^4.1.1",
     "ssh2": "^0.5.4",
     "winston": "^2.3.0"
   },
@@ -36,7 +34,6 @@
     "@types/jasmine": "^2.5.37",
     "@types/json-stable-stringify": "^1.0.29",
     "@types/node": "^6.0.46",
-    "@types/request-promise": "^4.1.33",
     "@types/ssh2": "^0.5.35",
     "@types/winston": "^2.2.0",
     "aws-sdk": "^2.7.5",
