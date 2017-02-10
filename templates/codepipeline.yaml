@@ -338,8 +338,7 @@ Resources:
                   - iam:PassRole
                   - iam:DeleteRole
                 Resource:
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-beta-*
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-release-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-*
               - Effect: Allow
                 Action:
                   - iam:PassRole
@@ -354,11 +353,9 @@ Resources:
                   ArnLike:
                     'iam:PolicyArn':
                       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-                      - !Sub arn:aws:iam::${AWS::AccountId}:policy/${RepoName}-beta-*
-                      - !Sub arn:aws:iam::${AWS::AccountId}:policy/${RepoName}-release-*
+                      - !Sub arn:aws:iam::${AWS::AccountId}:policy/${RepoName}-*
                 Resource:
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-beta-*
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-release-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-*
               - Effect: Allow
                 Action:
                   - s3:GetObject
@@ -376,8 +373,7 @@ Resources:
                   - lambda:AddPermission
                   - lambda:RemovePermission
                 Resource:
-                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${RepoName}-beta-*
-                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${RepoName}-release-*
+                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${RepoName}-*
               - Effect: Allow
                 Action:
                   - events:DescribeRule
@@ -386,8 +382,7 @@ Resources:
                   - events:PutTargets
                   - events:RemoveTargets
                 Resource:
-                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${RepoName}-beta-*
-                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${RepoName}-release-*
+                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${RepoName}-*
               - Effect: Allow
                 Action:
                   - ec2:DescribeKeyPairs
