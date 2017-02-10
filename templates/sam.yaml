@@ -50,16 +50,16 @@ Resources:
 
   CreateStateMachine:
     Type: AWS::Serverless::Function
-    Properties:
+    Properties: !Sub |
       CodeUri: ../app
       Handler: states.createStateMachine
       Runtime: nodejs4.3
       Timeout: 5
       Environment:
         Variables:
-          AWS_ACCOUNT: !Ref AWS::AccountId
-          STACK_NAME: !Ref AWS::StackName
-      Policies: !Sub ${CreateStateMachinePolicy}
+          AWS_ACCOUNT: ${AWS::AccountId}
+          STACK_NAME: ${AWS::StackName}
+      Policies: ${CreateStateMachinePolicy}
 
   ExecuteStateMachine:
     Type: AWS::Serverless::Function
@@ -88,15 +88,15 @@ Resources:
 
   SetupInstancesInit:
     Type: AWS::Serverless::Function
-    Properties:
+    Properties: !Sub |
       CodeUri: ../app
       Handler: instances.setupInstancesInit
       Runtime: nodejs4.3
       Environment:
         Variables:
-          AWS_ACCOUNT: !Ref AWS::AccountId
-          STACK_NAME: !Ref AWS::StackName
-      Policies: !Sub ${CreateStateMachinePolicy}
+          AWS_ACCOUNT: ${AWS::AccountId}
+          STACK_NAME: $AWS::StackName}
+      Policies: ${CreateStateMachinePolicy}
 
   InstancesInit:
     Type: AWS::Serverless::Function
@@ -153,22 +153,22 @@ Resources:
 
   SetupSSHKey:
     Type: AWS::Serverless::Function
-    Properties:
+    Properties: !Sub |
       CodeUri: ../app
       Handler: instances.setupSSHKey
       Runtime: nodejs4.3
       Environment:
         Variables:
-          AWS_ACCOUNT: !Ref AWS::AccountId
-          STACK_NAME: !Ref AWS::StackName
+          AWS_ACCOUNT: ${AWS::AccountId}
+          STACK_NAME: ${AWS::StackName}
       Policies:
-        - !Sub ${CreateStateMachinePolicy}
+        - ${CreateStateMachinePolicy}
         -
           Statement:
             - Effect: Allow
               Action: states:StartExecution
               Resource:
-                - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-SetupSSHKey-*_${AWS::StackName}
+                - arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-SetupSSHKey-*_${AWS::StackName}
 
   CreateSSHKey:
     Type: AWS::Serverless::Function
