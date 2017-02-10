@@ -157,6 +157,7 @@ Resources:
     DependsOn:
       - CreateSSHKey
       - DeleteSSHKey
+      - SendCloudFormationResponse
     Properties:
       ServiceToken: !GetAtt SetupSSHKey.Arn
 
