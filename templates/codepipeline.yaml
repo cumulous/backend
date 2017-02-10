@@ -353,6 +353,7 @@ Resources:
                   ArnLike:
                     'iam:PolicyArn':
                       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+                      - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
                       - !Sub arn:aws:iam::${AWS::AccountId}:policy/${RepoName}-*
                 Resource:
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-*
