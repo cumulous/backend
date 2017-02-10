@@ -29,11 +29,18 @@ Resources:
       Handler: cloudformation.sendResponse
       Runtime: nodejs4.3
 
-  CreateStateMachinePolicy:
-    Type: AWS::IAM::ManagedPolicy
+  CreateStateMachine:
+    Type: AWS::Serverless::Function
     Properties:
-      PolicyDocument:
-        Version: 2012-10-17
+      CodeUri: ../app
+      Handler: states.createStateMachine
+      Runtime: nodejs4.3
+      Timeout: 5
+      Environment:
+        Variables:
+          AWS_ACCOUNT: !Ref AWS::AccountId
+          STACK_NAME: !Ref AWS::StackName
+      Policies:
         Statement:
           - Effect: Allow
             Action: cloudformation:DescribeStackResource
@@ -47,19 +54,6 @@ Resources:
             Action: iam:PassRole
             Resource:
               - !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
-
-  CreateStateMachine: !Sub |
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../app
-      Handler: states.createStateMachine
-      Runtime: nodejs4.3
-      Timeout: 5
-      Environment:
-        Variables:
-          AWS_ACCOUNT: ${AWS::AccountId}
-          STACK_NAME: ${AWS::StackName}
-      Policies: ${CreateStateMachinePolicy}
 
   ExecuteStateMachine:
     Type: AWS::Serverless::Function
@@ -86,7 +80,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupInstancesInit.Arn
 
-  SetupInstancesInit: !Sub |
+  SetupInstancesInit:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../app
@@ -94,9 +88,22 @@ Resources:
       Runtime: nodejs4.3
       Environment:
         Variables:
-          AWS_ACCOUNT: ${AWS::AccountId}
-          STACK_NAME: $AWS::StackName}
-      Policies: ${CreateStateMachinePolicy}
+          AWS_ACCOUNT: !Ref AWS::AccountId
+          STACK_NAME: !Ref AWS::StackName
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: cloudformation:DescribeStackResource
+            Resource:
+              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*
+          - Effect: Allow
+            Action: states:CreateStateMachine
+            Resource:
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-Init-*_${AWS::StackName}
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource:
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
 
   InstancesInit:
     Type: AWS::Serverless::Function
@@ -151,7 +158,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupSSHKey.Arn
 
-  SetupSSHKey: !Sub |
+  SetupSSHKey:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../app
@@ -159,16 +166,24 @@ Resources:
       Runtime: nodejs4.3
       Environment:
         Variables:
-          AWS_ACCOUNT: ${AWS::AccountId}
-          STACK_NAME: ${AWS::StackName}
+          AWS_ACCOUNT: !Ref AWS::AccountId
+          STACK_NAME: !Ref AWS::StackName
       Policies:
-        - ${CreateStateMachinePolicy}
-        -
-          Statement:
-            - Effect: Allow
-              Action: states:StartExecution
-              Resource:
-                - arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-SetupSSHKey-*_${AWS::StackName}
+        Statement:
+          - Effect: Allow
+            Action: cloudformation:DescribeStackResource
+            Resource:
+              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*
+          - Effect: Allow
+            Action:
+              - states:CreateStateMachine
+              - states:StartExecution
+            Resource:
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-SetupSSHKey-*_${AWS::StackName}
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource:
+              - !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
 
   CreateSSHKey:
     Type: AWS::Serverless::Function

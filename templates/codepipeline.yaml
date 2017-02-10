@@ -361,15 +361,6 @@ Resources:
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-release-*
               - Effect: Allow
                 Action:
-                  - iam:CreatePolicy
-                  - iam:GetPolicy
-                  - iam:ListPolicyVersions
-                  - iam:DeletePolicy
-                Resource:
-                  - !Sub arn:aws:iam::${AWS::AccountId}:policy/${RepoName}-beta-*
-                  - !Sub arn:aws:iam::${AWS::AccountId}:policy/${RepoName}-release-*
-              - Effect: Allow
-                Action:
                   - s3:GetObject
                 Resource:
                   - !Sub arn:aws:s3:::${ArtifactsBucket}/lambda/*
