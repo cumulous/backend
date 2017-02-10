@@ -28,9 +28,10 @@ export const ec2 = new EC2();
 export const s3 = new S3();
 export const stepFunctions = new StepFunctions();
 
-export function setupInstancesInit(event: cloudformation.Request, context: any, callback: Callback) {
+export function setupInstancesInit(request: cloudformation.Request, context: any, callback: Callback) {
+  log.info(stringify(request));
   createStateMachine(initDefinition, null, (err?: Error) =>
-    cloudformation.sendOnError(event, err, callback));
+    cloudformation.sendOnError(request, err, callback));
 }
 
 export function init(event: any, context: any, callback: Callback) {
@@ -49,14 +50,15 @@ export function describeInstance(instanceId: string, context: any, callback: Cal
     .catch(callback);
 }
 
-export function setupSSHKey(event: cloudformation.Request, context: any, callback: Callback) {
+export function setupSSHKey(request: cloudformation.Request, context: any, callback: Callback) {
+  log.info(stringify(request));
   createStateMachine(setupSSHKeyDefinition, null, (err?: Error) => {
-    if (err) return cloudformation.sendOnError(event, err, callback);
+    if (err) return cloudformation.sendOnError(request, err, callback);
     executeStateMachine({
       logicalName: setupSSHKeyDefinition.Comment,
-      input: event,
+      input: request,
     }, null, (err?: Error) =>
-      cloudformation.sendOnError(event, err, callback));
+      cloudformation.sendOnError(request, err, callback));
   });
 }
 

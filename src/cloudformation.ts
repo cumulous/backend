@@ -23,7 +23,6 @@ export interface Response {
 };
 
 export function sendResponse(event: Request & Response, context: any, callback: Callback) {
-  log.info(stringify(event));
   requestPromise.put({
     uri: event.ResponseURL,
     body: stringify({
