@@ -68,6 +68,20 @@ Resources:
 
   SetupInstancesInitResource:
     Type: AWS::CloudFormation::CustomResource
+    DependsOn:
+      - DescribeInstance
+      - CheckSSHKeyName
+      - CalculateVolumeSizes
+      - CreateVolumes
+      - WaitForVolumesAvailable
+      - CalculateVolumeDevices
+      - AttachVolumes
+      - DetachVolumes
+      - WaitForVolumesAvailable
+      - DeleteVolumes
+      - DeleteVolumesOnTermination
+      - TransferInitScript
+      - ExecuteInitScript
     Properties:
       ServiceToken: !GetAtt SetupInstancesInit.Arn
 
