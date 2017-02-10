@@ -77,10 +77,10 @@ describe('setupInstancesInit()', () => {
         callback(Error('states.createStateMachine()')));
       setupInstancesInit(fakeRequest, null, () => {
         expect(spyOnCloudFormationSendResponse).toHaveBeenCalledWith(
-          Object.assign(fakeRequest, {
+          Object.assign({
             Status: 'FAILED',
             Reason: jasmine.any(String),
-          }), null, jasmine.any(Function));
+          }, fakeRequest), null, jasmine.any(Function));
         expect(spyOnCloudFormationSendResponse).toHaveBeenCalledTimes(1);
         done();
       });
@@ -243,10 +243,10 @@ describe('setupSSHKey()', () => {
       afterEach((done: Callback) => {
         setupSSHKey(fakeRequest, null, () => {
           expect(spyOnCloudFormationSendResponse).toHaveBeenCalledWith(
-            Object.assign(fakeRequest, {
+            Object.assign({
               Status: 'FAILED',
               Reason: jasmine.any(String),
-            }), null, jasmine.any(Function));
+            }, fakeRequest), null, jasmine.any(Function));
           expect(spyOnCloudFormationSendResponse).toHaveBeenCalledTimes(1);
           done();
         });
