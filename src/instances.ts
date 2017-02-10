@@ -25,7 +25,7 @@ export const initScriptFile = 'init.sh';
 export const volumeType = 'gp2';
 
 export const ec2 = new EC2();
-export const s3 = new S3();
+export const s3 = new S3({ signatureVersion: 'v4' });
 export const stepFunctions = new StepFunctions();
 
 export function setupInstancesInit(request: cloudformation.Request, context: any, callback: Callback) {
