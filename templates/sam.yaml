@@ -68,9 +68,6 @@ Resources:
 
   SetupInstancesInitResource:
     Type: AWS::CloudFormation::CustomResource
-    DependsOn:
-      - CreateStateMachine
-      - SendCloudFormationResponse
     Properties:
       ServiceToken: !GetAtt SetupInstancesInit.Arn
 
@@ -146,9 +143,6 @@ Resources:
     DependsOn:
       - CreateSSHKey
       - DeleteSSHKey
-      - CreateStateMachine
-      - ExecuteStateMachine
-      - SendCloudFormationResponse
     Properties:
       ServiceToken: !GetAtt SetupSSHKey.Arn
 
