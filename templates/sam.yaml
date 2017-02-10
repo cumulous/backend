@@ -59,7 +59,7 @@ Resources:
         Variables:
           AWS_ACCOUNT: !Ref AWS::AccountId
           STACK_NAME: !Ref AWS::StackName
-      Policies: !Select [1, !Split ['/', !Ref CreateStateMachinePolicy]]
+      Policies: !Sub ${CreateStateMachinePolicy}
 
   ExecuteStateMachine:
     Type: AWS::Serverless::Function
@@ -96,7 +96,7 @@ Resources:
         Variables:
           AWS_ACCOUNT: !Ref AWS::AccountId
           STACK_NAME: !Ref AWS::StackName
-      Policies: !Ref CreateStateMachinePolicy
+      Policies: !Sub ${CreateStateMachinePolicy}
 
   InstancesInit:
     Type: AWS::Serverless::Function
@@ -162,7 +162,7 @@ Resources:
           AWS_ACCOUNT: !Ref AWS::AccountId
           STACK_NAME: !Ref AWS::StackName
       Policies:
-        - !Ref CreateStateMachinePolicy
+        - !Sub ${CreateStateMachinePolicy}
         -
           Statement:
             - Effect: Allow
