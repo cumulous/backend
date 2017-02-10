@@ -48,9 +48,9 @@ Resources:
             Resource:
               - !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
 
-  CreateStateMachine:
+  CreateStateMachine: !Sub |
     Type: AWS::Serverless::Function
-    Properties: !Sub |
+    Properties:
       CodeUri: ../app
       Handler: states.createStateMachine
       Runtime: nodejs4.3
@@ -86,9 +86,9 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupInstancesInit.Arn
 
-  SetupInstancesInit:
+  SetupInstancesInit: !Sub |
     Type: AWS::Serverless::Function
-    Properties: !Sub |
+    Properties:
       CodeUri: ../app
       Handler: instances.setupInstancesInit
       Runtime: nodejs4.3
@@ -151,9 +151,9 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupSSHKey.Arn
 
-  SetupSSHKey:
+  SetupSSHKey: !Sub |
     Type: AWS::Serverless::Function
-    Properties: !Sub |
+    Properties:
       CodeUri: ../app
       Handler: instances.setupSSHKey
       Runtime: nodejs4.3
