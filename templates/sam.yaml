@@ -4,22 +4,16 @@ Transform: AWS::Serverless-2016-10-31
 Parameters:
   EncryptionKeyId:
     Type: String
-    MinLength: 1
   SSHKeyName:
     Type: String
-    MinLength: 1
   SSHKeyS3Bucket:
     Type: String
-    MinLength: 1
   SSHKeyS3Path:
     Type: String
-    MinLength: 1
   SSHKeyPutRole:
     Type: String
-    MinLength: 1
   SSHKeyGetRole:
     Type: String
-    MinLength: 1
 
 Resources:
   SendCloudFormationResponse:
