@@ -23,6 +23,19 @@ Resources:
       Handler: cloudformation.sendResponse
       Runtime: nodejs4.3
 
+  StatesExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+
   CreateStateMachine:
     Type: AWS::Serverless::Function
     Properties:
@@ -34,6 +47,7 @@ Resources:
         Variables:
           AWS_ACCOUNT: !Ref AWS::AccountId
           STACK_NAME: !Ref AWS::StackName
+          STATES_EXECUTION_ROLE: !GetAtt StatesExecutionRole.Arn
       Policies:
         Statement:
           - Effect: Allow
@@ -47,7 +61,7 @@ Resources:
           - Effect: Allow
             Action: iam:PassRole
             Resource:
-              - !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
+              - !GetAtt StatesExecutionRole.Arn
 
   ExecuteStateMachine:
     Type: AWS::Serverless::Function
@@ -95,6 +109,7 @@ Resources:
         Variables:
           AWS_ACCOUNT: !Ref AWS::AccountId
           STACK_NAME: !Ref AWS::StackName
+          STATES_EXECUTION_ROLE: !GetAtt StatesExecutionRole.Arn
       Policies:
         Statement:
           - Effect: Allow
@@ -108,7 +123,7 @@ Resources:
           - Effect: Allow
             Action: iam:PassRole
             Resource:
-              - !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
+              - !GetAtt StatesExecutionRole.Arn
 
   InstancesInit:
     Type: AWS::Serverless::Function
@@ -171,6 +186,7 @@ Resources:
         Variables:
           AWS_ACCOUNT: !Ref AWS::AccountId
           STACK_NAME: !Ref AWS::StackName
+          STATES_EXECUTION_ROLE: !GetAtt StatesExecutionRole.Arn
       Policies:
         Statement:
           - Effect: Allow
@@ -190,7 +206,7 @@ Resources:
           - Effect: Allow
             Action: iam:PassRole
             Resource:
-              - !Sub arn:aws:iam::${AWS::AccountId}:role/service-role/StatesExecutionRole-${AWS::Region}
+              - !GetAtt StatesExecutionRole.Arn
 
   CreateSSHKey:
     Type: AWS::Serverless::Function

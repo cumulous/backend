@@ -88,11 +88,6 @@ function createStateMachineRequest(definition: StateMachineDefinition) {
   return stepFunctions.createStateMachine({
       name: getStateMachineName(definition.Comment),
       definition: stringify(definition),
-      roleArn: getStatesExecutionRole(),
+      roleArn: process.env[envNames.statesExecutionRole],
     }).promise();
-}
-
-function getStatesExecutionRole() {
-  return 'arn:aws:iam::' + process.env[envNames.AWSAccount] + ':' +
-         'role/service-role/StatesExecutionRole-' + process.env[envNames.AWSRegion];
 }

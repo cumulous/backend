@@ -25,7 +25,8 @@ beforeEach(() => {
 });
 
 describe('createStateMachine()', () => {
-  const fakeStateMachineRole = 'fakeRole';
+  const fakeStatesExecutionRole =
+    'arn:aws:iam::' + fakeAccount + ':' + 'role/FakeStatesExecutionRole';
   const fakeResourceSuffix = '-fakeSuffix';
 
   let spyOnCreateStateMachine: jasmine.Spy;
@@ -34,6 +35,8 @@ describe('createStateMachine()', () => {
   beforeEach(() => {
     spyOnCreateStateMachine = spyOn(stepFunctions, 'createStateMachine')
       .and.returnValue(fakeResolve());
+
+    process.env[envNames.statesExecutionRole] = fakeStatesExecutionRole;
 
     spyOnDescribeStackResource = spyOn(cloudFormation, 'describeStackResource')
       .and.callFake((data: {LogicalResourceId: string}) => fakeResolve({
@@ -52,13 +55,10 @@ describe('createStateMachine()', () => {
             'arn:aws:lambda:' + fakeRegion + ':' + fakeAccount + ':' + resource + fakeResourceSuffix;
         }
       });
-      const fakeRoleArn = 'arn:aws:iam::' + fakeAccount + ':' +
-        'role/service-role/StatesExecutionRole-' + fakeRegion;
-
       expect(spyOnCreateStateMachine).toHaveBeenCalledWith({
         name: fakeDefinition.Comment + '_' + fakeStack,
         definition: stringify(fakeDefinition),
-        roleArn: fakeRoleArn,
+        roleArn: fakeStatesExecutionRole,
       });
       expect(spyOnCreateStateMachine).toHaveBeenCalledTimes(1);
       done();
