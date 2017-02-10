@@ -32,7 +32,6 @@ describe('sendResponse()', () => {
       RequestId: fakeRequestId,
       ResourceType: fakeResponseType,
       LogicalResourceId: fakeLogicalResourceId,
-      PhysicalResourceId: fakePhysicalResourceId,
       ResourceProperties: {},
       OldResourceProperties: {},
       Status: fakeResponseStatus,
@@ -45,23 +44,34 @@ describe('sendResponse()', () => {
   });
 
   describe('calls', () => {
-    it('requestPromise.put() once with correct parameters', (done: Callback) => {
-      sendResponse(fakeEvent, null, () => {
-        expect(spyOnRequestPromisePut).toHaveBeenCalledWith({
-          uri: fakeResponseUri,
-          body: stringify({
-            Status: fakeResponseStatus,
-            Reason: fakeResponseReason,
-            PhysicalResourceId: fakePhysicalResourceId,
-            StackId: fakeStackId,
-            RequestId: fakeRequestId,
-            LogicalResourceId: fakeLogicalResourceId,
-            Data: fakeResponseData,
-          }),
-        });
-        expect(spyOnRequestPromisePut).toHaveBeenCalledTimes(1);
-        done();
+    describe('requestPromise.put() once with correct parameters when PhysicalResourceId is', () => {
+      it('defined', (done: Callback) => {
+        fakeEvent.PhysicalResourceId = fakePhysicalResourceId;
+        checkPut(fakePhysicalResourceId, done);
       });
+      it('undefined', (done: Callback) => {
+        delete fakeEvent.PhysicalResourceId;
+        checkPut(fakeLogicalResourceId, done);
+      });
+
+      function checkPut(resourceId: any, done: Callback) {
+        sendResponse(fakeEvent, null, () => {
+          expect(spyOnRequestPromisePut).toHaveBeenCalledWith({
+            uri: fakeResponseUri,
+            body: stringify({
+              Status: fakeResponseStatus,
+              Reason: fakeResponseReason,
+              PhysicalResourceId: resourceId,
+              StackId: fakeStackId,
+              RequestId: fakeRequestId,
+              LogicalResourceId: fakeLogicalResourceId,
+              Data: fakeResponseData,
+            }),
+          });
+          expect(spyOnRequestPromisePut).toHaveBeenCalledTimes(1);
+          done();
+        });
+      };
     });
 
     it('callback with an error if requestPromise.put() returns an error', (done: Callback) => {

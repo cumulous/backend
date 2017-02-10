@@ -29,7 +29,7 @@ export function sendResponse(event: Request & Response, context: any, callback: 
     body: stringify({
       Status: event.Status,
       Reason: event.Reason,
-      PhysicalResourceId: event.PhysicalResourceId,
+      PhysicalResourceId: event.PhysicalResourceId || event.LogicalResourceId,
       StackId: event.StackId,
       RequestId: event.RequestId,
       LogicalResourceId: event.LogicalResourceId,
@@ -49,4 +49,4 @@ export function sendOnError(request: Request, err: Error, callback: Callback) {
   } else {
     callback();
   }
-}
+};
