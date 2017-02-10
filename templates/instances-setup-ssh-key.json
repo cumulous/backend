@@ -8,7 +8,7 @@
         {
           "Variable": "$.RequestType",
           "StringEquals": "Create",
-          "Next": "SetCreateSSHKey"
+          "Next": "DeleteSSHKey"
         },
         {
           "Variable": "$.RequestType",
@@ -22,12 +22,6 @@
         }
       ],
       "Default": "Fail"
-    },
-    "SetCreateSSHKey": {
-      "Type": "Pass",
-      "ResultPath": "$.createSSHKey",
-      "Result": true,
-      "Next": "DeleteSSHKey"
     },
     "DeleteSSHKey": {
       "Type": "Task",
@@ -44,8 +38,8 @@
       "Type": "Choice",
       "Choices": [
         {
-          "Variable": "$.createSSHKey",
-          "BooleanEquals": true,
+          "Variable": "$.RequestType",
+          "StringEquals": "Create",
           "Next": "CreateSSHKey"
         }
       ],
