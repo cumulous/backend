@@ -1,5 +1,5 @@
 {
-  "Comment": "Instances-Init-v1.0.7",
+  "Comment": "Instances-Init-v1_0_7",
   "StartAt": "DescribeInstance",
   "States": {
     "DescribeInstance": {

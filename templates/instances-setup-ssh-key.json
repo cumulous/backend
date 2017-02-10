@@ -1,5 +1,5 @@
 {
-  "Comment": "Instances-SetupSSHKey-v1_0_0",
+  "Comment": "Instances-SetupSSHKey-v1_0_1",
   "StartAt": "ChooseEventType",
   "States": {
     "ChooseEventType": {
