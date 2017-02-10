@@ -18,7 +18,7 @@ describe('sendResponse()', () => {
   let fakeEvent: Request & Response;
   let fakeResponseData: Dict<any>;
 
-  let spyOnRequestPromisePost: jasmine.Spy;
+  let spyOnRequestPromisePut: jasmine.Spy;
 
   beforeEach(() => {
     fakeResponseData = {
@@ -39,14 +39,14 @@ describe('sendResponse()', () => {
       Data: fakeResponseData,
     };
 
-    spyOnRequestPromisePost = spyOn(requestPromise, 'post')
+    spyOnRequestPromisePut= spyOn(requestPromise, 'put')
       .and.returnValue(Promise.resolve());
   });
 
   describe('calls', () => {
-    it('requestPromise.post() once with correct parameters', (done: Callback) => {
+    it('requestPromise.put() once with correct parameters', (done: Callback) => {
       sendResponse(fakeEvent, null, () => {
-        expect(spyOnRequestPromisePost).toHaveBeenCalledWith(fakeResponseUri, {
+        expect(spyOnRequestPromisePut).toHaveBeenCalledWith(fakeResponseUri, {
           body: {
             Status: fakeResponseStatus,
             Reason: fakeResponseReason,
@@ -57,19 +57,19 @@ describe('sendResponse()', () => {
             Data: fakeResponseData,
           },
         });
-        expect(spyOnRequestPromisePost).toHaveBeenCalledTimes(1);
+        expect(spyOnRequestPromisePut).toHaveBeenCalledTimes(1);
         done();
       });
     });
 
-    it('callback with an error if requestPromise.post() returns an error', (done: Callback) => {
-      spyOnRequestPromisePost.and.returnValue(Promise.reject('requestPromise.post()'));
+    it('callback with an error if requestPromise.put() returns an error', (done: Callback) => {
+      spyOnRequestPromisePut.and.returnValue(Promise.reject('requestPromise.put()'));
       testError(sendResponse, fakeEvent, done);
     });
   });
 
   it('does not produce an error when called with correct parameters ' +
-     'and requestPromise.post() does not return an error', (done: Callback) => {
+     'and requestPromise.put() does not return an error', (done: Callback) => {
     testError(sendResponse, fakeEvent, done, false);
   });
 });
