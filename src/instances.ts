@@ -31,7 +31,7 @@ export const stepFunctions = new StepFunctions();
 export function setupInstancesInit(request: cloudformation.Request, context: any, callback: Callback) {
   log.info(stringify(request));
   createStateMachine(initDefinition, null, (err?: Error) =>
-    cloudformation.sendOnError(request, err, callback));
+    cloudformation.sendOnSuccessOrError(request, err, callback));
 }
 
 export function init(event: any, context: any, callback: Callback) {

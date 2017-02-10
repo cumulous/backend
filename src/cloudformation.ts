@@ -48,12 +48,16 @@ export function sendResponse(event: Request & Response, context: any, callback: 
 
 export function sendOnError(request: Request, err: Error, callback: Callback) {
   if (err) {
-    const event: any = Object.assign(request, {
-      Status: 'FAILED',
-      Reason: err.message,
-    });
-    this.sendResponse(event, null, () => callback(err));
+    this.sendOnSuccessOrError(request, err, callback);
   } else {
     callback();
   }
+}
+
+export function sendOnSuccessOrError(request: Request, err: Error, callback: Callback) {
+  const event: any = Object.assign(request, {
+    Status: err ? 'FAILED' : 'SUCCESS',
+    Reason: err ? err.message : undefined,
+  });
+  this.sendResponse(event, null, () => callback(err));
 }

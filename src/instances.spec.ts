@@ -86,8 +86,7 @@ describe('setupInstancesInit()', () => {
       });
     });
 
-    it('callback with an error if states.createStateMachine() produces an error',
-        (done: Callback) => {
+    it('callback with an error if states.createStateMachine() produces an error', (done: Callback) => {
       spyOnCreateStateMachine.and.callFake((definition: any, context: any, callback: Callback) =>
         callback(Error('states.createStateMachine()')));
       testError(setupInstancesInit, fakeRequest, done);
@@ -278,7 +277,7 @@ describe('setupSSHKey()', () => {
       });
     });
 
-    it('callback with an error when called with correct parameters', (done: Callback) => {
+    it('callback without an error when called with correct parameters', (done: Callback) => {
       testError(setupSSHKey, fakeRequest, done, false);
     });
   });
