@@ -2,6 +2,7 @@ import * as requestPromise from 'request-promise';
 
 import { Request, Response, sendResponse } from './cloudformation';
 import { testError} from './fixtures/support';
+import * as stringify from 'json-stable-stringify';
 import { Callback, Dict } from './types';
 
 describe('sendResponse()', () => {
@@ -46,8 +47,9 @@ describe('sendResponse()', () => {
   describe('calls', () => {
     it('requestPromise.put() once with correct parameters', (done: Callback) => {
       sendResponse(fakeEvent, null, () => {
-        expect(spyOnRequestPromisePut).toHaveBeenCalledWith(fakeResponseUri, {
-          body: {
+        expect(spyOnRequestPromisePut).toHaveBeenCalledWith({
+          uri: fakeResponseUri,
+          body: stringify({
             Status: fakeResponseStatus,
             Reason: fakeResponseReason,
             PhysicalResourceId: fakePhysicalResourceId,
@@ -55,7 +57,7 @@ describe('sendResponse()', () => {
             RequestId: fakeRequestId,
             LogicalResourceId: fakeLogicalResourceId,
             Data: fakeResponseData,
-          },
+          }),
         });
         expect(spyOnRequestPromisePut).toHaveBeenCalledTimes(1);
         done();

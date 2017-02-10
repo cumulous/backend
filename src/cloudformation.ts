@@ -1,5 +1,6 @@
 import * as requestPromise from 'request-promise';
 
+import * as stringify from 'json-stable-stringify';
 import { log } from './log';
 import { Callback, Dict } from './types';
 
@@ -22,9 +23,10 @@ export interface Response {
 };
 
 export function sendResponse(event: Request & Response, context: any, callback: Callback) {
-  log.info(JSON.stringify(event));
-  requestPromise.put(event.ResponseURL, {
-    body: {
+  log.info(stringify(event));
+  requestPromise.put({
+    uri: event.ResponseURL,
+    body: stringify({
       Status: event.Status,
       Reason: event.Reason,
       PhysicalResourceId: event.PhysicalResourceId,
@@ -32,7 +34,7 @@ export function sendResponse(event: Request & Response, context: any, callback: 
       RequestId: event.RequestId,
       LogicalResourceId: event.LogicalResourceId,
       Data: event.Data,
-    },
+    }),
   }).then(() => callback())
     .catch(callback);
 };
