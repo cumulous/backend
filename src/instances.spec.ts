@@ -671,7 +671,8 @@ describe('attachVolumes()', () => {
   });
 });
 
-const testVolumeCleanup = (lambda: Function, lambdaName: string, spyOnFunctionName: string) => {
+const testVolumeCleanup = (lambda: Function, lambdaName: string,
+    spyOnFunctionName: 'detachVolume' | 'deleteVolume') => {
   describe(lambdaName + '()', () => {
     let spy: jasmine.Spy;
 
