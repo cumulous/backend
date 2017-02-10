@@ -15,13 +15,13 @@ export interface Request {
   PhysicalResourceId?: string;
   ResourceProperties?: Dict<any>;
   OldResourceProperties: Dict<any>;
-};
+}
 
 export interface Response {
   Status: 'SUCCESS' | 'FAILED';
   Reason?: string;
   Data?: Dict<any>;
-};
+}
 
 export function sendResponse(event: Request & Response, context: any, callback: Callback) {
   const parsedUrl = url.parse(event.ResponseURL);
@@ -44,7 +44,7 @@ export function sendResponse(event: Request & Response, context: any, callback: 
   });
   request.on('error', callback);
   request.end(response, 'utf8', callback);
-};
+}
 
 export function sendOnError(request: Request, err: Error, callback: Callback) {
   if (err) {
@@ -56,4 +56,4 @@ export function sendOnError(request: Request, err: Error, callback: Callback) {
   } else {
     callback();
   }
-};
+}
