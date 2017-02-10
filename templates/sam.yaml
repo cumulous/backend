@@ -43,7 +43,7 @@ Resources:
           - Effect: Allow
             Action: states:CreateStateMachine
             Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*_${AWS::StackName}
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:*
           - Effect: Allow
             Action: iam:PassRole
             Resource:
@@ -93,7 +93,7 @@ Resources:
           - Effect: Allow
             Action: states:CreateStateMachine
             Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-Init-*_${AWS::StackName}
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:*
           - Effect: Allow
             Action: iam:PassRole
             Resource:
@@ -171,6 +171,10 @@ Resources:
           - Effect: Allow
             Action:
               - states:CreateStateMachine
+            Resource:
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:*
+          - Effect: Allow
+            Action:
               - states:StartExecution
             Resource:
               - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-SetupSSHKey-*_${AWS::StackName}
