@@ -74,7 +74,7 @@ Resources:
                 Capabilities: CAPABILITY_IAM
                 TemplatePath: Deploy::sam.yaml
                 RoleArn: !GetAtt DeployRole.Arn
-                ParameterOverrides: !Sub |
+                ParameterOverrides: !Sub |-
                   {
                     "EncryptionKeyId": "${EncryptionKey}",
                     "SSHKeyName": "${RepoName}-beta",
@@ -124,7 +124,7 @@ Resources:
                 Capabilities: CAPABILITY_IAM
                 TemplatePath: Deploy::sam.yaml
                 RoleArn: !GetAtt DeployRole.Arn
-                ParameterOverrides: !Sub |
+                ParameterOverrides: !Sub |-
                   {
                     "EncryptionKeyId": "${EncryptionKey}",
                     "SSHKeyName": "${RepoName}-release",
