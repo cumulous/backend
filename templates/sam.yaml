@@ -324,6 +324,7 @@ Resources:
             },
             "MountVolumes": {
               "Type": "Parallel",
+              "InputPath": "$.[0]",
               "End": true,
               "Branches": [{
                 "StartAt": "AttachVolumes",
