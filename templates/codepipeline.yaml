@@ -360,6 +360,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - states:CreateStateMachine
+                  - states:DeleteStateMachine
                 Resource:
                   - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:*
               - Effect: Allow
