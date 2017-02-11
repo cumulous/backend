@@ -23,109 +23,6 @@ Resources:
       Handler: cloudformation.sendResponse
       Runtime: nodejs4.3
 
-  StatesExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: !Sub states.${AWS::Region}.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
-
-  CreateStateMachine:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../app
-      Handler: states.createStateMachine
-      Runtime: nodejs4.3
-      Timeout: 5
-      Environment:
-        Variables:
-          AWS_ACCOUNT: !Ref AWS::AccountId
-          STACK_NAME: !Ref AWS::StackName
-          STATES_EXECUTION_ROLE: !GetAtt StatesExecutionRole.Arn
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: cloudformation:DescribeStackResource
-            Resource:
-              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*
-          - Effect: Allow
-            Action: states:CreateStateMachine
-            Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:*
-          - Effect: Allow
-            Action: iam:PassRole
-            Resource:
-              - !GetAtt StatesExecutionRole.Arn
-
-  ExecuteStateMachine:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../app
-      Handler: states.executeStateMachine
-      Runtime: nodejs4.3
-      Environment:
-        Variables:
-          AWS_ACCOUNT: !Ref AWS::AccountId
-          STACK_NAME: !Ref AWS::StackName
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: states:StartExecution
-            Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*_${AWS::StackName}
-
-  SetupInstancesInitResource:
-    Type: AWS::CloudFormation::CustomResource
-    DependsOn:
-      - DescribeInstance
-      - CheckSSHKeyName
-      - CalculateVolumeSizes
-      - CreateVolumes
-      - WaitForVolumesAvailable
-      - CalculateVolumeDevices
-      - AttachVolumes
-      - DetachVolumes
-      - WaitForVolumesAvailable
-      - DeleteVolumes
-      - DeleteVolumesOnTermination
-      - TransferInitScript
-      - ExecuteInitScript
-    Properties:
-      ServiceToken: !GetAtt SetupInstancesInit.Arn
-
-  SetupInstancesInit:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../app
-      Handler: instances.setupInstancesInit
-      Runtime: nodejs4.3
-      Timeout: 5
-      Environment:
-        Variables:
-          AWS_ACCOUNT: !Ref AWS::AccountId
-          STACK_NAME: !Ref AWS::StackName
-          STATES_EXECUTION_ROLE: !GetAtt StatesExecutionRole.Arn
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: cloudformation:DescribeStackResource
-            Resource:
-              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*
-          - Effect: Allow
-            Action: states:CreateStateMachine
-            Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:*
-          - Effect: Allow
-            Action: iam:PassRole
-            Resource:
-              - !GetAtt StatesExecutionRole.Arn
-
   InstancesInit:
     Type: AWS::Serverless::Function
     Properties:
@@ -134,8 +31,7 @@ Resources:
       Runtime: nodejs4.3
       Environment:
         Variables:
-          AWS_ACCOUNT: !Ref AWS::AccountId
-          STACK_NAME: !Ref AWS::StackName
+          STATE_MACHINE: !Ref InstancesInitStateMachine
       Events:
         InstanceRunning:
           Type: CloudWatchEvent
@@ -153,7 +49,7 @@ Resources:
           - Effect: Allow
             Action: states:StartExecution
             Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-Init-*_${AWS::StackName}
+              - !Ref InstancesInitStateMachine
 
   DescribeInstance:
     Type: AWS::Serverless::Function
@@ -171,8 +67,6 @@ Resources:
   SetupSSHKeyResource:
     Type: AWS::CloudFormation::CustomResource
     DependsOn:
-      - CreateSSHKey
-      - DeleteSSHKey
       - SendCloudFormationResponse
     Properties:
       ServiceToken: !GetAtt SetupSSHKey.Arn
@@ -186,29 +80,14 @@ Resources:
       Timeout: 5
       Environment:
         Variables:
-          AWS_ACCOUNT: !Ref AWS::AccountId
-          STACK_NAME: !Ref AWS::StackName
-          STATES_EXECUTION_ROLE: !GetAtt StatesExecutionRole.Arn
+          STATE_MACHINE: !Ref SetupSSHKeyStateMachine
       Policies:
         Statement:
-          - Effect: Allow
-            Action: cloudformation:DescribeStackResource
-            Resource:
-              - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}/*
-          - Effect: Allow
-            Action:
-              - states:CreateStateMachine
-            Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:*
           - Effect: Allow
             Action:
               - states:StartExecution
             Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Instances-SetupSSHKey-*_${AWS::StackName}
-          - Effect: Allow
-            Action: iam:PassRole
-            Resource:
-              - !GetAtt StatesExecutionRole.Arn
+              - !Ref SetupSSHKeyStateMachine
 
   CreateSSHKey:
     Type: AWS::Serverless::Function
@@ -367,3 +246,248 @@ Resources:
           SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
+
+  StatesExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+
+  InstancesInitStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString: |-
+        {
+          "StartAt": "DescribeInstance",
+          "States": {
+            "DescribeInstance": {
+              "Type": "Task",
+              "InputPath": "$.detail.instance-id",
+              "Resource": { "Fn::GetAtt" : ["DescribeInstance", "Arn"] },
+              "Next": "CheckSSHKeyName"
+            },
+            "CheckSSHKeyName": {
+              "Type": "Task",
+              "InputPath": "$.KeyName",
+              "ResultPath": null,
+              "Resource": { "Fn::GetAtt" : ["CheckSSHKeyName", "Arn"] },
+              "Next": "CalculateVolumeSizes"
+            },
+            "CalculateVolumeSizes": {
+              "Type": "Task",
+              "InputPath": "$.InstanceType",
+              "ResultPath": "$.volumeSizes",
+              "Resource": { "Fn::GetAtt" : ["CalculateVolumeSizes", "Arn"] },
+              "Next": "CreateVolumes"
+            },
+            "CreateVolumes": {
+              "Type": "Task",
+              "ResultPath": "$.volumeIds",
+              "Resource": { "Fn::GetAtt" : ["CreateVolumes", "Arn"] },
+              "Next": "WaitForVolumesCreated",
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.error",
+                "Next": "DeleteVolumes"
+              }]
+            },
+            "WaitForVolumesCreated": {
+              "Type": "Task",
+              "InputPath": "$.volumeIds",
+              "ResultPath": null,
+              "Resource": { "Fn::GetAtt" : ["WaitForVolumesAvailable", "Arn"] },
+              "Next": "CalculateVolumeDevices",
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.error",
+                "Next": "DeleteVolumes"
+              }]
+            },
+            "CalculateVolumeDevices": {
+              "Type": "Task",
+              "InputPath": "$.volumeIds",
+              "ResultPath": "$.volumeDevices",
+              "Resource": { "Fn::GetAtt" : ["CalculateVolumeDevices", "Arn"] },
+              "Next": "AttachVolumes",
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.error",
+                "Next": "DeleteVolumes"
+              }]
+            },
+            "AttachVolumes": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": { "Fn::GetAtt" : ["AttachVolumes", "Arn"] },
+              "Next": "DeleteVolumesOnTermination",
+              "Retry": [{
+                  "ErrorEquals": [ "HandledError" ],
+                  "IntervalSeconds": 5
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.error",
+                "Next": "DetachVolumes"
+              }]
+            },
+            "DetachVolumes": {
+              "Type": "Task",
+              "InputPath": "$.volumeIds",
+              "ResultPath": null,
+              "Resource": { "Fn::GetAtt" : ["DetachVolumes", "Arn"] },
+              "Next": "WaitForVolumesDetached"
+            },
+            "WaitForVolumesDetached": {
+              "Type": "Task",
+              "InputPath": "$.volumeIds",
+              "ResultPath": null,
+              "Resource": { "Fn::GetAtt" : ["WaitForVolumesAvailable", "Arn"] },
+              "Next": "DeleteVolumes",
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.error",
+                "Next": "DeleteVolumes"
+              }]
+            },
+            "DeleteVolumes": {
+              "Type": "Task",
+              "InputPath": "$.volumeIds",
+              "Resource": { "Fn::GetAtt" : ["DeleteVolumes", "Arn"] },
+              "Next": "Fail"
+            },
+            "DeleteVolumesOnTermination": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": { "Fn::GetAtt" : ["DeleteVolumesOnTermination", "Arn"] },
+              "Next": "TransferInitScript",
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.error",
+                "Next": "DetachVolumes"
+              }]
+            },
+            "TransferInitScript": {
+              "Type": "Task",
+              "InputPath": "$.PublicDnsName",
+              "ResultPath": null,
+              "Resource": { "Fn::GetAtt" : ["TransferInitScript", "Arn"] },
+              "TimeoutSeconds": 5,
+              "Next": "ExecuteInitScript",
+              "Retry": [{
+                  "ErrorEquals": [ "HandledError", "States.Timeout" ],
+                  "IntervalSeconds": 5, "MaxAttempts": 5
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.error",
+                "Next": "DetachVolumes"
+              }]
+            },
+            "ExecuteInitScript": {
+              "Type": "Task",
+              "Resource": { "Fn::GetAtt" : ["ExecuteInitScript", "Arn"] },
+              "TimeoutSeconds": 10,
+              "End": true,
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.error",
+                "Next": "DetachVolumes"
+              }]
+            },
+            "Fail": {
+              "Type": "Fail",
+              "Cause": "Failed to initialize instance"
+            }
+          }
+        }
+
+  SetupSSHKeyStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString: |-
+        {
+          "StartAt": "ChooseEventType",
+          "States": {
+            "ChooseEventType": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.RequestType",
+                  "StringEquals": "Create",
+                  "Next": "DeleteSSHKey"
+                },
+                {
+                  "Variable": "$.RequestType",
+                  "StringEquals": "Update",
+                  "Next": "CreateSSHKey"
+                },
+                {
+                  "Variable": "$.RequestType",
+                  "StringEquals": "Delete",
+                  "Next": "DeleteSSHKey"
+                }
+              ],
+              "Default": "Fail"
+            },
+            "DeleteSSHKey": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": { "Fn::GetAtt" : ["DeleteSSHKey", "Arn"] },
+              "Next": "CheckCreateSSHKey",
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": null,
+                "Next": "Fail"
+              }]
+            },
+            "CheckCreateSSHKey": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.RequestType",
+                  "StringEquals": "Create",
+                  "Next": "CreateSSHKey"
+                }
+              ],
+              "Default": "Succeed"
+            },
+            "CreateSSHKey": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": { "Fn::GetAtt" : ["CreateSSHKey", "Arn"] },
+              "Next": "Succeed",
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": null,
+                "Next": "Fail"
+              }]
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "Succeed": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "SUCCESS",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": { "Fn::GetAtt" : ["SendCloudFormationResponse", "Arn"] },
+              "End": true
+            }
+          }
+        }

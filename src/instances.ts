@@ -5,16 +5,12 @@ import { Client as SSHClient, ClientChannel as SSHClientChannel, SFTPWrapper } f
 
 import * as cloudformation from './cloudformation';
 import { envNames } from './env';
-import { createStateMachine, executeStateMachine } from './states';
 import { log } from './log';
 import { testEmpty } from './helpers';
 import { Callback } from './types';
 
 // shim to be replaced with a DB lookup
 const instanceTypes = require('./instance-types.json');
-
-const initDefinition = require('./instances-init.json');
-const setupSSHKeyDefinition = require('./instances-setup-ssh-key.json');
 
 export const defaults = {
   sshUser: 'ec2-user',
@@ -28,17 +24,13 @@ export const ec2 = new EC2();
 export const s3 = new S3({ signatureVersion: 'v4' });
 export const stepFunctions = new StepFunctions();
 
-export function setupInstancesInit(request: cloudformation.Request, context: any, callback: Callback) {
-  log.info(stringify(request));
-  createStateMachine(initDefinition, null, (err?: Error) =>
-    cloudformation.sendOnSuccessOrError(request, err, callback));
-}
-
 export function init(event: any, context: any, callback: Callback) {
-  executeStateMachine({
-    logicalName: initDefinition.Comment,
-    input: event,
-  }, context, callback);
+  stepFunctions.startExecution({
+    stateMachineArn: process.env[envNames.stateMachine],
+    input: stringify(event),
+  }).promise()
+    .then(() => callback())
+    .catch(callback);
 }
 
 export function describeInstance(instanceId: string, context: any, callback: Callback) {
@@ -52,13 +44,11 @@ export function describeInstance(instanceId: string, context: any, callback: Cal
 
 export function setupSSHKey(request: cloudformation.Request, context: any, callback: Callback) {
   log.info(stringify(request));
-  createStateMachine(setupSSHKeyDefinition, null, (err?: Error) => {
-    if (err) return cloudformation.sendOnError(request, err, callback);
-    executeStateMachine({
-      logicalName: setupSSHKeyDefinition.Comment,
-      input: request,
-    }, null, (err?: Error) =>
-      cloudformation.sendOnError(request, err, callback));
+  stepFunctions.startExecution({
+    stateMachineArn: process.env[envNames.stateMachine],
+    input: stringify(request),
+  }, (err: Error) => {
+    cloudformation.sendOnError(request, err, callback);
   });
 }
 
