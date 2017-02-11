@@ -412,7 +412,7 @@ Resources:
           "States": {
             "SetupSSHKey": {
               "Type": "Parallel",
-              "Next": "End",
+              "Next": "Succeed",
               "Branches": [{
                 "StartAt": "ChooseEventType",
                 "States": {
@@ -451,15 +451,15 @@ Resources:
                         "Next": "CreateSSHKey"
                       }
                     ],
-                    "Default": "Succeed"
+                    "Default": "Success"
                   },
                   "CreateSSHKey": {
                     "Type": "Task",
                     "ResultPath": null,
                     "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CreateSSHKey}",
-                    "Next": "Succeed"
+                    "Next": "Success"
                   },
-                  "Succeed": {
+                  "Success": {
                     "Type": "Pass",
                     "ResultPath": "$.Status",
                     "Result": "SUCCESS",
@@ -472,6 +472,11 @@ Resources:
                 "ResultPath": "$.error",
                 "Next": "Fail"
               }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
             },
             "Fail": {
               "Type": "Pass",
