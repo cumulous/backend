@@ -359,6 +359,11 @@ Resources:
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-*
               - Effect: Allow
                 Action:
+                  - states:CreateStateMachine
+                Resource:
+                  - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:*
+              - Effect: Allow
+                Action:
                   - s3:GetObject
                 Resource:
                   - !Sub arn:aws:s3:::${ArtifactsBucket}/lambda/*
