@@ -264,34 +264,34 @@ Resources:
     Type: AWS::StepFunctions::StateMachine
     Properties:
       RoleArn: !GetAtt StatesExecutionRole.Arn
-      DefinitionString: |-
+      DefinitionString: !Sub |-
         {
           "StartAt": "DescribeInstance",
           "States": {
             "DescribeInstance": {
               "Type": "Task",
               "InputPath": "$.detail.instance-id",
-              "Resource": { "Fn::GetAtt" : ["DescribeInstance", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DescribeInstance}",
               "Next": "CheckSSHKeyName"
             },
             "CheckSSHKeyName": {
               "Type": "Task",
               "InputPath": "$.KeyName",
               "ResultPath": null,
-              "Resource": { "Fn::GetAtt" : ["CheckSSHKeyName", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CheckSSHKeyName}",
               "Next": "CalculateVolumeSizes"
             },
             "CalculateVolumeSizes": {
               "Type": "Task",
               "InputPath": "$.InstanceType",
               "ResultPath": "$.volumeSizes",
-              "Resource": { "Fn::GetAtt" : ["CalculateVolumeSizes", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CalculateVolumeSizes}",
               "Next": "CreateVolumes"
             },
             "CreateVolumes": {
               "Type": "Task",
               "ResultPath": "$.volumeIds",
-              "Resource": { "Fn::GetAtt" : ["CreateVolumes", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CreateVolumes}",
               "Next": "WaitForVolumesCreated",
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
@@ -303,7 +303,7 @@ Resources:
               "Type": "Task",
               "InputPath": "$.volumeIds",
               "ResultPath": null,
-              "Resource": { "Fn::GetAtt" : ["WaitForVolumesAvailable", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${WaitForVolumesAvailable}",
               "Next": "CalculateVolumeDevices",
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
@@ -315,7 +315,7 @@ Resources:
               "Type": "Task",
               "InputPath": "$.volumeIds",
               "ResultPath": "$.volumeDevices",
-              "Resource": { "Fn::GetAtt" : ["CalculateVolumeDevices", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CalculateVolumeDevices}",
               "Next": "AttachVolumes",
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
@@ -326,7 +326,7 @@ Resources:
             "AttachVolumes": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": { "Fn::GetAtt" : ["AttachVolumes", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AttachVolumes}",
               "Next": "DeleteVolumesOnTermination",
               "Retry": [{
                   "ErrorEquals": [ "HandledError" ],
@@ -342,14 +342,14 @@ Resources:
               "Type": "Task",
               "InputPath": "$.volumeIds",
               "ResultPath": null,
-              "Resource": { "Fn::GetAtt" : ["DetachVolumes", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DetachVolumes}",
               "Next": "WaitForVolumesDetached"
             },
             "WaitForVolumesDetached": {
               "Type": "Task",
               "InputPath": "$.volumeIds",
               "ResultPath": null,
-              "Resource": { "Fn::GetAtt" : ["WaitForVolumesAvailable", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${WaitForVolumesAvailable}",
               "Next": "DeleteVolumes",
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
@@ -360,13 +360,13 @@ Resources:
             "DeleteVolumes": {
               "Type": "Task",
               "InputPath": "$.volumeIds",
-              "Resource": { "Fn::GetAtt" : ["DeleteVolumes", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteVolumes}",
               "Next": "Fail"
             },
             "DeleteVolumesOnTermination": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": { "Fn::GetAtt" : ["DeleteVolumesOnTermination", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteVolumesOnTermination}",
               "Next": "TransferInitScript",
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
@@ -378,7 +378,7 @@ Resources:
               "Type": "Task",
               "InputPath": "$.PublicDnsName",
               "ResultPath": null,
-              "Resource": { "Fn::GetAtt" : ["TransferInitScript", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TransferInitScript}",
               "TimeoutSeconds": 5,
               "Next": "ExecuteInitScript",
               "Retry": [{
@@ -393,7 +393,7 @@ Resources:
             },
             "ExecuteInitScript": {
               "Type": "Task",
-              "Resource": { "Fn::GetAtt" : ["ExecuteInitScript", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ExecuteInitScript}",
               "TimeoutSeconds": 10,
               "End": true,
               "Catch": [{
@@ -413,7 +413,7 @@ Resources:
     Type: AWS::StepFunctions::StateMachine
     Properties:
       RoleArn: !GetAtt StatesExecutionRole.Arn
-      DefinitionString: |-
+      DefinitionString: !Sub |-
         {
           "StartAt": "ChooseEventType",
           "States": {
@@ -441,7 +441,7 @@ Resources:
             "DeleteSSHKey": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": { "Fn::GetAtt" : ["DeleteSSHKey", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteSSHKey}",
               "Next": "CheckCreateSSHKey",
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
@@ -463,7 +463,7 @@ Resources:
             "CreateSSHKey": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": { "Fn::GetAtt" : ["CreateSSHKey", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CreateSSHKey}",
               "Next": "Succeed",
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
@@ -486,7 +486,7 @@ Resources:
             "End": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": { "Fn::GetAtt" : ["SendCloudFormationResponse", "Arn"] },
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SendCloudFormationResponse}",
               "End": true
             }
           }
