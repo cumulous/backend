@@ -286,51 +286,83 @@ Resources:
               "InputPath": "$.InstanceType",
               "ResultPath": "$.volumeSizes",
               "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CalculateVolumeSizes}",
-              "Next": "CreateVolumes"
+              "Next": "PrepareVolumes"
             },
-            "CreateVolumes": {
-              "Type": "Task",
-              "ResultPath": "$.volumeIds",
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CreateVolumes}",
-              "Next": "WaitForVolumesCreated",
+            "PrepareVolumes": {
+              "Type": "Parallel",
+              "Next": "MountVolumes",
+              "Branches": [{
+                "StartAt": "CreateVolumes",
+                "States": {
+                  "CreateVolumes": {
+                    "Type": "Task",
+                    "ResultPath": "$.volumeIds",
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CreateVolumes}",
+                    "Next": "WaitForVolumesCreated"
+                  },
+                  "WaitForVolumesCreated": {
+                    "Type": "Task",
+                    "InputPath": "$.volumeIds",
+                    "ResultPath": null,
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${WaitForVolumesAvailable}",
+                    "Next": "CalculateVolumeDevices"
+                  },
+                  "CalculateVolumeDevices": {
+                    "Type": "Task",
+                    "InputPath": "$.volumeIds",
+                    "ResultPath": "$.volumeDevices",
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CalculateVolumeDevices}",
+                    "End": true
+                  }
+                }
+              }],
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
                 "ResultPath": "$.error",
                 "Next": "DeleteVolumes"
               }]
             },
-            "WaitForVolumesCreated": {
-              "Type": "Task",
-              "InputPath": "$.volumeIds",
-              "ResultPath": null,
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${WaitForVolumesAvailable}",
-              "Next": "CalculateVolumeDevices",
-              "Catch": [{
-                "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.error",
-                "Next": "DeleteVolumes"
-              }]
-            },
-            "CalculateVolumeDevices": {
-              "Type": "Task",
-              "InputPath": "$.volumeIds",
-              "ResultPath": "$.volumeDevices",
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CalculateVolumeDevices}",
-              "Next": "AttachVolumes",
-              "Catch": [{
-                "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.error",
-                "Next": "DeleteVolumes"
-              }]
-            },
-            "AttachVolumes": {
-              "Type": "Task",
-              "ResultPath": null,
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AttachVolumes}",
-              "Next": "DeleteVolumesOnTermination",
-              "Retry": [{
-                  "ErrorEquals": [ "HandledError" ],
-                  "IntervalSeconds": 5
+            "MountVolumes": {
+              "Type": "Parallel",
+              "End": true,
+              "Branches": [{
+                "StartAt": "AttachVolumes",
+                "States": {
+                  "AttachVolumes": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AttachVolumes}",
+                    "Next": "DeleteVolumesOnTermination",
+                    "Retry": [{
+                        "ErrorEquals": [ "HandledError" ],
+                        "IntervalSeconds": 5
+                    }]
+                  },
+                  "DeleteVolumesOnTermination": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteVolumesOnTermination}",
+                    "Next": "TransferInitScript"
+                  },
+                  "TransferInitScript": {
+                    "Type": "Task",
+                    "InputPath": "$.PublicDnsName",
+                    "ResultPath": null,
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TransferInitScript}",
+                    "TimeoutSeconds": 5,
+                    "Next": "ExecuteInitScript",
+                    "Retry": [{
+                        "ErrorEquals": [ "HandledError", "States.Timeout" ],
+                        "IntervalSeconds": 5, "MaxAttempts": 5
+                    }]
+                  },
+                  "ExecuteInitScript": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ExecuteInitScript}",
+                    "TimeoutSeconds": 10,
+                    "End": true
+                  }
+                }
               }],
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
@@ -363,45 +395,6 @@ Resources:
               "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteVolumes}",
               "Next": "Fail"
             },
-            "DeleteVolumesOnTermination": {
-              "Type": "Task",
-              "ResultPath": null,
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteVolumesOnTermination}",
-              "Next": "TransferInitScript",
-              "Catch": [{
-                "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.error",
-                "Next": "DetachVolumes"
-              }]
-            },
-            "TransferInitScript": {
-              "Type": "Task",
-              "InputPath": "$.PublicDnsName",
-              "ResultPath": null,
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TransferInitScript}",
-              "TimeoutSeconds": 5,
-              "Next": "ExecuteInitScript",
-              "Retry": [{
-                  "ErrorEquals": [ "HandledError", "States.Timeout" ],
-                  "IntervalSeconds": 5, "MaxAttempts": 5
-              }],
-              "Catch": [{
-                "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.error",
-                "Next": "DetachVolumes"
-              }]
-            },
-            "ExecuteInitScript": {
-              "Type": "Task",
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ExecuteInitScript}",
-              "TimeoutSeconds": 10,
-              "End": true,
-              "Catch": [{
-                "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.error",
-                "Next": "DetachVolumes"
-              }]
-            },
             "Fail": {
               "Type": "Fail",
               "Cause": "Failed to initialize instance"
@@ -415,59 +408,68 @@ Resources:
       RoleArn: !GetAtt StatesExecutionRole.Arn
       DefinitionString: !Sub |-
         {
-          "StartAt": "ChooseEventType",
+          "StartAt": "SetupSSHKey",
           "States": {
-            "ChooseEventType": {
-              "Type": "Choice",
-              "Choices": [
-                {
-                  "Variable": "$.RequestType",
-                  "StringEquals": "Create",
-                  "Next": "DeleteSSHKey"
-                },
-                {
-                  "Variable": "$.RequestType",
-                  "StringEquals": "Update",
-                  "Next": "CreateSSHKey"
-                },
-                {
-                  "Variable": "$.RequestType",
-                  "StringEquals": "Delete",
-                  "Next": "DeleteSSHKey"
+            "SetupSSHKey": {
+              "Type": "Parallel",
+              "Next": "End",
+              "Branches": [{
+                "StartAt": "ChooseEventType",
+                "States": {
+                  "ChooseEventType": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Create",
+                        "Next": "DeleteSSHKey"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Update",
+                        "Next": "CreateSSHKey"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "DeleteSSHKey"
+                      }
+                    ]
+                  },
+                  "DeleteSSHKey": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteSSHKey}",
+                    "Next": "CheckCreateSSHKey"
+                  },
+                  "CheckCreateSSHKey": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Create",
+                        "Next": "CreateSSHKey"
+                      }
+                    ],
+                    "Default": "Succeed"
+                  },
+                  "CreateSSHKey": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CreateSSHKey}",
+                    "Next": "Succeed"
+                  },
+                  "Succeed": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
                 }
-              ],
-              "Default": "Fail"
-            },
-            "DeleteSSHKey": {
-              "Type": "Task",
-              "ResultPath": null,
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteSSHKey}",
-              "Next": "CheckCreateSSHKey",
+              }],
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": null,
-                "Next": "Fail"
-              }]
-            },
-            "CheckCreateSSHKey": {
-              "Type": "Choice",
-              "Choices": [
-                {
-                  "Variable": "$.RequestType",
-                  "StringEquals": "Create",
-                  "Next": "CreateSSHKey"
-                }
-              ],
-              "Default": "Succeed"
-            },
-            "CreateSSHKey": {
-              "Type": "Task",
-              "ResultPath": null,
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CreateSSHKey}",
-              "Next": "Succeed",
-              "Catch": [{
-                "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": null,
+                "ResultPath": "$.error",
                 "Next": "Fail"
               }]
             },
@@ -475,12 +477,6 @@ Resources:
               "Type": "Pass",
               "ResultPath": "$.Status",
               "Result": "FAILED",
-              "Next": "End"
-            },
-            "Succeed": {
-              "Type": "Pass",
-              "ResultPath": "$.Status",
-              "Result": "SUCCESS",
               "Next": "End"
             },
             "End": {
