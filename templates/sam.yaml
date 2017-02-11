@@ -105,6 +105,7 @@ Resources:
       CodeUri: ../app
       Handler: instances.setupInstancesInit
       Runtime: nodejs4.3
+      Timeout: 5
       Environment:
         Variables:
           AWS_ACCOUNT: !Ref AWS::AccountId
@@ -182,6 +183,7 @@ Resources:
       CodeUri: ../app
       Handler: instances.setupSSHKey
       Runtime: nodejs4.3
+      Timeout: 5
       Environment:
         Variables:
           AWS_ACCOUNT: !Ref AWS::AccountId
