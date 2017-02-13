@@ -421,19 +421,22 @@ Resources:
                     "Type": "Choice",
                     "Choices": [
                       {
+                        "Or": [
+                          {
+                            "Variable": "$.RequestType",
+                            "StringEquals": "Update"
+                          },
+                          {
+                            "Variable": "$.RequestType",
+                            "StringEquals": "Delete"
+                          }
+                        ],
+                        "Next": "DeleteSSHKey"
+                      },
+                      {
                         "Variable": "$.RequestType",
                         "StringEquals": "Create",
-                        "Next": "DeleteSSHKey"
-                      },
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Update",
                         "Next": "CreateSSHKey"
-                      },
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Delete",
-                        "Next": "DeleteSSHKey"
                       }
                     ]
                   },
