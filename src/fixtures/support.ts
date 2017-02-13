@@ -1,5 +1,5 @@
 import { log } from '../log';
-import { Callback } from '../types';
+import { Callback, Lambda } from '../types';
 
 export const fakeResolve = (value?: any) => ({
   promise : () => Promise.resolve(value),
@@ -17,7 +17,7 @@ export const fakeReject = (reason?: Error | string) => ({
   },
 });
 
-export const testError = (lambda: Function, event: any, done: Callback, error: boolean = true) => {
+export const testError = (lambda: Lambda, event: any, done: Callback, error: boolean = true) => {
   if (done) {
     lambda(event, null, (err: Error) => {
       error ? expect(err).toBeTruthy() : expect(err).toBeFalsy();
@@ -30,7 +30,7 @@ export const testError = (lambda: Function, event: any, done: Callback, error: b
   }
 };
 
-export const testArray = (lambda: Function, getEvent: () => any,
+export const testArray = (lambda: Lambda, getEvent: () => any,
                           arrayName: string, handled: boolean = true) => {
   describe(arrayName + ' is', () => {
     let event: any;

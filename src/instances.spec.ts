@@ -11,7 +11,7 @@ import { defaults, volumeType, initScriptFile, init, describeInstance,
          transferInitScript, executeInitScript } from './instances';
 import { log as log } from './log';
 import { fakeResolve, fakeReject, testError, testArray } from './fixtures/support';
-import { Callback } from './types';
+import { Callback, Lambda } from './types';
 
 if (!process.env['LOG_LEVEL']) {
   log.remove(log.transports.Console);
@@ -580,7 +580,7 @@ describe('attachVolumes()', () => {
   });
 });
 
-const testVolumeCleanup = (lambda: Function, lambdaName: string,
+const testVolumeCleanup = (lambda: Lambda, lambdaName: string,
     spyOnFunctionName: 'detachVolume' | 'deleteVolume') => {
   describe(lambdaName + '()', () => {
     let spy: jasmine.Spy;
@@ -699,7 +699,7 @@ describe('', () => {
     spyOnSSHClientEnd = spyOn(SSHClient.prototype, 'end');
   });
 
-  const testSSHRun = (lambda: Function) => {
+  const testSSHRun = (lambda: Lambda) => {
     describe('calls', () => {
       it('S3.getObject() once with correct parameters', (done: Callback) => {
         lambda(fakeEvent, null, () => {
