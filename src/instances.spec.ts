@@ -2,9 +2,9 @@ import * as stringify from 'json-stable-stringify';
 import { Client as SSHClient } from 'ssh2';
 
 import * as cloudformation from './cloudformation';
+import { ec2, s3, stepFunctions } from './aws';
 import { envNames } from './env';
-import { ec2, s3, stepFunctions, defaults, volumeType,
-         initScriptFile, init, describeInstance,
+import { defaults, volumeType, initScriptFile, init, describeInstance,
          setupSSHKey, createSSHKey, deleteSSHKey, checkSSHKeyName, calculateVolumeSizes,
          createVolumes, waitForVolumesAvailable, calculateVolumeDevices, attachVolumes,
          detachVolumes, deleteVolumes, deleteVolumesOnTermination,

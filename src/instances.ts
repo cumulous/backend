@@ -1,13 +1,12 @@
-import { AWSError } from 'aws-sdk/lib/error';
-import { EC2, S3, StepFunctions } from 'aws-sdk';
 import * as stringify from 'json-stable-stringify';
 import { Client as SSHClient, ClientChannel as SSHClientChannel, SFTPWrapper } from 'ssh2';
 
+import { ec2, s3, stepFunctions } from './aws';
 import * as cloudformation from './cloudformation';
 import { envNames } from './env';
 import { log } from './log';
 import { testEmpty } from './helpers';
-import { Callback } from './types';
+import { AWSError, Callback } from './types';
 
 // shim to be replaced with a DB lookup
 const instanceTypes = require('./instance-types.json');
@@ -19,10 +18,6 @@ export const defaults = {
 
 export const initScriptFile = 'init.sh';
 export const volumeType = 'gp2';
-
-export const ec2 = new EC2();
-export const s3 = new S3({ signatureVersion: 'v4' });
-export const stepFunctions = new StepFunctions();
 
 export function init(event: any, context: any, callback: Callback) {
   stepFunctions.startExecution({
