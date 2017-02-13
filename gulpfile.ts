@@ -10,7 +10,7 @@ const tsProject = ts.createProject('tsconfig.json');
 
 const paths = {
   bin: 'bin',
-  src: 'src/!(*.spec).ts',
+  src: 'src/**/!(*.spec).ts',
   specs: 'src/*.spec.ts',
   conf: ['src/**/*.json', 'templates/*.json'],
   reports: 'reports',
