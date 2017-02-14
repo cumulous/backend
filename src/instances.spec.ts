@@ -1,11 +1,10 @@
 import * as stringify from 'json-stable-stringify';
 import { Client as SSHClient } from 'ssh2';
 
-import * as cloudformation from './cloudformation';
-import { ec2, s3, stepFunctions } from './aws';
+import { ec2, s3 } from './aws';
 import { envNames } from './env';
-import { defaults, volumeType, initScriptFile, init, describeInstance,
-         setupSSHKey, createSSHKey, deleteSSHKey, checkSSHKeyName, calculateVolumeSizes,
+import { defaults, volumeType, initScriptFile, describeInstance,
+         createSSHKey, deleteSSHKey, checkSSHKeyName, calculateVolumeSizes,
          createVolumes, waitForVolumesAvailable, calculateVolumeDevices, attachVolumes,
          detachVolumes, deleteVolumes, deleteVolumesOnTermination,
          transferInitScript, executeInitScript } from './instances';
@@ -38,48 +37,6 @@ beforeEach(() => {
   fakeVolumeSizes = [133, 133];
   fakeVolumeIds = ['vol-abcd01', 'vol-abcd10'];
   fakeVolumeDevices = ['/dev/sdf', '/dev/sdg'];
-});
-
-describe('init()', () => {
-  const fakeStateMachine = 'arn:aws:states:::execution:FakeInitStateMachine';
-
-  let spyOnStepFunctionsStartExecution: jasmine.Spy;
-
-  beforeEach(() => {
-    fakeEvent = {
-      detail: {
-        'instance-id': fakeInstanceId,
-        'state': 'running',
-      },
-    };
-
-    process.env[envNames.stateMachine] = fakeStateMachine;
-
-    spyOnStepFunctionsStartExecution = spyOn(stepFunctions, 'startExecution')
-      .and.returnValue(fakeResolve());
-  });
-
-  it('calls stepFunctions.startExecution() with correct parameters', (done: Callback) => {
-    init(fakeEvent, null, () => {
-      expect(spyOnStepFunctionsStartExecution).toHaveBeenCalledWith({
-        stateMachineArn: fakeStateMachine,
-        input: stringify(fakeEvent),
-      });
-      done();
-    });
-  });
-
-  it('calls callback with an error if stepFunctions.startExecution() returns an error',
-      (done: Callback) => {
-    spyOnStepFunctionsStartExecution.and.returnValue(
-      fakeReject('stepFunctions.startExecution()'));
-    testError(init, fakeEvent, done);
-  });
-
-  it('does not produce an error when called with correct parameters ' +
-     'and StepFunctions.startExecution() does not return an error', (done: Callback) => {
-    testError(init, fakeEvent, done, false);
-  });
 });
 
 describe('describeInstance()', () => {
@@ -125,70 +82,6 @@ describe('describeInstance()', () => {
   it('does not produce an error when called with correct parameters ' +
      'and EC2.describeInstances() returns non-empty list', (done: Callback) => {
     testError(describeInstance, fakeInstanceId, done, false);
-  });
-});
-
-describe('setupSSHKey()', () => {
-  const fakeStateMachine = 'arn:aws:states:::execution:FakeSetupSSHKeyStateMachine';
-
-  let fakeRequest: any;
-
-  let spyOnStepFunctionsStartExecution: jasmine.Spy;
-  let spyOnCloudFormationSendResponse: jasmine.Spy;
-
-  beforeEach(() => {
-    fakeRequest = {
-      RequestId: 'fake-request-abcd-1234',
-    };
-
-    process.env[envNames.stateMachine] = fakeStateMachine;
-
-    spyOnStepFunctionsStartExecution = spyOn(stepFunctions, 'startExecution')
-      .and.callFake((params: any, callback: Callback) => callback());
-    spyOnCloudFormationSendResponse = spyOn(cloudformation, 'sendResponse')
-      .and.callFake((event: any, context: any, callback: Callback) => callback());
-  });
-
-  describe('calls', () => {
-    it('stepFunctions.startExecution() once with correct parameters', (done: Callback) => {
-      setupSSHKey(fakeRequest, null, () => {
-        expect(spyOnStepFunctionsStartExecution).toHaveBeenCalledWith({
-          stateMachineArn: fakeStateMachine,
-          input: stringify(fakeRequest),
-        }, jasmine.any(Function));
-        expect(spyOnStepFunctionsStartExecution).toHaveBeenCalledTimes(1);
-        done();
-      });
-    });
-
-    it('cloudformation.sendResponse() once with an error if ' +
-        'stepFunctions.startExecution() produces an error', (done: Callback) => {
-      spyOnStepFunctionsStartExecution.and.callFake((params: any, callback: Callback) =>
-        callback(Error('stepFunctions.startExecution()')));
-      setupSSHKey(fakeRequest, null, () => {
-        expect(spyOnCloudFormationSendResponse).toHaveBeenCalledWith(
-          Object.assign({
-            Status: 'FAILED',
-            Reason: jasmine.any(String),
-          }, fakeRequest), null, jasmine.any(Function));
-        expect(spyOnCloudFormationSendResponse).toHaveBeenCalledTimes(1);
-        done();
-      });
-    });
-
-    describe('callback with an error if', () => {
-      it('stepFunctions.startExecution() produces an error', (done: Callback) => {
-        spyOnStepFunctionsStartExecution.and.callFake((params: any, callback: Callback) =>
-          callback(Error('stepFunctions.startExecution()')));
-        testError(setupSSHKey, fakeRequest, done);
-      });
-    });
-  });
-
-  describe('does not call', () => {
-    it('callback without an error when called with correct parameters', (done: Callback) => {
-      testError(setupSSHKey, fakeRequest, done, false);
-    });
   });
 });
 

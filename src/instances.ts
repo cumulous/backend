@@ -1,8 +1,7 @@
 import * as stringify from 'json-stable-stringify';
 import { Client as SSHClient, ClientChannel as SSHClientChannel, SFTPWrapper } from 'ssh2';
 
-import { ec2, s3, stepFunctions } from './aws';
-import * as cloudformation from './cloudformation';
+import { ec2, s3 } from './aws';
 import { envNames } from './env';
 import { log } from './log';
 import { testEmpty } from './helpers';
@@ -19,15 +18,6 @@ export const defaults = {
 export const initScriptFile = 'init.sh';
 export const volumeType = 'gp2';
 
-export function init(event: any, context: any, callback: Callback) {
-  stepFunctions.startExecution({
-    stateMachineArn: process.env[envNames.stateMachine],
-    input: stringify(event),
-  }).promise()
-    .then(() => callback())
-    .catch(callback);
-}
-
 export function describeInstance(instanceId: string, context: any, callback: Callback) {
   ec2.describeInstances({
     InstanceIds: [ instanceId ],
@@ -35,16 +25,6 @@ export function describeInstance(instanceId: string, context: any, callback: Cal
     .then(instances =>
       callback(null, instances.Reservations[0].Instances[0]))
     .catch(callback);
-}
-
-export function setupSSHKey(request: cloudformation.Request, context: any, callback: Callback) {
-  log.info(stringify(request));
-  stepFunctions.startExecution({
-    stateMachineArn: process.env[envNames.stateMachine],
-    input: stringify(request),
-  }, (err: Error) => {
-    cloudformation.sendOnError(request, err, callback);
-  });
 }
 
 export function createSSHKey(event: any, context: any, callback: Callback) {

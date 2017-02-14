@@ -23,11 +23,24 @@ Resources:
       Handler: cloudformation.sendResponse
       Runtime: nodejs4.3
 
+  SetupCustomResource:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: aws.setupCustomResource
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: states:StartExecution
+            Resource:
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*
+
   InstancesInit:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../app
-      Handler: instances.init
+      Handler: aws.executeStateMachine
       Runtime: nodejs4.3
       Environment:
         Variables:
@@ -64,30 +77,13 @@ Resources:
             Action: ec2:DescribeInstances
             Resource: '*'
 
-  SetupSSHKeyResource:
+  SetupSSHKey:
     Type: AWS::CloudFormation::CustomResource
     DependsOn:
       - SendCloudFormationResponse
     Properties:
-      ServiceToken: !GetAtt SetupSSHKey.Arn
-
-  SetupSSHKey:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: ../app
-      Handler: instances.setupSSHKey
-      Runtime: nodejs4.3
-      Timeout: 5
-      Environment:
-        Variables:
-          STATE_MACHINE: !Ref SetupSSHKeyStateMachine
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action:
-              - states:StartExecution
-            Resource:
-              - !Ref SetupSSHKeyStateMachine
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupSSHKeyStateMachine
 
   CreateSSHKey:
     Type: AWS::Serverless::Function
