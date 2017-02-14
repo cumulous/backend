@@ -2,6 +2,8 @@ AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
+  VPCRange:
+    Type: String
   EncryptionKeyId:
     Type: String
   SSHKeyName:
@@ -16,6 +18,33 @@ Parameters:
     Type: String
 
 Resources:
+  BackendVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VPCRange
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+
+  BackendVPCEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      VpcId: !Ref BackendVPC
+
+  BackendVPCSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub 'Rules for ${AWS::StackName}'
+      VpcId: !Ref BackendVPC
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          ToPort: 22
+          CidrIp: !Ref VPCRange
+
   SendCloudFormationResponse:
     Type: AWS::Serverless::Function
     Properties:
@@ -35,6 +64,55 @@ Resources:
             Action: states:StartExecution
             Resource:
               - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*
+
+  SetupSubnets:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn:
+      - SendCloudFormationResponse
+    Properties:
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupSubnetsStateMachine
+      VpcId: !Ref VpcId
+      AvailabilityZones: !GetAZs AWS::Region
+
+  CreateSubnets:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.createSubnets
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2:CreateSubnet
+            Resource: '*'
+
+  DescribeSubnets:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.describeSubnets
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2:DescribeSubnets
+            Resource: '*'
+
+  DeleteSubnets:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.deleteSubnets
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2:DeleteSubnet
+            Resource: '*'
 
   InstancesInit:
     Type: AWS::Serverless::Function
@@ -395,6 +473,91 @@ Resources:
             "Fail": {
               "Type": "Fail",
               "Cause": "Failed to initialize instance"
+            }
+          }
+        }
+
+  SetupSubnetsStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupSubnets",
+          "States": {
+            "SetupSubnets": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "ChooseEventType",
+                "States": {
+                  "ChooseEventType": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Create",
+                        "Next": "CreateSubnets"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "DescribeSubnets"
+                      }
+                    ],
+                    "Default": "Success"
+                  },
+                  "CreateSubnets": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": null,
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CreateSubnets}",
+                    "Next": "Success"
+                  },
+                  "DescribeSubnets": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.VpcId",
+                    "ResultPath": "$.ResourceProperties.SubnetIds",
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DescribeSubnets}",
+                    "Next": "DeleteSubnets"
+                  },
+                  "DeleteSubnets": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.SubnetIds",
+                    "ResultPath": null,
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteSubnets}",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.error",
+                "Next": "Fail"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SendCloudFormationResponse}",
+              "End": true
             }
           }
         }

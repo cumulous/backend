@@ -5,6 +5,14 @@ Parameters:
   NotificationEmail:
     Type: String
     AllowedPattern: ^[\w\.-]+@[\w\.-]+\.[a-z\.]{2,6}$
+  BetaVPCRange:
+    Type: String
+    AllowedPattern: ^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})$
+    Default: 10.0.0.0/16
+  ReleaseVPCRange:
+    Type: String
+    AllowedPattern: ^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})$
+    Default: 10.1.0.0/16
 
 Resources:
   ArtifactsBucket:
@@ -76,6 +84,7 @@ Resources:
                 RoleArn: !GetAtt DeployRole.Arn
                 ParameterOverrides: !Sub |-
                   {
+                    "VpcRange": "${BetaVPCRange}",
                     "EncryptionKeyId": "${EncryptionKey}",
                     "SSHKeyName": "${RepoName}-beta",
                     "SSHKeyS3Bucket": "${ArtifactsBucket}",
@@ -126,6 +135,7 @@ Resources:
                 RoleArn: !GetAtt DeployRole.Arn
                 ParameterOverrides: !Sub |-
                   {
+                    "VpcRange": "${ReleaseVPCRange}",
                     "EncryptionKeyId": "${EncryptionKey}",
                     "SSHKeyName": "${RepoName}-release",
                     "SSHKeyS3Bucket": "${ArtifactsBucket}",
@@ -390,6 +400,24 @@ Resources:
                   - events:RemoveTargets
                 Resource:
                   - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${RepoName}-*
+              - Effect: Allow
+                Action:
+                  - ec2:CreateVpc
+                  - ec2:CreateVpcEndpoint
+                  - ec2:CreateSecurityGroup
+                  - ec2:DeleteVpc
+                  - ec2:DeleteVpcEndpoint
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ec2:AuthorizeSecurityGroupIngress
+                  - ec2:RevokeSecurityGroupIngress
+                  - ec2:DeleteSecurityGroup
+                Condition:
+                  StringLike:
+                    'ec2:ResourceTag/Name': !Sub ${RepoName}-*
+                Resource:
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*
               - Effect: Allow
                 Action:
                   - ec2:DescribeKeyPairs
