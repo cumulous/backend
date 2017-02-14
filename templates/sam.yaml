@@ -59,6 +59,7 @@ Resources:
       CodeUri: ../app
       Handler: aws.setupCustomResource
       Runtime: nodejs4.3
+      Timeout: 10
       Policies:
         Statement:
           - Effect: Allow
