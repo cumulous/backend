@@ -50,7 +50,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../app
-      Handler: cloudformation.sendResponse
+      Handler: aws.sendCloudFormationResponse
       Runtime: nodejs4.3
 
   SetupCustomResource:
