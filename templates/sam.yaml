@@ -73,6 +73,7 @@ Resources:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupSubnetsStateMachine
       VpcId: !Ref VpcId
+      VpcRange: !Ref VpcRange
       AvailabilityZones: !GetAZs AWS::Region
 
   CreateSubnets:
