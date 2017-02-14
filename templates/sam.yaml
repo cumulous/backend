@@ -79,6 +79,13 @@ Resources:
       AvailabilityZones: !GetAZs
         Ref: AWS::Region
 
+  CalculateSubnets:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: instances.calculateSubnets
+      Runtime: nodejs4.3
+
   CreateSubnets:
     Type: AWS::Serverless::Function
     Properties:
@@ -507,7 +514,7 @@ Resources:
                       {
                         "Variable": "$.RequestType",
                         "StringEquals": "Create",
-                        "Next": "CreateSubnets"
+                        "Next": "CalculateSubnets"
                       },
                       {
                         "Variable": "$.RequestType",
@@ -516,6 +523,13 @@ Resources:
                       }
                     ],
                     "Default": "Success"
+                  },
+                  "CalculateSubnets": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.Data.SubnetRanges",
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CalculateSubnets}",
+                    "Next": "CreateSubnets"
                   },
                   "CreateSubnets": {
                     "Type": "Task",
