@@ -32,15 +32,7 @@ export interface CloudFormationResponse {
 export function sendCloudFormationResponse(event: CloudFormationRequest & CloudFormationResponse,
                                          context: any, callback: Callback) {
   const parsedUrl = url.parse(event.ResponseURL);
-  const response = stringify({
-    Status: event.Status,
-    Reason: event.Reason,
-    PhysicalResourceId: event.PhysicalResourceId || event.LogicalResourceId,
-    StackId: event.StackId,
-    RequestId: event.RequestId,
-    LogicalResourceId: event.LogicalResourceId,
-    Data: event.Data,
-  });
+  const response = composeCloudFormationResponse(event);
   const request = https.request({
     hostname: parsedUrl.hostname,
     path: parsedUrl.path,
@@ -51,6 +43,18 @@ export function sendCloudFormationResponse(event: CloudFormationRequest & CloudF
   });
   request.on('error', callback);
   request.end(response, 'utf8', callback);
+}
+
+function composeCloudFormationResponse(event: CloudFormationRequest & CloudFormationResponse) {
+  return stringify({
+    Status: event.Status,
+    Reason: event.Reason,
+    PhysicalResourceId: event.PhysicalResourceId || event.LogicalResourceId,
+    StackId: event.StackId,
+    RequestId: event.RequestId,
+    LogicalResourceId: event.LogicalResourceId,
+    Data: event.Data,
+  });
 }
 
 const sendCloudFormationOnError = (request: CloudFormationRequest, err: Error, callback: Callback) => {
