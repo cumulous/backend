@@ -76,7 +76,8 @@ Resources:
       StateMachine: !Ref SetupSubnetsStateMachine
       VpcId: !Ref BackendVPC
       VpcRange: !Ref VpcRange
-      AvailabilityZones: !GetAZs AWS::Region
+      AvailabilityZones: !GetAZs
+        Ref: AWS::Region
 
   CreateSubnets:
     Type: AWS::Serverless::Function
