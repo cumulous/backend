@@ -72,7 +72,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupSubnetsStateMachine
-      VpcId: !Ref VpcId
+      VpcId: !Ref BackendVPC
       VpcRange: !Ref VpcRange
       AvailabilityZones: !GetAZs AWS::Region
 
@@ -308,9 +308,9 @@ Resources:
           SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
-      # VpcConfig:
-      #   SecurityGroupIds: !Ref BackendVPCSecurityGroup
-      #   SubnetIds: !GetAtt Subnets.SubnetIds
+      VpcConfig:
+        SecurityGroupIds: !Ref BackendVPCSecurityGroup
+        SubnetIds: !GetAtt Subnets.SubnetIds
 
   ExecuteInitScript:
     Type: AWS::Serverless::Function
@@ -324,9 +324,9 @@ Resources:
           SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
-      # VpcConfig:
-      #   SecurityGroupIds: !Ref BackendVPCSecurityGroup
-      #   SubnetIds: !GetAtt Subnets.SubnetIds
+      VpcConfig:
+        SecurityGroupIds: !Ref BackendVPCSecurityGroup
+        SubnetIds: !GetAtt Subnets.SubnetIds
 
   StatesExecutionRole:
     Type: AWS::IAM::Role
