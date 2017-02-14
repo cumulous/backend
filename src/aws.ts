@@ -29,8 +29,8 @@ export interface CloudFormationResponse {
   Data?: Dict<any>;
 }
 
-export function sendCloudFormationResponse(event: CloudFormationRequest & CloudFormationResponse,
-                                         context: any, callback: Callback) {
+export const sendCloudFormationResponse = (event: CloudFormationRequest & CloudFormationResponse,
+                                         context: any, callback: Callback) => {
   const parsedUrl = url.parse(event.ResponseURL);
   const response = composeCloudFormationResponse(event);
   const request = https.request({
@@ -45,7 +45,7 @@ export function sendCloudFormationResponse(event: CloudFormationRequest & CloudF
   request.end(response, 'utf8', callback);
 }
 
-function composeCloudFormationResponse(event: CloudFormationRequest & CloudFormationResponse) {
+const composeCloudFormationResponse = (event: CloudFormationRequest & CloudFormationResponse) => {
   return stringify({
     Status: event.Status,
     Reason: event.Reason,
@@ -63,13 +63,13 @@ const sendCloudFormationOnError = (request: CloudFormationRequest, err: Error, c
       Status: 'FAILED',
       Reason: err.message,
     });
-    this.sendCloudFormationResponse(event, null, () => callback(err));
+    sendCloudFormationResponse(event, null, () => callback(err));
   } else {
     callback();
   }
 }
 
-export function executeStateMachine(event: any, context: any, callback: Callback) {
+export const executeStateMachine = (event: any, context: any, callback: Callback) => {
   stepFunctions.startExecution({
     stateMachineArn: process.env[envNames.stateMachine],
     input: stringify(event),
@@ -78,12 +78,12 @@ export function executeStateMachine(event: any, context: any, callback: Callback
     .catch(callback);
 }
 
-export function setupCustomResource(request: CloudFormationRequest, context: any, callback: Callback) {
+export const setupCustomResource = (request: CloudFormationRequest, context: any, callback: Callback) => {
   log.info(stringify(request));
 
   process.env[envNames.stateMachine] = request.ResourceProperties['StateMachine'];
 
-  this.executeStateMachine(request, null, (err: Error) => {
+  executeStateMachine(request, null, (err: Error) => {
     sendCloudFormationOnError(request, err, callback);
   });
 }
