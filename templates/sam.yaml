@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
-  VPCRange:
+  VpcRange:
     Type: String
   EncryptionKeyId:
     Type: String
@@ -21,7 +21,7 @@ Resources:
   BackendVPC:
     Type: AWS::EC2::VPC
     Properties:
-      CidrBlock: !Ref VPCRange
+      CidrBlock: !Ref VpcRange
       Tags:
         - Key: Name
           Value: !Ref AWS::StackName
@@ -43,7 +43,7 @@ Resources:
       SecurityGroupIngress:
         - IpProtocol: tcp
           ToPort: 22
-          CidrIp: !Ref VPCRange
+          CidrIp: !Ref VpcRange
 
   SendCloudFormationResponse:
     Type: AWS::Serverless::Function
