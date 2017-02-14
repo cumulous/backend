@@ -42,6 +42,7 @@ Resources:
           Value: !Ref AWS::StackName
       SecurityGroupIngress:
         - IpProtocol: tcp
+          FromPort: 22
           ToPort: 22
           CidrIp: !Ref VpcRange
 
