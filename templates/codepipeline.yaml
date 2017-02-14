@@ -405,6 +405,7 @@ Resources:
                   - ec2:CreateVpc
                   - ec2:CreateVpcEndpoint
                   - ec2:CreateSecurityGroup
+                  - ec2:DescribeVpcs
                   - ec2:DeleteVpc
                   - ec2:DeleteVpcEndpoint
                 Resource: '*'
