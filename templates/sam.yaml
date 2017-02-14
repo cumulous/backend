@@ -65,7 +65,7 @@ Resources:
             Resource:
               - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*
 
-  SetupSubnets:
+  Subnets:
     Type: AWS::CloudFormation::CustomResource
     DependsOn:
       - SendCloudFormationResponse
@@ -307,6 +307,9 @@ Resources:
           SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
+      VpcConfig:
+        SecurityGroupIds: !Ref BackendVPCSecurityGroup
+        SubnetIds: !GetAtt Subnets.SubnetIds
 
   ExecuteInitScript:
     Type: AWS::Serverless::Function
@@ -320,6 +323,9 @@ Resources:
           SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
+      VpcConfig:
+        SecurityGroupIds: !Ref BackendVPCSecurityGroup
+        SubnetIds: !GetAtt Subnets.SubnetIds
 
   StatesExecutionRole:
     Type: AWS::IAM::Role
@@ -510,20 +516,20 @@ Resources:
                   "CreateSubnets": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties",
-                    "ResultPath": null,
+                    "ResultPath": "$.Data.SubnetIds",
                     "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CreateSubnets}",
                     "Next": "Success"
                   },
                   "DescribeSubnets": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.VpcId",
-                    "ResultPath": "$.ResourceProperties.SubnetIds",
+                    "ResultPath": "$.Data.SubnetIds",
                     "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DescribeSubnets}",
                     "Next": "DeleteSubnets"
                   },
                   "DeleteSubnets": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.SubnetIds",
+                    "InputPath": "$.Data.SubnetIds",
                     "ResultPath": null,
                     "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteSubnets}",
                     "Next": "Success"
