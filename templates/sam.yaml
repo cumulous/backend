@@ -554,23 +554,16 @@ Resources:
               "Type": "Parallel",
               "Next": "Succeed",
               "Branches": [{
-                "StartAt": "ChooseEventType",
+                "StartAt": "CheckCreate",
                 "States": {
-                  "ChooseEventType": {
+                  "CheckCreate": {
                     "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Create",
-                        "Next": "CalculateSubnets"
-                      },
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Delete",
-                        "Next": "DescribeSubnets"
-                      }
-                    ],
-                    "Default": "Success"
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Create",
+                      "Next": "CalculateSubnets"
+                    }],
+                    "Default": "DescribeSubnets"
                   },
                   "CalculateSubnets": {
                     "Type": "Task",
@@ -604,7 +597,22 @@ Resources:
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.VpcId",
                     "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DescribeSubnets}",
-                    "Next": "DeleteSubnets"
+                    "Next": "ChooseUpdateOrDelete"
+                  },
+                  "ChooseUpdateOrDelete": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Update",
+                        "Next": "ModifySubnets"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "DeleteSubnets"
+                      }
+                    ]
                   },
                   "DeleteSubnets": {
                     "Type": "Task",
