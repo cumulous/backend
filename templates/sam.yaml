@@ -319,8 +319,10 @@ Resources:
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
       VpcConfig:
-        SecurityGroupIds: !Ref BackendVPCSecurityGroup
-        SubnetIds: !GetAtt Subnets.SubnetIds
+        SecurityGroupIds:
+          - !Ref BackendVPCSecurityGroup
+        SubnetIds:
+          - !GetAtt Subnets.SubnetIds
 
   ExecuteInitScript:
     Type: AWS::Serverless::Function
@@ -335,8 +337,10 @@ Resources:
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
       VpcConfig:
-        SecurityGroupIds: !Ref BackendVPCSecurityGroup
-        SubnetIds: !GetAtt Subnets.SubnetIds
+        SecurityGroupIds:
+          - !Ref BackendVPCSecurityGroup
+        SubnetIds:
+          - !GetAtt Subnets.SubnetIds
 
   StatesExecutionRole:
     Type: AWS::IAM::Role
