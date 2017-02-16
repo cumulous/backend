@@ -451,7 +451,7 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
       Policies:
         - PolicyName: SSHKeyPutPolicy
           PolicyDocument:
@@ -476,7 +476,7 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
       Policies:
         - PolicyName: SSHKeyGetPolicy
           PolicyDocument:
