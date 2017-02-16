@@ -32,20 +32,6 @@ Resources:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
       VpcId: !Ref BackendVPC
 
-  BackendVPCSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: !Sub 'Rules for ${AWS::StackName}'
-      VpcId: !Ref BackendVPC
-      Tags:
-        - Key: Name
-          Value: !Ref AWS::StackName
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: !Ref VpcRange
-
   SendCloudFormationResponse:
     Type: AWS::Serverless::Function
     Properties:
@@ -320,7 +306,7 @@ Resources:
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
       VpcConfig:
         SecurityGroupIds:
-          - !Ref BackendVPCSecurityGroup
+          - !GetAtt BackendVPC.DefaultSecurityGroup
         SubnetIds: !GetAtt Subnets.SubnetIds
 
   ExecuteInitScript:
@@ -337,7 +323,7 @@ Resources:
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
       VpcConfig:
         SecurityGroupIds:
-          - !Ref BackendVPCSecurityGroup
+          - !GetAtt BackendVPC.DefaultSecurityGroup
         SubnetIds: !GetAtt Subnets.SubnetIds
 
   StatesExecutionRole:
