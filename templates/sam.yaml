@@ -36,10 +36,17 @@ Resources:
 
   BackendVPCInternetRoute:
     Type: AWS::EC2::Route
+    DependsOn: BackendVPCGatewayAttachment
     Properties:
       DestinationCidrBlock: 0.0.0.0/0
       RouteTableId: !Ref BackendRouteTable
       GatewayId: !Ref BackendInternetGateway
+
+  BackendVPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref BackendVPC
+      InternetGatewayId: !Ref BackendInternetGateway
 
   BackendInternetGateway:
     Type: AWS::EC2::InternetGateway
