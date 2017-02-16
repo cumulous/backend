@@ -22,15 +22,19 @@ Resources:
     Type: AWS::EC2::VPC
     Properties:
       CidrBlock: !Ref VpcRange
-      Tags:
-        - Key: Name
-          Value: !Ref AWS::StackName
 
-  BackendVPCEndpoint:
+  BackendRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref BackendVPC
+
+  BackendS3Endpoint:
     Type: AWS::EC2::VPCEndpoint
     Properties:
       ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
       VpcId: !Ref BackendVPC
+      RouteTableIds:
+        - !Ref BackendRouteTable
 
   SendCloudFormationResponse:
     Type: AWS::Serverless::Function
