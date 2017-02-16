@@ -321,8 +321,7 @@ Resources:
       VpcConfig:
         SecurityGroupIds:
           - !Ref BackendVPCSecurityGroup
-        SubnetIds:
-          - !GetAtt Subnets.SubnetIds
+        SubnetIds: !GetAtt Subnets.SubnetIds
 
   ExecuteInitScript:
     Type: AWS::Serverless::Function
@@ -339,8 +338,7 @@ Resources:
       VpcConfig:
         SecurityGroupIds:
           - !Ref BackendVPCSecurityGroup
-        SubnetIds:
-          - !GetAtt Subnets.SubnetIds
+        SubnetIds: !GetAtt Subnets.SubnetIds
 
   StatesExecutionRole:
     Type: AWS::IAM::Role
