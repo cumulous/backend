@@ -440,7 +440,7 @@ Resources:
                   },
                   "TransferInitScript": {
                     "Type": "Task",
-                    "InputPath": "$.PublicDnsName",
+                    "InputPath": "$.PrivateIpAddress",
                     "ResultPath": null,
                     "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TransferInitScript}",
                     "TimeoutSeconds": 5,
