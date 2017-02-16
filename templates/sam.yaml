@@ -129,6 +129,22 @@ Resources:
               - ec2:ModifySubnetAttribute
             Resource: '*'
 
+  RouteSubnets:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: vpc.routeSubnets
+      Runtime: nodejs4.3
+      Environment:
+        Variables:
+          ROUTE_TABLE: !Ref BackendRouteTable
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2:AssociateRouteTable
+            Resource: '*'
+
   DescribeSubnets:
     Type: AWS::Serverless::Function
     Properties:
@@ -575,6 +591,13 @@ Resources:
                     "InputPath": "$.Data.SubnetIds",
                     "ResultPath": null,
                     "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ModifySubnets}",
+                    "Next": "RouteSubnets"
+                  },
+                  "RouteSubnets": {
+                    "Type": "Task",
+                    "InputPath": "$.Data.SubnetIds",
+                    "ResultPath": null,
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${RouteSubnets}",
                     "Next": "Success"
                   },
                   "DescribeSubnets": {

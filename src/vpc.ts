@@ -1,6 +1,7 @@
 import { Netmask } from 'netmask';
 
 import { ec2 } from './aws';
+import { envNames } from './env';
 import { testEmpty } from './helpers';
 import { Callback } from './types';
 
@@ -70,6 +71,17 @@ const modifySubnet = (subnetId: string) => {
   return ec2.modifySubnetAttribute({
       SubnetId: subnetId,
       MapPublicIpOnLaunch: { Value: true },
+    }).promise();
+};
+
+export const routeSubnets = (subnetIds: string[], context: any, callback: Callback) => {
+  handleSubnets(subnetIds, routeSubnet, callback);
+};
+
+const routeSubnet = (subnetId: string) => {
+  return ec2.associateRouteTable({
+      SubnetId: subnetId,
+      RouteTableId: process.env[envNames.routeTable],
     }).promise();
 };
 

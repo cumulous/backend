@@ -1,7 +1,9 @@
 import { ec2 } from './aws';
+import { envNames } from './env';
 import { fakeResolve, fakeReject, testArray, testError } from './fixtures/support';
 import { Callback } from './types';
-import { calculateSubnets, createSubnets, modifySubnets, describeSubnets, deleteSubnets } from './vpc';
+import { calculateSubnets, createSubnets, modifySubnets,
+         routeSubnets, describeSubnets, deleteSubnets } from './vpc';
 
 const fakeVpcId = 'fake-vpc-1234';
 const fakeAvailabilityZones = () => ['us-west-2a', 'us-west-2b', 'us-west-2c'];
@@ -136,6 +138,49 @@ describe('modifySubnets()', () => {
 
       it('without an error when called with correct parameters', (done: Callback) => {
         testError(modifySubnets, fakeSubnetIds(), done, false);
+      });
+    });
+  });
+});
+
+describe('routeSubnets()', () => {
+  const fakeRouteTableId = 'fake-route-table-abcd';
+
+  let spyOnAssociateRouteTable: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.routeTable] = fakeRouteTableId;
+
+    spyOnAssociateRouteTable = spyOn(ec2, 'associateRouteTable')
+      .and.returnValue(fakeResolve());
+  });
+
+  describe('calls', () => {
+    it('ec2.associateRouteTable() with correct parameters', (done: Callback) => {
+      routeSubnets(fakeSubnetIds(), null, () => {
+        fakeSubnetIds().map(subnetId => {
+          expect(spyOnAssociateRouteTable).toHaveBeenCalledWith({
+            SubnetId: subnetId,
+            RouteTableId: fakeRouteTableId,
+          });
+        });
+        expect(spyOnAssociateRouteTable).toHaveBeenCalledTimes(fakeSubnetIds().length);
+        done();
+      });
+    });
+
+    describe('callback', () => {
+      describe('with an error if', () => {
+        it('ec2.associateRouteTable() produces an error', (done: Callback) => {
+          spyOnAssociateRouteTable.and.returnValue(
+            fakeReject('ec2.associateRouteTable()'));
+          testError(routeSubnets, fakeSubnetIds(), done);
+        });
+        testArray(routeSubnets, fakeSubnetIds, 'subnetIds');
+      });
+
+      it('without an error when called with correct parameters', (done: Callback) => {
+        testError(routeSubnets, fakeSubnetIds(), done, false);
       });
     });
   });
