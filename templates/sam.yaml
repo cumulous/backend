@@ -23,10 +23,21 @@ Resources:
     Properties:
       CidrBlock: !Ref VpcRange
 
+  BackendInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties: {}
+
   BackendRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref BackendVPC
+
+  BackendVPCInternetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref BackendRouteTable
+      GatewayId: !Ref BackendInternetGateway
 
   BackendS3Endpoint:
     Type: AWS::EC2::VPCEndpoint
