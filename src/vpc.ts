@@ -54,6 +54,25 @@ const createSubnet = (vpcId: string, zone: string, subnetRange: string) => {
       .then(data => data.Subnet.SubnetId);
 };
 
+const handleSubnets = (subnetIds: string[], handler: (subnetId: string) => void, callback: Callback) => {
+  Promise.resolve(subnetIds)
+    .then(subnetIds => testEmpty(subnetIds, 'subnetIds'))
+    .then(() => Promise.all(subnetIds.map(handler)))
+    .then(() => callback())
+    .catch(callback);
+};
+
+export const modifySubnets = (subnetIds: string[], context: any, callback: Callback) => {
+  handleSubnets(subnetIds, modifySubnet, callback);
+};
+
+const modifySubnet = (subnetId: string) => {
+  return ec2.modifySubnetAttribute({
+      SubnetId: subnetId,
+      MapPublicIpOnLaunch: { Value: true },
+    }).promise();
+};
+
 export const describeSubnets = (vpcId: string, context: any, callback: Callback) => {
   ec2.describeSubnets({
     Filters: [{
@@ -66,12 +85,7 @@ export const describeSubnets = (vpcId: string, context: any, callback: Callback)
 };
 
 export const deleteSubnets = (subnetIds: string[], context: any, callback: Callback) => {
-  Promise.resolve(subnetIds)
-    .then(subnetIds => testEmpty(subnetIds, 'subnetIds'))
-    .then(() => Promise.all(subnetIds
-      .map(deleteSubnet)))
-    .then(subnetIds => callback(null, subnetIds))
-    .catch(callback);
+  handleSubnets(subnetIds, deleteSubnet, callback);
 };
 
 const deleteSubnet = (subnetId: string) => {

@@ -25,7 +25,10 @@ Resources:
 
   BackendInternetGateway:
     Type: AWS::EC2::InternetGateway
-    Properties: {}
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref AWS::StackName
 
   BackendRouteTable:
     Type: AWS::EC2::RouteTable
@@ -98,6 +101,19 @@ Resources:
           - Effect: Allow
             Action:
               - ec2:CreateSubnet
+            Resource: '*'
+
+  ModifySubnets:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: ../app
+      Handler: vpc.modifySubnets
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action:
+              - ec2:ModifySubnetAttribute
             Resource: '*'
 
   DescribeSubnets:
@@ -539,6 +555,13 @@ Resources:
                     "InputPath": "$.ResourceProperties",
                     "ResultPath": "$.Data.SubnetIds",
                     "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CreateSubnets}",
+                    "Next": "ModifySubnets"
+                  },
+                  "ModifySubnets": {
+                    "Type": "Task",
+                    "InputPath": "$.Data.SubnetIds",
+                    "ResultPath": null,
+                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ModifySubnets}",
                     "Next": "Success"
                   },
                   "DescribeSubnets": {

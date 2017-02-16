@@ -1,7 +1,7 @@
 import { ec2 } from './aws';
 import { fakeResolve, fakeReject, testArray, testError } from './fixtures/support';
 import { Callback } from './types';
-import { calculateSubnets, createSubnets, describeSubnets, deleteSubnets } from './vpc';
+import { calculateSubnets, createSubnets, modifySubnets, describeSubnets, deleteSubnets } from './vpc';
 
 const fakeVpcId = 'fake-vpc-1234';
 const fakeAvailabilityZones = () => ['us-west-2a', 'us-west-2b', 'us-west-2c'];
@@ -95,6 +95,47 @@ describe('createSubnets()', () => {
           fakeEvent.SubnetRanges.pop();
           testError(createSubnets, fakeEvent, done);
         });
+      });
+    });
+  });
+});
+
+describe('modifySubnets()', () => {
+  let spyOnModifySubnetAttribute: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnModifySubnetAttribute = spyOn(ec2, 'modifySubnetAttribute')
+      .and.returnValue(fakeResolve());
+  });
+
+  describe('calls', () => {
+    it('ec2.modifySubnetAttribute() with correct parameters', (done: Callback) => {
+      modifySubnets(fakeSubnetIds(), null, () => {
+        fakeSubnetIds().map(subnetId => {
+          expect(spyOnModifySubnetAttribute).toHaveBeenCalledWith({
+            SubnetId: subnetId,
+            MapPublicIpOnLaunch: {
+              Value: true,
+            },
+          });
+        });
+        expect(spyOnModifySubnetAttribute).toHaveBeenCalledTimes(fakeSubnetIds().length);
+        done();
+      });
+    });
+
+    describe('callback', () => {
+      describe('with an error if', () => {
+        it('ec2.modifySubnetAttribute() produces an error', (done: Callback) => {
+          spyOnModifySubnetAttribute.and.returnValue(
+            fakeReject('ec2.modifySubnetAttribute()'));
+          testError(modifySubnets, fakeSubnetIds(), done);
+        });
+        testArray(modifySubnets, fakeSubnetIds, 'subnetIds');
+      });
+
+      it('without an error when called with correct parameters', (done: Callback) => {
+        testError(modifySubnets, fakeSubnetIds(), done, false);
       });
     });
   });
