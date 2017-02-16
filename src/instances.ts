@@ -239,9 +239,9 @@ function sshConnect(client: SSHClient, instanceAddress: string, sshKey: Buffer) 
   });
 }
 
-export function executeInitScript(event: {volumeDevices: string[], PublicDnsName: string},
+export function executeInitScript(event: {volumeDevices: string[], PrivateIpAddress: string},
                                 context: any, callback: Callback) {
-  sshRun(event.PublicDnsName, sshExecute, initCommand(event.volumeDevices), callback);
+  sshRun(event.PrivateIpAddress, sshExecute, initCommand(event.volumeDevices), callback);
 }
 
 function initCommand(volumeDevices: string[]) {

@@ -414,7 +414,7 @@ describe('calculateVolumeDevices()', () => {
     });
   });
 
-  describe('calls callback with an error if volume count is', () => {
+  describe('throws an error if', () => {
     testArray(calculateVolumeDevices, () => fakeVolumeIds, 'volumeIds', false);
   });
 
@@ -727,7 +727,7 @@ describe('', () => {
 
     beforeEach(() => {
       fakeEvent = {
-        PublicDnsName: fakeInstanceAddress,
+        PrivateIpAddress: fakeInstanceAddress,
         volumeDevices: fakeVolumeDevices,
       };
 
