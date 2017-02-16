@@ -26,6 +26,7 @@
   "author": "Denis Loginov <dloginov@mit.edu>",
   "dependencies": {
     "json-stable-stringify": "^1.0.1",
+    "netmask": "^1.0.6",
     "ssh2": "^0.5.4",
     "winston": "^2.3.0"
   },
@@ -33,6 +34,7 @@
     "@types/cucumber": "^0.0.33",
     "@types/jasmine": "^2.5.37",
     "@types/json-stable-stringify": "^1.0.29",
+    "@types/netmask": "^1.0.29",
     "@types/node": "^6.0.46",
     "@types/ssh2": "^0.5.35",
     "@types/winston": "^2.2.0",

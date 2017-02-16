@@ -83,14 +83,14 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../app
-      Handler: instances.calculateSubnets
+      Handler: vpc.calculateSubnets
       Runtime: nodejs4.3
 
   CreateSubnets:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../app
-      Handler: instances.createSubnets
+      Handler: vpc.createSubnets
       Runtime: nodejs4.3
       Policies:
         Statement:
@@ -103,7 +103,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../app
-      Handler: instances.describeSubnets
+      Handler: vpc.describeSubnets
       Runtime: nodejs4.3
       Policies:
         Statement:
@@ -116,7 +116,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: ../app
-      Handler: instances.deleteSubnets
+      Handler: vpc.deleteSubnets
       Runtime: nodejs4.3
       Policies:
         Statement:
@@ -527,7 +527,7 @@ Resources:
                   "CalculateSubnets": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties",
-                    "ResultPath": "$.Data.SubnetRanges",
+                    "ResultPath": "$.ResourceProperties.SubnetRanges",
                     "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CalculateSubnets}",
                     "Next": "CreateSubnets"
                   },
@@ -541,13 +541,11 @@ Resources:
                   "DescribeSubnets": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.VpcId",
-                    "ResultPath": "$.Data.SubnetIds",
                     "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DescribeSubnets}",
                     "Next": "DeleteSubnets"
                   },
                   "DeleteSubnets": {
                     "Type": "Task",
-                    "InputPath": "$.Data.SubnetIds",
                     "ResultPath": null,
                     "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteSubnets}",
                     "Next": "Success"
