@@ -596,6 +596,7 @@ Resources:
                   "DescribeSubnets": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.VpcId",
+                    "ResultPath": "$.Data.SubnetIds",
                     "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DescribeSubnets}",
                     "Next": "ChooseUpdateOrDelete"
                   },
@@ -616,6 +617,7 @@ Resources:
                   },
                   "DeleteSubnets": {
                     "Type": "Task",
+                    "InputPath": "$.Data.SubnetIds",
                     "ResultPath": null,
                     "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteSubnets}",
                     "Next": "Success"
