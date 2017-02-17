@@ -420,21 +420,35 @@ Resources:
                 Action:
                   - ec2:CreateVpc
                   - ec2:CreateVpcEndpoint
-                  - ec2:CreateSecurityGroup
+                  - ec2:CreateRouteTable
+                  - ec2:CreateRoute
+                  - ec2:CreateInternetGateway
+                  - ec2:CreateTags
                   - ec2:DescribeVpcs
+                  - ec2:DescribeVpcEndpoints
+                  - ec2:DescribeRouteTables
+                  - ec2:DescribeInternetGateways
+                  - ec2:DescribeSubnets
+                  - ec2:DescribeSecurityGroups
+                  - ec2:DescribeAvailabilityZones
+                  - ec2:DescribeAccountAttributes
+                  - ec2:AttachInternetGateway
+                  - ec2:ModifyVpcAttribute
                   - ec2:DeleteVpc
-                  - ec2:DeleteVpcEndpoint
+                  - ec2:DeleteVpcEndpoints
+                  - ec2:DetachInternetGateway
                 Resource: '*'
               - Effect: Allow
                 Action:
-                  - ec2:AuthorizeSecurityGroupIngress
-                  - ec2:RevokeSecurityGroupIngress
-                  - ec2:DeleteSecurityGroup
+                  - ec2:DeleteRouteTable
+                  - ec2:DeleteRoute
+                  - ec2:DeleteInternetGateway
                 Condition:
                   StringLike:
                     'ec2:ResourceTag/Name': !Sub ${RepoName}-*
                 Resource:
-                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:security-group/*
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*
+                  - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*
               - Effect: Allow
                 Action:
                   - ec2:DescribeKeyPairs
