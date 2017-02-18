@@ -399,6 +399,7 @@ Resources:
                 Action:
                   - lambda:CreateFunction
                   - lambda:UpdateFunctionCode
+                  - lambda:GetFunction
                   - lambda:GetFunctionConfiguration
                   - lambda:UpdateFunctionConfiguration
                   - lambda:InvokeFunction
@@ -406,7 +407,8 @@ Resources:
                   - lambda:AddPermission
                   - lambda:RemovePermission
                 Resource:
-                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${RepoName}-*
+                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*-${RepoName}-beta
+                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*-${RepoName}-release
               - Effect: Allow
                 Action:
                   - events:DescribeRule
