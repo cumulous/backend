@@ -66,6 +66,7 @@ Resources:
   SendCloudFormationResponse:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub SendCloudFormationResponse-${AWS::StackName}
       CodeUri: ../app
       Handler: aws.sendCloudFormationResponse
       Runtime: nodejs4.3
@@ -73,6 +74,7 @@ Resources:
   SetupCustomResource:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub SetupCustomResource-${AWS::StackName}
       CodeUri: ../app
       Handler: aws.setupCustomResource
       Runtime: nodejs4.3
@@ -99,6 +101,7 @@ Resources:
   CalculateSubnets:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub CalculateSubnets-${AWS::StackName}
       CodeUri: ../app
       Handler: vpc.calculateSubnets
       Runtime: nodejs4.3
@@ -106,6 +109,7 @@ Resources:
   CreateSubnets:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub CreateSubnets-${AWS::StackName}
       CodeUri: ../app
       Handler: vpc.createSubnets
       Runtime: nodejs4.3
@@ -119,6 +123,7 @@ Resources:
   ModifySubnets:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub ModifySubnets-${AWS::StackName}
       CodeUri: ../app
       Handler: vpc.modifySubnets
       Runtime: nodejs4.3
@@ -132,6 +137,7 @@ Resources:
   RouteSubnets:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub RouteSubnets-${AWS::StackName}
       CodeUri: ../app
       Handler: vpc.routeSubnets
       Runtime: nodejs4.3
@@ -148,6 +154,7 @@ Resources:
   DescribeSubnets:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub DescribeSubnets-${AWS::StackName}
       CodeUri: ../app
       Handler: vpc.describeSubnets
       Runtime: nodejs4.3
@@ -161,6 +168,7 @@ Resources:
   DeleteSubnets:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub DeleteSubnets-${AWS::StackName}
       CodeUri: ../app
       Handler: vpc.deleteSubnets
       Runtime: nodejs4.3
@@ -174,6 +182,7 @@ Resources:
   InstancesInit:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub InstancesInit-${AWS::StackName}
       CodeUri: ../app
       Handler: aws.executeStateMachine
       Runtime: nodejs4.3
@@ -202,6 +211,7 @@ Resources:
   DescribeInstance:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub DescribeInstance-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.describeInstance
       Runtime: nodejs4.3
@@ -223,6 +233,7 @@ Resources:
   CreateSSHKey:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub CreateSSHKey-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.createSSHKey
       Runtime: nodejs4.3
@@ -237,6 +248,7 @@ Resources:
   DeleteSSHKey:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub DeleteSSHKey-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.deleteSSHKey
       Runtime: nodejs4.3
@@ -258,6 +270,7 @@ Resources:
   CheckSSHKeyName:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub CheckSSHKeyName-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.checkSSHKeyName
       Runtime: nodejs4.3
@@ -268,6 +281,7 @@ Resources:
   CalculateVolumeSizes:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub CalculateVolumeSizes-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.calculateVolumeSizes
       Runtime: nodejs4.3
@@ -275,6 +289,7 @@ Resources:
   CreateVolumes:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub CreateVolumes-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.createVolumes
       Runtime: nodejs4.3
@@ -287,6 +302,7 @@ Resources:
   WaitForVolumesAvailable:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub WaitForVolumesAvailable-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.waitForVolumesAvailable
       Runtime: nodejs4.3
@@ -300,6 +316,7 @@ Resources:
   CalculateVolumeDevices:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub CalculateVolumeDevices-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.calculateVolumeDevices
       Runtime: nodejs4.3
@@ -307,6 +324,7 @@ Resources:
   AttachVolumes:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub AttachVolumes-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.attachVolumes
       Runtime: nodejs4.3
@@ -319,6 +337,7 @@ Resources:
   DetachVolumes:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub DetachVolumes-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.detachVolumes
       Runtime: nodejs4.3
@@ -331,6 +350,7 @@ Resources:
   DeleteVolumes:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub DeleteVolumes-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.deleteVolumes
       Runtime: nodejs4.3
@@ -343,6 +363,7 @@ Resources:
   DeleteVolumesOnTermination:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub DeleteVolumesOnTermination-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.deleteVolumesOnTermination
       Runtime: nodejs4.3
@@ -355,6 +376,7 @@ Resources:
   TransferInitScript:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub TransferInitScript-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.transferInitScript
       Runtime: nodejs4.3
@@ -372,6 +394,7 @@ Resources:
   ExecuteInitScript:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub ExecuteInitScript-${AWS::StackName}
       CodeUri: ../app
       Handler: instances.executeInitScript
       Runtime: nodejs4.3
