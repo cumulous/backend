@@ -407,8 +407,7 @@ Resources:
                   - lambda:AddPermission
                   - lambda:RemovePermission
                 Resource:
-                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*-${RepoName}-beta
-                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*-${RepoName}-release
+                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${RepoName}-*
               - Effect: Allow
                 Action:
                   - events:DescribeRule
