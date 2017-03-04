@@ -655,7 +655,7 @@ Resources:
               }],
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.error",
+                "ResultPath": "$.Reason",
                 "Next": "Fail"
               }]
             },
@@ -749,7 +749,7 @@ Resources:
               }],
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.error",
+                "ResultPath": "$.Reason",
                 "Next": "Fail"
               }]
             },
