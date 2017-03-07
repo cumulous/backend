@@ -6,9 +6,9 @@ Parameters:
     Type: String
   EncryptionKeyId:
     Type: String
-  SSHKeyName:
+  SecretsBucket:
     Type: String
-  SSHKeyS3Bucket:
+  SSHKeyName:
     Type: String
   SSHKeyS3Path:
     Type: String
@@ -245,7 +245,7 @@ Resources:
         Variables:
           ENCRYPTION_KEY_ID: !Ref EncryptionKeyId
           SSH_KEY_NAME: !Ref SSHKeyName
-          SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
+          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyPutRole}
 
@@ -259,7 +259,7 @@ Resources:
       Environment:
         Variables:
           SSH_KEY_NAME: !Ref SSHKeyName
-          SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
+          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Policies:
         Statement:
@@ -269,7 +269,7 @@ Resources:
           - Effect: Allow
             Action: s3:DeleteObject
             Resource:
-              - !Sub arn:aws:s3:::${SSHKeyS3Bucket}/${SSHKeyS3Path}
+              - !Sub arn:aws:s3:::${SecretsBucket}/${SSHKeyS3Path}
 
   CheckSSHKeyName:
     Type: AWS::Serverless::Function
@@ -387,7 +387,7 @@ Resources:
       Timeout: 10
       Environment:
         Variables:
-          SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
+          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
       VpcConfig:
@@ -405,7 +405,7 @@ Resources:
       Timeout: 15
       Environment:
         Variables:
-          SSH_KEY_S3_BUCKET: !Ref SSHKeyS3Bucket
+          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
           SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
       VpcConfig:

@@ -102,8 +102,8 @@ Resources:
                   {
                     "VpcRange": "${BetaVPCRange}",
                     "EncryptionKeyId": "${EncryptionKey}",
+                    "SecretsBucket": "${ArtifactsBucket}",
                     "SSHKeyName": "${RepoName}-beta",
-                    "SSHKeyS3Bucket": "${ArtifactsBucket}",
                     "SSHKeyS3Path" : "secrets/${RepoName}-beta.pem",
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
                     "SSHKeyGetRole": "${SSHKeyGetRole}"
@@ -153,9 +153,9 @@ Resources:
                   {
                     "VpcRange": "${ReleaseVPCRange}",
                     "EncryptionKeyId": "${EncryptionKey}",
+                    "SecretsBucket": "${ArtifactsBucket}",
                     "SSHKeyName": "${RepoName}-release",
-                    "SSHKeyS3Bucket": "${ArtifactsBucket}",
-                    "SSHKeyS3Path" : "secrets/${RepoName}-release.pem",
+                    "SHKeyS3Path" : "secrets/${RepoName}-release.pem",
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
                     "SSHKeyGetRole": "${SSHKeyGetRole}"
                   }
