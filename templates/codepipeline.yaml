@@ -13,6 +13,11 @@ Parameters:
     Type: String
     AllowedPattern: ^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})$
     Default: 10.1.0.0/16
+  Auth0CloudFormationClientID:
+    Type: String
+  Auth0CloudFormationClientSecret:
+    Type: String
+    NoEcho: true
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -29,6 +34,12 @@ Metadata:
         Parameters:
           - BetaVPCRange
           - ReleaseVPCRange
+      -
+        Label:
+          default: "Auth0 Configuration"
+        Parameters:
+          - Auth0CloudFormationClientID
+          - Auth0CloudFormationClientSecret
 
 Resources:
   ArtifactsBucket:
@@ -106,7 +117,9 @@ Resources:
                     "SSHKeyName": "${RepoName}-beta",
                     "SSHKeyS3Path" : "secrets/${RepoName}-beta.pem",
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
-                    "SSHKeyGetRole": "${SSHKeyGetRole}"
+                    "SSHKeyGetRole": "${SSHKeyGetRole}",
+                    "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
+                    "Auth0CloudFormationClientSecret": "${Auth0CloudFormationClientSecret}"
                   }
               InputArtifacts:
                 - Name: Deploy
@@ -157,7 +170,8 @@ Resources:
                     "SSHKeyName": "${RepoName}-release",
                     "SHKeyS3Path" : "secrets/${RepoName}-release.pem",
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
-                    "SSHKeyGetRole": "${SSHKeyGetRole}"
+                    "SSHKeyGetRole": "${SSHKeyGetRole}",
+                    "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
                   }
               InputArtifacts:
                 - Name: Deploy

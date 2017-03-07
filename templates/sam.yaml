@@ -18,7 +18,6 @@ Parameters:
     Type: String
   Auth0CloudFormationClientID:
     Type: String
-    Default: ''
   Auth0CloudFormationClientSecret:
     Type: String
     NoEcho: true
