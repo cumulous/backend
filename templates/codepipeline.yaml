@@ -46,6 +46,10 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
 
+  SecretsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+
   PipelineNotification:
     Type: AWS::SNS::Topic
     Properties:
@@ -113,9 +117,9 @@ Resources:
                   {
                     "VpcRange": "${BetaVPCRange}",
                     "EncryptionKeyId": "${EncryptionKey}",
-                    "SecretsBucket": "${ArtifactsBucket}",
+                    "SecretsBucket": "${SecretsBucket}",
                     "SSHKeyName": "${RepoName}-beta",
-                    "SSHKeyS3Path" : "secrets/${RepoName}-beta.pem",
+                    "SSHKeyS3Path" : "ssh/${RepoName}-beta.pem",
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
@@ -166,9 +170,9 @@ Resources:
                   {
                     "VpcRange": "${ReleaseVPCRange}",
                     "EncryptionKeyId": "${EncryptionKey}",
-                    "SecretsBucket": "${ArtifactsBucket}",
+                    "SecretsBucket": "${SecretsBucket}",
                     "SSHKeyName": "${RepoName}-release",
-                    "SHKeyS3Path" : "secrets/${RepoName}-release.pem",
+                    "SHKeyS3Path" : "ssh/${RepoName}-release.pem",
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
@@ -253,7 +257,7 @@ Resources:
               StringEquals:
                 'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
               StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${ArtifactsBucket}/secrets/*.pem
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
             Resource: '*'
           - Effect: Allow
             Principal:
@@ -264,7 +268,7 @@ Resources:
               StringEquals:
                 'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
               StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${ArtifactsBucket}/secrets/*.pem
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
             Resource: '*'
 
   PipelineRole:
@@ -492,7 +496,7 @@ Resources:
               - Effect: Allow
                 Action: s3:PutObject
                 Resource:
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/secrets/*.pem
+                  - !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
 
   SSHKeyGetRole:
     Type: AWS::IAM::Role
@@ -514,7 +518,7 @@ Resources:
               - Effect: Allow
                 Action: s3:GetObject
                 Resource:
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/secrets/*.pem
+                  - !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
 
 Outputs:
   PipelineUrl:
