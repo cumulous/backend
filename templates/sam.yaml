@@ -16,6 +16,9 @@ Parameters:
     Type: String
   SSHKeyGetRole:
     Type: String
+  ManagementAPISecret:
+    Type: String
+    Default: ''
 
 Resources:
   BackendVPC:
