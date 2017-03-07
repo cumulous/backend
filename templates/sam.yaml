@@ -18,6 +18,7 @@ Parameters:
     Type: String
   ManagementAPISecret:
     Type: String
+    NoEcho: true
     Default: ''
 
 Resources:
