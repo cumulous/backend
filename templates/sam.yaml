@@ -416,12 +416,12 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupAuth0StateMachine
-      ManagementAPI:
+      CloudFormation:
         ID: !Ref Auth0CloudFormationClientID
         Secret:
           Value: !Ref Auth0CloudFormationClientSecret
           Bucket: !Ref SecretsBucket
-          Path: secrets/${AWS::StackName}.auth0
+          Path: auth0/${AWS::StackName}-cf.key
 
   RotateAndStoreAuth0Secret:
     Type: AWS::Serverless::Function
@@ -826,7 +826,7 @@ Resources:
                     "Type": "Choice",
                     "Choices": [
                       {
-                        "Variable": "$.ResourceProperties.ManagementAPI.Secret.Value",
+                        "Variable": "$.ResourceProperties.CloudFormation.Secret.Value",
                         "StringGreaterThan": "",
                         "Next": "ChooseEventType"
                       }
@@ -857,7 +857,7 @@ Resources:
                     "Type": "Choice",
                     "Choices": [
                       {
-                        "Variable": "$.OldResourceProperties.ManagementAPI.Secret.Value",
+                        "Variable": "$.OldResourceProperties.CloudFormation.Secret.Value",
                         "StringEquals": "${Auth0CloudFormationClientSecret}",
                         "Next": "Success"
                       }
@@ -866,14 +866,14 @@ Resources:
                   },
                   "RotateAndStoreSecret": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.ManagementAPI",
+                    "InputPath": "$.ResourceProperties.CloudFormation",
                     "ResultPath": null,
                     "Resource": "${RotateAndStoreAuth0Secret.Arn}",
                     "Next": "Success"
                   },
                   "DeleteSecret": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.ManagementAPI.Secret",
+                    "InputPath": "$.ResourceProperties.CloudFormation.Secret",
                     "ResultPath": null,
                     "Resource": "${DeleteS3Object.Arn}",
                     "Next": "Success"
