@@ -2,8 +2,8 @@ import * as https from 'https';
 
 import * as aws from './aws';
 import { CloudFormationRequest, CloudFormationResponse,
-         sendCloudFormationResponse, executeStateMachine,
-         setupCustomResource, stepFunctions } from './aws';
+         sendCloudFormationResponse, deleteS3Object, executeStateMachine,
+         s3, setupCustomResource, stepFunctions } from './aws';
 import { envNames } from './env';
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
 import * as stringify from 'json-stable-stringify';
@@ -213,5 +213,54 @@ describe('setupCustomResource()', () => {
         expect(err).toBeFalsy();
         done();
       });
+  });
+});
+
+describe('deleteS3Object()', () => {
+  const fakeBucket = 'fake-bucket';
+  const fakePath = 'fake/path';
+
+  let fakeEvent: any;
+
+  let spyOnS3DeleteObject: jasmine.Spy;
+
+  beforeEach(() => {
+    fakeEvent = {
+      Bucket: fakeBucket,
+      Path: fakePath,
+    };
+
+    spyOnS3DeleteObject = spyOn(s3, 'deleteObject')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls s3.deleteObject() with correct parameters', (done: Callback) => {
+    deleteS3Object(fakeEvent, null, () => {
+      expect(spyOnS3DeleteObject).toHaveBeenCalledWith({
+        Bucket: fakeBucket,
+        Key: fakePath,
+      });
+      done();
+    });
+  });
+
+  describe('calls callback with an error if', () => {
+    it('s3.deleteObject() produces an error', () => {
+      spyOnS3DeleteObject.and.returnValue(fakeReject('s3.deleteObject()'));
+    });
+
+    describe('event is', () => {
+      it('null', () => fakeEvent = null);
+      it('undefined', () => fakeEvent = undefined);
+    });
+
+    afterEach((done: Callback) => {
+      testError(deleteS3Object, fakeEvent, done);
+    });
+  });
+
+  it('does not produce an error when called with correct parameters ' +
+     'and s3.deleteObject() does not produce an error', (done: Callback) => {
+    testError(deleteS3Object, fakeEvent, done, false);
   });
 });

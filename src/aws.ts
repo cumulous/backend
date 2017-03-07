@@ -87,3 +87,16 @@ export const setupCustomResource = (request: CloudFormationRequest, context: any
     sendCloudFormationOnError(request, err, callback);
   });
 }
+
+export const deleteS3Object = (event: { Bucket: string, Path: string },
+                             context: any, callback: Callback) => {
+  if (event == null) {
+    return callback(Error('Expected non-empty event with Bucket and Path'));
+  };
+  s3.deleteObject({
+    Bucket: event.Bucket,
+    Key: event.Path,
+  }).promise()
+    .then(() => callback())
+    .catch(callback);
+}
