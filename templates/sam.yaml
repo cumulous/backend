@@ -409,6 +409,27 @@ Resources:
           - !GetAtt BackendVPC.DefaultSecurityGroup
         SubnetIds: !GetAtt Subnets.SubnetIds
 
+  RotateAndStoreAuth0Secret:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-RotateAndStoreAuth0Secret
+      CodeUri: ../app
+      Handler: auth0.rotateAndStoreClientSecret
+      Runtime: nodejs4.3
+
+  DeleteS3Object:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DeleteS3Object
+      CodeUri: ../app
+      Handler: aws.deleteS3Object
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: s3:DeleteObject
+            Resource: '*'
+
   StatesExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -772,3 +793,111 @@ Resources:
             }
           }
         }
+
+  SetupAuth0StateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString: !Sub
+        - |-
+          {
+            "StartAt": "SetupAuth0",
+            "States": {
+              "SetupAuth0": {
+                "Type": "Parallel",
+                "Next": "Succeed",
+                "Branches": [{
+                  "StartAt": "CheckToSkipSetup",
+                  "States": {
+                    "CheckToSkipSetup": {
+                      "Type": "Choice",
+                      "Choices": [
+                        {
+                          "Variable": "$.ResourceProperties.Secret",
+                          "StringGreaterThan": "",
+                          "Next": "ChooseEventType"
+                        }
+                      ],
+                      "Default": "Success"
+                    },
+                    "ChooseEventType": {
+                      "Type": "Choice",
+                      "Choices": [
+                        {
+                          "Variable": "$.RequestType",
+                          "StringEquals": "Create",
+                          "Next": "RotateAndStoreSecret"
+                        },
+                        {
+                          "Variable": "$.RequestType",
+                          "StringEquals": "Update",
+                          "Next": "CheckIfSecretUpdated"
+                        },
+                        {
+                          "Variable": "$.RequestType",
+                          "StringEquals": "Delete",
+                          "Next": "DeleteSecret"
+                        }
+                      ]
+                    },
+                    "CheckIfSecretUpdated": {
+                      "Type": "Choice",
+                      "Choices": [
+                        {
+                          "Variable": "$.OldResourceProperties.ManagementAPI.Secret.Value",
+                          "StringEquals": "${ManagementAPISecret}",
+                          "Next": "Success"
+                        }
+                      ],
+                      "Default": "RotateAndStoreSecret"
+                    },
+                    "RotateAndStoreSecret": {
+                      "Type": "Task",
+                      "InputPath": "$.ResourceProperties.ManagementAPI.Secret.Value",
+                      "ResultPath": null,
+                      "Resource": "${RotateAndStoreAuth0Secret}",
+                      "Next": "Success"
+                    },
+                    "DeleteSecret": {
+                      "Type": "Task",
+                      "InputPath": "$.ResourceProperties.ManagementAPI.Secret",
+                      "ResultPath": null,
+                      "Resource": "${DeleteS3Object}",
+                      "Next": "Success"
+                    },
+                    "Success": {
+                      "Type": "Pass",
+                      "ResultPath": "$.Status",
+                      "Result": "SUCCESS",
+                      "End": true
+                    }
+                  }
+                }],
+                "Catch": [{
+                  "ErrorEquals": [ "States.ALL" ],
+                  "ResultPath": "$.Reason",
+                  "Next": "Fail"
+                }]
+              },
+              "Succeed": {
+                "InputPath": "$.[0]",
+                "Type": "Pass",
+                "Next": "End"
+              },
+              "Fail": {
+                "Type": "Pass",
+                "ResultPath": "$.Status",
+                "Result": "FAILED",
+                "Next": "End"
+              },
+              "End": {
+                "Type": "Task",
+                "ResultPath": null,
+                "Resource": "${SendCloudFormationResponse}",
+                "End": true
+              }
+            }
+          }
+        - RotateAndStoreAuth0Secret: !GetAtt RotateAndStoreAuth0Secret.Arn
+          DeleteS3Object: !GetAtt DeleteS3Object.Arn
+          SendCloudFormationResponse: !GetAtt SendCloudFormationResponse.Arn
