@@ -92,8 +92,6 @@ Resources:
 
   Subnets:
     Type: AWS::CloudFormation::CustomResource
-    DependsOn:
-      - SendCloudFormationResponse
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupSubnetsStateMachine
@@ -228,8 +226,6 @@ Resources:
 
   SetupSSHKey:
     Type: AWS::CloudFormation::CustomResource
-    DependsOn:
-      - SendCloudFormationResponse
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupSSHKeyStateMachine
@@ -412,6 +408,7 @@ Resources:
         SecurityGroupIds:
           - !GetAtt BackendVPC.DefaultSecurityGroup
         SubnetIds: !GetAtt Subnets.SubnetIds
+
 
   RotateAndStoreAuth0Secret:
     Type: AWS::Serverless::Function
