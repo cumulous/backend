@@ -454,21 +454,21 @@ Resources:
             "DescribeInstance": {
               "Type": "Task",
               "InputPath": "$.detail.instance-id",
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DescribeInstance}",
+              "Resource": "${DescribeInstance.Arn}",
               "Next": "CheckSSHKeyName"
             },
             "CheckSSHKeyName": {
               "Type": "Task",
               "InputPath": "$.KeyName",
               "ResultPath": null,
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CheckSSHKeyName}",
+              "Resource": "${CheckSSHKeyName.Arn}",
               "Next": "CalculateVolumeSizes"
             },
             "CalculateVolumeSizes": {
               "Type": "Task",
               "InputPath": "$.InstanceType",
               "ResultPath": "$.volumeSizes",
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CalculateVolumeSizes}",
+              "Resource": "${CalculateVolumeSizes.Arn}",
               "Next": "PrepareVolumes"
             },
             "PrepareVolumes": {
@@ -480,21 +480,21 @@ Resources:
                   "CreateVolumes": {
                     "Type": "Task",
                     "ResultPath": "$.volumeIds",
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CreateVolumes}",
+                    "Resource": "${CreateVolumes.Arn}",
                     "Next": "WaitForVolumesCreated"
                   },
                   "WaitForVolumesCreated": {
                     "Type": "Task",
                     "InputPath": "$.volumeIds",
                     "ResultPath": null,
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${WaitForVolumesAvailable}",
+                    "Resource": "${WaitForVolumesAvailable.Arn}",
                     "Next": "CalculateVolumeDevices"
                   },
                   "CalculateVolumeDevices": {
                     "Type": "Task",
                     "InputPath": "$.volumeIds",
                     "ResultPath": "$.volumeDevices",
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CalculateVolumeDevices}",
+                    "Resource": "${CalculateVolumeDevices.Arn}",
                     "End": true
                   }
                 }
@@ -515,7 +515,7 @@ Resources:
                   "AttachVolumes": {
                     "Type": "Task",
                     "ResultPath": null,
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AttachVolumes}",
+                    "Resource": "${AttachVolumes.Arn}",
                     "Next": "DeleteVolumesOnTermination",
                     "Retry": [{
                         "ErrorEquals": [ "HandledError" ],
@@ -525,14 +525,14 @@ Resources:
                   "DeleteVolumesOnTermination": {
                     "Type": "Task",
                     "ResultPath": null,
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteVolumesOnTermination}",
+                    "Resource": "${DeleteVolumesOnTermination.Arn}",
                     "Next": "TransferInitScript"
                   },
                   "TransferInitScript": {
                     "Type": "Task",
                     "InputPath": "$.PrivateIpAddress",
                     "ResultPath": null,
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${TransferInitScript}",
+                    "Resource": "${TransferInitScript.Arn}",
                     "TimeoutSeconds": 5,
                     "Next": "ExecuteInitScript",
                     "Retry": [{
@@ -542,7 +542,7 @@ Resources:
                   },
                   "ExecuteInitScript": {
                     "Type": "Task",
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ExecuteInitScript}",
+                    "Resource": "${ExecuteInitScript.Arn}",
                     "TimeoutSeconds": 10,
                     "End": true
                   }
@@ -558,14 +558,14 @@ Resources:
               "Type": "Task",
               "InputPath": "$.volumeIds",
               "ResultPath": null,
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DetachVolumes}",
+              "Resource": "${DetachVolumes.Arn}",
               "Next": "WaitForVolumesDetached"
             },
             "WaitForVolumesDetached": {
               "Type": "Task",
               "InputPath": "$.volumeIds",
               "ResultPath": null,
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${WaitForVolumesAvailable}",
+              "Resource": "${WaitForVolumesAvailable.Arn}",
               "Next": "DeleteVolumes",
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
@@ -576,7 +576,7 @@ Resources:
             "DeleteVolumes": {
               "Type": "Task",
               "InputPath": "$.volumeIds",
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteVolumes}",
+              "Resource": "${DeleteVolumes.Arn}",
               "Next": "Fail"
             },
             "Fail": {
@@ -613,35 +613,35 @@ Resources:
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties",
                     "ResultPath": "$.ResourceProperties.SubnetRanges",
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CalculateSubnets}",
+                    "Resource": "${CalculateSubnets.Arn}",
                     "Next": "CreateSubnets"
                   },
                   "CreateSubnets": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties",
                     "ResultPath": "$.Data.SubnetIds",
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CreateSubnets}",
+                    "Resource": "${CreateSubnets.Arn}",
                     "Next": "ModifySubnets"
                   },
                   "ModifySubnets": {
                     "Type": "Task",
                     "InputPath": "$.Data.SubnetIds",
                     "ResultPath": null,
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${ModifySubnets}",
+                    "Resource": "${ModifySubnets.Arn}",
                     "Next": "RouteSubnets"
                   },
                   "RouteSubnets": {
                     "Type": "Task",
                     "InputPath": "$.Data.SubnetIds",
                     "ResultPath": null,
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${RouteSubnets}",
+                    "Resource": "${RouteSubnets.Arn}",
                     "Next": "Success"
                   },
                   "DescribeSubnets": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.VpcId",
                     "ResultPath": "$.Data.SubnetIds",
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DescribeSubnets}",
+                    "Resource": "${DescribeSubnets.Arn}",
                     "Next": "ChooseUpdateOrDelete"
                   },
                   "ChooseUpdateOrDelete": {
@@ -663,7 +663,7 @@ Resources:
                     "Type": "Task",
                     "InputPath": "$.Data.SubnetIds",
                     "ResultPath": null,
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteSubnets}",
+                    "Resource": "${DeleteSubnets.Arn}",
                     "Next": "Success"
                   },
                   "Success": {
@@ -694,7 +694,7 @@ Resources:
             "End": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SendCloudFormationResponse}",
+              "Resource": "${SendCloudFormationResponse.Arn}",
               "End": true
             }
           }
@@ -740,7 +740,7 @@ Resources:
                   "DeleteSSHKey": {
                     "Type": "Task",
                     "ResultPath": null,
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${DeleteSSHKey}",
+                    "Resource": "${DeleteSSHKey.Arn}",
                     "Next": "CheckCreateSSHKey"
                   },
                   "CheckCreateSSHKey": {
@@ -757,7 +757,7 @@ Resources:
                   "CreateSSHKey": {
                     "Type": "Task",
                     "ResultPath": null,
-                    "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${CreateSSHKey}",
+                    "Resource": "${CreateSSHKey.Arn}",
                     "Next": "Success"
                   },
                   "Success": {
@@ -788,7 +788,7 @@ Resources:
             "End": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${SendCloudFormationResponse}",
+              "Resource": "${SendCloudFormationResponse.Arn}",
               "End": true
             }
           }
