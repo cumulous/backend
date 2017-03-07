@@ -16,7 +16,10 @@ Parameters:
     Type: String
   SSHKeyGetRole:
     Type: String
-  ManagementAPISecret:
+  Auth0CloudFormationClientID:
+    Type: String
+    Default: ''
+  Auth0CloudFormationClientSecret:
     Type: String
     NoEcho: true
     Default: ''
@@ -409,6 +412,17 @@ Resources:
           - !GetAtt BackendVPC.DefaultSecurityGroup
         SubnetIds: !GetAtt Subnets.SubnetIds
 
+  Auth0:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupAuth0StateMachine
+      ManagementAPI:
+        ID: !Ref Auth0CloudFormationClientID
+        Secret:
+          Value: !Ref Auth0CloudFormationClientSecret
+          Bucket: !Ref SecretsBucket
+          Path: secrets/${AWS::StackName}.auth0
 
   RotateAndStoreAuth0Secret:
     Type: AWS::Serverless::Function
@@ -813,7 +827,7 @@ Resources:
                     "Type": "Choice",
                     "Choices": [
                       {
-                        "Variable": "$.ResourceProperties.Secret",
+                        "Variable": "$.ResourceProperties.ManagementAPI.Secret.Value",
                         "StringGreaterThan": "",
                         "Next": "ChooseEventType"
                       }
@@ -845,7 +859,7 @@ Resources:
                     "Choices": [
                       {
                         "Variable": "$.OldResourceProperties.ManagementAPI.Secret.Value",
-                        "StringEquals": "${ManagementAPISecret}",
+                        "StringEquals": "${Auth0CloudFormationClientSecret}",
                         "Next": "Success"
                       }
                     ],
@@ -853,7 +867,7 @@ Resources:
                   },
                   "RotateAndStoreSecret": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.ManagementAPI.Secret.Value",
+                    "InputPath": "$.ResourceProperties.ManagementAPI",
                     "ResultPath": null,
                     "Resource": "${RotateAndStoreAuth0Secret.Arn}",
                     "Next": "Success"
