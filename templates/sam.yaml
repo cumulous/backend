@@ -24,6 +24,8 @@ Parameters:
     Type: String
     NoEcho: true
     Default: ''
+  Auth0CloudFormationSecretsRole:
+    Type: String
 
 Resources:
   BackendVPC:
@@ -434,6 +436,7 @@ Resources:
       CodeUri: ../app
       Handler: auth0.rotateAndStoreClientSecret
       Runtime: nodejs4.3
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${Auth0CloudFormationSecretsRole}
 
   DeleteS3Object:
     Type: AWS::Serverless::Function

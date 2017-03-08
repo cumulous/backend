@@ -128,7 +128,8 @@ Resources:
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
                     "Auth0Domain": "${Auth0Domain}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
-                    "Auth0CloudFormationClientSecret": "${Auth0CloudFormationClientSecret}"
+                    "Auth0CloudFormationClientSecret": "${Auth0CloudFormationClientSecret}",
+                    "Auth0CloudFormationSecretsRole": "${Auth0CloudFormationSecretsRole}"
                   }
               InputArtifacts:
                 - Name: Deploy
@@ -182,6 +183,7 @@ Resources:
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
                     "Auth0Domain": "${Auth0Domain}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
+                    "Auth0CloudFormationSecretsRole": "${Auth0CloudFormationSecretsRole}"
                   }
               InputArtifacts:
                 - Name: Deploy
@@ -275,6 +277,18 @@ Resources:
                 'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
               StringLike:
                 'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
+            Resource: '*'
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt Auth0CloudFormationSecretsRole.Arn
+            Action:
+              - kms:GenerateDataKey
+              - kms:Decrypt
+            Condition:
+              StringEquals:
+                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
+              StringLike:
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*.key
             Resource: '*'
 
   PipelineRole:
@@ -525,6 +539,30 @@ Resources:
                 Action: s3:GetObject
                 Resource:
                   - !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
+
+  Auth0CloudFormationSecretsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: Auth0CloudFormationSecretsPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*
 
 Outputs:
   PipelineUrl:
