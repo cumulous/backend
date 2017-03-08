@@ -1,9 +1,8 @@
 import { EC2, S3, StepFunctions } from 'aws-sdk';
-import * as https from 'https';
 import * as stringify from 'json-stable-stringify';
-import * as url from 'url';
 
 import { envNames } from './env';
+import { httpsRequest } from './helpers';
 import { log } from './log';
 import { Callback, Dict } from './types';
 
@@ -31,22 +30,7 @@ export interface CloudFormationResponse {
 
 export const sendCloudFormationResponse = (event: CloudFormationRequest & CloudFormationResponse,
                                          context: any, callback: Callback) => {
-  const parsedUrl = url.parse(event.ResponseURL);
-  const response = composeCloudFormationResponse(event);
-  const request = https.request({
-    hostname: parsedUrl.hostname,
-    path: parsedUrl.path,
-    method: 'PUT',
-    headers: {
-      'content-length': response.length,
-    }
-  });
-  request.on('error', callback);
-  request.end(response, 'utf8', callback);
-}
-
-const composeCloudFormationResponse = (event: CloudFormationRequest & CloudFormationResponse) => {
-  return stringify({
+  httpsRequest(event.ResponseURL, 'PUT', null, {
     Status: event.Status,
     Reason: event.Reason,
     PhysicalResourceId: event.PhysicalResourceId || event.LogicalResourceId,
@@ -54,7 +38,7 @@ const composeCloudFormationResponse = (event: CloudFormationRequest & CloudForma
     RequestId: event.RequestId,
     LogicalResourceId: event.LogicalResourceId,
     Data: event.Data,
-  });
+  }, callback);
 }
 
 const sendCloudFormationOnError = (request: CloudFormationRequest, err: Error, callback: Callback) => {
