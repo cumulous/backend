@@ -60,7 +60,7 @@ describe('httpsRequest()', () => {
       describe('body is', () => {
         describe('defined and headers are', () => {
           const getHeaders = (headers: Dict<any> = {}) => {
-            headers['content-length'] = stringify(fakeBody).length;
+            headers['Content-Length'] = stringify(fakeBody).length;
             return headers;
           };
 

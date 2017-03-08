@@ -23,7 +23,7 @@ export const httpsRequest = (
     if (body != null) {
       body = stringify(body);
       headers = headers || {};
-      headers['content-length'] = body.length;
+      headers['Content-Length'] = body.length;
     }
 
     const request = https.request({
