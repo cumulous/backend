@@ -40,6 +40,10 @@ describe('httpsRequest()', () => {
       .and.returnValue(spyOnHttpsRequest);
   });
 
+  const testMethod = (callback: Callback) => {
+    httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
+  };
+
   describe('calls', () => {
     describe('https.request() once with correct parameters when', () => {
       const checkRequest =
@@ -88,7 +92,7 @@ describe('httpsRequest()', () => {
         expect((spyOnHttpsRequest as any).on).toHaveBeenCalledTimes(2);
         done();
       };
-      httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
+      testMethod(callback);
     });
 
     it('https.request().end() once with correct parameters', (done: Callback) => {
@@ -98,7 +102,7 @@ describe('httpsRequest()', () => {
         expect((spyOnHttpsRequest as any).end).toHaveBeenCalledTimes(1);
         done();
       };
-      httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
+      testMethod(callback);
     });
 
     it('callback with correct data upon successful request that returns data', (done: Callback) => {
@@ -113,7 +117,7 @@ describe('httpsRequest()', () => {
         expect(data).toEqual(fakeResponse);
         done();
       };
-      httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
+      testMethod(callback);
     });
 
     it('callback without an error upon successful request that does not return data', (done: Callback) => {
@@ -121,7 +125,7 @@ describe('httpsRequest()', () => {
         expect(err).toBeFalsy();
         done();
       };
-      httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
+      testMethod(callback);
     });
 
     describe('callback with an error', () => {
@@ -131,7 +135,7 @@ describe('httpsRequest()', () => {
           expect(err).toBeTruthy();
           done();
         };
-        httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
+        testMethod(callback);
       });
       it('if https.request() produces an error', (done: Callback) => {
         spyOnHttpsRequestConstructor.and.throwError('https.request()');
@@ -139,7 +143,7 @@ describe('httpsRequest()', () => {
           expect(err).toBeTruthy();
           done();
         };
-        httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
+        testMethod(callback);
       });
       it('on "error" event', (done: Callback) => {
         (spyOnHttpsRequest as any).on
@@ -154,7 +158,7 @@ describe('httpsRequest()', () => {
           expect(err).toBeTruthy();
           done();
         };
-        httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
+        testMethod(callback);
       });
       it('if data could not be parsed', (done: Callback) => {
         (spyOnHttpsRequest as any).on
@@ -167,7 +171,7 @@ describe('httpsRequest()', () => {
           expect(err).toBeTruthy();
           done();
         };
-        httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
+        testMethod(callback);
       });
     });
   });
