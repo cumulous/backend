@@ -1,3 +1,4 @@
+import { s3 } from './aws';
 import { httpsRequest } from './helpers';
 import { Callback } from './types';
 
@@ -8,6 +9,7 @@ export interface Auth0ClientConfig {
     Value: string;
     Bucket?: string;
     Path?: string;
+    EncryptionKeyId?: string;
   };
 }
 
@@ -40,5 +42,21 @@ export const manage = (
     if (err) return callback(err);
 
     httpsRequest(method, baseUrl + endpoint, { Authorization: 'Bearer ' + jwt }, payload, callback);
+  });
+};
+
+export const rotateAndStoreClientSecret = (client: Auth0ClientConfig, context: any, callback: Callback) => {
+  manage(client, 'POST', '/clients/' + client.ID + '/rotate-secret', null,
+      (err: Error, data: { client_secret: string }) => {
+    if (err) return callback(err);
+    else if (data == null) return callback(Error('Expected a client response'));
+
+    s3.putObject({
+      Bucket: client.Secret.Bucket,
+      Key: client.Secret.Path,
+      Body: data.client_secret,
+      SSEKMSKeyId: client.Secret.EncryptionKeyId,
+      ServerSideEncryption: 'aws:kms',
+    }, callback);
   });
 };
