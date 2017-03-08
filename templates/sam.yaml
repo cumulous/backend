@@ -16,6 +16,8 @@ Parameters:
     Type: String
   SSHKeyGetRole:
     Type: String
+  Auth0Domain:
+    Type: string
   Auth0CloudFormationClientID:
     Type: String
   Auth0CloudFormationClientSecret:
@@ -417,11 +419,13 @@ Resources:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupAuth0StateMachine
       CloudFormation:
+        Domain: !Ref Auth0Domain
         ID: !Ref Auth0CloudFormationClientID
         Secret:
           Value: !Ref Auth0CloudFormationClientSecret
           Bucket: !Ref SecretsBucket
           Path: auth0/${AWS::StackName}-cf.key
+          EncryptionKeyId: !Ref EncryptionKeyId
 
   RotateAndStoreAuth0Secret:
     Type: AWS::Serverless::Function

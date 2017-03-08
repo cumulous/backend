@@ -13,6 +13,9 @@ Parameters:
     Type: String
     AllowedPattern: ^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})$
     Default: 10.1.0.0/16
+  Auth0Domain:
+    Type: String
+    AllowedPattern: ^[a-z][a-z0-9\.]*\.[a-z]+$
   Auth0CloudFormationClientID:
     Type: String
   Auth0CloudFormationClientSecret:
@@ -38,6 +41,7 @@ Metadata:
         Label:
           default: "Auth0 Configuration"
         Parameters:
+          - Auth0Domain
           - Auth0CloudFormationClientID
           - Auth0CloudFormationClientSecret
 
@@ -122,6 +126,7 @@ Resources:
                     "SSHKeyS3Path" : "ssh/${RepoName}-beta.pem",
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
+                    "Auth0Domain": "${Auth0Domain}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
                     "Auth0CloudFormationClientSecret": "${Auth0CloudFormationClientSecret}"
                   }
@@ -175,6 +180,7 @@ Resources:
                     "SHKeyS3Path" : "ssh/${RepoName}-release.pem",
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
+                    "Auth0Domain": "${Auth0Domain}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
                   }
               InputArtifacts:
