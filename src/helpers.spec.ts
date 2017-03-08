@@ -133,6 +133,21 @@ describe('httpsRequest()', () => {
         };
         httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
       });
+      it('on "error" event', (done: Callback) => {
+        (spyOnHttpsRequest as any).on
+          .and.callFake((event: string, callback: (chunk?: string | Error) => void) => {
+            if (event === 'error') {
+              callback(Error('"error"'));
+            }
+          });
+        (spyOnHttpsRequest as any).end
+          .and.callFake(() => {});
+        const callback = (err: Error) => {
+          expect(err).toBeTruthy();
+          done();
+        };
+        httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
+      });
       it('if data could not be parsed', (done: Callback) => {
         (spyOnHttpsRequest as any).on
           .and.callFake((event: string, callback: (data: any) => void) => {
