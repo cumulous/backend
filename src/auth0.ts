@@ -6,8 +6,8 @@ export interface Auth0ClientConfig {
   ID: string;
   Secret: {
     Value: string;
-    Bucket: string;
-    Path: string;
+    Bucket?: string;
+    Path?: string;
   };
 }
 
@@ -25,4 +25,20 @@ export const authenticate = (client: Auth0ClientConfig, audience: string, callba
     client_secret: client.Secret.Value,
     audience: audience,
   }, callback);
+};
+
+export const manage = (
+    client: Auth0ClientConfig,
+    method: 'GET' | 'POST',
+    endpoint: string,
+    payload: any,
+    callback: Callback) => {
+
+  const baseUrl = 'https://' + client.Domain + '/api/v2';
+
+  authenticate(client, baseUrl, (err: Error, jwt: string) => {
+    if (err) return callback(err);
+
+    httpsRequest(method, baseUrl + endpoint, { Authorization: 'Bearer ' + jwt }, payload, callback);
+  });
 };
