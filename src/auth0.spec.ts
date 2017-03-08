@@ -4,24 +4,24 @@ import { fakeResolve } from './fixtures/support';
 import * as helpers from './helpers';
 import { Callback, Dict } from './types';
 
-const fakeAuth0Domain = 'account.auth0.com';
-const fakeAuth0CloudFormationClientId = '012345abcdEFGH';
-const fakeAuth0CloudFormationClientSecret = 'fak3-s3cr3t';
-const fakeAuth0CloudFormationToken = 'ey.12.34';
+const fakeDomain = 'account.auth0.com';
+const fakeCloudFormationClientId = '012345abcdEFGH';
+const fakeCloudFormationClientSecret = 'fak3-s3cr3t';
+const fakeCloudFormationToken = 'ey.12.34';
 
 describe('authenticate', () => {
-  let fakeAuth0BaseUrl: string;
+  let fakeBaseUrl: string;
   let fakeClientConfig: Auth0ClientConfig;
 
   let spyOnHttpsRequest: jasmine.Spy;
 
   beforeEach(() => {
-    fakeAuth0BaseUrl = 'https://' + fakeAuth0Domain;
+    fakeBaseUrl = 'https://' + fakeDomain;
     fakeClientConfig = {
-      Domain: fakeAuth0Domain,
-      ID: fakeAuth0CloudFormationClientId,
+      Domain: fakeDomain,
+      ID: fakeCloudFormationClientId,
       Secret: {
-        Value: fakeAuth0CloudFormationClientSecret,
+        Value: fakeCloudFormationClientSecret,
       },
     };
 
@@ -34,22 +34,22 @@ describe('authenticate', () => {
     it('httpsRequest() with correct parameters', (done: Callback) => {
       const callback = () => {
         expect(spyOnHttpsRequest).toHaveBeenCalledWith(
-          'POST', fakeAuth0BaseUrl + '/oauth/token', {
+          'POST', fakeBaseUrl + '/oauth/token', {
             'Content-Type': 'application/json',
           }, {
             grant_type: 'client_credentials',
-            audience: fakeAuth0BaseUrl,
-            client_id: fakeAuth0CloudFormationClientId,
-            client_secret: fakeAuth0CloudFormationClientSecret,
+            audience: fakeBaseUrl,
+            client_id: fakeCloudFormationClientId,
+            client_secret: fakeCloudFormationClientSecret,
           }, callback);
         expect(spyOnHttpsRequest).toHaveBeenCalledTimes(1);
         done();
       };
-      authenticate(fakeClientConfig, fakeAuth0BaseUrl, callback);
+      authenticate(fakeClientConfig, fakeBaseUrl, callback);
     });
     describe('callback with an error if client', () => {
       afterEach((done: Callback) => {
-        authenticate(fakeClientConfig, fakeAuth0BaseUrl, (err: Error) => {
+        authenticate(fakeClientConfig, fakeBaseUrl, (err: Error) => {
           expect(err).toBeTruthy();
           done();
         });
@@ -78,7 +78,7 @@ describe('manage', () => {
   const fakeManageMethod = 'POST';
   const fakeManageEndpoint = '/clients';
 
-  let fakeAuth0BaseUrl: string;
+  let fakeBaseUrl: string;
   let fakeClientConfig: () => Auth0ClientConfig;
   let fakeManagePayload: () => any;
 
@@ -86,12 +86,12 @@ describe('manage', () => {
   let spyOnHttpsRequest: jasmine.Spy;
 
   beforeEach(() => {
-    fakeAuth0BaseUrl = 'https://' + fakeAuth0Domain + '/api/v2';
+    fakeBaseUrl = 'https://' + fakeDomain + '/api/v2';
     fakeClientConfig = () => ({
-      Domain: fakeAuth0Domain,
-      ID: fakeAuth0CloudFormationClientId,
+      Domain: fakeDomain,
+      ID: fakeCloudFormationClientId,
       Secret: {
-        Value: fakeAuth0CloudFormationClientSecret,
+        Value: fakeCloudFormationClientSecret,
       },
     });
     fakeManagePayload = () => ({
@@ -100,7 +100,7 @@ describe('manage', () => {
 
     spyOnAuthenticate = spyOn(auth0, 'authenticate').and.callFake(
         (client: Auth0ClientConfig, audience: string, callback: Callback) =>
-      callback(null, fakeAuth0CloudFormationToken));
+      callback(null, fakeCloudFormationToken));
     spyOnHttpsRequest = spyOn(helpers, 'httpsRequest').and.callFake(
         (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
       callback());
@@ -114,7 +114,7 @@ describe('manage', () => {
     it('authenticate() with correct parameters', (done: Callback) => {
       const callback = () => {
         expect(spyOnAuthenticate).toHaveBeenCalledWith(
-          fakeClientConfig(), fakeAuth0BaseUrl, jasmine.any(Function));
+          fakeClientConfig(), fakeBaseUrl, jasmine.any(Function));
         expect(spyOnAuthenticate).toHaveBeenCalledTimes(1);
         done();
       };
@@ -132,8 +132,8 @@ describe('manage', () => {
     it('httpsRequest() with correct parameters', (done: Callback) => {
       const callback = (err: Error) => {
         expect(spyOnHttpsRequest).toHaveBeenCalledWith(
-          fakeManageMethod, fakeAuth0BaseUrl + fakeManageEndpoint, {
-            Authorization: 'Bearer ' + fakeAuth0CloudFormationToken,
+          fakeManageMethod, fakeBaseUrl + fakeManageEndpoint, {
+            Authorization: 'Bearer ' + fakeCloudFormationToken,
           }, fakeManagePayload(), callback);
         expect(spyOnHttpsRequest).toHaveBeenCalledTimes(1);
         done();
