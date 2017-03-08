@@ -12,6 +12,11 @@ export interface Auth0ClientConfig {
 }
 
 export const authenticate = (client: Auth0ClientConfig, audience: string, callback: Callback) => {
+  if (client == null) {
+    return callback(Error('Expected client config to be defined'));
+  } else if (client.Secret == null) {
+    return callback(Error('Expected client secret to be defined'));
+  }
   httpsRequest('POST', 'https://' + client.Domain + '/oauth/token', {
     'Content-Type': 'application/json',
   }, {

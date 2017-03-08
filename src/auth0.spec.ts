@@ -30,20 +30,46 @@ describe('authenticate', () => {
       callback());
   });
 
-  it('calls httpsRequest() with correct parameters', (done: Callback) => {
-    const callback = () => {
-      expect(spyOnHttpsRequest).toHaveBeenCalledWith(
-        'POST', fakeAuth0BaseUrl + '/oauth/token', {
-          'Content-Type': 'application/json',
-        }, {
-          grant_type: 'client_credentials',
-          audience: fakeAuth0BaseUrl,
-          client_id: fakeAuth0CloudFormationClientId,
-          client_secret: fakeAuth0CloudFormationClientSecret,
-        }, callback);
-      expect(spyOnHttpsRequest).toHaveBeenCalledTimes(1);
-      done();
-    };
-    authenticate(fakeClientConfig, fakeAuth0BaseUrl, callback);
+  describe('calls', () => {
+    it('httpsRequest() with correct parameters', (done: Callback) => {
+      const callback = () => {
+        expect(spyOnHttpsRequest).toHaveBeenCalledWith(
+          'POST', fakeAuth0BaseUrl + '/oauth/token', {
+            'Content-Type': 'application/json',
+          }, {
+            grant_type: 'client_credentials',
+            audience: fakeAuth0BaseUrl,
+            client_id: fakeAuth0CloudFormationClientId,
+            client_secret: fakeAuth0CloudFormationClientSecret,
+          }, callback);
+        expect(spyOnHttpsRequest).toHaveBeenCalledTimes(1);
+        done();
+      };
+      authenticate(fakeClientConfig, fakeAuth0BaseUrl, callback);
+    });
+    describe('callback with an error if client', () => {
+      afterEach((done: Callback) => {
+        authenticate(fakeClientConfig, fakeAuth0BaseUrl, (err: Error) => {
+          expect(err).toBeTruthy();
+          done();
+        });
+      });
+      describe('is', () => {
+        it('undefined', () => {
+          fakeClientConfig = undefined;
+        });
+        it('null', () => {
+          fakeClientConfig = null;
+        });
+      });
+      describe('secret config is', () => {
+        it('undefined', () => {
+          delete fakeClientConfig.Secret;
+        });
+        it('null', () => {
+          fakeClientConfig.Secret = null;
+        });
+      });
+    });
   });
 });
