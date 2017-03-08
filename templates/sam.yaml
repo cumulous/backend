@@ -17,7 +17,7 @@ Parameters:
   SSHKeyGetRole:
     Type: String
   Auth0Domain:
-    Type: string
+    Type: String
   Auth0CloudFormationClientID:
     Type: String
   Auth0CloudFormationClientSecret:
