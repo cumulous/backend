@@ -101,7 +101,7 @@ describe('httpsRequest()', () => {
       httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
     });
 
-    it('callback with correct data upon successful request', (done: Callback) => {
+    it('callback with correct data upon successful request that returns data', (done: Callback) => {
       (spyOnHttpsRequest as any).on
         .and.callFake((event: string, callback: (data: any) => void) => {
           if (event === 'data') {
@@ -111,6 +111,14 @@ describe('httpsRequest()', () => {
         });
       const callback = (err: Error, data: any) => {
         expect(data).toEqual(fakeResponse);
+        done();
+      };
+      httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
+    });
+
+    it('callback without an error upon successful request that does not return data', (done: Callback) => {
+      const callback = (err: Error) => {
+        expect(err).toBeFalsy();
         done();
       };
       httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
