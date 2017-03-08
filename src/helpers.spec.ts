@@ -15,6 +15,7 @@ describe('httpsRequest()', () => {
   let fakeUrl: string;
   let fakeBody: any;
   let fakeHeaders: () => Dict<any>;
+  let fakeResponse: any;
 
   let spyOnHttpsRequest: jasmine.Spy;
   let spyOnHttpsRequestConstructor: jasmine.Spy;
@@ -28,6 +29,9 @@ describe('httpsRequest()', () => {
     fakeHeaders = () => ({
       'fake-header': 'fake-value',
     });
+    fakeResponse = {
+      fake: 'response',
+    };
 
     spyOnHttpsRequest = jasmine.createSpyObj('spyOnHttpsRequest', ['on', 'end']);
     (spyOnHttpsRequest as any).end
@@ -79,8 +83,9 @@ describe('httpsRequest()', () => {
 
     it('https.request().on() with correct parameters', (done: Callback) => {
       const callback = () => {
+        expect((spyOnHttpsRequest as any).on).toHaveBeenCalledWith('data', jasmine.any(Function));
         expect((spyOnHttpsRequest as any).on).toHaveBeenCalledWith('error', callback);
-        expect((spyOnHttpsRequest as any).on).toHaveBeenCalledTimes(1);
+        expect((spyOnHttpsRequest as any).on).toHaveBeenCalledTimes(2);
         done();
       };
       httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
@@ -89,15 +94,30 @@ describe('httpsRequest()', () => {
     it('https.request().end() once with correct parameters', (done: Callback) => {
       const callback = () => {
         expect((spyOnHttpsRequest as any).end).toHaveBeenCalledWith(
-          stringify(fakeBody), 'utf8', callback);
+          stringify(fakeBody), 'utf8', jasmine.any(Function));
         expect((spyOnHttpsRequest as any).end).toHaveBeenCalledTimes(1);
         done();
       };
       httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
     });
 
-    describe('callback with an error if', () => {
-      it('url cannot be parsed', (done: Callback) => {
+    it('callback with correct data upon successful request', (done: Callback) => {
+      (spyOnHttpsRequest as any).on
+        .and.callFake((event: string, callback: (data: any) => void) => {
+          if (event === 'data') {
+            callback(stringify(fakeResponse).substring(0, 5));
+            callback(stringify(fakeResponse).substring(5));
+          }
+        });
+      const callback = (err: Error, data: any) => {
+        expect(data).toEqual(fakeResponse);
+        done();
+      };
+      httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
+    });
+
+    describe('callback with an error', () => {
+      it('if url cannot be parsed', (done: Callback) => {
         spyOn(url, 'parse').and.throwError('url.parse()');
         const callback = (err: Error) => {
           expect(err).toBeTruthy();
@@ -105,8 +125,21 @@ describe('httpsRequest()', () => {
         };
         httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
       });
-      it('https.request() produces an error', (done: Callback) => {
+      it('if https.request() produces an error', (done: Callback) => {
         spyOnHttpsRequestConstructor.and.throwError('https.request()');
+        const callback = (err: Error) => {
+          expect(err).toBeTruthy();
+          done();
+        };
+        httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
+      });
+      it('if data could not be parsed', (done: Callback) => {
+        (spyOnHttpsRequest as any).on
+          .and.callFake((event: string, callback: (data: any) => void) => {
+            if (event === 'data') {
+              callback(stringify(fakeResponse) + '{');
+            }
+          });
         const callback = (err: Error) => {
           expect(err).toBeTruthy();
           done();

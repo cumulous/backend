@@ -32,8 +32,10 @@ export const httpsRequest = (
       method: method,
       headers: headers,
     });
+    let data = '';
+    request.on('data', (chunk: string) => data += chunk);
     request.on('error', callback);
-    request.end(body, 'utf8', callback);
+    request.end(body, 'utf8', () => callback(null, JSON.parse(data)));
   } catch (err) {
     callback(err);
   }
