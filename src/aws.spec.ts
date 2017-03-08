@@ -73,7 +73,7 @@ describe('sendCloudFormationResponse()', () => {
     function checkPut(resourceId: any, done: Callback) {
       const callback = () => {
         expect(spyOnHttpsRequest).toHaveBeenCalledWith(
-          fakeResponseUrl, 'PUT', null, fakeResponse(resourceId), callback);
+          'PUT', fakeResponseUrl, null, fakeResponse(resourceId), callback);
         expect(spyOnHttpsRequest).toHaveBeenCalledTimes(1);
         done();
       };

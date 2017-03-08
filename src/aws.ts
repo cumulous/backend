@@ -30,7 +30,7 @@ export interface CloudFormationResponse {
 
 export const sendCloudFormationResponse = (event: CloudFormationRequest & CloudFormationResponse,
                                          context: any, callback: Callback) => {
-  httpsRequest(event.ResponseURL, 'PUT', null, {
+  httpsRequest('PUT', event.ResponseURL, null, {
     Status: event.Status,
     Reason: event.Reason,
     PhysicalResourceId: event.PhysicalResourceId || event.LogicalResourceId,

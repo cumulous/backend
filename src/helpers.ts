@@ -10,11 +10,13 @@ export const testEmpty = (array: any[], name: string) => {
   }
 };
 
-export const httpsRequest = (Url: string,
-                         method: 'GET' | 'PUT' | 'POST',
-                         headers: Dict<string>,
-                           body: any,
-                       callback: Callback) => {
+export const httpsRequest = (
+    method: 'GET' | 'PUT' | 'POST',
+    Url: string,
+    headers: Dict<string>,
+    body: any,
+    callback: Callback) => {
+
   try {
     const parsedUrl = url.parse(Url);
 

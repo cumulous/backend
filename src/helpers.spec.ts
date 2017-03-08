@@ -50,7 +50,7 @@ describe('httpsRequest()', () => {
           expect(spyOnHttpsRequestConstructor).toHaveBeenCalledTimes(1);
           done();
         };
-        httpsRequest(fakeUrl, fakeRequestMethod, headersInput, body, callback);
+        httpsRequest(fakeRequestMethod, fakeUrl, headersInput, body, callback);
       };
 
       describe('body is', () => {
@@ -83,7 +83,7 @@ describe('httpsRequest()', () => {
         expect((spyOnHttpsRequest as any).on).toHaveBeenCalledTimes(1);
         done();
       };
-      httpsRequest(fakeUrl, fakeRequestMethod, fakeHeaders(), fakeBody, callback);
+      httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
     });
 
     it('https.request().end() once with correct parameters', (done: Callback) => {
@@ -93,7 +93,7 @@ describe('httpsRequest()', () => {
         expect((spyOnHttpsRequest as any).end).toHaveBeenCalledTimes(1);
         done();
       };
-      httpsRequest(fakeUrl, fakeRequestMethod, fakeHeaders(), fakeBody, callback);
+      httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
     });
 
     describe('callback with an error if', () => {
@@ -103,7 +103,7 @@ describe('httpsRequest()', () => {
           expect(err).toBeTruthy();
           done();
         };
-        httpsRequest(fakeUrl, fakeRequestMethod, fakeHeaders(), fakeBody, callback);
+        httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
       });
       it('https.request() produces an error', (done: Callback) => {
         spyOnHttpsRequestConstructor.and.throwError('https.request()');
@@ -111,7 +111,7 @@ describe('httpsRequest()', () => {
           expect(err).toBeTruthy();
           done();
         };
-        httpsRequest(fakeUrl, fakeRequestMethod, fakeHeaders(), fakeBody, callback);
+        httpsRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody, callback);
       });
     });
   });
