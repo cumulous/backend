@@ -426,7 +426,7 @@ Resources:
         Secret:
           Value: !Ref Auth0CloudFormationClientSecret
           Bucket: !Ref SecretsBucket
-          Path: auth0/${AWS::StackName}-cf.key
+          Path: !Sub auth0/${AWS::StackName}-cf.key
           EncryptionKeyId: !Ref EncryptionKeyId
 
   RotateAndStoreAuth0Secret:
