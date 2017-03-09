@@ -697,14 +697,20 @@ Resources:
               }],
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.Reason",
-                "Next": "Fail"
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
               }]
             },
             "Succeed": {
               "InputPath": "$.[0]",
               "Type": "Pass",
               "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
             },
             "Fail": {
               "Type": "Pass",
@@ -791,14 +797,20 @@ Resources:
               }],
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.Reason",
-                "Next": "Fail"
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
               }]
             },
             "Succeed": {
               "InputPath": "$.[0]",
               "Type": "Pass",
               "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
             },
             "Fail": {
               "Type": "Pass",
@@ -895,14 +907,20 @@ Resources:
               }],
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.Reason",
-                "Next": "Fail"
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
               }]
             },
             "Succeed": {
               "InputPath": "$.[0]",
               "Type": "Pass",
               "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
             },
             "Fail": {
               "Type": "Pass",
