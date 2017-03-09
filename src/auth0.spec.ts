@@ -13,7 +13,7 @@ const fakeCloudFormationToken = 'ey.12.34';
 describe('authenticate', () => {
   let fakeBaseUrl: string;
   let fakeClientConfig: Auth0ClientConfig;
-
+  let fakeResponse: () => any;
   let spyOnHttpsRequest: jasmine.Spy;
 
   beforeEach(() => {
@@ -25,10 +25,13 @@ describe('authenticate', () => {
         Value: fakeCloudFormationClientSecret,
       },
     };
+    fakeResponse = () => ({
+      access_token: fakeCloudFormationToken,
+    });
 
     spyOnHttpsRequest = spyOn(helpers, 'httpsRequest').and.callFake(
         (method: 'POST', Url: string, headers: Dict<string>, body: any, callback: Callback) =>
-      callback());
+      callback(null, fakeResponse()));
   });
 
   describe('calls', () => {
@@ -42,33 +45,51 @@ describe('authenticate', () => {
             audience: fakeBaseUrl,
             client_id: fakeCloudFormationClientId,
             client_secret: fakeCloudFormationClientSecret,
-          }, callback);
+          }, jasmine.any(Function));
         expect(spyOnHttpsRequest).toHaveBeenCalledTimes(1);
         done();
       };
       authenticate(fakeClientConfig, fakeBaseUrl, callback);
     });
-    describe('callback with an error if client', () => {
-      afterEach((done: Callback) => {
-        authenticate(fakeClientConfig, fakeBaseUrl, (err: Error) => {
-          expect(err).toBeTruthy();
-          done();
+    describe('callback with an error if', () => {
+      describe('response is', () => {
+        let response: any;
+        afterEach((done: Callback) => {
+          spyOnHttpsRequest.and.callFake(
+              (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
+            callback(null, response));
+          authenticate(fakeClientConfig, fakeBaseUrl, (err: Error) => {
+            expect(err).toBeTruthy();
+            done();
+          });
         });
+        it('undefined', () => response = undefined);
+        it('null', () => response = null);
+        it('missing access_token', () => response = { error: 'invalid_request' });
       });
-      describe('is', () => {
-        it('undefined', () => {
-          fakeClientConfig = undefined;
+
+      describe('client', () => {
+        afterEach((done: Callback) => {
+          authenticate(fakeClientConfig, fakeBaseUrl, (err: Error) => {
+            expect(err).toBeTruthy();
+            done();
+          });
         });
-        it('null', () => {
-          fakeClientConfig = null;
+        describe('is', () => {
+          it('undefined', () => {
+            fakeClientConfig = undefined;
+          });
+          it('null', () => {
+            fakeClientConfig = null;
+          });
         });
-      });
-      describe('secret config is', () => {
-        it('undefined', () => {
-          delete fakeClientConfig.Secret;
-        });
-        it('null', () => {
-          fakeClientConfig.Secret = null;
+        describe('secret config is', () => {
+          it('undefined', () => {
+            delete fakeClientConfig.Secret;
+          });
+          it('null', () => {
+            fakeClientConfig.Secret = null;
+          });
         });
       });
     });

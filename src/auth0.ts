@@ -1,3 +1,5 @@
+import * as stringify from 'json-stable-stringify';
+
 import { s3 } from './aws';
 import { httpsRequest } from './helpers';
 import { Callback } from './types';
@@ -26,7 +28,13 @@ export const authenticate = (client: Auth0ClientConfig, audience: string, callba
     client_id: client.ID,
     client_secret: client.Secret.Value,
     audience: audience,
-  }, callback);
+  }, (err: Error, data: { access_token: string }) => {
+    if (data && data.access_token) {
+      callback(null, data.access_token);
+    } else {
+      callback(Error(stringify(data)));
+    }
+  });
 };
 
 export const manage = (
