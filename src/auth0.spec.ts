@@ -52,6 +52,15 @@ describe('authenticate', () => {
       authenticate(fakeClientConfig, fakeBaseUrl, callback);
     });
     describe('callback with an error if', () => {
+      it('httpsRequest() returns an error', (done: Callback) => {
+        spyOnHttpsRequest.and.callFake(
+            (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
+          callback(Error('httpsRequest()')));
+        authenticate(fakeClientConfig, fakeBaseUrl, (err: Error) => {
+          expect(err).toBeTruthy();
+          done();
+        });
+      });
       describe('response is', () => {
         let response: any;
         afterEach((done: Callback) => {

@@ -32,7 +32,7 @@ export const authenticate = (client: Auth0ClientConfig, audience: string, callba
     if (data && data.access_token) {
       callback(null, data.access_token);
     } else {
-      callback(Error(stringify(data)));
+      callback(err || Error(stringify(data)));
     }
   });
 };
