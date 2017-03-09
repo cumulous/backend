@@ -145,7 +145,7 @@ describe('manage', () => {
     it('authenticate() with correct parameters', (done: Callback) => {
       const callback = () => {
         expect(spyOnAuthenticate).toHaveBeenCalledWith(
-          fakeClientConfig(), fakeBaseUrl, jasmine.any(Function));
+          fakeClientConfig(), fakeBaseUrl + '/', jasmine.any(Function));
         expect(spyOnAuthenticate).toHaveBeenCalledTimes(1);
         done();
       };

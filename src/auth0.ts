@@ -46,7 +46,7 @@ export const manage = (
 
   const baseUrl = 'https://' + client.Domain + '/api/v2';
 
-  authenticate(client, baseUrl, (err: Error, jwt: string) => {
+  authenticate(client, baseUrl + '/', (err: Error, jwt: string) => {
     if (err) return callback(err);
 
     httpsRequest(method, baseUrl + endpoint, { Authorization: 'Bearer ' + jwt }, payload, callback);
