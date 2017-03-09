@@ -32,9 +32,10 @@ export const httpsRequest = (
       method: method,
       headers: headers,
     }, response => {
-      let data = '';
-      response.on('data', (chunk: string) => data += chunk);
+      let chunks: string[] = [];
+      response.on('data', (chunk: string) => chunks.push(chunk));
       response.on('end', () => {
+        const data = chunks.join('');
         data ? callback(null, JSON.parse(data)) : callback();
       });
     });
