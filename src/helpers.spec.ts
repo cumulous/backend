@@ -18,6 +18,7 @@ describe('httpsRequest()', () => {
   let fakeResponse: any;
 
   let spyOnHttpsRequest: jasmine.Spy;
+  let spyOnHttpsResponse: jasmine.Spy;
   let spyOnHttpsRequestConstructor: jasmine.Spy;
 
   beforeEach(() => {
@@ -34,10 +35,25 @@ describe('httpsRequest()', () => {
     };
 
     spyOnHttpsRequest = jasmine.createSpyObj('spyOnHttpsRequest', ['on', 'end']);
-    (spyOnHttpsRequest as any).end
-      .and.callFake((response: string, encoding: string, callback: Callback) => callback());
     spyOnHttpsRequestConstructor = spyOn(https, 'request')
-      .and.returnValue(spyOnHttpsRequest);
+      .and.callFake((options: any, callback: (response: any) => void) => {
+        (spyOnHttpsRequest as any).callback = callback;
+        return spyOnHttpsRequest;
+      });
+    spyOnHttpsResponse = jasmine.createSpyObj('spyOnHttpsResponse', ['on']);
+    (spyOnHttpsResponse as any).on
+      .and.callFake((event: string, callback: (data?: any) => void) => {
+        if (event === 'data') {
+          callback(stringify(fakeResponse).substring(0, 5));
+          callback(stringify(fakeResponse).substring(5));
+        } else if (event === 'end') {
+          callback();
+        }
+      });
+    (spyOnHttpsRequest as any).end
+      .and.callFake((body: string) => {
+        (spyOnHttpsRequest as any).callback(spyOnHttpsResponse);
+      });
   });
 
   const testMethod = (callback: Callback) => {
@@ -54,7 +70,7 @@ describe('httpsRequest()', () => {
             path: fakePath,
             method: fakeRequestMethod,
             headers: headersOutput,
-          });
+          }, jasmine.any(Function));
           expect(spyOnHttpsRequestConstructor).toHaveBeenCalledTimes(1);
           done();
         };
@@ -85,20 +101,18 @@ describe('httpsRequest()', () => {
       });
     });
 
-    it('https.request().on() with correct parameters', (done: Callback) => {
+    it('https.request().on() once with correct parameters', (done: Callback) => {
       const callback = () => {
-        expect((spyOnHttpsRequest as any).on).toHaveBeenCalledWith('data', jasmine.any(Function));
         expect((spyOnHttpsRequest as any).on).toHaveBeenCalledWith('error', callback);
-        expect((spyOnHttpsRequest as any).on).toHaveBeenCalledTimes(2);
+        expect((spyOnHttpsRequest as any).on).toHaveBeenCalledTimes(1);
         done();
       };
       testMethod(callback);
     });
 
-    it('https.request().end() once with correct parameters', (done: Callback) => {
+    it('https.request().end() once with correct parameter', (done: Callback) => {
       const callback = () => {
-        expect((spyOnHttpsRequest as any).end).toHaveBeenCalledWith(
-          stringify(fakeBody), 'utf8', jasmine.any(Function));
+        expect((spyOnHttpsRequest as any).end).toHaveBeenCalledWith(stringify(fakeBody));
         expect((spyOnHttpsRequest as any).end).toHaveBeenCalledTimes(1);
         done();
       };
@@ -106,13 +120,6 @@ describe('httpsRequest()', () => {
     });
 
     it('callback with correct data upon successful request that returns data', (done: Callback) => {
-      (spyOnHttpsRequest as any).on
-        .and.callFake((event: string, callback: (data: any) => void) => {
-          if (event === 'data') {
-            callback(stringify(fakeResponse).substring(0, 5));
-            callback(stringify(fakeResponse).substring(5));
-          }
-        });
       const callback = (err: Error, data: any) => {
         expect(data).toEqual(fakeResponse);
         done();
@@ -121,6 +128,12 @@ describe('httpsRequest()', () => {
     });
 
     it('callback without an error upon successful request that does not return data', (done: Callback) => {
+      (spyOnHttpsResponse as any).on
+        .and.callFake((event: string, callback: (data?: any) => void) => {
+          if (event === 'end') {
+            callback();
+          }
+        });
       const callback = (err: Error) => {
         expect(err).toBeFalsy();
         done();
@@ -147,9 +160,9 @@ describe('httpsRequest()', () => {
       });
       it('on "error" event', (done: Callback) => {
         (spyOnHttpsRequest as any).on
-          .and.callFake((event: string, callback: (chunk?: string | Error) => void) => {
+          .and.callFake((event: string, callback: (err: Error) => void) => {
             if (event === 'error') {
-              callback(Error('"error"'));
+              callback(Error('"error" event'));
             }
           });
         (spyOnHttpsRequest as any).end
@@ -161,10 +174,12 @@ describe('httpsRequest()', () => {
         testMethod(callback);
       });
       it('if data could not be parsed', (done: Callback) => {
-        (spyOnHttpsRequest as any).on
-          .and.callFake((event: string, callback: (data: any) => void) => {
+        (spyOnHttpsResponse as any).on
+          .and.callFake((event: string, callback: (data?: any) => void) => {
             if (event === 'data') {
               callback(stringify(fakeResponse) + '{');
+            } else if (event === 'end') {
+              callback();
             }
           });
         const callback = (err: Error) => {

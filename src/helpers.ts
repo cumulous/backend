@@ -31,12 +31,15 @@ export const httpsRequest = (
       path: parsedUrl.path,
       method: method,
       headers: headers,
+    }, response => {
+      let data = '';
+      response.on('data', (chunk: string) => data += chunk);
+      response.on('end', () => {
+        data ? callback(null, JSON.parse(data)) : callback();
+      });
     });
-    let data = '';
-    request.on('data', (chunk: string) => data += chunk);
     request.on('error', callback);
-    request.end(body, 'utf8', () =>
-      data ? callback(null, JSON.parse(data)) : callback());
+    request.end(body);
   } catch (err) {
     callback(err);
   }
