@@ -16,6 +16,8 @@ paths:
       description: |
         Returns a list of projects for the current member,
         filtered by optional parameters.
+      security:
+        - member_auth: []
       tags:
         - projects:describe
         - projects:describe_details
@@ -147,15 +149,12 @@ definitions:
         items:
           type: string
 
-security:
-  - member_auth: []
-
 securityDefinitions:
   member_auth:
     type: apiKey
     in: header
     name: Authorization
-    x-amazon-apigateway-authtype: oauth2
+    x-amazon-apigateway-authtype: custom
     x-amazon-apigateway-authorizer:
       type: token
       authorizerUri: '${Authorizer}'
