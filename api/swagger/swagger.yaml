@@ -1,0 +1,164 @@
+swagger: '2.0'
+info:
+  title: Project API
+  version: '1'
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+
+paths:
+  /projects:
+    get:
+      summary: Search projects
+      description: |
+        Returns a list of projects for the current member,
+        filtered by optional parameters.
+      tags:
+        - projects:describe
+        - projects:describe_details
+      parameters:
+        - $ref: '#/parameters/ProjectsQueryNameContains'
+        - $ref: '#/parameters/ProjectsQueryIsMember'
+        - $ref: '#/parameters/ProjectsQueryIsHidden'
+        - $ref: '#/parameters/ProjectsQueryStatus'
+        - $ref: '#/parameters/ProjectsQueryIRB'
+        - $ref: '#/parameters/QueryPaginationFrom'
+        - $ref: '#/parameters/QueryPaginationMax'
+      responses:
+        200:
+          description: The list of projects
+          schema:
+            type: object
+            properties:
+              projects:
+                type: array
+                items:
+                  $ref: '#/definitions/Project'
+              from:
+                $ref: '#/definitions/PaginationFrom'
+        400:
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/Error'
+
+parameters:
+  ProjectsQueryNameContains:
+    in: query
+    name: name_contains
+    description: part of project name, case-insensitive
+    type: string
+  ProjectsQueryIsMember:
+    in: query
+    name: is_member
+    description: filter projects by requester's membership
+    type: boolean
+  ProjectsQueryIsHidden:
+    in: query
+    name: is_hidden
+    description: |
+      filter by project 'hidden' flag
+
+      **requires scope: *projects:describe_details***
+    type: boolean
+  ProjectsQueryStatus:
+    in: query
+    name: status
+    description: filter by project status
+    type: array
+    items:
+      type: string
+      enum:
+        - Available
+        - Removed
+  ProjectsQueryIRB:
+    in: query
+    name: irb
+    description: |
+      project IRB (might not be unique)
+
+      **requires scope: *projects:describe_details***
+    type: string
+    pattern: ^[A-Za-z0-9]{1,64}$
+  QueryPaginationFrom:
+    in: query
+    name: from
+    description: starting index for pagination
+    type: integer
+    minimum: 0
+    default: 0
+  QueryPaginationMax:
+    in: query
+    name: max
+    description: maximum count of paginated results
+    type: integer
+    minimum: 1
+    default: 10
+
+definitions:
+  Project:
+    required:
+      - id
+      - name
+      - status
+    properties:
+      id:
+        $ref: '#/definitions/ProjectId'
+      name:
+        $ref: '#/definitions/ProjectName'
+      hidden:
+        $ref: '#/definitions/ProjectHidden'
+      status:
+        $ref: '#/definitions/ProjectStatus'
+      IRB:
+        $ref: '#/definitions/ProjectIRB'
+  ProjectId:
+    description: Unique identifier for a project
+    type: string
+    format: uuid
+  ProjectName:
+    description: Project name
+    type: string
+    pattern: ^[A-Za-z0-9 ,]{1,80}$
+  ProjectHidden:
+    description:
+      Indicates whether project name and status are hidden from public view
+    type: boolean
+  ProjectStatus:
+    description: Project status
+    type: string
+    enum:
+      - Available
+      - Removed
+  ProjectIRB:
+    description: project IRB identifier
+    type: string
+    pattern: ^[A-Za-z0-9]{1,64}$
+  PaginationFrom:
+    type: integer
+    minimum: 0
+    default: 0
+  Error:
+    properties:
+      errors:
+        type: array
+        items:
+          type: string
+
+security:
+  - member_auth: []
+
+securityDefinitions:
+  member_auth:
+    type: apiKey
+    in: header
+    name: Authorization
+    x-amazon-apigateway-authtype: oauth2
+    x-amazon-apigateway-authorizer:
+      type: token
+      authorizerUri: '${Authorizer}'
+      authorizerCredentials: '${AuthorizerRole}'
+      identityValidationExpression: '^[\w\-]{36,}\.[\w\-]{128,}\.[\w\-]{256,}$'
+      authorizerResultTtlInSeconds: 60

@@ -936,3 +936,9 @@ Resources:
             }
           }
         }
+
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref AWS::StackName
+      DefinitionBody: !Sub |-

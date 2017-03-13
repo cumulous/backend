@@ -1,20 +1,28 @@
+const concat = require('gulp-concat');
 const gulp = require('gulp');
 const istanbul = require('gulp-istanbul');
 const jasmineTest = require('gulp-jasmine');
 const remapIstanbul = require('remap-istanbul/lib/gulpRemapIstanbul');
+const replace = require('gulp-replace');
 const reporters = require('jasmine-reporters');
 const sourcemaps = require('gulp-sourcemaps');
 const ts = require('gulp-typescript');
+const yaml = require('gulp-yaml');
 
 const tsProject = ts.createProject('tsconfig.json');
 
 const paths = {
+  api: () => 'api/swagger/' + paths.swagger,
   bin: 'bin',
+  conf: () => ['src/**/*.json', paths.templates + '/*.json'],
+  coverage: () => paths.reports + '/coverage',
+  reports: 'reports',
+  sam: 'sam.yaml',
   src: 'src/**/!(*.spec).ts',
   specs: 'src/*.spec.ts',
-  conf: ['src/**/*.json', 'templates/*.json'],
-  reports: 'reports',
-  coverage: () => paths.reports + '/coverage',
+  swagger: 'swagger.yaml',
+  templates: 'templates',
+  tmp: 'tmp',
 };
 
 let watching = false;
@@ -22,7 +30,8 @@ let failed = false;
 
 gulp.task('watch', () => {
   watching = true;
-  gulp.watch(paths.conf, ['test']);
+  gulp.watch(paths.api(), ['test']);
+  gulp.watch(paths.conf(), ['test']);
   gulp.watch(paths.src, ['test']);
   gulp.watch(paths.specs, ['test']);
 });
@@ -37,8 +46,20 @@ const handleError = function(error: Error) {
 gulp.task('compile', () => {
   failed = false;
   gulp
-    .src(paths.conf)
+    .src(paths.conf())
     .pipe(gulp.dest(paths.bin));
+  gulp
+    .src(paths.api())
+    .pipe(replace(/^/gm, '        '))
+    .pipe(gulp.dest(paths.tmp))
+    .pipe(yaml())
+    .pipe(gulp.dest(paths.bin))
+    .on('end', () => {
+      gulp
+        .src([paths.templates + '/' + paths.sam, paths.tmp + '/' + paths.swagger])
+        .pipe(concat(paths.sam))
+        .pipe(gulp.dest(paths.tmp));
+    });
   return tsProject.src()
     .pipe(sourcemaps.init())
     .pipe(tsProject())
