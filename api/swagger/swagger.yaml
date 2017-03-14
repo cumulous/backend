@@ -46,6 +46,12 @@ paths:
           description: Invalid request
           schema:
             $ref: '#/definitions/Error'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: GET
+        uri: "\
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/\
+          ${GetProjects.Arn}/invocations"
 
 parameters:
   ProjectsQueryNameContains:

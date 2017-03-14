@@ -451,6 +451,14 @@ Resources:
             Action: s3:DeleteObject
             Resource: '*'
 
+  GetProjects:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-GetProjects
+      CodeUri: ../app
+      Handler: projects.get
+      Runtime: nodejs4.3
+
   StatesExecutionRole:
     Type: AWS::IAM::Role
     Properties:
