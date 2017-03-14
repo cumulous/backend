@@ -494,6 +494,7 @@ Resources:
                 Resource: '*'
               - Effect: Allow
                 Action:
+                  - apigateway:GET
                   - apigateway:POST
                   - apigateway:PATCH
                   - apigateway:DELETE
