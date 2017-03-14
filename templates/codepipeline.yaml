@@ -492,6 +492,14 @@ Resources:
                 Action:
                   - ec2:DescribeKeyPairs
                 Resource: '*'
+              - Effect: Allow
+                Action:
+                  - apigateway:POST
+                  - apigateway:PATCH
+                  - apigateway:DELETE
+                Resource:
+                  - !Sub arn:aws:apigateway:${AWS::Region}::/restapis*
+                  - !Sub arn:aws:apigateway:${AWS::Region}::/usageplans*
 
   SSHKeyPutRole:
     Type: AWS::IAM::Role
