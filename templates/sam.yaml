@@ -485,7 +485,7 @@ Resources:
               - Effect: Allow
                 Action: lambda:InvokeFunction
                 Resource:
-                  - !Ref Authorizer
+                  - !GetAtt Authorizer.Arn
 
   StatesExecutionRole:
     Type: AWS::IAM::Role
