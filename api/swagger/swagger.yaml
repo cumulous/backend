@@ -18,6 +18,7 @@ paths:
         filtered by optional parameters.
       security:
         - member_token: []
+        - api_key: []
       tags:
         - projects:describe
         - projects:describe_details
@@ -161,3 +162,7 @@ securityDefinitions:
       authorizerCredentials: '${AuthorizerRole}'
       identityValidationExpression: '^[\w\-]{36,}\.[\w\-]{128,}\.[\w\-]{256,}$'
       authorizerResultTtlInSeconds: 60
+  api_key:
+    type: apiKey
+    in: header
+    name: x-api-key
