@@ -158,7 +158,9 @@ securityDefinitions:
     x-amazon-apigateway-authtype: custom
     x-amazon-apigateway-authorizer:
       type: token
-      authorizerUri: '${Authorizer}'
+      authorizerUri: "\
+        arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/\
+        ${Authorizer.Arn}/invocations"
       authorizerCredentials: '${AuthorizerRole}'
       identityValidationExpression: '^[\w\-]{36,}\.[\w\-]{128,}\.[\w\-]{256,}$'
       authorizerResultTtlInSeconds: 60
