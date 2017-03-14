@@ -471,20 +471,6 @@ Resources:
       CodeUri: ../app
       Handler: members.authorize
       Runtime: nodejs4.3
-      Role:
-
-  AuthorizerRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   InstancesInitStateMachine:
     Type: AWS::StepFunctions::StateMachine
