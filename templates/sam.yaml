@@ -459,6 +459,27 @@ Resources:
       Handler: projects.get
       Runtime: nodejs4.3
 
+  Authorizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-Authorizer
+      CodeUri: ../app
+      Handler: members.authorize
+      Runtime: nodejs4.3
+
+  AuthorizerExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
   StatesExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -471,14 +492,6 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
-
-  Authorizer:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-Authorizer
-      CodeUri: ../app
-      Handler: members.authorize
-      Runtime: nodejs4.3
 
   InstancesInitStateMachine:
     Type: AWS::StepFunctions::StateMachine
