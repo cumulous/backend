@@ -937,6 +937,20 @@ Resources:
           }
         }
 
+  ApiUsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    Properties:
+      UsagePlanName: !Ref AWS::StackName
+      ApiStages:
+        - ApiId: !Ref Api
+          Stage: !Ref AWS::StackName
+      Throttle:
+        RateLimit: 5
+        BurstLimit: 10
+      Quota:
+        Limit: 1000000
+        Period: MONTH
+
   Api:
     Type: AWS::Serverless::Api
     Properties:
