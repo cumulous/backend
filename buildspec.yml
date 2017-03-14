@@ -9,6 +9,7 @@ phases:
   build:
     commands:
       - npm run package -- --s3-bucket ${ARTIFACT_BUCKET} --s3-prefix lambda
+      - sed -i '/DefinitionUri/d' bin/sam.yaml
 artifacts:
   files:
     - bin/sam.yaml
