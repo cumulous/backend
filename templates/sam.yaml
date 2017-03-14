@@ -467,7 +467,7 @@ Resources:
       Handler: members.authorize
       Runtime: nodejs4.3
 
-  AuthorizerExecutionRole:
+  AuthorizerInvocationRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -477,8 +477,15 @@ Resources:
             Principal:
               Service: apigateway.amazonaws.com
             Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: AuthorizerInvocationPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !Ref Authorizer
 
   StatesExecutionRole:
     Type: AWS::IAM::Role
