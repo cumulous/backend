@@ -17,7 +17,7 @@ paths:
         Returns a list of projects for the current member,
         filtered by optional parameters.
       security:
-        - member_auth: []
+        - member_token: []
       tags:
         - projects:describe
         - projects:describe_details
@@ -150,7 +150,7 @@ definitions:
           type: string
 
 securityDefinitions:
-  member_auth:
+  member_token:
     type: apiKey
     in: header
     name: Authorization
