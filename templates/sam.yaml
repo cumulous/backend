@@ -947,11 +947,13 @@ Resources:
 
   ApiUsagePlan:
     Type: AWS::ApiGateway::UsagePlan
+    DependsOn:
+      - ApiLatestStage
     Properties:
       UsagePlanName: !Ref AWS::StackName
       ApiStages:
         - ApiId: !Ref Api
-          Stage: !Ref AWS::StackName
+          Stage: Latest
       Throttle:
         RateLimit: 5
         BurstLimit: 10
@@ -962,5 +964,5 @@ Resources:
   Api:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: !Ref AWS::StackName
+      StageName: Latest
       DefinitionBody: !Sub |-
