@@ -223,8 +223,10 @@ Resources:
         Image: aws/codebuild/nodejs:4.3.2
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
-          - Name: ARTIFACT_BUCKET
+          - Name: ARTIFACTS_BUCKET
             Value: !Ref ArtifactsBucket
+          - Name: API_STAGE
+            Value: beta
       ServiceRole: !Ref BuildRole
 
   EncryptionKeyAlias:
@@ -372,6 +374,12 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${ArtifactsBucket}/lambda/*
                   - !Sub arn:aws:s3:::${ArtifactsBucket}/${RepoName}/*
+                  - !Sub arn:aws:s3:::${ArtifactsBucket}/api/beta/*
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${ArtifactsBucket}
 
   DeployRole:
     Type: AWS::IAM::Role
