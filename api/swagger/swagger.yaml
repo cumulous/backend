@@ -143,10 +143,6 @@ definitions:
     description: project IRB identifier
     type: string
     pattern: ^[A-Za-z0-9]{1,64}$
-  PaginationFrom:
-    type: integer
-    minimum: 0
-    default: 0
   ListOfProjects:
     type: object
     properties:
@@ -154,8 +150,11 @@ definitions:
         type: array
         items:
           $ref: '#/definitions/Project'
-      from:
-        $ref: '#/definitions/PaginationFrom'
+      next:
+        $ref: '#/definitions/PaginationNext'
+  PaginationNext:
+    type: integer
+    minimum: 1
   Error:
     properties:
       errors:
