@@ -1,6 +1,6 @@
 swagger: '2.0'
 info:
-  title: Project API
+  title: Backend API
   version: '1'
 schemes:
   - https
