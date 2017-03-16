@@ -35,14 +35,7 @@ paths:
         200:
           description: The list of projects
           schema:
-            type: object
-            properties:
-              projects:
-                type: array
-                items:
-                  $ref: '#/definitions/Project'
-              from:
-                $ref: '#/definitions/PaginationFrom'
+            $ref: '#/definitions/ListOfProjects'
         400:
           description: Invalid request
           schema:
@@ -154,6 +147,15 @@ definitions:
     type: integer
     minimum: 0
     default: 0
+  ListOfProjects:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          $ref: '#/definitions/Project'
+      from:
+        $ref: '#/definitions/PaginationFrom'
   Error:
     properties:
       errors:
