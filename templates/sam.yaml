@@ -975,13 +975,15 @@ Resources:
           }
         }
 
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+      Properties:
+        DomainName: !Ref APISubdomain
+
+  # WARNING: this resource should be the last one in this template!
+  # We concatenate it with the Swagger template afterwards.
   Api:
     Type: AWS::Serverless::Api
     Properties:
       StageName: latest
       DefinitionBody: !Sub |-
-
-  ApiCertificate:
-    Type: AWS::CertificateManager::Certificate
-      Properties:
-        DomainName: !Ref APISubdomain
