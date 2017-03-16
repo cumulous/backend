@@ -16,11 +16,13 @@ paths:
       description: |
         Returns a list of projects for the current member,
         filtered by optional parameters.
+
+        **requires scopes:  
+        *projects:describe*,
+        *projects:describe_details (conditional)*
+        **
       security:
         - member_token: []
-      tags:
-        - projects:describe
-        - projects:describe_details
       parameters:
         - $ref: '#/parameters/ProjectsQueryNameContains'
         - $ref: '#/parameters/ProjectsQueryIsMember'
@@ -69,7 +71,9 @@ parameters:
     description: |
       filter by project 'hidden' flag
 
-      **requires scope: *projects:describe_details***
+      **requires scope:  
+      *projects:describe_details*
+      **
     type: boolean
   ProjectsQueryStatus:
     in: query
@@ -87,7 +91,9 @@ parameters:
     description: |
       project IRB (might not be unique)
 
-      **requires scope: *projects:describe_details***
+      **requires scope:  
+      *projects:describe_details*
+      **
     type: string
     pattern: ^[A-Za-z0-9]{1,64}$
   QueryPaginationFrom:
