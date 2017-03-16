@@ -984,4 +984,4 @@ Resources:
   ApiCertificate:
     Type: AWS::CertificateManager::Certificate
       Properties:
-        DomainName: APISubdomain
+        DomainName: !Ref APISubdomain
