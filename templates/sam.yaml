@@ -977,8 +977,8 @@ Resources:
 
   ApiCertificate:
     Type: AWS::CertificateManager::Certificate
-      Properties:
-        DomainName: !Ref APISubdomain
+    Properties:
+      DomainName: !Ref APISubdomain
 
   # WARNING: this resource should be the last one in this template!
   # We concatenate it with the Swagger template afterwards.
