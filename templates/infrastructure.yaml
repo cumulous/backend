@@ -147,6 +147,7 @@ Resources:
                     "SSHKeyS3Path" : "ssh/${RepoName}-beta.pem",
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
+                    "APISubdomain": "beta.${APISubdomain}",
                     "Auth0Domain": "${Auth0Domain}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
                     "Auth0CloudFormationClientSecret": "${Auth0CloudFormationClientSecret}",
@@ -202,6 +203,7 @@ Resources:
                     "SSHKeyS3Path" : "ssh/${RepoName}-release.pem",
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
+                    "APISubdomain": "${APISubdomain}",
                     "Auth0Domain": "${Auth0Domain}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
                     "Auth0CloudFormationSecretsRole": "${Auth0CloudFormationSecretsRole}"

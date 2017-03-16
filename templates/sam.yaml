@@ -16,6 +16,8 @@ Parameters:
     Type: String
   SSHKeyGetRole:
     Type: String
+  APISubdomain:
+    Type: String
   Auth0Domain:
     Type: String
   Auth0CloudFormationClientID:
@@ -978,3 +980,8 @@ Resources:
     Properties:
       StageName: latest
       DefinitionBody: !Sub |-
+
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+      Properties:
+        DomainName: APISubdomain
