@@ -976,5 +976,5 @@ Resources:
   Api:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: Latest
+      StageName: latest
       DefinitionBody: !Sub |-
