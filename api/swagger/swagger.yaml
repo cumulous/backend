@@ -23,6 +23,8 @@ paths:
         **
       security:
         - member_token: []
+      tags:
+        - Projects
       parameters:
         - $ref: '#/parameters/ProjectsQueryNameContains'
         - $ref: '#/parameters/ProjectsQueryIsMember'
