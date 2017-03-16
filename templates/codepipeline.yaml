@@ -178,7 +178,7 @@ Resources:
                     "EncryptionKeyId": "${EncryptionKey}",
                     "SecretsBucket": "${SecretsBucket}",
                     "SSHKeyName": "${RepoName}-release",
-                    "SHKeyS3Path" : "ssh/${RepoName}-release.pem",
+                    "SSHKeyS3Path" : "ssh/${RepoName}-release.pem",
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
                     "Auth0Domain": "${Auth0Domain}",
