@@ -33,9 +33,13 @@ Metadata:
     ParameterGroups:
       -
         Label:
-          default: "General parameters"
+          default: "Repositories"
         Parameters:
           - RepoName
+      -
+        Label:
+          default: "Administration"
+        Parameters:
           - NotificationEmail
       -
         Label:
