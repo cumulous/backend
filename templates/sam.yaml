@@ -1063,7 +1063,7 @@ Resources:
                   "CreateApiDomainName": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.Domain",
-                    "ResultPath": null,
+                    "ResultPath": "$.Data.DistributionDomainName",
                     "Resource": "${CreateApiDomainName.Arn}",
                     "Next": "Success"
                   },

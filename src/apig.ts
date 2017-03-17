@@ -11,7 +11,7 @@ export const createDomainName = (event: { Name: string, Certificate: string },
     certificateName: event.Name,
     certificateArn: event.Certificate,
   }).promise()
-    .then(() => callback())
+    .then(data => callback(null, data.distributionDomainName))
     .catch(callback);
 }
 

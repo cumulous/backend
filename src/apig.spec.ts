@@ -5,13 +5,15 @@ import { Callback } from './types';
 
 const fakeDomainName = 'api.example.org';
 const fakeApiCertificate = 'arn:aws:acm:us-east-1:012345678910:certificate/abcd-1234';
+const fakeCloudFrontDistribution = 'fake-1234.cloudfront.net';
 
-const testMethod = (apiGatewayMethod: any, fakeEvent: () => any, fakeRequest: () => any) => {
+const testMethod = (apiGatewayMethod: any, fakeEvent: () => any, fakeRequest: () => any,
+    fakeResponse?: () => any, expectedResponse?: any) => {
   let spyOnMethod: jasmine.Spy;
 
   beforeEach(() => {
     spyOnMethod = spyOn(apiGateway, apiGatewayMethod)
-      .and.returnValue(fakeResolve());
+      .and.returnValue(fakeResolve(fakeResponse ? fakeResponse() : undefined));
   });
 
   describe('calls', () => {
@@ -22,26 +24,39 @@ const testMethod = (apiGatewayMethod: any, fakeEvent: () => any, fakeRequest: ()
         done();
       });
     });
-    describe('callback with an error if', () => {
-      it(`apiGateway.${apiGatewayMethod}() produces an error`, (done: Callback) => {
-        spyOnMethod.and.returnValue(fakeReject(`apiGateway.${apiGatewayMethod}()`));
-        testError((apig as any)[apiGatewayMethod], fakeEvent(), done);
-      });
-      if (typeof fakeEvent() !== 'string') {
-        describe('event is', () => {
-          it('null', (done: Callback) => {
-            testError((apig as any)[apiGatewayMethod], null, done);
+    describe('callback', () => {
+      describe('with', () => {
+        describe('an error if', () => {
+          it(`apiGateway.${apiGatewayMethod}() produces an error`, (done: Callback) => {
+            spyOnMethod.and.returnValue(fakeReject(`apiGateway.${apiGatewayMethod}()`));
+            testError((apig as any)[apiGatewayMethod], fakeEvent(), done);
           });
-          it('undefined', (done: Callback) => {
-            testError((apig as any)[apiGatewayMethod], undefined, done);
-          });
+          if (typeof fakeEvent() !== 'string') {
+            describe('event is', () => {
+              it('null', (done: Callback) => {
+                testError((apig as any)[apiGatewayMethod], null, done);
+              });
+              it('undefined', (done: Callback) => {
+                testError((apig as any)[apiGatewayMethod], undefined, done);
+              });
+            });
+          }
         });
-      }
-    });
+        if (fakeResponse) {
+          it(`correct parameters when apiGateway.${apiGatewayMethod} returns a correct response`,
+              (done: Callback) => {
+            (apig as any)[apiGatewayMethod](fakeEvent(), null, (err: Error, data: any) => {
+              expect(data).toEqual(expectedResponse);
+              done();
+            });
+          });
+        }
+      });
 
-    it(`callback without an error when called with correct parameters
-        and apiGateway.${apiGatewayMethod}() does not produce an error`, (done: Callback) => {
-      testError((apig as any)[apiGatewayMethod], fakeEvent(), done, false);
+      it(`without an error when called with correct parameters
+          and apiGateway.${apiGatewayMethod}() does not produce an error`, (done: Callback) => {
+        testError((apig as any)[apiGatewayMethod], fakeEvent(), done, false);
+      });
     });
   });
 };
@@ -53,7 +68,9 @@ testMethod('createDomainName', () => ({
   domainName: fakeDomainName,
   certificateName: fakeDomainName,
   certificateArn: fakeApiCertificate,
-}));
+}), () => ({
+  distributionDomainName: fakeCloudFrontDistribution,
+}), fakeCloudFrontDistribution);
 
 testMethod('updateDomainName', () => ({
   Name: fakeDomainName,
