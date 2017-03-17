@@ -535,6 +535,7 @@ Resources:
                 Resource:
                   - !Sub arn:aws:apigateway:${AWS::Region}::/restapis*
                   - !Sub arn:aws:apigateway:${AWS::Region}::/usageplans*
+                  - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/*api.${DomainName}/basepathmappings
               - Effect: Allow
                 Action:
                   - acm:RequestCertificate
