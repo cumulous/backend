@@ -244,7 +244,7 @@ Resources:
         EnvironmentVariables:
           - Name: ARTIFACTS_BUCKET
             Value: !Ref ArtifactsBucket
-          - Name: API_STAGE
+          - Name: BACKEND_STAGE
             Value: beta
       ServiceRole: !Ref BuildRole
 
