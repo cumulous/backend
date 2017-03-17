@@ -975,6 +975,152 @@ Resources:
           }
         }
 
+  SetupApiDomainName:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupApiDomainNameStateMachine
+      Domain:
+        Name: !Ref APISubdomain
+        Certificate: !Ref ApiCertificate
+
+  CreateApiDomainName:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CreateApiDomainName
+      CodeUri: ../app
+      Handler: apig.createDomainName
+      Runtime: nodejs4.3
+
+  UpdateApiDomainName:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-UpdateApiDomainName
+      CodeUri: ../app
+      Handler: apig.updateDomainName
+      Runtime: nodejs4.3
+
+  DeleteApiDomainName:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DeleteApiDomainName
+      CodeUri: ../app
+      Handler: apig.deleteDomainName
+      Runtime: nodejs4.3
+
+  SetupApiDomainNameStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupApiCertificate",
+          "States": {
+            "SetupApiCertificate": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "ChooseEventType",
+                "States": {
+                  "ChooseEventType": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Create",
+                        "Next": "CreateApiDomainName"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Update",
+                        "Next": "CheckReplaceDomainName"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "DeleteApiDomainName"
+                      }
+                    ]
+                  },
+                  "CreateApiDomainName": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Domain",
+                    "ResultPath": null,
+                    "Resource": "${CreateApiDomainName.Arn}",
+                    "Next": "Success"
+                  },
+                  "CheckReplaceDomainName": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.OldResourceProperties.Domain.Name",
+                        "StringEquals": "${APISubdomain}",
+                        "Next": "DeleteOldApiDomainName"
+                      }
+                    ],
+                    "Default": "UpdateApiDomainName"
+                  },
+                  "DeleteOldApiDomainName": {
+                    "Type": "Task",
+                    "InputPath": "$.OldResourceProperties.Domain.Name",
+                    "ResultPath": null,
+                    "Resource": "${DeleteApiDomainName.Arn}",
+                    "Next": "CreateApiDomainName"
+                  },
+                  "UpdateApiDomainName": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Domain",
+                    "ResultPath": null,
+                    "Resource": "${UpdateApiDomainName.Arn}",
+                    "Next": "Success"
+                  },
+                  "DeleteApiDomainName": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Domain.Name",
+                    "ResultPath": null,
+                    "Resource": "${DeleteApiDomainName.Arn}",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
+
   ApiCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:

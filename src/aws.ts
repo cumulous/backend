@@ -1,4 +1,4 @@
-import { EC2, S3, StepFunctions } from 'aws-sdk';
+import { APIGateway, EC2, S3, StepFunctions } from 'aws-sdk';
 import * as stringify from 'json-stable-stringify';
 
 import { envNames } from './env';
@@ -6,6 +6,7 @@ import { httpsRequest } from './helpers';
 import { log } from './log';
 import { Callback, Dict } from './types';
 
+export const apiGateway = new APIGateway();
 export const ec2 = new EC2();
 export const s3 = new S3({ signatureVersion: 'v4' });
 export const stepFunctions = new StepFunctions();
