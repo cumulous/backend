@@ -1148,7 +1148,7 @@ Resources:
     Type: AWS::ApiGateway::BasePathMapping
     Properties:
       DomainName: !Ref APISubdomain
-      RestApiId: !Ref RestApiId
+      RestApiId: !Ref Api
       StageName: latest
 
   # WARNING: this resource should be the last one in this template!
