@@ -16,9 +16,6 @@ Parameters:
   DomainName:
     Type: String
     AllowedPattern: ^[a-z][a-z0-9\.]*\.[a-z]+$
-  APISubdomain:
-    Type: String
-    AllowedPattern: ^[a-z][a-z0-9\.]*\.[a-z]+$
   Auth0Domain:
     Type: String
     AllowedPattern: ^[a-z][a-z0-9\.]*\.[a-z]+$
@@ -47,12 +44,7 @@ Metadata:
         Parameters:
           - BetaVPCRange
           - ReleaseVPCRange
-      -
-        Label:
-          default: "DNS Configuration"
-        Parameters:
           - DomainName
-          - APISubdomain
       -
         Label:
           default: "Auth0 Configuration"
@@ -148,7 +140,7 @@ Resources:
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
                     "DomainZone": "${DomainZone}",
-                    "APISubdomain": "beta.${APISubdomain}",
+                    "APISubdomain": "beta.api.${DomainName}",
                     "Auth0Domain": "${Auth0Domain}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
                     "Auth0CloudFormationClientSecret": "${Auth0CloudFormationClientSecret}",
@@ -205,7 +197,7 @@ Resources:
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
                     "DomainZone": "${DomainZone}",
-                    "APISubdomain": "${APISubdomain}",
+                    "APISubdomain": "api.${DomainName}",
                     "Auth0Domain": "${Auth0Domain}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
                     "Auth0CloudFormationSecretsRole": "${Auth0CloudFormationSecretsRole}"
