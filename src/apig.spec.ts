@@ -53,6 +53,7 @@ testMethod('createDomainName', () => ({
   Certificate: fakeApiCertificate,
 }), () => ({
   domainName: fakeDomainName,
+  certificateName: fakeDomainName,
   certificateArn: fakeApiCertificate,
 }));
 

@@ -8,6 +8,7 @@ export const createDomainName = (event: { Name: string, Certificate: string },
   };
   apiGateway.createDomainName({
     domainName: event.Name,
+    certificateName: event.Name,
     certificateArn: event.Certificate,
   }).promise()
     .then(() => callback())
