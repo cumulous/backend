@@ -533,6 +533,10 @@ Resources:
                 Resource:
                   - !Sub arn:aws:apigateway:${AWS::Region}::/restapis*
                   - !Sub arn:aws:apigateway:${AWS::Region}::/usageplans*
+              - Effect: Allow
+                Action:
+                  - acm:RequestCertificate
+                Resource: '*'
 
   SSHKeyPutRole:
     Type: AWS::IAM::Role
