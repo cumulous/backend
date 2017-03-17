@@ -141,6 +141,7 @@ Resources:
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
                     "DomainZone": "${DomainZone}",
                     "APISubdomain": "beta.api.${DomainName}",
+                    "WebSubdomain": "beta.${DomainName}",
                     "Auth0Domain": "${Auth0Domain}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
                     "Auth0CloudFormationClientSecret": "${Auth0CloudFormationClientSecret}",
@@ -198,6 +199,7 @@ Resources:
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
                     "DomainZone": "${DomainZone}",
                     "APISubdomain": "api.${DomainName}",
+                    "WebSubdomain": "${DomainName}",
                     "Auth0Domain": "${Auth0Domain}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
                     "Auth0CloudFormationSecretsRole": "${Auth0CloudFormationSecretsRole}"

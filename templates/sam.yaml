@@ -20,6 +20,8 @@ Parameters:
     Type: String
   APISubdomain:
     Type: String
+  WebSubdomain:
+    Type: String
   Auth0Domain:
     Type: String
   Auth0CloudFormationClientID:
@@ -976,6 +978,11 @@ Resources:
             }
           }
         }
+
+  WebCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref WebSubdomain
 
   # ApiDomainName:
   #   Type: AWS::CloudFormation::CustomResource
