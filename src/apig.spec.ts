@@ -15,36 +15,34 @@ const testMethod = (apiGatewayMethod: any, fakeEvent: () => any, fakeRequest: ()
   });
 
   describe('calls', () => {
-    it(`apiGateway.${apiGatewayMethod} once with correct parameters`, (done: Callback) => {
+    it(`apiGateway.${apiGatewayMethod}() once with correct parameters`, (done: Callback) => {
       (apig as any)[apiGatewayMethod](fakeEvent(), null, () => {
         expect(spyOnMethod).toHaveBeenCalledWith(fakeRequest());
         expect(spyOnMethod).toHaveBeenCalledTimes(1);
         done();
       });
     });
-
-  });
-
-  describe('callback with an error if', () => {
-    it(`apiGateway.${apiGatewayMethod} produces an error`, (done: Callback) => {
-      spyOnMethod.and.returnValue(fakeReject(`apiGateway.${apiGatewayMethod}`));
-      testError((apig as any)[apiGatewayMethod], fakeEvent(), done);
-    });
-    if (typeof fakeEvent() !== 'string') {
-      describe('event is', () => {
-        it('null', (done: Callback) => {
-          testError((apig as any)[apiGatewayMethod], null, done);
-        });
-        it('undefined', (done: Callback) => {
-          testError((apig as any)[apiGatewayMethod], undefined, done);
-        });
+    describe('callback with an error if', () => {
+      it(`apiGateway.${apiGatewayMethod}() produces an error`, (done: Callback) => {
+        spyOnMethod.and.returnValue(fakeReject(`apiGateway.${apiGatewayMethod}()`));
+        testError((apig as any)[apiGatewayMethod], fakeEvent(), done);
       });
-    }
-  });
+      if (typeof fakeEvent() !== 'string') {
+        describe('event is', () => {
+          it('null', (done: Callback) => {
+            testError((apig as any)[apiGatewayMethod], null, done);
+          });
+          it('undefined', (done: Callback) => {
+            testError((apig as any)[apiGatewayMethod], undefined, done);
+          });
+        });
+      }
+    });
 
-  it(`callback without an error when called with correct parameters
-      and apiGateway.${apiGatewayMethod} does not produce an error`, (done: Callback) => {
-    testError((apig as any)[apiGatewayMethod], fakeEvent(), done, false);
+    it(`callback without an error when called with correct parameters
+        and apiGateway.${apiGatewayMethod}() does not produce an error`, (done: Callback) => {
+      testError((apig as any)[apiGatewayMethod], fakeEvent(), done, false);
+    });
   });
 };
 
