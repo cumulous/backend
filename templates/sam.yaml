@@ -991,6 +991,12 @@ Resources:
       CodeUri: ../app
       Handler: apig.createDomainName
       Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: apigateway:POST
+            Resource:
+              - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${Api}/domainnames
 
   UpdateApiDomainName:
     Type: AWS::Serverless::Function
@@ -999,6 +1005,12 @@ Resources:
       CodeUri: ../app
       Handler: apig.updateDomainName
       Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: apigateway:PATCH
+            Resource:
+              - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${Api}/domainnames/${APISubdomain}
 
   DeleteApiDomainName:
     Type: AWS::Serverless::Function
@@ -1007,6 +1019,12 @@ Resources:
       CodeUri: ../app
       Handler: apig.deleteDomainName
       Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: apigateway:DELETE
+            Resource:
+              - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${Api}/domainnames/${APISubdomain}
 
   SetupApiDomainNameStateMachine:
     Type: AWS::StepFunctions::StateMachine
