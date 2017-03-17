@@ -996,7 +996,7 @@ Resources:
           - Effect: Allow
             Action: apigateway:POST
             Resource:
-              - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${Api}/domainnames
+              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames
 
   UpdateApiDomainName:
     Type: AWS::Serverless::Function
@@ -1010,7 +1010,7 @@ Resources:
           - Effect: Allow
             Action: apigateway:PATCH
             Resource:
-              - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${Api}/domainnames/${APISubdomain}
+              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${APISubdomain}
 
   DeleteApiDomainName:
     Type: AWS::Serverless::Function
@@ -1024,7 +1024,7 @@ Resources:
           - Effect: Allow
             Action: apigateway:DELETE
             Resource:
-              - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${Api}/domainnames/${APISubdomain}
+              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${APISubdomain}
 
   SetupApiDomainNameStateMachine:
     Type: AWS::StepFunctions::StateMachine
