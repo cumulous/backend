@@ -536,6 +536,8 @@ Resources:
               - Effect: Allow
                 Action:
                   - acm:RequestCertificate
+                  - acm:DescribeCertificate
+                  - acm:DeleteCertificate
                 Resource: '*'
 
   SSHKeyPutRole:
