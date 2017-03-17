@@ -1144,6 +1144,13 @@ Resources:
     Properties:
       DomainName: !Ref APISubdomain
 
+  ApiPathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref APISubdomain
+      RestApiId: !Ref RestApiId
+      StageName: latest
+
   # WARNING: this resource should be the last one in this template!
   # We concatenate it with the Swagger template afterwards.
   Api:
