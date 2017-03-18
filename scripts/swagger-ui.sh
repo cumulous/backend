@@ -10,4 +10,5 @@ cp "${SWAGGER_API}" "${SWAGGER_DIST}"
 cd "${SWAGGER_DIST}"
 rm -f swagger-ui.js
 sed -i 's/swagger-ui\.js/swagger-ui.min.js/' index.html
+sed -i 's/url: url,$/url: url, validatorUrl: null,/' index.html
 aws s3 sync . "${S3_PATH}"
