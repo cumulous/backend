@@ -1153,14 +1153,14 @@ Resources:
     Properties:
       DomainName: !Ref APIDomain
 
-  ApiPathMapping:
-    Type: AWS::ApiGateway::BasePathMapping
-    DependsOn:
-      ApiCurrentStage
-    Properties:
-      DomainName: !Ref APIDomain
-      RestApiId: !Ref Api
-      Stage: Current
+  # ApiPathMapping:
+  #   Type: AWS::ApiGateway::BasePathMapping
+  #   DependsOn:
+  #     ApiCurrentStage
+  #   Properties:
+  #     DomainName: !Ref APIDomain
+  #     RestApiId: !Ref Api
+  #     Stage: Current
 
   # ApiDnsRecord:
   #   Type: AWS::Route53::RecordSet
