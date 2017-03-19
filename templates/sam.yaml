@@ -1155,6 +1155,8 @@ Resources:
 
   ApiPathMapping:
     Type: AWS::ApiGateway::BasePathMapping
+    DependsOn:
+      ApiCurrentStage
     Properties:
       DomainName: !Ref APIDomain
       RestApiId: !Ref Api
@@ -1175,5 +1177,5 @@ Resources:
   Api:
     Type: AWS::Serverless::Api
     Properties:
-      StageName: latest
+      StageName: Current
       DefinitionBody: !Sub |-
