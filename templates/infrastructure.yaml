@@ -12,7 +12,8 @@ Parameters:
   NotificationEmail:
     Description: "Email for notifying about pipeline updates"
     Type: String
-    AllowedPattern: ^[\w\.-]+@[\w\.-]+\.[a-z\.]{2,6}$
+    AllowedPattern: ^(|[\w\.-]+@[\w\.-]+\.[a-z\.]{2,6})$
+    Default: ''
   BetaVPCRange:
     Description: "CIDR block of IP addresses for EC2 instances in 'Beta' environment (*)"
     Type: String
@@ -72,6 +73,7 @@ Metadata:
 
 Conditions:
   EnableStackAdmin: !Not [!Equals [!Ref StackAdmin, '']]
+  CreateNotification: !Not [!Equals [!Ref NotificationEmail, '']]
 
 Resources:
   ArtifactsBucket:
@@ -89,6 +91,7 @@ Resources:
 
   PipelineNotification:
     Type: AWS::SNS::Topic
+    Condition: CreateNotification
     Properties:
       Subscription:
         - Endpoint: !Ref NotificationEmail
@@ -177,7 +180,7 @@ Resources:
                 Provider: Manual
                 Version: 1
               Configuration:
-                NotificationArn: !Ref PipelineNotification
+                NotificationArn: !If [CreateNotification, !Ref PipelineNotification, !Ref 'AWS::NoValue']
               RunOrder: 2
             -
               Name: Deploy
@@ -234,7 +237,7 @@ Resources:
                 Provider: Manual
                 Version: 1
               Configuration:
-                NotificationArn: !Ref PipelineNotification
+                NotificationArn: !If [CreateNotification, !Ref PipelineNotification, !Ref 'AWS::NoValue']
               RunOrder: 2
             -
               Name: Deploy
@@ -394,11 +397,14 @@ Resources:
                   - iam:PassRole
                 Resource:
                   - !GetAtt DeployRole.Arn
-              - Effect: Allow
-                Action:
-                  - sns:Publish
-                Resource:
-                  - !Ref PipelineNotification
+              - !If
+                - CreateNotification
+                - Effect: Allow
+                  Action:
+                    - sns:Publish
+                  Resource:
+                    - !Ref PipelineNotification
+                - !Ref AWS::NoValue
 
   BuildRole:
     Type: AWS::IAM::Role
