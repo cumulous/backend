@@ -2,6 +2,10 @@ Parameters:
   RepoName:
     Type: String
     Default: backend
+  StackAdmin:
+    Type: String
+    AllowedPattern: ^[\w+=.,@-]{0,64}$
+    Default: ''
   NotificationEmail:
     Type: String
     AllowedPattern: ^[\w\.-]+@[\w\.-]+\.[a-z\.]{2,6}$
@@ -37,6 +41,7 @@ Metadata:
         Label:
           default: "Administration"
         Parameters:
+          - StackAdmin
           - NotificationEmail
       -
         Label:
@@ -52,6 +57,9 @@ Metadata:
           - Auth0Domain
           - Auth0CloudFormationClientID
           - Auth0CloudFormationClientSecret
+
+Conditions:
+  EnableStackAdmin: !Not [!Equals [!Ref StackAdmin, '']]
 
 Resources:
   ArtifactsBucket:
@@ -310,6 +318,17 @@ Resources:
                 'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
               StringLike:
                 'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*.key
+            Resource: '*'
+          - Effect: Deny
+            NotPrincipal:
+              AWS:
+              - !Ref AWS::AccountId
+              - !GetAtt SSHKeyPutRole.Arn
+              - !GetAtt SSHKeyGetRole.Arn
+              - !GetAtt Auth0CloudFormationSecretsRole.Arn
+              - !If [EnableStackAdmin, !Sub 'arn:aws:iam::${AWS::AccountId}:user/${StackAdmin}', !Ref 'AWS::NoValue']
+            Action:
+              - kms:*
             Resource: '*'
 
   PipelineRole:
