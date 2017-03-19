@@ -18,9 +18,9 @@ Parameters:
     Type: String
   DomainZone:
     Type: String
-  APISubdomain:
+  APIDomain:
     Type: String
-  WebSubdomain:
+  WebDomain:
     Type: String
   Auth0Domain:
     Type: String
@@ -982,7 +982,7 @@ Resources:
   WebCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !Ref WebSubdomain
+      DomainName: !Ref WebDomain
 
   # ApiDomainName:
   #   Type: AWS::CloudFormation::CustomResource
@@ -990,7 +990,7 @@ Resources:
   #     ServiceToken: !GetAtt SetupCustomResource.Arn
   #     StateMachine: !Ref SetupApiDomainNameStateMachine
   #     Domain:
-  #       Name: !Ref APISubdomain
+  #       Name: !Ref APIDomain
   #       Certificate: !Ref ApiCertificate
 
   CreateApiDomainName:
@@ -1019,7 +1019,7 @@ Resources:
           - Effect: Allow
             Action: apigateway:PATCH
             Resource:
-              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${APISubdomain}
+              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${APIDomain}
 
   DeleteApiDomainName:
     Type: AWS::Serverless::Function
@@ -1033,7 +1033,7 @@ Resources:
           - Effect: Allow
             Action: apigateway:DELETE
             Resource:
-              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${APISubdomain}
+              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${APIDomain}
 
   SetupApiDomainNameStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -1081,7 +1081,7 @@ Resources:
                     "Choices": [
                       {
                         "Variable": "$.OldResourceProperties.Domain.Name",
-                        "StringEquals": "${APISubdomain}",
+                        "StringEquals": "${APIDomain}",
                         "Next": "DeleteOldApiDomainName"
                       }
                     ],
@@ -1151,19 +1151,19 @@ Resources:
   ApiCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !Ref APISubdomain
+      DomainName: !Ref APIDomain
 
   ApiPathMapping:
     Type: AWS::ApiGateway::BasePathMapping
     Properties:
-      DomainName: !Ref APISubdomain
+      DomainName: !Ref APIDomain
       RestApiId: !Ref Api
       Stage: latest
 
   # ApiDnsRecord:
   #   Type: AWS::Route53::RecordSet
   #   Properties:
-  #     Name: !Sub ${APISubdomain}.
+  #     Name: !Sub ${APIDomain}.
   #     Type: A
   #     HostedZoneId: !Ref DomainZone
   #     AliasTarget:
