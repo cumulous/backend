@@ -1156,7 +1156,8 @@ Resources:
   # ApiPathMapping:
   #   Type: AWS::ApiGateway::BasePathMapping
   #   DependsOn:
-  #     ApiCurrentStage
+  #     - ApiCurrentStage
+  #     - ApiDomainName
   #   Properties:
   #     DomainName: !Ref APIDomain
   #     RestApiId: !Ref Api
