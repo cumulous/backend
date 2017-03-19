@@ -1,7 +1,7 @@
 Parameters:
   RepoName:
     Type: String
-    Default: serverless-backend
+    Default: backend
   NotificationEmail:
     Type: String
     AllowedPattern: ^[\w\.-]+@[\w\.-]+\.[a-z\.]{2,6}$
