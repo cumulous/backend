@@ -57,14 +57,14 @@ Metadata:
           - NotificationEmail
       -
         Label:
-          default: "Network Configuration"
+          default: "Network"
         Parameters:
           - BetaVPCRange
           - ProductionVPCRange
           - Domain
       -
         Label:
-          default: "Auth0 Configuration"
+          default: "Auth0"
         Parameters:
           - Auth0Domain
           - Auth0CloudFormationClientID
