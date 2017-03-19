@@ -351,10 +351,33 @@ Resources:
             NotPrincipal:
               AWS:
               - !Ref AWS::AccountId
+
               - !GetAtt SSHKeyPutRole.Arn
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${SSHKeyPutRole}/${RepoName}-beta-CreateSSHKey"
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${SSHKeyPutRole}/${RepoName}-release-CreateSSHKey"
+
               - !GetAtt SSHKeyGetRole.Arn
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${SSHKeyGetRole}/${RepoName}-beta-TransferInitScript"
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${SSHKeyGetRole}/${RepoName}-release-TransferInitScript"
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${SSHKeyGetRole}/${RepoName}-beta-ExecuteInitScript"
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${SSHKeyGetRole}/${RepoName}-release-ExecuteInitScript"
+
               - !GetAtt Auth0CloudFormationSecretsRole.Arn
-              - !If [EnableStackAdmin, !Sub 'arn:aws:iam::${AWS::AccountId}:user/${StackAdmin}', !Ref 'AWS::NoValue']
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${Auth0CloudFormationSecretsRole}/${RepoName}-beta-RotateAndStoreAuth0Secret"
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${Auth0CloudFormationSecretsRole}/${RepoName}-release-RotateAndStoreAuth0Secret"
+
+              - !If
+                - EnableStackAdmin
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:user/${StackAdmin}'
+                - !Ref 'AWS::NoValue'
             Action:
               - kms:*
             Resource: '*'
