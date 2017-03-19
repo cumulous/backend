@@ -28,6 +28,11 @@ Parameters:
     Description: "Registered domain name for the entire infrastructure (*)"
     Type: String
     AllowedPattern: ^[a-z][a-z0-9\.]*\.[a-z]+$
+  HostedZone:
+    Description: "Route 53 hosted zone ID, if created previously for this domain"
+    Type: String
+    AllowedPattern: ^[A-Z0-9]{0,32}$
+    Default: ''
   Auth0Domain:
     Description: "Your Auth0 domain name (*)"
     Type: String
@@ -63,6 +68,7 @@ Metadata:
           - BetaVPCRange
           - ProductionVPCRange
           - Domain
+          - HostedZone
       -
         Label:
           default: "Auth0"
@@ -74,6 +80,7 @@ Metadata:
 Conditions:
   EnableStackAdmin: !Not [!Equals [!Ref StackAdmin, '']]
   CreateNotification: !Not [!Equals [!Ref NotificationEmail, '']]
+  CreateHostedZone: !Equals [!Ref HostedZone, '']
 
 Resources:
   ArtifactsBucket:
@@ -86,6 +93,8 @@ Resources:
 
   DomainZone:
     Type: AWS::Route53::HostedZone
+    Condition: CreateHostedZone
+    DeletionPolicy: Retain
     Properties:
       Name: !Ref Domain
 
@@ -153,7 +162,8 @@ Resources:
                 Capabilities: CAPABILITY_IAM
                 TemplatePath: Deploy::sam.yaml
                 RoleArn: !GetAtt DeployRole.Arn
-                ParameterOverrides: !Sub |-
+                ParameterOverrides: !Sub
+                - |-
                   {
                     "VpcRange": "${BetaVPCRange}",
                     "EncryptionKeyId": "${EncryptionKey}",
@@ -162,7 +172,7 @@ Resources:
                     "SSHKeyS3Path" : "ssh/${RepoName}-beta.pem",
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
-                    "DomainZone": "${DomainZone}",
+                    "DomainZone": "${HostedZoneId}",
                     "APIDomain": "beta.api.${Domain}",
                     "WebDomain": "beta.${Domain}",
                     "Auth0Domain": "${Auth0Domain}",
@@ -170,6 +180,7 @@ Resources:
                     "Auth0CloudFormationClientSecret": "${Auth0CloudFormationClientSecret}",
                     "Auth0CloudFormationSecretsRole": "${Auth0CloudFormationSecretsRole}"
                   }
+                - HostedZoneId: !If [CreateHostedZone, !Ref DomainZone, !Ref HostedZone]
               InputArtifacts:
                 - Name: Deploy
               RunOrder: 1
@@ -211,7 +222,8 @@ Resources:
                 Capabilities: CAPABILITY_IAM
                 TemplatePath: Deploy::sam.yaml
                 RoleArn: !GetAtt DeployRole.Arn
-                ParameterOverrides: !Sub |-
+                ParameterOverrides: !Sub
+                - |-
                   {
                     "VpcRange": "${ProductionVPCRange}",
                     "EncryptionKeyId": "${EncryptionKey}",
@@ -220,13 +232,14 @@ Resources:
                     "SSHKeyS3Path" : "ssh/${RepoName}-release.pem",
                     "SSHKeyPutRole": "${SSHKeyPutRole}",
                     "SSHKeyGetRole": "${SSHKeyGetRole}",
-                    "DomainZone": "${DomainZone}",
+                    "DomainZone": "${HostedZoneId}",
                     "APIDomain": "api.${Domain}",
                     "WebDomain": "${Domain}",
                     "Auth0Domain": "${Auth0Domain}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
                     "Auth0CloudFormationSecretsRole": "${Auth0CloudFormationSecretsRole}"
                   }
+                - HostedZoneId: !If [CreateHostedZone, !Ref DomainZone, !Ref HostedZone]
               InputArtifacts:
                 - Name: Deploy
               RunOrder: 1
