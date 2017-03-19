@@ -1160,7 +1160,7 @@ Resources:
     Properties:
       DomainName: !Ref APIDomain
       RestApiId: !Ref Api
-      Stage: latest
+      Stage: Current
 
   # ApiDnsRecord:
   #   Type: AWS::Route53::RecordSet
