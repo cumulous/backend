@@ -1187,6 +1187,6 @@ Resources:
   # WARNING: this resource should be the last one in this template!
   # We concatenate it with the Swagger template afterwards.
   Api:
-    Type: AWS::ApiGateway::Api
+    Type: AWS::Serverless::Api
     Properties:
       Body: !Sub |-
