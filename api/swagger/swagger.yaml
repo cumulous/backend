@@ -35,9 +35,7 @@ paths:
         - $ref: '#/parameters/QueryPaginationMax'
       responses:
         200:
-          description: The list of projects
-          schema:
-            $ref: '#/definitions/ListOfProjects'
+          $ref: '#/responses/ListOfProjects'
         400:
           description: Invalid request
           schema:
@@ -163,6 +161,12 @@ definitions:
         type: array
         items:
           type: string
+
+responses:
+  ListOfProjects:
+    description: List of projects
+    schema:
+      $ref: '#/definitions/ListOfProjects'
 
 securityDefinitions:
   member_token:
