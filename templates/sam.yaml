@@ -989,7 +989,7 @@ Resources:
   WebACL:
     Type: AWS::WAF::WebACL
     Properties:
-      Name: !Sub 'WebACL for ${WebDomain}'
+      Name: !Sub 'Web ACL for ${WebDomain}'
       MetricName: WebACL
       DefaultAction:
         Type: BLOCK
@@ -1002,7 +1002,7 @@ Resources:
   WebACLRule:
     Type: AWS::WAF::Rule
     Properties:
-      Name: !Sub "WebACL 'ALLOW' rule for ${WebDomain}"
+      Name: !Sub "'Allow' rule for ${WebDomain}"
       MetricName: WebACLAllowRule
       Predicates:
       - DataId: !Ref WebIPSetWhitelist
@@ -1012,10 +1012,10 @@ Resources:
   WebIPSetWhitelist:
     Type: AWS::WAF::IPSet
     Properties:
-      Name: !Sub 'WebACL whitelist for ${WebDomain}'
-      IPSetDescriptors: !GetAtt WebIPSetDescriptors.Descriptors
+      Name: !Sub 'IP whitelist for ${WebDomain}'
+      IPSetDescriptors: !GetAtt WebIPSets.Descriptors
 
-  WebIPSetDescriptors:
+  WebIPSets:
     Type: AWS::CloudFormation::CustomResource
     Properties:
       ServiceToken: !GetAtt GetIPSetDescriptors.Arn
