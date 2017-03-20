@@ -36,10 +36,8 @@ paths:
       responses:
         200:
           $ref: '#/responses/ListOfProjects'
-        400:
-          description: Invalid request
-          schema:
-            $ref: '#/definitions/Error'
+        default:
+          $ref: '#/responses/Error'
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: GET
@@ -157,16 +155,24 @@ definitions:
     minimum: 1
   Error:
     properties:
-      errors:
-        type: array
-        items:
-          type: string
+      message:
+        type: string
 
 responses:
   ListOfProjects:
     description: List of projects
     schema:
       $ref: '#/definitions/ListOfProjects'
+  Error:
+    description: Error response
+    schema:
+      properties:
+        message:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: '#/definitions/Error'
 
 securityDefinitions:
   member_token:
