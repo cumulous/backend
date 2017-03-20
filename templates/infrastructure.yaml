@@ -33,6 +33,13 @@ Parameters:
     Type: String
     AllowedPattern: ^[A-Z0-9]{0,32}$
     Default: ''
+  WebFirewallRanges:
+    Description: "Comma-separated CIDR blocks that should have access to the website [without spaces] (*)"
+    Type: String
+    AllowedPattern: "\
+      ^(1?\\d{0,2}|2[0-4]\\d|25[0-5])(\\.(1?\\d{0,2}|2[0-4]\\d|25[0-5])){3}/([1-2]?[0-9]|3[0-2])\
+      (,(1?\\d{0,2}|2[0-4]\\d|25[0-5])(\\.(1?\\d{0,2}|2[0-4]\\d|25[0-5])){3}/([1-2]?[0-9]|3[0-2]))*$"
+    Default: 0.0.0.0/0
   Auth0Domain:
     Description: "Your Auth0 domain name (*)"
     Type: String
@@ -67,8 +74,13 @@ Metadata:
         Parameters:
           - BetaVPCRange
           - ProductionVPCRange
+      -
+        Label:
+          default: "Web"
+        Parameters:
           - Domain
           - HostedZone
+          - WebFirewallRanges
       -
         Label:
           default: "Auth0"
@@ -175,6 +187,7 @@ Resources:
                     "DomainZone": "${HostedZoneId}",
                     "APIDomain": "beta.api.${Domain}",
                     "WebDomain": "beta.${Domain}",
+                    "WebFirewallRanges": "${WebFirewallRanges}",
                     "Auth0Domain": "${Auth0Domain}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
                     "Auth0CloudFormationClientSecret": "${Auth0CloudFormationClientSecret}",
@@ -235,6 +248,7 @@ Resources:
                     "DomainZone": "${HostedZoneId}",
                     "APIDomain": "api.${Domain}",
                     "WebDomain": "${Domain}",
+                    "WebFirewallRanges": "${WebFirewallRanges}",
                     "Auth0Domain": "${Auth0Domain}",
                     "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
                     "Auth0CloudFormationSecretsRole": "${Auth0CloudFormationSecretsRole}"

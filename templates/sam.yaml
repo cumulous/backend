@@ -22,6 +22,8 @@ Parameters:
     Type: String
   WebDomain:
     Type: String
+  WebFirewallRanges:
+    Type: CommaDelimitedList
   Auth0Domain:
     Type: String
   Auth0CloudFormationClientID:
@@ -983,6 +985,49 @@ Resources:
     Type: AWS::CertificateManager::Certificate
     Properties:
       DomainName: !Ref WebDomain
+
+  WebACL:
+    Type: AWS::WAF::WebACL
+    Properties:
+      Name: !Sub 'WebACL for ${WebDomain}'
+      MetricName: WebACL
+      DefaultAction:
+        Type: BLOCK
+      Rules:
+      - Action:
+          Type: ALLOW
+        Priority: 1
+        RuleId: !Ref WebACLRule
+
+  WebACLRule:
+    Type: AWS::WAF::Rule
+    Properties:
+      Name: !Sub "WebACL 'ALLOW' rule for ${WebDomain}"
+      MetricName: WebACLAllowRule
+      Predicates:
+      - DataId: !Ref WebIPSetWhitelist
+        Negated: false
+        Type: IPMatch
+
+  WebIPSetWhitelist:
+    Type: AWS::WAF::IPSet
+    Properties:
+      Name: !Sub 'WebACL whitelist for ${WebDomain}'
+      IPSetDescriptors: !GetAtt WebIPSetDescriptors.Descriptors
+
+  WebIPSetDescriptors:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt GetIPSetDescriptors.Arn
+      CIDRs: !Ref WebFirewallRanges
+
+  GetIPSetDescriptors:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-GetIPSetDescriptors
+      CodeUri: ../app
+      Handler: web.getIPSetDescriptors
+      Runtime: nodejs4.3
 
   # ApiDomainName:
   #   Type: AWS::CloudFormation::CustomResource
