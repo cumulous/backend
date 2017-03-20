@@ -4,8 +4,8 @@ import * as url from 'url';
 
 import { Callback, Dict } from './types';
 
-export const testEmpty = (array: any[], name: string) => {
-  if (!array || array.length === 0) {
+export const assertNonEmptyArray = (array: any[], name: string) => {
+  if (!Array.isArray(array) || array.length === 0) {
     throw Error('Expected non-empty ' + name + '[]');
   }
 };

@@ -4,7 +4,7 @@ import { Client as SSHClient, ClientChannel as SSHClientChannel, SFTPWrapper } f
 import { ec2, s3 } from './aws';
 import { envNames } from './env';
 import { log } from './log';
-import { testEmpty } from './helpers';
+import { assertNonEmptyArray } from './helpers';
 import { AWSError, Callback } from './types';
 
 // shim to be replaced with a DB lookup
@@ -101,7 +101,7 @@ export function calculateVolumeSizes(instanceType: string, context: any, callbac
 
 export function createVolumes(event: { volumeSizes: number[], Placement: { AvailabilityZone: string }},
                             context: any, callback: Callback) {
-  testEmpty(event.volumeSizes, 'event.volumeSizes');
+  assertNonEmptyArray(event.volumeSizes, 'event.volumeSizes');
   Promise.all(event.volumeSizes
     .map(volumeSize => createVolume(volumeSize, event.Placement.AvailabilityZone)))
     .then(volumeIds => callback(null, volumeIds))
@@ -126,7 +126,7 @@ export function waitForVolumesAvailable(volumeIds: string[], context: any, callb
 }
 
 export function calculateVolumeDevices(volumeIds: string[], context: any, callback: Callback) {
-  testEmpty(volumeIds, 'volumeIds');
+  assertNonEmptyArray(volumeIds, 'volumeIds');
   callback(null, Array.apply(this, Array(volumeIds.length))
     .map((volume: void, volumeIndex: number) =>
       '/dev/sd' + String.fromCharCode('f'.charCodeAt(0) + volumeIndex)));
@@ -134,8 +134,8 @@ export function calculateVolumeDevices(volumeIds: string[], context: any, callba
 
 export function attachVolumes(event: {volumeIds: string[], volumeDevices: string[], InstanceId: string},
                             context: any, callback: Callback) {
-  testEmpty(event.volumeIds, 'event.volumeIds');
-  testEmpty(event.volumeDevices, 'event.volumeDevices');
+  assertNonEmptyArray(event.volumeIds, 'event.volumeIds');
+  assertNonEmptyArray(event.volumeDevices, 'event.volumeDevices');
 
   if (event.volumeIds.length !== event.volumeDevices.length) {
     throw Error('Expected volumeIds[] and volumeDevices[] of equal length');
@@ -165,7 +165,7 @@ export function deleteVolumes(volumeIds: string[], context: any, callback: Callb
 }
 
 function cleanupVolumes(volumeIds: string[], action: string, callback: Callback) {
-  testEmpty(volumeIds, 'volumeIds');
+  assertNonEmptyArray(volumeIds, 'volumeIds');
   Promise.all(volumeIds
     .map(volumeId => cleanupVolume(volumeId, action)))
     .then(() => callback());
@@ -180,7 +180,7 @@ function cleanupVolume(volumeId: string, action: string) {
 
 export function deleteVolumesOnTermination(event: {volumeDevices: string[], InstanceId: string},
                                          context: any, callback: Callback) {
-  testEmpty(event.volumeDevices, 'event.volumeDevices');
+  assertNonEmptyArray(event.volumeDevices, 'event.volumeDevices');
   ec2.modifyInstanceAttribute({
     InstanceId: event.InstanceId,
     BlockDeviceMappings: event.volumeDevices.map(volumeDevice => ({

@@ -61,5 +61,8 @@ export const testArray = (lambda: Lambda, getEvent: () => any,
     it('empty', () => {
       setEvent([]);
     });
+    it('not an array', () => {
+      setEvent({ fake: 'value' });
+    });
   });
 };

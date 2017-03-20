@@ -2,12 +2,12 @@ import { Netmask } from 'netmask';
 
 import { ec2 } from './aws';
 import { envNames } from './env';
-import { testEmpty } from './helpers';
+import { assertNonEmptyArray } from './helpers';
 import { Callback } from './types';
 
 export const calculateSubnets = (event: any, context: any, callback: Callback) => {
   try {
-    testEmpty(event.AvailabilityZones, 'AvailabilityZones');
+    assertNonEmptyArray(event.AvailabilityZones, 'AvailabilityZones');
 
     const vpc = new Netmask(event.VpcRange);
     const subnetBits = countBits(event.AvailabilityZones.length);
@@ -33,8 +33,8 @@ export const createSubnets = (event: { VpcId: string, AvailabilityZones: string[
                             context: any, callback: Callback) => {
   Promise.resolve(event)
     .then(event => {
-      testEmpty(event.AvailabilityZones, 'AvailabilityZones');
-      testEmpty(event.SubnetRanges, 'SubnetRanges');
+      assertNonEmptyArray(event.AvailabilityZones, 'AvailabilityZones');
+      assertNonEmptyArray(event.SubnetRanges, 'SubnetRanges');
       if (event.AvailabilityZones.length !== event.SubnetRanges.length) {
         throw Error('Expected AvailabilityZones[] and SubnetRanges[] of equal length');
       }
@@ -57,7 +57,7 @@ const createSubnet = (vpcId: string, zone: string, subnetRange: string) => {
 
 const handleSubnets = (subnetIds: string[], handler: (subnetId: string) => void, callback: Callback) => {
   Promise.resolve(subnetIds)
-    .then(subnetIds => testEmpty(subnetIds, 'subnetIds'))
+    .then(subnetIds => assertNonEmptyArray(subnetIds, 'subnetIds'))
     .then(() => Promise.all(subnetIds.map(handler)))
     .then(() => callback())
     .catch(callback);
