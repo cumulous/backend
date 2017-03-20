@@ -71,12 +71,10 @@ parameters:
     in: query
     name: status
     description: filter by project status
-    type: array
-    items:
-      type: string
-      enum:
-        - Available
-        - Removed
+    type: string
+    enum:
+      - Available
+      - Removed
   ProjectsQueryIRB:
     in: query
     name: irb
