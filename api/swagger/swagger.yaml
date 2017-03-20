@@ -51,6 +51,7 @@ parameters:
     name: name_contains
     description: part of project name, case-insensitive
     type: string
+    pattern: ^[\w-,. ]{1,64}$
   ProjectsQueryIsMember:
     in: query
     name: is_member
@@ -86,7 +87,7 @@ parameters:
       *projects:describe_details*
       **
     type: string
-    pattern: ^[A-Za-z0-9]{1,64}$
+    pattern: ^[\w-]{1,64}$
   QueryPaginationFrom:
     in: query
     name: from
@@ -186,5 +187,5 @@ securityDefinitions:
         arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/\
         ${Authorizer.Arn}/invocations"
       authorizerCredentials: ${AuthorizerInvocationRole.Arn}
-      identityValidationExpression: '^[\w\-]{36,}\.[\w\-]{128,}\.[\w\-]{256,}$'
+      identityValidationExpression: '^[\w-]{36,}\.[\w-]{128,}\.[\w-]{256,}$'
       authorizerResultTtlInSeconds: 60
