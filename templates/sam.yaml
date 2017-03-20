@@ -1189,4 +1189,4 @@ Resources:
   Api:
     Type: AWS::Serverless::Api
     Properties:
-      Body: !Sub |-
+      DefinitionBody: !Sub |-
