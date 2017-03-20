@@ -1172,17 +1172,17 @@ Resources:
   #       DNSName: !GetAtt ApiDomainName.DistributionDomainName
   #       HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
 
-  ApiStage:
-    Type: AWS::ApiGateway::Stage
-    Properties:
-      StageName: Latest
-      RestApiId: !Ref Api
-      DeploymentId: !Ref ApiDeployment
+  # ApiStage:
+  #   Type: AWS::ApiGateway::Stage
+  #   Properties:
+  #     StageName: Latest
+  #     RestApiId: !Ref Api
+  #     DeploymentId: !Ref ApiDeployment
 
-  ApiDeployment:
-    Type: AWS::ApiGateway::Deployment
-    Properties:
-      RestApiId: !Ref Api
+  # ApiDeployment:
+  #   Type: AWS::ApiGateway::Deployment
+  #   Properties:
+  #     RestApiId: !Ref Api
 
   # WARNING: this resource should be the last one in this template!
   # We concatenate it with the Swagger template afterwards.
