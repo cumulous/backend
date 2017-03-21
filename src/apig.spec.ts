@@ -9,14 +9,15 @@ const fakeCloudFrontDistribution = 'fake-1234.cloudfront.net';
 
 const testMethod = (apiGatewayMethod: any, fakeEvent: () => any, fakeRequest: () => any,
     fakeResponse?: () => any, expectedResponse?: any) => {
-  let spyOnMethod: jasmine.Spy;
 
-  beforeEach(() => {
-    spyOnMethod = spyOn(apiGateway, apiGatewayMethod)
-      .and.returnValue(fakeResolve(fakeResponse ? fakeResponse() : undefined));
-  });
+  describe(`apig.${apiGatewayMethod}() calls`, () => {
+    let spyOnMethod: jasmine.Spy;
 
-  describe('calls', () => {
+    beforeEach(() => {
+      spyOnMethod = spyOn(apiGateway, apiGatewayMethod)
+        .and.returnValue(fakeResolve(fakeResponse ? fakeResponse() : undefined));
+    });
+
     it(`apiGateway.${apiGatewayMethod}() once with correct parameters`, (done: Callback) => {
       (apig as any)[apiGatewayMethod](fakeEvent(), null, () => {
         expect(spyOnMethod).toHaveBeenCalledWith(fakeRequest());
@@ -24,6 +25,7 @@ const testMethod = (apiGatewayMethod: any, fakeEvent: () => any, fakeRequest: ()
         done();
       });
     });
+
     describe('callback', () => {
       describe('with', () => {
         describe('an error if', () => {
