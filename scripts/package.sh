@@ -43,5 +43,5 @@ create_change_set() {
     aws cloudformation create-change-set --change-set-type UPDATE "${parameters}"
 }
 
-create-change-set backend-beta "${BETA_VPC_RANGE}" "beta.api.${DOMAIN_NAME}" "beta.${DOMAIN_NAME}"
-create-change-set backend-release "${RELEASE_VPC_RANGE}" "api.${DOMAIN_NAME}" "${DOMAIN_NAME}"
+create_change_set backend-beta "${BETA_VPC_RANGE}" "beta.api.${DOMAIN_NAME}" "beta.${DOMAIN_NAME}"
+create_change_set backend-release "${RELEASE_VPC_RANGE}" "api.${DOMAIN_NAME}" "${DOMAIN_NAME}"
