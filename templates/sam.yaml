@@ -1033,6 +1033,194 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
 
+  WebOriginAccessIdentity:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupOriginAccessStateMachine
+      Comment: !Ref WebDomain
+      Bucket: !Ref WebBucket
+      Path: !Sub /Id
+
+  StoreOriginAccessIdentity:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-StoreOriginAccessIdentity
+      CodeUri: ../app
+      Handler: web.storeOriginAccessIdentity
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: s3:PutObject
+            Resource:
+              - !Sub arn:aws:s3:::${WebBucket}/Id
+
+  RetrieveOriginAccessIdentity:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-RetrieveOriginAccessIdentity
+      CodeUri: ../app
+      Handler: web.retrieveOriginAccessIdentity
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: s3:GetObject
+            Resource:
+              - !Sub arn:aws:s3:::${WebBucket}/Id
+
+  CreateOriginAccessIdentity:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CreateOriginAccessIdentity
+      CodeUri: ../app
+      Handler: web.createOriginAccessIdentity
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: cloudfront:CreateCloudFrontOriginAccessIdentity
+            Resource: '*'
+
+  UpdateOriginAccessIdentity:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-UpdateOriginAccessIdentity
+      CodeUri: ../app
+      Handler: web.updateOriginAccessIdentity
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: cloudfront:UpdateCloudFrontOriginAccessIdentity
+            Resource: '*'
+
+  DeleteOriginAccessIdentity:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DeleteOriginAccessIdentity
+      CodeUri: ../app
+      Handler: web.deleteOriginAccessIdentity
+      Runtime: nodejs4.3
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: cloudfront:DeleteCloudFrontOriginAccessIdentity
+            Resource: '*'
+
+  SetupOriginAccessStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupOriginAccess",
+          "States": {
+            "SetupOriginAccess": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "CheckCreate",
+                "States": {
+                  "CheckCreate": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Create",
+                        "Next": "CreateOriginAccessIdentity"
+                      }
+                    ],
+                    "Default": "RetrieveOriginAccessIdentity"
+                  },
+                  "CreateOriginAccessIdentity": {
+                    "Type": "Task",
+                    "ResultPath": "$.Data",
+                    "Resource": "${CreateOriginAccessIdentity.Arn}",
+                    "Next": "StoreOriginAccessIdentity"
+                  },
+                  "StoreOriginAccessIdentity": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "${StoreOriginAccessIdentity.Arn}",
+                    "Next": "Success"
+                  },
+                  "RetrieveOriginAccessIdentity": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.ResourceProperties.Id",
+                    "Resource": "${RetrieveOriginAccessIdentity.Arn}",
+                    "Next": "ChooseUpdateOrDelete"
+                  },
+                  "ChooseUpdateOrDelete": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Update",
+                        "Next": "UpdateOriginAccessIdentity"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "DeleteOriginAccessIdentity"
+                      }
+                    ]
+                  },
+                  "UpdateOriginAccessIdentity": {
+                    "Type": "Task",
+                    "ResultPath": "$.Data",
+                    "Resource": "${UpdateOriginAccessIdentity.Arn}",
+                    "Next": "StoreOriginAccessIdentity"
+                  },
+                  "DeleteOriginAccessIdentity": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Id",
+                    "ResultPath": null,
+                    "Resource": "${DeleteOriginAccessIdentity.Arn}",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
+
   # ApiDomainName:
   #   Type: AWS::CloudFormation::CustomResource
   #   Properties:
