@@ -2,7 +2,6 @@ version: 0.1
 phases:
   install:
     commands:
-      - pip install requests[security]
       - pip install --upgrade awscli
       - npm install
   pre_build:
