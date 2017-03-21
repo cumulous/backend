@@ -23,6 +23,7 @@ create_change_set() {
     --stack-name ${stack_name} \
     --template-url ${template_url} \
     --change-set-name Deploy \
+    --capabilities CAPABILITY_IAM \
     --parameters \
       ParameterKey=VpcRange,ParameterValue=${VPC_RANGE} \
       ParameterKey=EncryptionKeyId,ParameterValue=${ENCRYPTION_KEY_ID} \
