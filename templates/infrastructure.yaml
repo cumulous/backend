@@ -623,6 +623,36 @@ Resources:
                   - acm:DescribeCertificate
                   - acm:DeleteCertificate
                 Resource: '*'
+              - Effect: Allow
+                Action:
+                  - waf:GetChangeToken
+                  - waf:GetChangeTokenStatus
+                Resource:
+                  - !Sub arn:aws:waf::${AWS::AccountId}:changetoken/*
+              - Effect: Allow
+                Action:
+                  - waf:CreateWebACL
+                  - waf:GetWebACL
+                  - waf:UpdateWebACL
+                  - waf:DeleteWebACL
+                Resource:
+                  - !Sub arn:aws:waf::${AWS::AccountId}:webacl/*
+              - Effect: Allow
+                Action:
+                  - waf:CreateRule
+                  - waf:GetRule
+                  - waf:UpdateRule
+                  - waf:DeleteRule
+                Resource:
+                  - !Sub arn:aws:waf::${AWS::AccountId}:rule/*
+              - Effect: Allow
+                Action:
+                  - waf:CreateIPSet
+                  - waf:GetIPSet
+                  - waf:UpdateIPSet
+                  - waf:DeleteIPSet
+                Resource:
+                  - !Sub arn:aws:waf::${AWS::AccountId}:ipset/*
 
   SSHKeyPutRole:
     Type: AWS::IAM::Role
