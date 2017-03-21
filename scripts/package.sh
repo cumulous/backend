@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 SOURCE_TEMPLATE="tmp/sam.yaml"
 OUTPUT_TEMPLATE="bin/sam.yaml"
 
