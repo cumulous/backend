@@ -295,8 +295,6 @@ Resources:
         EnvironmentVariables:
           - Name: ARTIFACTS_BUCKET
             Value: !Ref ArtifactsBucket
-          - Name: BACKEND_STAGE
-            Value: beta
       ServiceRole: !Ref BuildRole
 
   EncryptionKeyAlias:
