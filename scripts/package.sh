@@ -42,7 +42,6 @@ create_change_set() {
       ParameterKey=Auth0CloudFormationSecretsRole,ParameterValue=${AUTH0_SECRETS_ROLE} "
 
   aws s3 cp "${OUTPUT_TEMPLATE}" "${template_url}"
-  echo ${parameters}
   aws cloudformation create-change-set --change-set-type CREATE ${parameters} ||
     aws cloudformation create-change-set --change-set-type UPDATE ${parameters}
 }
