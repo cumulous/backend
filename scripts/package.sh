@@ -39,8 +39,8 @@ create_change_set() {
       ParameterKey=Auth0CloudFormationSecretsRole,ParameterValue='${AUTH0_SECRETS_ROLE}' "
 
   aws s3 cp "${OUTPUT_TEMPLATE}" "${template_url}"
-  aws cloudformation create-change-set --change-set-type CREATE "${parameters}" ||
-    aws cloudformation create-change-set --change-set-type UPDATE "${parameters}"
+  aws cloudformation create-change-set --change-set-type CREATE ${parameters} ||
+    aws cloudformation create-change-set --change-set-type UPDATE ${parameters}
 }
 
 create_change_set backend-beta "${BETA_VPC_RANGE}" "beta.api.${DOMAIN_NAME}" "beta.${DOMAIN_NAME}"
