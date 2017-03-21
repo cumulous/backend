@@ -126,6 +126,7 @@ Resources:
       ArtifactStore:
         Type: S3
         Location: !Ref ArtifactsBucket
+      RestartExecutionOnUpdate: true
       Stages:
         -
           Name: Source
