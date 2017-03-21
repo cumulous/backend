@@ -548,6 +548,10 @@ Resources:
                   - !Sub arn:aws:s3:::${ArtifactsBucket}/${RepoName}/Deploy/*
               - Effect: Allow
                 Action:
+                  - s3:CreateBucket
+                Resource: '*'
+              - Effect: Allow
+                Action:
                   - lambda:CreateFunction
                   - lambda:UpdateFunctionCode
                   - lambda:GetFunction
