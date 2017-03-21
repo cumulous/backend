@@ -161,43 +161,6 @@ Resources:
         -
           Name: Beta
           Actions:
-            -
-              Name: CreateChangeSet
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Provider: CloudFormation
-                Version: 1
-              Configuration:
-                ActionMode: CHANGE_SET_REPLACE
-                ChangeSetName: Deploy
-                StackName: !Sub ${RepoName}-beta
-                Capabilities: CAPABILITY_IAM
-                TemplatePath: Deploy::sam.yaml
-                RoleArn: !GetAtt DeployRole.Arn
-                ParameterOverrides: !Sub
-                - |-
-                  {
-                    "VpcRange": "${BetaVPCRange}",
-                    "EncryptionKeyId": "${EncryptionKey}",
-                    "SecretsBucket": "${SecretsBucket}",
-                    "SSHKeyName": "${RepoName}-beta",
-                    "SSHKeyS3Path" : "ssh/${RepoName}-beta.pem",
-                    "SSHKeyPutRole": "${SSHKeyPutRole}",
-                    "SSHKeyGetRole": "${SSHKeyGetRole}",
-                    "DomainZone": "${HostedZoneId}",
-                    "APIDomain": "beta.api.${Domain}",
-                    "WebDomain": "beta.${Domain}",
-                    "WebFirewallRanges": "${WebFirewallRanges}",
-                    "Auth0Domain": "${Auth0Domain}",
-                    "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
-                    "Auth0CloudFormationClientSecret": "${Auth0CloudFormationClientSecret}",
-                    "Auth0CloudFormationSecretsRole": "${Auth0CloudFormationSecretsRole}"
-                  }
-                - HostedZoneId: !If [CreateHostedZone, !Ref DomainZone, !Ref HostedZone]
-              InputArtifacts:
-                - Name: Deploy
-              RunOrder: 1
             - Name: ApproveChangeSet
               ActionTypeId:
                 Category: Approval
@@ -222,42 +185,6 @@ Resources:
         -
           Name: Release
           Actions:
-            -
-              Name: CreateChangeSet
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Provider: CloudFormation
-                Version: 1
-              Configuration:
-                ActionMode: CHANGE_SET_REPLACE
-                ChangeSetName: Deploy
-                StackName: !Sub ${RepoName}-release
-                Capabilities: CAPABILITY_IAM
-                TemplatePath: Deploy::sam.yaml
-                RoleArn: !GetAtt DeployRole.Arn
-                ParameterOverrides: !Sub
-                - |-
-                  {
-                    "VpcRange": "${ProductionVPCRange}",
-                    "EncryptionKeyId": "${EncryptionKey}",
-                    "SecretsBucket": "${SecretsBucket}",
-                    "SSHKeyName": "${RepoName}-release",
-                    "SSHKeyS3Path" : "ssh/${RepoName}-release.pem",
-                    "SSHKeyPutRole": "${SSHKeyPutRole}",
-                    "SSHKeyGetRole": "${SSHKeyGetRole}",
-                    "DomainZone": "${HostedZoneId}",
-                    "APIDomain": "api.${Domain}",
-                    "WebDomain": "${Domain}",
-                    "WebFirewallRanges": "${WebFirewallRanges}",
-                    "Auth0Domain": "${Auth0Domain}",
-                    "Auth0CloudFormationClientID": "${Auth0CloudFormationClientID}",
-                    "Auth0CloudFormationSecretsRole": "${Auth0CloudFormationSecretsRole}"
-                  }
-                - HostedZoneId: !If [CreateHostedZone, !Ref DomainZone, !Ref HostedZone]
-              InputArtifacts:
-                - Name: Deploy
-              RunOrder: 1
             - Name: ApproveChangeSet
               ActionTypeId:
                 Category: Approval
@@ -295,6 +222,30 @@ Resources:
         EnvironmentVariables:
           - Name: ARTIFACTS_BUCKET
             Value: !Ref ArtifactsBucket
+          - Name: SECRETS_BUCKET
+            Value: !Ref SecretsBucket
+          - Name: ENCRYPTION_KEY_ID
+            Value: !Ref EncryptionKey
+          - Name: BETA_VPC_RANGE
+            Value: !Ref BetaVPCRange
+          - Name: RELEASE_VPC_RANGE
+            Value: !Ref ProductionVPCRange
+          - Name: DOMAIN_ZONE
+            Value: !If [CreateHostedZone, !Ref DomainZone, !Ref HostedZone]
+          - Name: WEB_FIREWALL_RANGES
+            Value: !Ref WebFirewallRanges
+          - Name: AUTH0_DOMAIN
+            Value: !Ref Auth0Domain
+          - Name: AUTH0_CLIENT_ID
+            Value: !Ref Auth0CloudFormationClientID
+          - Name: AUTH0_CLIENT_SECRET
+            Value: !Ref Auth0CloudFormationClientSecret
+          - Name: AUTH0_SECRETS_ROLE
+            Value: !Ref Auth0CloudFormationSecretsRole
+          - Name: SSH_KEY_PUT_ROLE
+            Value: !Ref SSHKeyPutRole
+          - Name: SSH_KEY_GET_ROLE
+            Value: !Ref SSHKeyGetRole
       ServiceRole: !Ref BuildRole
 
   EncryptionKeyAlias:
@@ -435,7 +386,6 @@ Resources:
                 Action:
                   - cloudformation:DescribeStacks
                   - cloudformation:DescribeChangeSet
-                  - cloudformation:CreateChangeSet
                   - cloudformation:ExecuteChangeSet
                   - cloudformation:DeleteChangeSet
                 Resource:
@@ -485,6 +435,14 @@ Resources:
                   - s3:ListBucket
                 Resource:
                   - !Sub arn:aws:s3:::${ArtifactsBucket}
+              - Effect: Allow
+                Action:
+                  - cloudformation:DescribeStacks
+                  - cloudformation:DescribeChangeSet
+                  - cloudformation:CreateChangeSet
+                Resource:
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${RepoName}-beta/*
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${RepoName}-release/*
 
   DeployRole:
     Type: AWS::IAM::Role

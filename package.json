@@ -8,7 +8,7 @@
     "clean:app": "rimraf app/*.spec.js app/package.json app/fixtures",
     "copy:configs": "copyfiles -f package.json bin/swagger.json src/*.sh templates/*.json app/",
     "build:modules": "npm i --prod --prefix app/",
-    "package": "run-s build && aws cloudformation package --template-file tmp/sam.yaml --output-template-file bin/sam.yaml",
+    "package": "./scripts/package.sh",
     "rm": "rimraf",
     "server": "lite-server",
     "start": "run-p server",
