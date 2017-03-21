@@ -1029,6 +1029,10 @@ Resources:
       Handler: web.getIPSetDescriptors
       Runtime: nodejs4.3
 
+  WebBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+
   # ApiDomainName:
   #   Type: AWS::CloudFormation::CustomResource
   #   Properties:
