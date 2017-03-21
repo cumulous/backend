@@ -168,7 +168,10 @@ Resources:
                 Provider: Manual
                 Version: 1
               Configuration:
-                NotificationArn: !If [CreateNotification, !Ref PipelineNotification, !Ref 'AWS::NoValue']
+                NotificationArn: !If
+                  - CreateNotification
+                  - !Ref PipelineNotification
+                  - !Ref AWS::NoValue
               RunOrder: 2
             -
               Name: Deploy
@@ -192,7 +195,10 @@ Resources:
                 Provider: Manual
                 Version: 1
               Configuration:
-                NotificationArn: !If [CreateNotification, !Ref PipelineNotification, !Ref 'AWS::NoValue']
+                NotificationArn: !If
+                  - CreateNotification
+                  - !Ref PipelineNotification
+                  - !Ref AWS::NoValue
               RunOrder: 2
             -
               Name: Deploy
@@ -340,8 +346,8 @@ Resources:
 
               - !If
                 - EnableStackAdmin
-                - !Sub 'arn:aws:iam::${AWS::AccountId}:user/${StackAdmin}'
-                - !Ref 'AWS::NoValue'
+                - !Sub arn:aws:iam::${AWS::AccountId}:user/${StackAdmin}
+                - !Ref AWS::NoValue
             Action:
               - kms:*
             Resource: '*'
