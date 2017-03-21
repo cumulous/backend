@@ -236,6 +236,8 @@ Resources:
             Value: !Ref BetaVPCRange
           - Name: RELEASE_VPC_RANGE
             Value: !Ref ProductionVPCRange
+          - Name: DOMAIN
+            Value: !Ref Domain
           - Name: DOMAIN_ZONE
             Value: !If [CreateHostedZone, !Ref DomainZone, !Ref HostedZone]
           - Name: WEB_FIREWALL_RANGES
