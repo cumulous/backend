@@ -9,8 +9,7 @@ phases:
       - npm run test:unit:once
   build:
     commands:
-      - npm run package:app -- --s3-bucket ${ARTIFACTS_BUCKET} --s3-prefix lambda
-      - npm run package:api
+      - npm run package -- --s3-bucket ${ARTIFACTS_BUCKET} --s3-prefix lambda
 artifacts:
   files:
     - bin/sam.yaml

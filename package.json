@@ -8,8 +8,7 @@
     "clean:app": "rimraf app/*.spec.js app/package.json app/fixtures",
     "copy:configs": "copyfiles -f package.json bin/swagger.json src/*.sh templates/*.json app/",
     "build:modules": "npm i --prod --prefix app/",
-    "package:app": "run-s build && aws cloudformation package --template-file tmp/sam.yaml --output-template-file bin/sam.yaml",
-    "package:api": "./scripts/swagger-ui.sh",
+    "package": "run-s build && aws cloudformation package --template-file tmp/sam.yaml --output-template-file bin/sam.yaml",
     "rm": "rimraf",
     "server": "lite-server",
     "start": "run-p server",
@@ -56,7 +55,6 @@
     "remap-istanbul": "^0.7.0",
     "rimraf": "^2.5.4",
     "swagger": "^0.7.5",
-    "swagger-ui": "^2.2.10",
     "ts-node": "^1.7.0",
     "typescript": "^2.0.10"
   }
