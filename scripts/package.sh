@@ -18,10 +18,9 @@ create_change_set() {
   local api_domain="$2"
   local web_domain="$3"
 
-  local template_url="https://${ARTIFACTS_BUCKET}.s3.amazonaws.com/${stack_name}/sam.yaml"
   local parameters=" \
     --stack-name ${stack_name} \
-    --template-url ${template_url} \
+    --template-url https://${ARTIFACTS_BUCKET}.s3.amazonaws.com/${stack_name}/sam.yaml \
     --change-set-name Deploy \
     --capabilities CAPABILITY_IAM \
     --parameters \
@@ -41,7 +40,8 @@ create_change_set() {
       ParameterKey=Auth0CloudFormationClientSecret,ParameterValue=${AUTH0_CLIENT_SECRET} \
       ParameterKey=Auth0CloudFormationSecretsRole,ParameterValue=${AUTH0_SECRETS_ROLE} "
 
-  aws s3 cp "${OUTPUT_TEMPLATE}" "${template_url}"
+  aws s3 cp "${OUTPUT_TEMPLATE}" "s3://${ARTIFACTS_BUCKET}/${stack_name}/sam.yaml"
+  echo ${parameters}
   aws cloudformation create-change-set --change-set-type CREATE ${parameters} ||
     aws cloudformation create-change-set --change-set-type UPDATE ${parameters}
 }
