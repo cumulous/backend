@@ -18,7 +18,7 @@ create_change_set() {
   local api_domain="$2"
   local web_domain="$3"
 
-  local template_url="s3://${ARTIFACTS_BUCKET}/${stack_name}/sam.yaml"
+  local template_url="https://${ARTIFACTS_BUCKET}.s3.amazonaws.com/${stack_name}/sam.yaml"
   local parameters=" \
     --stack-name ${stack_name} \
     --template-url ${template_url} \
