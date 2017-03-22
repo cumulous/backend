@@ -140,7 +140,7 @@ Resources:
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: !Ref RepoName
+      Name: !Ref AWS::StackName
       RoleArn: !GetAtt PipelineRole.Arn
       ArtifactStore:
         Type: S3
@@ -200,7 +200,7 @@ Resources:
               Configuration:
                 ActionMode: CHANGE_SET_EXECUTE
                 ChangeSetName: Deploy
-                StackName: !Sub ${RepoName}-beta
+                StackName: !Sub ${AWS::StackName}-beta
               RunOrder: 3
         -
           Name: Release
@@ -227,13 +227,13 @@ Resources:
               Configuration:
                 ActionMode: CHANGE_SET_EXECUTE
                 ChangeSetName: Deploy
-                StackName: !Sub ${RepoName}-release
+                StackName: !Sub ${AWS::StackName}-release
               RunOrder: 3
 
   BuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Ref RepoName
+      Name: !Ref AWS::StackName
       Artifacts:
         Type: CODEPIPELINE
       Source:
@@ -243,6 +243,8 @@ Resources:
         Image: aws/codebuild/nodejs:4.3.2
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
+          - Name: STACK_NAME
+            Value: !Sub ${AWS::StackName}
           - Name: ARTIFACTS_BUCKET
             Value: !Ref ArtifactsBucket
           - Name: SECRETS_BUCKET
@@ -282,7 +284,7 @@ Resources:
   EncryptionKeyAlias:
     Type: AWS::KMS::Alias
     Properties:
-      AliasName: !Sub alias/${RepoName}
+      AliasName: !Sub alias/${AWS::StackName}
       TargetKeyId: !Ref EncryptionKey
 
   EncryptionKey:
@@ -349,25 +351,25 @@ Resources:
 
               - !GetAtt SSHKeyPutRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyPutRole}/${RepoName}-beta-CreateSSHKey"
+                      ${SSHKeyPutRole}/${AWS::StackName}-beta-CreateSSHKey"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyPutRole}/${RepoName}-release-CreateSSHKey"
+                      ${SSHKeyPutRole}/${AWS::StackName}-release-CreateSSHKey"
 
               - !GetAtt SSHKeyGetRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyGetRole}/${RepoName}-beta-TransferInitScript"
+                      ${SSHKeyGetRole}/${AWS::StackName}-beta-TransferInitScript"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyGetRole}/${RepoName}-release-TransferInitScript"
+                      ${SSHKeyGetRole}/${AWS::StackName}-release-TransferInitScript"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyGetRole}/${RepoName}-beta-ExecuteInitScript"
+                      ${SSHKeyGetRole}/${AWS::StackName}-beta-ExecuteInitScript"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyGetRole}/${RepoName}-release-ExecuteInitScript"
+                      ${SSHKeyGetRole}/${AWS::StackName}-release-ExecuteInitScript"
 
               - !GetAtt Auth0CloudFormationSecretsRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0CloudFormationSecretsRole}/${RepoName}-beta-RotateAndStoreAuth0Secret"
+                      ${Auth0CloudFormationSecretsRole}/${AWS::StackName}-beta-RotateAndStoreAuth0Secret"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0CloudFormationSecretsRole}/${RepoName}-release-RotateAndStoreAuth0Secret"
+                      ${Auth0CloudFormationSecretsRole}/${AWS::StackName}-release-RotateAndStoreAuth0Secret"
 
               - !If
                 - EnableStackAdmin
@@ -406,7 +408,7 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                 Resource:
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/${RepoName}/*
+                  - !Sub arn:aws:s3:::${ArtifactsBucket}/${AWS::StackName}/*
               - Effect: Allow
                 Action:
                   - codebuild:BatchGetBuilds
@@ -420,8 +422,8 @@ Resources:
                   - cloudformation:ExecuteChangeSet
                   - cloudformation:DeleteChangeSet
                 Resource:
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${RepoName}-beta/*
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${RepoName}-release/*
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}-beta/*
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}-release/*
               - Effect: Allow
                 Action:
                   - iam:PassRole
@@ -459,7 +461,7 @@ Resources:
                   - s3:PutObject
                 Resource:
                   - !Sub arn:aws:s3:::${ArtifactsBucket}/lambda/*
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/${RepoName}*
+                  - !Sub arn:aws:s3:::${ArtifactsBucket}/${AWS::StackName}*
                   - !Sub arn:aws:s3:::${ArtifactsBucket}/api/beta/*
               - Effect: Allow
                 Action:
@@ -472,8 +474,8 @@ Resources:
                   - cloudformation:DeleteChangeSet
                 Resource:
                   - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${RepoName}-beta/*
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${RepoName}-release/*
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}-beta/*
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}-release/*
 
   DeployRole:
     Type: AWS::IAM::Role
@@ -504,7 +506,7 @@ Resources:
                   - iam:PassRole
                   - iam:DeleteRole
                 Resource:
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-*
               - Effect: Allow
                 Action:
                   - iam:PassRole
@@ -520,9 +522,9 @@ Resources:
                     'iam:PolicyArn':
                       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
                       - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
-                      - !Sub arn:aws:iam::${AWS::AccountId}:policy/${RepoName}-*
+                      - !Sub arn:aws:iam::${AWS::AccountId}:policy/${AWS::StackName}-*
                 Resource:
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/${RepoName}-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-*
               - Effect: Allow
                 Action:
                   - states:CreateStateMachine
@@ -551,7 +553,7 @@ Resources:
                   - lambda:AddPermission
                   - lambda:RemovePermission
                 Resource:
-                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${RepoName}-*
+                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-*
               - Effect: Allow
                 Action:
                   - events:DescribeRule
@@ -560,7 +562,7 @@ Resources:
                   - events:PutTargets
                   - events:RemoveTargets
                 Resource:
-                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${RepoName}-*
+                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}-*
               - Effect: Allow
                 Action:
                   - ec2:CreateVpc
@@ -590,7 +592,7 @@ Resources:
                   - ec2:DeleteInternetGateway
                 Condition:
                   StringLike:
-                    'ec2:ResourceTag/Name': !Sub ${RepoName}-*
+                    'ec2:ResourceTag/Name': !Sub ${AWS::StackName}-*
                 Resource:
                   - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*
                   - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*
