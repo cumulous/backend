@@ -45,6 +45,62 @@ paths:
           arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/\
           ${GetProjects.Arn}/invocations"
 
+definitions:
+  Project:
+    required:
+      - id
+      - name
+      - status
+    properties:
+      id:
+        $ref: '#/definitions/ProjectId'
+      name:
+        $ref: '#/definitions/ProjectName'
+      hidden:
+        $ref: '#/definitions/ProjectHidden'
+      status:
+        $ref: '#/definitions/ProjectStatus'
+      IRB:
+        $ref: '#/definitions/ProjectIRB'
+  ProjectId:
+    description: Unique identifier for a project
+    type: string
+    format: uuid
+  ProjectName:
+    description: Project name
+    type: string
+    pattern: ^[\w-., ]{1,100}$
+  ProjectHidden:
+    description:
+      Indicates whether project name and status are hidden from public view
+    type: boolean
+  ProjectStatus:
+    description: Project status
+    type: string
+    enum:
+      - Available
+      - Removed
+  ProjectIRB:
+    description: project IRB identifier
+    type: string
+    pattern: ^[\w-.]{1,100}$
+  ListOfProjects:
+    type: object
+    properties:
+      projects:
+        type: array
+        items:
+          $ref: '#/definitions/Project'
+      next:
+        $ref: '#/definitions/PaginationNext'
+  PaginationNext:
+    type: integer
+    minimum: 1
+  Error:
+    properties:
+      message:
+        type: string
+
 parameters:
   ProjectsQueryNameContains:
     in: query
@@ -101,62 +157,6 @@ parameters:
     type: integer
     minimum: 1
     default: 10
-
-definitions:
-  Project:
-    required:
-      - id
-      - name
-      - status
-    properties:
-      id:
-        $ref: '#/definitions/ProjectId'
-      name:
-        $ref: '#/definitions/ProjectName'
-      hidden:
-        $ref: '#/definitions/ProjectHidden'
-      status:
-        $ref: '#/definitions/ProjectStatus'
-      IRB:
-        $ref: '#/definitions/ProjectIRB'
-  ProjectId:
-    description: Unique identifier for a project
-    type: string
-    format: uuid
-  ProjectName:
-    description: Project name
-    type: string
-    pattern: ^[\w-., ]{1,100}$
-  ProjectHidden:
-    description:
-      Indicates whether project name and status are hidden from public view
-    type: boolean
-  ProjectStatus:
-    description: Project status
-    type: string
-    enum:
-      - Available
-      - Removed
-  ProjectIRB:
-    description: project IRB identifier
-    type: string
-    pattern: ^[\w-.]{1,100}$
-  ListOfProjects:
-    type: object
-    properties:
-      projects:
-        type: array
-        items:
-          $ref: '#/definitions/Project'
-      next:
-        $ref: '#/definitions/PaginationNext'
-  PaginationNext:
-    type: integer
-    minimum: 1
-  Error:
-    properties:
-      message:
-        type: string
 
 responses:
   ListOfProjects:
