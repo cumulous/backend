@@ -126,7 +126,7 @@ definitions:
   ProjectName:
     description: Project name
     type: string
-    pattern: ^[A-Za-z0-9 ,]{1,80}$
+    pattern: ^[\w-., ]{1,100}$
   ProjectHidden:
     description:
       Indicates whether project name and status are hidden from public view
@@ -140,7 +140,7 @@ definitions:
   ProjectIRB:
     description: project IRB identifier
     type: string
-    pattern: ^[A-Za-z0-9]{1,64}$
+    pattern: ^[\w-.]{1,100}$
   ListOfProjects:
     type: object
     properties:
