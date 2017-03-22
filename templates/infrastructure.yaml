@@ -63,12 +63,12 @@ Parameters:
   Auth0CloudFormationClientID:
     Description: "Your Auth0 CloudFormation cliend ID (*)"
     Type: String
-    AllowedPattern: ^\w{32}$
+    MinLength: 1
   Auth0CloudFormationClientSecret:
     Description: "Your Auth0 CloudFormation cliend secret (*)"
     Type: String
     NoEcho: true
-    AllowedPattern: ^[\w-]{64}$
+    MinLength: 1
 
 Metadata:
   AWS::CloudFormation::Interface:
