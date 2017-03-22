@@ -1040,7 +1040,7 @@ Resources:
       StateMachine: !Ref SetupOriginAccessStateMachine
       Comment: !Ref WebDomain
       Bucket: !Ref WebBucket
-      Path: !Sub /Id
+      Path: !Sub Id
 
   StoreOriginAccessIdentity:
     Type: AWS::Serverless::Function
