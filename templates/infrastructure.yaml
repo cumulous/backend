@@ -444,6 +444,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - cloudformation:CreateChangeSet
+                  - cloudformation:DeleteChangeSet
                 Resource:
                   - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
                   - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${RepoName}-beta/*

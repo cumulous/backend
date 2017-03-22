@@ -40,7 +40,8 @@ create_change_set() {
       ParameterKey=Auth0CloudFormationSecretsRole,ParameterValue=${AUTH0_SECRETS_ROLE} "
 
   aws s3 cp "${OUTPUT_TEMPLATE}" "s3://${ARTIFACTS_BUCKET}/${stack_name}/sam.yaml"
-  aws cloudformation create-change-set --change-set-type UPDATE ${parameters} ||
+  aws cloudformation delete-change-set --change-set-name Deploy --stack-name ${stack_name} ||
+  aws cloudformation create-change-set ${parameters} ||
     aws cloudformation create-change-set --change-set-type CREATE ${parameters}
 }
 
