@@ -666,7 +666,10 @@ Resources:
                   - route53:ListResourceRecordSets
                   - route53:ChangeResourceRecordSets
                 Resource:
-                  - !Sub arn:aws:route53:::hostedzone/${DomainZone}
+                  - !If
+                    - CreateHostedZone
+                    - !Sub arn:aws:route53:::hostedzone/${DomainZone}
+                    - !Sub arn:aws:route53:::hostedzone/${HostedZone}
               - Effect: Allow
                 Action:
                   - route53:GetChange
