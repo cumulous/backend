@@ -156,8 +156,6 @@ Resources:
                 ProjectName: !Ref BuildProject
               InputArtifacts:
                 - Name: Source
-              OutputArtifacts:
-                - Name: Deploy
         -
           Name: Beta
           Actions:

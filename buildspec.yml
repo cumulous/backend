@@ -10,7 +10,3 @@ phases:
   build:
     commands:
       - npm run package
-artifacts:
-  files:
-    - bin/sam.yaml
-  discard-paths: yes
