@@ -1039,6 +1039,19 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
 
+  WebBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: s3:GetObject
+            Principal:
+              CanonicalUser: !GetAtt WebOriginAccessIdentity.S3CanonicalUserId
+            Resource:
+              - !Sub arn:aws:s3:::${WebBucket}/*/*
+
   WebOriginAccessIdentity:
     Type: AWS::CloudFormation::CustomResource
     Properties:

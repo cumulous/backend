@@ -541,6 +541,14 @@ Resources:
                 Resource: '*'
               - Effect: Allow
                 Action:
+                  - s3:GetBucketPolicy
+                  - s3:PutBucketPolicy
+                  - s3:DeleteBucketPolicy
+                Resource:
+                  - !Sub arn:aws:s3:::${AWS::StackName}-beta-*
+                  - !Sub arn:aws:s3:::${AWS::StackName}-release-*
+              - Effect: Allow
+                Action:
                   - lambda:CreateFunction
                   - lambda:UpdateFunctionCode
                   - lambda:GetFunction
