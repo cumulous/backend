@@ -443,10 +443,9 @@ Resources:
                   - !Sub arn:aws:s3:::${ArtifactsBucket}
               - Effect: Allow
                 Action:
-                  - cloudformation:DescribeStacks
-                  - cloudformation:DescribeChangeSet
                   - cloudformation:CreateChangeSet
                 Resource:
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
                   - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${RepoName}-beta/*
                   - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${RepoName}-release/*
 
@@ -469,7 +468,7 @@ Resources:
                 Action:
                   - cloudformation:CreateChangeSet
                 Resource:
-                  - arn:aws:cloudformation:us-east-1:aws:transform/Serverless-2016-10-31
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
               - Effect: Allow
                 Action:
                   - iam:GetRole
