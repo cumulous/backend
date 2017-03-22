@@ -5,8 +5,6 @@ set -e
 SOURCE_TEMPLATE="tmp/sam.yaml"
 OUTPUT_TEMPLATE="bin/sam.yaml"
 
-run-s build
-
 aws cloudformation package \
   --template-file "${SOURCE_TEMPLATE}" \
   --output-template-file "${OUTPUT_TEMPLATE}" \
