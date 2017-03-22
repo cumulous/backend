@@ -16,6 +16,7 @@ create_change_set() {
   local vpc_range="$2"
   local api_domain="$3"
   local web_domain="$4"
+  local web_bucket="$5"
 
   local parameters=" \
     --stack-name ${stack_name} \
@@ -33,6 +34,7 @@ create_change_set() {
       ParameterKey=DomainZone,ParameterValue=${DOMAIN_ZONE} \
       ParameterKey=APIDomain,ParameterValue=${api_domain} \
       ParameterKey=WebDomain,ParameterValue=${web_domain} \
+      ParameterKey=WebBucket,ParameterValue=${web_bucket} \
       ParameterKey=WebTTL,ParameterValue=${WEB_TTL} \
       ParameterKey=WebPriceClass,ParameterValue=${WEB_PRICE_CLASS} \
       ParameterKey=WebLocations,ParameterValue=${WEB_LOCATIONS} \
@@ -43,10 +45,13 @@ create_change_set() {
       ParameterKey=Auth0CloudFormationSecretsRole,ParameterValue=${AUTH0_SECRETS_ROLE} "
 
   aws s3 cp "${OUTPUT_TEMPLATE}" "s3://${ARTIFACTS_BUCKET}/${stack_name}/sam.yaml"
-  aws cloudformation delete-change-set --change-set-name Deploy --stack-name ${stack_name} ;
+  aws cloudformation delete-change-set --change-set-name Deploy --stack-name ${stack_name} ; \
   aws cloudformation create-change-set ${parameters} ||
     aws cloudformation create-change-set --change-set-type CREATE ${parameters}
 }
 
-create_change_set "${STACK_NAME}-beta" "${BETA_VPC_RANGE}" "beta.api.${DOMAIN}" "beta.${DOMAIN}"
-create_change_set "${STACK_NAME}-release" "${RELEASE_VPC_RANGE}" "api.${DOMAIN}" "${DOMAIN}"
+create_change_set "${STACK_NAME}-beta" \
+  "${BETA_VPC_RANGE}" "beta.api.${DOMAIN}" "beta.${DOMAIN}" "${BETA_WEB_BUCKET}"
+
+create_change_set "${STACK_NAME}-release" \
+  "${RELEASE_VPC_RANGE}" "api.${DOMAIN}" "${DOMAIN}" "${RELEASE_WEB_BUCKET}"

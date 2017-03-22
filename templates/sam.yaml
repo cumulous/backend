@@ -22,6 +22,8 @@ Parameters:
     Type: String
   WebDomain:
     Type: String
+  WebBucket:
+    Type: String
   WebTTL:
     Type: Number
   WebPriceClass:
@@ -1034,10 +1036,6 @@ Resources:
       CodeUri: ../app
       Handler: web.getIPSetDescriptors
       Runtime: nodejs4.3
-
-  WebBucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
 
   WebBucketPolicy:
     Type: AWS::S3::BucketPolicy
