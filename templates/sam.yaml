@@ -1120,6 +1120,16 @@ Resources:
           SslSupportMethod: sni-only
         WebACLId: !Ref WebACL
 
+  WebDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: !Ref WebDomain
+      Type: A
+      HostedZoneId: !Ref DomainZone
+      AliasTarget:
+        DNSName: !GetAtt WebDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
+
   WebOriginAccessIdentity:
     Type: AWS::CloudFormation::CustomResource
     Properties:
@@ -1489,7 +1499,7 @@ Resources:
   # ApiDnsRecord:
   #   Type: AWS::Route53::RecordSet
   #   Properties:
-  #     Name: !Sub ${APIDomain}.
+  #     Name: !Ref APIDomain
   #     Type: A
   #     HostedZoneId: !Ref DomainZone
   #     AliasTarget:
