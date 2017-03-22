@@ -1059,19 +1059,19 @@ Resources:
         Enabled: true
         Origins:
         - Id: login
-          DomainName: !GetAtt WebBucket.DomainName
+          DomainName: !Sub ${WebBucket}.s3.amazonaws.com
           OriginPath: !Sub /login
           S3OriginConfig:
             OriginAccessIdentity:
               !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
         - Id: app
-          DomainName: !GetAtt WebBucket.DomainName
+          DomainName: !Sub ${WebBucket}.s3.amazonaws.com
           OriginPath: !Sub /app
           S3OriginConfig:
             OriginAccessIdentity:
               !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
         - Id: api
-          DomainName: !GetAtt WebBucket.DomainName
+          DomainName: !Sub ${WebBucket}.s3.amazonaws.com
           OriginPath: !Sub /api
           S3OriginConfig:
             OriginAccessIdentity:
