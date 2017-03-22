@@ -1064,17 +1064,20 @@ Resources:
           DomainName: !GetAtt WebBucket.DomainName
           OriginPath: !Sub /login
           S3OriginConfig:
-            OriginAccessIdentity: !GetAtt WebOriginAccessIdentity.Id
+            OriginAccessIdentity:
+              !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
         - Id: app
           DomainName: !GetAtt WebBucket.DomainName
           OriginPath: !Sub /app
           S3OriginConfig:
-            OriginAccessIdentity: !GetAtt WebOriginAccessIdentity.Id
+            OriginAccessIdentity:
+              !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
         - Id: api
           DomainName: !GetAtt WebBucket.DomainName
           OriginPath: !Sub /api
           S3OriginConfig:
-            OriginAccessIdentity: !GetAtt WebOriginAccessIdentity.Id
+            OriginAccessIdentity:
+              !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
         DefaultRootObject: login.html
         DefaultCacheBehavior:
           TargetOriginId: login
