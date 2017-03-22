@@ -462,7 +462,6 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${ArtifactsBucket}/lambda/*
                   - !Sub arn:aws:s3:::${ArtifactsBucket}/${AWS::StackName}*
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/api/beta/*
               - Effect: Allow
                 Action:
                   - s3:ListBucket
@@ -536,7 +535,6 @@ Resources:
                   - s3:GetObject
                 Resource:
                   - !Sub arn:aws:s3:::${ArtifactsBucket}/lambda/*
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/${RepoName}/Deploy/*
               - Effect: Allow
                 Action:
                   - s3:CreateBucket
