@@ -15,8 +15,9 @@ aws cloudformation package \
 
 create_change_set() {
   local stack_name="$1"
-  local api_domain="$2"
-  local web_domain="$3"
+  local vpc_range="$2"
+  local api_domain="$3"
+  local web_domain="$4"
 
   local parameters=" \
     --stack-name ${stack_name} \
@@ -24,7 +25,7 @@ create_change_set() {
     --change-set-name Deploy \
     --capabilities CAPABILITY_IAM \
     --parameters \
-      ParameterKey=VpcRange,ParameterValue=${VPC_RANGE} \
+      ParameterKey=VpcRange,ParameterValue=${vpc_range} \
       ParameterKey=EncryptionKeyId,ParameterValue=${ENCRYPTION_KEY_ID} \
       ParameterKey=SecretsBucket,ParameterValue=${SECRETS_BUCKET} \
       ParameterKey=SSHKeyName,ParameterValue=${stack_name} \
