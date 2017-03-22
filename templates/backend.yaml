@@ -1,9 +1,14 @@
 Parameters:
-  RepoName:
+  BackendRepo:
     Description: "This stack's CodeCommit repository name (*)"
     Type: String
     AllowedPattern: ^[\w.-]{1,100}$
     Default: backend
+  FrontendRepo:
+    Description: "Frontend's CodeCommit repository name (*)"
+    Type: String
+    AllowedPattern: ^[\w.-]{1,100}$
+    Default: frontend
   StackAdmin:
     Description: "IAM user whom to allow to administer this stack, including encryption keys"
     Type: String
@@ -77,7 +82,8 @@ Metadata:
         Label:
           default: "Repositories"
         Parameters:
-          - RepoName
+          - BackendRepo
+          - FrontendRepo
       -
         Label:
           default: "Administration"
@@ -122,6 +128,14 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
 
+  BetaWebBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+
+  ReleaseWebBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+
   DomainZone:
     Type: AWS::Route53::HostedZone
     Condition: CreateHostedZone
@@ -157,7 +171,7 @@ Resources:
                 Provider: CodeCommit
                 Version: 1
               Configuration:
-                RepositoryName: !Ref RepoName
+                RepositoryName: !Ref BackendRepo
                 BranchName: master
               OutputArtifacts:
                 - Name: Source
@@ -189,7 +203,7 @@ Resources:
                   - CreateNotification
                   - !Ref PipelineNotification
                   - !Ref AWS::NoValue
-              RunOrder: 2
+              RunOrder: 1
             -
               Name: Deploy
               ActionTypeId:
@@ -201,7 +215,7 @@ Resources:
                 ActionMode: CHANGE_SET_EXECUTE
                 ChangeSetName: Deploy
                 StackName: !Sub ${AWS::StackName}-beta
-              RunOrder: 3
+              RunOrder: 2
         -
           Name: Release
           Actions:
@@ -216,7 +230,7 @@ Resources:
                   - CreateNotification
                   - !Ref PipelineNotification
                   - !Ref AWS::NoValue
-              RunOrder: 2
+              RunOrder: 1
             -
               Name: Deploy
               ActionTypeId:
@@ -228,7 +242,7 @@ Resources:
                 ActionMode: CHANGE_SET_EXECUTE
                 ChangeSetName: Deploy
                 StackName: !Sub ${AWS::StackName}-release
-              RunOrder: 3
+              RunOrder: 2
 
   BuildProject:
     Type: AWS::CodeBuild::Project
@@ -259,6 +273,10 @@ Resources:
             Value: !Ref Domain
           - Name: DOMAIN_ZONE
             Value: !If [CreateHostedZone, !Ref DomainZone, !Ref HostedZone]
+          - Name: BETA_WEB_BUCKET
+            Value: !Ref BetaWebBucket
+          - Name: RELEASE_WEB_BUCKET
+            Value: !Ref ReleaseWebBucket
           - Name: WEB_TTL
             Value: !Ref WebTTL
           - Name: WEB_PRICE_CLASS
@@ -402,7 +420,7 @@ Resources:
                   - codecommit:GetUploadArchiveStatus
                   - codecommit:CancelUploadArchive
                 Resource:
-                  - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${RepoName}
+                  - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${BackendRepo}
               - Effect: Allow
                 Action:
                   - s3:GetObject
@@ -746,6 +764,190 @@ Resources:
                   - s3:PutObject
                 Resource:
                   - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*
+
+  FrontendPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: !Ref FrontendRepo
+      RoleArn: !GetAtt FrontendPipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactsBucket
+      RestartExecutionOnUpdate: true
+      Stages:
+        -
+          Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeCommit
+                Version: 1
+              Configuration:
+                RepositoryName: !Ref FrontendRepo
+                BranchName: master
+              OutputArtifacts:
+                - Name: Source
+        -
+          Name: Beta
+          Actions:
+            -
+              Name: Beta
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref FrontendBetaBuildProject
+              InputArtifacts:
+                - Name: Source
+        -
+          Name: Approval
+          Actions:
+            - Name: ApproveRelease
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Provider: Manual
+                Version: 1
+              Configuration:
+                NotificationArn: !If
+                  - CreateNotification
+                  - !Ref PipelineNotification
+                  - !Ref AWS::NoValue
+              RunOrder: 1
+        -
+          Name: Release
+          Actions:
+            -
+              Name: Release
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref FrontendReleaseBuildProject
+              InputArtifacts:
+                - Name: Source
+
+  FrontendBetaBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${FrontendRepo}-beta
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/nodejs:4.3.2
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: WEB_BUCKET
+            Value: !Ref BetaWebBucket
+      ServiceRole: !Ref FrontendBuildRole
+
+  FrontendReleaseBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${FrontendRepo}-release
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/nodejs:4.3.2
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: WEB_BUCKET
+            Value: !Ref ReleaseWebBucket
+      ServiceRole: !Ref FrontendBuildRole
+
+  FrontendPipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: PipelineRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codecommit:GetBranch
+                  - codecommit:GetCommit
+                  - codecommit:UploadArchive
+                  - codecommit:GetUploadArchiveStatus
+                  - codecommit:CancelUploadArchive
+                Resource:
+                  - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${FrontendRepo}
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${ArtifactsBucket}/${FrontendRepo}/*
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                Resource:
+                  - !GetAtt FrontendBetaBuildProject.Arn
+                  - !GetAtt FrontendReleaseBuildProject.Arn
+              - !If
+                - CreateNotification
+                - Effect: Allow
+                  Action:
+                    - sns:Publish
+                  Resource:
+                    - !Ref PipelineNotification
+                - !Ref AWS::NoValue
+
+  FrontendBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: BuildPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub arn:aws:s3:::${ArtifactsBucket}/${FrontendRepo}/*
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${BetaWebBucket}/app/*
+                  - !Sub arn:aws:s3:::${ReleaseWebBucket}/app/*
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${BetaWebBucket}
+                  - !Sub arn:aws:s3:::${ReleaseWebBucket}
 
 Outputs:
   PipelineUrl:
