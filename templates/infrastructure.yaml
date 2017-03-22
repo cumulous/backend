@@ -436,7 +436,7 @@ Resources:
                   - s3:PutObject
                 Resource:
                   - !Sub arn:aws:s3:::${ArtifactsBucket}/lambda/*
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/${RepoName}/*
+                  - !Sub arn:aws:s3:::${ArtifactsBucket}/${RepoName}*
                   - !Sub arn:aws:s3:::${ArtifactsBucket}/api/beta/*
               - Effect: Allow
                 Action:
