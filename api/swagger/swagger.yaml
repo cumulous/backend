@@ -51,7 +51,8 @@ parameters:
     name: name_contains
     description: part of project name, case-insensitive
     type: string
-    pattern: ^[\w-,. ]{1,64}$
+    pattern:
+      $ref: '#/definitions/ProjectName/pattern'
   ProjectsQueryIsMember:
     in: query
     name: is_member
@@ -73,8 +74,7 @@ parameters:
     description: filter by project status
     type: string
     enum:
-      - Available
-      - Removed
+      $ref: '#/definitions/ProjectStatus/enum'
   ProjectsQueryIRB:
     in: query
     name: irb
@@ -85,7 +85,8 @@ parameters:
       *projects:describe_details*
       **
     type: string
-    pattern: ^[\w-]{1,64}$
+    pattern:
+      $ref: '#/definitions/ProjectIRB/pattern'
   QueryPaginationFrom:
     in: query
     name: from
