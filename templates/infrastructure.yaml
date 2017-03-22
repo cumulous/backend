@@ -653,6 +653,13 @@ Resources:
                   - waf:DeleteIPSet
                 Resource:
                   - !Sub arn:aws:waf::${AWS::AccountId}:ipset/*
+              - Effect: Allow
+                Action:
+                  - cloudfront:CreateDistribution
+                  - cloudfront:GetDistribution
+                  - cloudfront:UpdateDistribution
+                  - cloudfront:DeleteDistribution
+                Resource: '*'
 
   SSHKeyPutRole:
     Type: AWS::IAM::Role
