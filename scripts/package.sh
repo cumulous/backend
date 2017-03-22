@@ -33,6 +33,9 @@ create_change_set() {
       ParameterKey=DomainZone,ParameterValue=${DOMAIN_ZONE} \
       ParameterKey=APIDomain,ParameterValue=${api_domain} \
       ParameterKey=WebDomain,ParameterValue=${web_domain} \
+      ParameterKey=WebTTL,ParameterValue=${WEB_TTL} \
+      ParameterKey=WebPriceClass,ParameterValue=${WEB_PRICE_CLASS} \
+      ParameterKey=WebLocations,ParameterValue=${WEB_LOCATIONS} \
       ParameterKey=WebFirewallRanges,ParameterValue=${WEB_FIREWALL_RANGES} \
       ParameterKey=Auth0Domain,ParameterValue=${AUTH0_DOMAIN} \
       ParameterKey=Auth0CloudFormationClientID,ParameterValue=${AUTH0_CLIENT_ID} \

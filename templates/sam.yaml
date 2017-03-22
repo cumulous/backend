@@ -22,6 +22,12 @@ Parameters:
     Type: String
   WebDomain:
     Type: String
+  WebTTL:
+    Type: Number
+  WebPriceClass:
+    Type: String
+  WebLocations:
+    Type: CommaDelimitedList
   WebFirewallRanges:
     Type: CommaDelimitedList
   Auth0Domain:

@@ -33,6 +33,22 @@ Parameters:
     Type: String
     AllowedPattern: ^[A-Z0-9]{0,32}$
     Default: ''
+  WebTTL:
+    Description: "How long static files for the web site will be cached [sec] (*)"
+    Type: Number
+    MinValue: 0
+    Default: 300
+  WebPriceClass:
+    Description: "Price class for the web (CloudFront) cache (*)"
+    Type: String
+    AllowedValues: [100, 200, All]
+    Default: 100
+  WebLocations:
+    Description: "Comma-separated country codes where the web site will be distributed \
+      [ISO 3166-1 alpha-2 format, without spaces] (*)"
+    Type: String
+    AllowedPattern: ^[A-Z]{2}(,[A-Z]{2})*$
+    Default: US
   WebFirewallRanges:
     Description: "Comma-separated CIDR blocks that should have access to the website [without spaces] (*)"
     Type: String
@@ -80,6 +96,9 @@ Metadata:
         Parameters:
           - Domain
           - HostedZone
+          - WebTTL
+          - WebPriceClass
+          - WebLocations
           - WebFirewallRanges
       -
         Label:
@@ -238,6 +257,12 @@ Resources:
             Value: !Ref Domain
           - Name: DOMAIN_ZONE
             Value: !If [CreateHostedZone, !Ref DomainZone, !Ref HostedZone]
+          - Name: WEB_TTL
+            Value: !Ref WebTTL
+          - Name: WEB_PRICE_CLASS
+            Value: !Ref WebPriceClass
+          - Name: WEB_LOCATIONS
+            Value: !Ref WebLocations
           - Name: WEB_FIREWALL_RANGES
             Value: !Ref WebFirewallRanges
           - Name: AUTH0_DOMAIN
