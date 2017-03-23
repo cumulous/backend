@@ -17,7 +17,7 @@ const paths = {
   conf: () => ['src/**/*.json', paths.templates + '/*.json'],
   coverage: () => paths.reports + '/coverage',
   reports: 'reports',
-  sam: 'sam.yaml',
+  backend: 'backend.yaml',
   src: 'src/**/!(*.spec).ts',
   specs: 'src/*.spec.ts',
   swagger: 'swagger.yaml',
@@ -56,8 +56,8 @@ gulp.task('compile', () => {
     .pipe(gulp.dest(paths.bin))
     .on('end', () => {
       gulp
-        .src([paths.templates + '/' + paths.sam, paths.tmp + '/' + paths.swagger])
-        .pipe(concat(paths.sam))
+        .src([paths.templates + '/' + paths.backend, paths.tmp + '/' + paths.swagger])
+        .pipe(concat(paths.backend))
         .pipe(gulp.dest(paths.tmp));
     });
   return tsProject.src()

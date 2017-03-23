@@ -2,8 +2,9 @@
 
 set -e
 
-SOURCE_TEMPLATE="tmp/sam.yaml"
-OUTPUT_TEMPLATE="bin/sam.yaml"
+BACKEND_TEMPLATE="backend.yaml"
+SOURCE_TEMPLATE="tmp/${BACKEND_TEMPLATE}"
+OUTPUT_TEMPLATE="bin/${BACKEND_TEMPLATE}"
 
 aws cloudformation package \
   --template-file "${SOURCE_TEMPLATE}" \
@@ -20,7 +21,7 @@ create_change_set() {
 
   local parameters=" \
     --stack-name ${stack_name} \
-    --template-url https://${ARTIFACTS_BUCKET}.s3.amazonaws.com/${stack_name}/sam.yaml \
+    --template-url https://${ARTIFACTS_BUCKET}.s3.amazonaws.com/${stack_name}/${BACKEND_TEMPLATE} \
     --change-set-name Deploy \
     --capabilities CAPABILITY_IAM \
     --parameters \
@@ -44,14 +45,14 @@ create_change_set() {
       ParameterKey=Auth0CloudFormationClientSecret,ParameterValue=${AUTH0_CLIENT_SECRET} \
       ParameterKey=Auth0CloudFormationSecretsRole,ParameterValue=${AUTH0_SECRETS_ROLE} "
 
-  aws s3 cp "${OUTPUT_TEMPLATE}" "s3://${ARTIFACTS_BUCKET}/${stack_name}/sam.yaml"
+  aws s3 cp "${OUTPUT_TEMPLATE}" "s3://${ARTIFACTS_BUCKET}/${stack_name}/${BACKEND_TEMPLATE}"
   aws cloudformation delete-change-set --change-set-name Deploy --stack-name ${stack_name} || true
   aws cloudformation create-change-set ${parameters} ||
     aws cloudformation create-change-set --change-set-type CREATE ${parameters}
 }
 
-create_change_set "${STACK_NAME}-beta" \
+create_change_set backend-beta \
   "${BETA_VPC_RANGE}" "beta.api.${DOMAIN}" "beta.${DOMAIN}" "${BETA_WEB_BUCKET}"
 
-create_change_set "${STACK_NAME}-release" \
+create_change_set backend-release \
   "${RELEASE_VPC_RANGE}" "api.${DOMAIN}" "${DOMAIN}" "${RELEASE_WEB_BUCKET}"
