@@ -93,7 +93,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-SendCloudFormationResponse
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: aws.sendCloudFormationResponse
       Runtime: nodejs4.3
 
@@ -101,7 +101,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-SetupCustomResource
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: aws.setupCustomResource
       Runtime: nodejs4.3
       Timeout: 10
@@ -126,7 +126,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CalculateSubnets
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: vpc.calculateSubnets
       Runtime: nodejs4.3
 
@@ -134,7 +134,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CreateSubnets
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: vpc.createSubnets
       Runtime: nodejs4.3
       Policies:
@@ -148,7 +148,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-ModifySubnets
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: vpc.modifySubnets
       Runtime: nodejs4.3
       Policies:
@@ -162,7 +162,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-RouteSubnets
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: vpc.routeSubnets
       Runtime: nodejs4.3
       Environment:
@@ -179,7 +179,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DescribeSubnets
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: vpc.describeSubnets
       Runtime: nodejs4.3
       Policies:
@@ -193,7 +193,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DeleteSubnets
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: vpc.deleteSubnets
       Runtime: nodejs4.3
       Policies:
@@ -207,7 +207,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-InstancesInit
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: aws.executeStateMachine
       Runtime: nodejs4.3
       Environment:
@@ -236,7 +236,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DescribeInstance
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.describeInstance
       Runtime: nodejs4.3
       Timeout: 5
@@ -256,7 +256,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CreateSSHKey
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.createSSHKey
       Runtime: nodejs4.3
       Environment:
@@ -271,7 +271,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DeleteSSHKey
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.deleteSSHKey
       Runtime: nodejs4.3
       Environment:
@@ -293,7 +293,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CheckSSHKeyName
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.checkSSHKeyName
       Runtime: nodejs4.3
       Environment:
@@ -304,7 +304,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CalculateVolumeSizes
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.calculateVolumeSizes
       Runtime: nodejs4.3
 
@@ -312,7 +312,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CreateVolumes
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.createVolumes
       Runtime: nodejs4.3
       Policies:
@@ -325,7 +325,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-WaitForVolumesAvailable
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.waitForVolumesAvailable
       Runtime: nodejs4.3
       Timeout: 20
@@ -339,7 +339,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CalculateVolumeDevices
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.calculateVolumeDevices
       Runtime: nodejs4.3
 
@@ -347,7 +347,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-AttachVolumes
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.attachVolumes
       Runtime: nodejs4.3
       Policies:
@@ -360,7 +360,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DetachVolumes
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.detachVolumes
       Runtime: nodejs4.3
       Policies:
@@ -373,7 +373,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DeleteVolumes
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.deleteVolumes
       Runtime: nodejs4.3
       Policies:
@@ -386,7 +386,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DeleteVolumesOnTermination
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.deleteVolumesOnTermination
       Runtime: nodejs4.3
       Policies:
@@ -399,7 +399,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-TransferInitScript
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.transferInitScript
       Runtime: nodejs4.3
       Timeout: 10
@@ -417,7 +417,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-ExecuteInitScript
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: instances.executeInitScript
       Runtime: nodejs4.3
       Timeout: 15
@@ -449,7 +449,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-RotateAndStoreAuth0Secret
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: auth0.rotateAndStoreClientSecret
       Runtime: nodejs4.3
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${Auth0CloudFormationSecretsRole}
@@ -458,7 +458,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DeleteS3Object
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: aws.deleteS3Object
       Runtime: nodejs4.3
       Policies:
@@ -471,7 +471,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-GetProjects
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: projects.get
       Runtime: nodejs4.3
 
@@ -479,7 +479,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-Authorizer
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: members.authorize
       Runtime: nodejs4.3
 
@@ -1033,7 +1033,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-GetIPSetDescriptors
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: web.getIPSetDescriptors
       Runtime: nodejs4.3
 
@@ -1141,7 +1141,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-StoreOriginAccessIdentity
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: web.storeOriginAccessIdentity
       Runtime: nodejs4.3
       Policies:
@@ -1155,7 +1155,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-RetrieveOriginAccessIdentity
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: web.retrieveOriginAccessIdentity
       Runtime: nodejs4.3
       Policies:
@@ -1169,7 +1169,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CreateOriginAccessIdentity
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: web.createOriginAccessIdentity
       Runtime: nodejs4.3
       Policies:
@@ -1182,7 +1182,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-UpdateOriginAccessIdentity
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: web.updateOriginAccessIdentity
       Runtime: nodejs4.3
       Policies:
@@ -1195,7 +1195,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DeleteOriginAccessIdentity
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: web.deleteOriginAccessIdentity
       Runtime: nodejs4.3
       Policies:
@@ -1329,7 +1329,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CreateApiDomainName
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: apig.createDomainName
       Runtime: nodejs4.3
       Policies:
@@ -1343,7 +1343,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-UpdateApiDomainName
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: apig.updateDomainName
       Runtime: nodejs4.3
       Policies:
@@ -1357,7 +1357,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DeleteApiDomainName
-      CodeUri: ../app
+      CodeUri: ./app
       Handler: apig.deleteDomainName
       Runtime: nodejs4.3
       Policies:

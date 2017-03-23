@@ -9,14 +9,7 @@ phases:
   build:
     commands:
       - npm run build
-  post_build:
-    commands:
-      - "aws cloudformation package \
-          --template-file tmp/backend.yaml \
-          --output-template-file backend.yaml \
-          --s3-bucket ${ARTIFACTS_BUCKET} \
-          --s3-prefix lambda"
-      - aws s3 cp backend.yaml s3://${ARTIFACTS_BUCKET}
 artifacts:
   files:
+    - app/
     - backend.yaml
