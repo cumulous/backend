@@ -17,6 +17,6 @@ phases:
           --s3-bucket ${ARTIFACTS_BUCKET} \
           --s3-prefix lambda"
       - aws s3 cp backend.yaml s3://${ARTIFACTS_BUCKET}
-# artifacts:
-#   files:
-#     - backend.yaml
+artifacts:
+  files:
+    - backend.yaml
