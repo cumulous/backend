@@ -22,7 +22,6 @@ create_change_set() {
   local parameters=" \
     --stack-name ${stack_name} \
     --template-url https://${ARTIFACTS_BUCKET}.s3.amazonaws.com/${stack_name}/${BACKEND_TEMPLATE} \
-    --role-arn ${DEPLOYMENT_ROLE} \
     --change-set-name Deploy \
     --capabilities CAPABILITY_IAM \
     --parameters \
