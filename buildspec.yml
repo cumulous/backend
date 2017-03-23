@@ -11,5 +11,5 @@ phases:
       - npm run build
 artifacts:
   files:
-    - app/
+    - app/**/*
     - tmp/backend.yaml
