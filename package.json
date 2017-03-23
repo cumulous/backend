@@ -1,6 +1,7 @@
 {
   "version": "1.0.0",
   "description": "A serverless backend for managing AWS Batch jobs and data on S3",
+  "author": "Denis Loginov <dloginov@mit.edu>",
   "license": "UNLICENSED",
   "private": true,
   "scripts": {
@@ -8,7 +9,6 @@
     "clean:app": "rimraf app/*.spec.js app/package.json app/fixtures",
     "copy:configs": "copyfiles -f package.json bin/swagger.json src/*.sh templates/*.json app/",
     "build:modules": "npm i --prod --prefix app/",
-    "package": "./scripts/package.sh",
     "rm": "rimraf",
     "server": "lite-server",
     "start": "run-p server",
@@ -19,11 +19,6 @@
     "test:unit:once": "gulp test --verbose",
     "tsc": "tsc"
   },
-  "repository": {
-    "type": "git",
-    "url": "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/ecs-scheduler"
-  },
-  "author": "Denis Loginov <dloginov@mit.edu>",
   "dependencies": {
     "json-stable-stringify": "^1.0.1",
     "netmask": "^1.0.6",
