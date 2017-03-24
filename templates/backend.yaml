@@ -1135,7 +1135,7 @@ Resources:
       StateMachine: !Ref SetupOriginAccessStateMachine
       Comment: !Ref WebDomain
       Bucket: !Ref WebBucket
-      Path: !Sub Id
+      Path: !Sub conf/id
 
   StoreOriginAccessIdentity:
     Type: AWS::Serverless::Function
@@ -1149,7 +1149,7 @@ Resources:
           - Effect: Allow
             Action: s3:PutObject
             Resource:
-              - !Sub arn:aws:s3:::${WebBucket}/Id
+              - !Sub arn:aws:s3:::${WebBucket}/conf/id
 
   RetrieveOriginAccessIdentity:
     Type: AWS::Serverless::Function
@@ -1163,7 +1163,7 @@ Resources:
           - Effect: Allow
             Action: s3:GetObject
             Resource:
-              - !Sub arn:aws:s3:::${WebBucket}/Id
+              - !Sub arn:aws:s3:::${WebBucket}/conf/id
 
   CreateOriginAccessIdentity:
     Type: AWS::Serverless::Function
