@@ -940,7 +940,7 @@ Resources:
         Type: CODEPIPELINE
       Environment:
         Type: LINUX_CONTAINER
-        Image: aws/codebuild/nodejs:4.3.2
+        Image: aws/codebuild/nodejs:7.0.0
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
           - Name: WEB_BUCKET
@@ -957,7 +957,7 @@ Resources:
         Type: CODEPIPELINE
       Environment:
         Type: LINUX_CONTAINER
-        Image: aws/codebuild/nodejs:4.3.2
+        Image: aws/codebuild/nodejs:7.0.0
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
           - Name: WEB_BUCKET
