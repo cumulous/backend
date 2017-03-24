@@ -1,11 +1,11 @@
 Parameters:
   BackendRepo:
-    Description: "This stack's CodeCommit repository name (*)"
+    Description: "Name of CodeCommit repository for the backend (*)"
     Type: String
     AllowedPattern: ^[\w.-]{1,100}$
     Default: backend
   FrontendRepo:
-    Description: "Frontend's CodeCommit repository name (*)"
+    Description: "Name of CodeCommit repository for the frontend (*)"
     Type: String
     AllowedPattern: ^[\w.-]{1,100}$
     Default: frontend
@@ -120,7 +120,11 @@ Conditions:
   CreateHostedZone: !Equals [!Ref HostedZone, '']
 
 Resources:
-  ArtifactsBucket:
+  BackendArtifactsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+
+  FrontendArtifactsBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
 
@@ -151,14 +155,14 @@ Resources:
         - Endpoint: !Ref NotificationEmail
           Protocol: email
 
-  Pipeline:
+  BackendPipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
       Name: backend
-      RoleArn: !GetAtt PipelineRole.Arn
+      RoleArn: !GetAtt BackendPipelineRole.Arn
       ArtifactStore:
         Type: S3
-        Location: !Ref ArtifactsBucket
+        Location: !Ref BackendArtifactsBucket
       RestartExecutionOnUpdate: true
       Stages:
         -
@@ -186,7 +190,7 @@ Resources:
                 Provider: CodeBuild
                 Version: 1
               Configuration:
-                ProjectName: !Ref BuildProject
+                ProjectName: !Ref BackendBuildProject
               InputArtifacts:
                 - Name: Source
         -
@@ -244,10 +248,10 @@ Resources:
                 StackName: !Sub backend-release
               RunOrder: 2
 
-  BuildProject:
+  BackendBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Ref AWS::StackName
+      Name: backend-build
       Artifacts:
         Type: CODEPIPELINE
       Source:
@@ -397,7 +401,7 @@ Resources:
               - kms:*
             Resource: '*'
 
-  PipelineRole:
+  BackendPipelineRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -408,7 +412,7 @@ Resources:
               Service: codepipeline.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: PipelineRolePolicy
+        - PolicyName: BackendPipelinePolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -426,13 +430,13 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                 Resource:
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/${AWS::StackName}/*
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend/*
               - Effect: Allow
                 Action:
                   - codebuild:BatchGetBuilds
                   - codebuild:StartBuild
                 Resource:
-                  - !GetAtt BuildProject.Arn
+                  - !GetAtt BackendBuildProject.Arn
               - Effect: Allow
                 Action:
                   - cloudformation:DescribeStacks
@@ -457,7 +461,7 @@ Resources:
                     - !Ref PipelineNotification
                 - !Ref AWS::NoValue
 
-  BuildRole:
+  BackendBuildRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -476,16 +480,24 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}
+              - Effect: Allow
+                Action:
                   - s3:GetObject
+                Resource:
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend/Source/*
+              - Effect: Allow
+                Action:
                   - s3:PutObject
                 Resource:
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/lambda/*
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/${AWS::StackName}*
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/*
               - Effect: Allow
                 Action:
                   - s3:ListBucket
                 Resource:
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}
               - Effect: Allow
                 Action:
                   - cloudformation:CreateChangeSet
@@ -493,8 +505,13 @@ Resources:
                 Resource:
                   - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/backend-beta/*
                   - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/backend-release/*
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource:
+                  - !GetAtt BackendDeploymentRole.Arn
 
-  DeployRole:
+  BackendDeploymentRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -553,19 +570,15 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/lambda/*
-              - Effect: Allow
-                Action:
-                  - s3:CreateBucket
-                Resource: '*'
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/lambda/*
               - Effect: Allow
                 Action:
                   - s3:GetBucketPolicy
                   - s3:PutBucketPolicy
                   - s3:DeleteBucketPolicy
                 Resource:
-                  - !Sub arn:aws:s3:::${AWS::StackName}-beta-*
-                  - !Sub arn:aws:s3:::${AWS::StackName}-release-*
+                  - !Sub arn:aws:s3:::${BetaWebBucket}
+                  - !Sub arn:aws:s3:::${ReleaseWebBucket}
               - Effect: Allow
                 Action:
                   - lambda:CreateFunction
@@ -769,11 +782,11 @@ Resources:
   FrontendPipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: !Ref FrontendRepo
+      Name: frontend
       RoleArn: !GetAtt FrontendPipelineRole.Arn
       ArtifactStore:
         Type: S3
-        Location: !Ref ArtifactsBucket
+        Location: !Ref FrontendArtifactsBucket
       RestartExecutionOnUpdate: true
       Stages:
         -
@@ -879,7 +892,7 @@ Resources:
               Service: codepipeline.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: PipelineRolePolicy
+        - PolicyName: FrontendPipelinePolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -897,7 +910,7 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                 Resource:
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/${FrontendRepo}/*
+                  - !Sub arn:aws:s3:::${FrontendArtifactsBucket}/*
               - Effect: Allow
                 Action:
                   - codebuild:BatchGetBuilds
@@ -935,7 +948,7 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
-                  - !Sub arn:aws:s3:::${ArtifactsBucket}/${FrontendRepo}/*
+                  - !Sub arn:aws:s3:::${FrontendArtifactsBucket}/*
               - Effect: Allow
                 Action:
                   - s3:GetObject
@@ -951,5 +964,7 @@ Resources:
                   - !Sub arn:aws:s3:::${ReleaseWebBucket}
 
 Outputs:
-  PipelineUrl:
-    Value: !Sub 'https://console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/${Pipeline}'
+  BackendPipelineUrl:
+    Value: !Sub 'https://console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/${BackendPipeline}'
+  FrontendPipelineUrl:
+    Value: !Sub 'https://console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/${FrontendPipeline}'
