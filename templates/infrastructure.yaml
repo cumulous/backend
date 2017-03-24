@@ -154,7 +154,7 @@ Resources:
   Pipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: !Ref AWS::StackName
+      Name: backend
       RoleArn: !GetAtt PipelineRole.Arn
       ArtifactStore:
         Type: S3
@@ -214,7 +214,7 @@ Resources:
               Configuration:
                 ActionMode: CHANGE_SET_EXECUTE
                 ChangeSetName: Deploy
-                StackName: !Sub ${AWS::StackName}-beta
+                StackName: !Sub backend-beta
               RunOrder: 2
         -
           Name: Release
@@ -241,7 +241,7 @@ Resources:
               Configuration:
                 ActionMode: CHANGE_SET_EXECUTE
                 ChangeSetName: Deploy
-                StackName: !Sub ${AWS::StackName}-release
+                StackName: !Sub backend-release
               RunOrder: 2
 
   BuildProject:
@@ -302,7 +302,7 @@ Resources:
   EncryptionKeyAlias:
     Type: AWS::KMS::Alias
     Properties:
-      AliasName: !Sub alias/${AWS::StackName}
+      AliasName: !Sub alias/backend
       TargetKeyId: !Ref EncryptionKey
 
   EncryptionKey:
@@ -369,25 +369,25 @@ Resources:
 
               - !GetAtt SSHKeyPutRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyPutRole}/${AWS::StackName}-beta-CreateSSHKey"
+                      ${SSHKeyPutRole}/backend-beta-CreateSSHKey"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyPutRole}/${AWS::StackName}-release-CreateSSHKey"
+                      ${SSHKeyPutRole}/backend-release-CreateSSHKey"
 
               - !GetAtt SSHKeyGetRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyGetRole}/${AWS::StackName}-beta-TransferInitScript"
+                      ${SSHKeyGetRole}/backend-beta-TransferInitScript"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyGetRole}/${AWS::StackName}-release-TransferInitScript"
+                      ${SSHKeyGetRole}/backend-release-TransferInitScript"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyGetRole}/${AWS::StackName}-beta-ExecuteInitScript"
+                      ${SSHKeyGetRole}/backend-beta-ExecuteInitScript"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyGetRole}/${AWS::StackName}-release-ExecuteInitScript"
+                      ${SSHKeyGetRole}/backend-release-ExecuteInitScript"
 
               - !GetAtt Auth0CloudFormationSecretsRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0CloudFormationSecretsRole}/${AWS::StackName}-beta-RotateAndStoreAuth0Secret"
+                      ${Auth0CloudFormationSecretsRole}/backend-beta-RotateAndStoreAuth0Secret"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0CloudFormationSecretsRole}/${AWS::StackName}-release-RotateAndStoreAuth0Secret"
+                      ${Auth0CloudFormationSecretsRole}/backend-release-RotateAndStoreAuth0Secret"
 
               - !If
                 - EnableStackAdmin
@@ -440,8 +440,9 @@ Resources:
                   - cloudformation:ExecuteChangeSet
                   - cloudformation:DeleteChangeSet
                 Resource:
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}-beta/*
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}-release/*
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/backend-beta/*
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/backend-release/*
               - Effect: Allow
                 Action:
                   - iam:PassRole
@@ -490,9 +491,8 @@ Resources:
                   - cloudformation:CreateChangeSet
                   - cloudformation:DeleteChangeSet
                 Resource:
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}-beta/*
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/${AWS::StackName}-release/*
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/backend-beta/*
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/backend-release/*
 
   DeployRole:
     Type: AWS::IAM::Role
@@ -523,7 +523,8 @@ Resources:
                   - iam:PassRole
                   - iam:DeleteRole
                 Resource:
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/backend-beta-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/backend-release-*
               - Effect: Allow
                 Action:
                   - iam:PassRole
@@ -539,9 +540,9 @@ Resources:
                     'iam:PolicyArn':
                       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
                       - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
-                      - !Sub arn:aws:iam::${AWS::AccountId}:policy/${AWS::StackName}-*
                 Resource:
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/${AWS::StackName}-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/backend-beta-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/backend-release-*
               - Effect: Allow
                 Action:
                   - states:CreateStateMachine
@@ -577,7 +578,7 @@ Resources:
                   - lambda:AddPermission
                   - lambda:RemovePermission
                 Resource:
-                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-*
+                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:backend-*
               - Effect: Allow
                 Action:
                   - events:DescribeRule
@@ -586,7 +587,7 @@ Resources:
                   - events:PutTargets
                   - events:RemoveTargets
                 Resource:
-                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}-*
+                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/backend-*
               - Effect: Allow
                 Action:
                   - ec2:CreateVpc
@@ -616,7 +617,7 @@ Resources:
                   - ec2:DeleteInternetGateway
                 Condition:
                   StringLike:
-                    'ec2:ResourceTag/Name': !Sub ${AWS::StackName}-*
+                    'ec2:ResourceTag/Name': !Sub backend-*
                 Resource:
                   - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*
                   - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*
