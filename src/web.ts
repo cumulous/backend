@@ -84,6 +84,6 @@ export const retrieveOriginAccessIdentity = (event: { Bucket: string, Path: stri
         Bucket: event.Bucket,
         Key: event.Path,
       }).promise())
-    .then(data => callback(null, data.Body))
+    .then(data => callback(null, data.Body.toString()))
     .catch(callback);
 };

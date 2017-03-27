@@ -237,5 +237,5 @@ testMethod('retrieveOriginAccessIdentity', s3, 'getObject', () => ({
   Bucket: fakeIdBucket,
   Key: fakeIdPath,
 }), () => ({
-  Body: fakeIdentityId,
+  Body: Buffer.from(fakeIdentityId),
 }), fakeIdentityId);
