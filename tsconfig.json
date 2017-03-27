@@ -1,13 +1,8 @@
 {
   "compilerOptions": {
     "module": "commonjs",
-    "target": "ES5",
+    "target": "ES6",
     "outDir": "app",
-    "lib": [
-      "es5",
-      "es2015.core",
-      "es2015.promise"
-    ],
     "noImplicitAny": true,
     "pretty": true
   },
