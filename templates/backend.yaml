@@ -1037,18 +1037,18 @@ Resources:
       Handler: web.getIPSetDescriptors
       Runtime: nodejs6.10
 
-  # WebBucketPolicy:
-  #   Type: AWS::S3::BucketPolicy
-  #   Properties:
-  #     Bucket: !Ref WebBucket
-  #     PolicyDocument:
-  #       Statement:
-  #         - Effect: Allow
-  #           Action: s3:GetObject
-  #           Principal:
-  #             CanonicalUser: !GetAtt WebOriginAccessIdentity.S3CanonicalUserId
-  #           Resource:
-  #             - !Sub arn:aws:s3:::${WebBucket}/*/*
+  WebBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: s3:GetObject
+            Principal:
+              CanonicalUser: !GetAtt WebOriginAccessIdentity.S3CanonicalUserId
+            Resource:
+              - !Sub arn:aws:s3:::${WebBucket}/*/*
 
   # WebDistribution:
   #   Type: AWS::CloudFront::Distribution
