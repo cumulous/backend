@@ -1050,83 +1050,83 @@ Resources:
             Resource:
               - !Sub arn:aws:s3:::${WebBucket}/*/*
 
-  # WebDistribution:
-  #   Type: AWS::CloudFront::Distribution
-  #   Properties:
-  #     DistributionConfig:
-  #       Aliases:
-  #       - !Ref WebDomain
-  #       Enabled: true
-  #       Origins:
-  #       - Id: login
-  #         DomainName: !Sub ${WebBucket}.s3.amazonaws.com
-  #         OriginPath: !Sub /login
-  #         S3OriginConfig:
-  #           OriginAccessIdentity:
-  #             !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
-  #       - Id: app
-  #         DomainName: !Sub ${WebBucket}.s3.amazonaws.com
-  #         OriginPath: !Sub /app
-  #         S3OriginConfig:
-  #           OriginAccessIdentity:
-  #             !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
-  #       - Id: api
-  #         DomainName: !Sub ${WebBucket}.s3.amazonaws.com
-  #         OriginPath: !Sub /api
-  #         S3OriginConfig:
-  #           OriginAccessIdentity:
-  #             !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
-  #       DefaultRootObject: login.html
-  #       DefaultCacheBehavior:
-  #         TargetOriginId: login
-  #         ViewerProtocolPolicy: redirect-to-https
-  #         ForwardedValues:
-  #           QueryString: false
-  #         MinTTL: !Ref WebTTL
-  #         DefaultTTL: !Ref WebTTL
-  #         Compress: true
-  #       CacheBehaviors:
-  #       -
-  #         TargetOriginId: app
-  #         PathPattern: app/*
-  #         ViewerProtocolPolicy: redirect-to-https
-  #         ForwardedValues:
-  #           QueryString: false
-  #         MinTTL: !Ref WebTTL
-  #         DefaultTTL: !Ref WebTTL
-  #         Compress: true
-  #         TrustedSigners:
-  #           - !Ref AWS::AccountId
-  #       -
-  #         TargetOriginId: api
-  #         PathPattern: api/*
-  #         ViewerProtocolPolicy: redirect-to-https
-  #         ForwardedValues:
-  #           QueryString: false
-  #         MinTTL: !Ref WebTTL
-  #         DefaultTTL: !Ref WebTTL
-  #         Compress: true
-  #         TrustedSigners:
-  #           - !Ref AWS::AccountId
-  #       PriceClass: !Sub PriceClass_${WebPriceClass}
-  #       Restrictions:
-  #         GeoRestriction:
-  #           RestrictionType: whitelist
-  #           Locations: !Ref WebLocations
-  #       ViewerCertificate:
-  #         AcmCertificateArn: !Ref WebCertificate
-  #         SslSupportMethod: sni-only
-  #       WebACLId: !Ref WebACL
+  WebDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+        - !Ref WebDomain
+        Enabled: true
+        Origins:
+        - Id: login
+          DomainName: !Sub ${WebBucket}.s3.amazonaws.com
+          OriginPath: !Sub /login
+          S3OriginConfig:
+            OriginAccessIdentity:
+              !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
+        - Id: app
+          DomainName: !Sub ${WebBucket}.s3.amazonaws.com
+          OriginPath: !Sub /app
+          S3OriginConfig:
+            OriginAccessIdentity:
+              !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
+        - Id: api
+          DomainName: !Sub ${WebBucket}.s3.amazonaws.com
+          OriginPath: !Sub /api
+          S3OriginConfig:
+            OriginAccessIdentity:
+              !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
+        DefaultRootObject: login.html
+        DefaultCacheBehavior:
+          TargetOriginId: login
+          ViewerProtocolPolicy: redirect-to-https
+          ForwardedValues:
+            QueryString: false
+          MinTTL: !Ref WebTTL
+          DefaultTTL: !Ref WebTTL
+          Compress: true
+        CacheBehaviors:
+        -
+          TargetOriginId: app
+          PathPattern: app/*
+          ViewerProtocolPolicy: redirect-to-https
+          ForwardedValues:
+            QueryString: false
+          MinTTL: !Ref WebTTL
+          DefaultTTL: !Ref WebTTL
+          Compress: true
+          TrustedSigners:
+            - !Ref AWS::AccountId
+        -
+          TargetOriginId: api
+          PathPattern: api/*
+          ViewerProtocolPolicy: redirect-to-https
+          ForwardedValues:
+            QueryString: false
+          MinTTL: !Ref WebTTL
+          DefaultTTL: !Ref WebTTL
+          Compress: true
+          TrustedSigners:
+            - !Ref AWS::AccountId
+        PriceClass: !Sub PriceClass_${WebPriceClass}
+        Restrictions:
+          GeoRestriction:
+            RestrictionType: whitelist
+            Locations: !Ref WebLocations
+        ViewerCertificate:
+          AcmCertificateArn: !Ref WebCertificate
+          SslSupportMethod: sni-only
+        WebACLId: !Ref WebACL
 
-  # WebDnsRecord:
-  #   Type: AWS::Route53::RecordSet
-  #   Properties:
-  #     Name: !Ref WebDomain
-  #     Type: A
-  #     HostedZoneId: !Ref DomainZone
-  #     AliasTarget:
-  #       DNSName: !GetAtt WebDistribution.DomainName
-  #       HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
+  WebDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: !Ref WebDomain
+      Type: A
+      HostedZoneId: !Ref DomainZone
+      AliasTarget:
+        DNSName: !GetAtt WebDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
 
   WebOriginAccessIdentity:
     Type: AWS::CloudFormation::CustomResource
