@@ -8,7 +8,7 @@ import * as web from './web';
 import { getIPSetDescriptors, IPSetDescriptor } from './web';
 
 const fakePhysicalResourceId = 'fake-physical-resource-id-1234-abcd';
-const fakeRequestId = 'fake-request-1234';
+const fakeResourceId = 'fake-request-1234';
 const fakeIdentityComment = 'OAI for fake.example.org';
 const fakeIdentityId = 'fake-oai-abcd';
 const fakeETag = 'fake-ETag-1234';
@@ -170,13 +170,13 @@ const testMethod = (
 };
 
 testMethod('createOriginAccessIdentity', cloudFront, 'createCloudFrontOriginAccessIdentity', () => ({
-  RequestId: fakeRequestId,
+  LogicalResourceId: fakeResourceId,
   ResourceProperties: {
     Comment: fakeIdentityComment,
   },
 }), () => ({
   CloudFrontOriginAccessIdentityConfig: {
-    CallerReference: fakeRequestId,
+    CallerReference: fakeResourceId,
     Comment: fakeIdentityComment,
   },
 }), () => ({
@@ -192,7 +192,7 @@ testMethod('createOriginAccessIdentity', cloudFront, 'createCloudFrontOriginAcce
 });
 
 testMethod('updateOriginAccessIdentity', cloudFront, 'updateCloudFrontOriginAccessIdentity', () => ({
-  RequestId: fakeRequestId,
+  LogicalResourceId: fakeResourceId,
   ResourceProperties: {
     Comment: fakeIdentityComment,
   },
@@ -202,7 +202,7 @@ testMethod('updateOriginAccessIdentity', cloudFront, 'updateCloudFrontOriginAcce
   },
 }), () => ({
   CloudFrontOriginAccessIdentityConfig: {
-    CallerReference: fakeRequestId,
+    CallerReference: fakeResourceId,
     Comment: fakeIdentityComment,
   },
   Id: fakeIdentityId,
