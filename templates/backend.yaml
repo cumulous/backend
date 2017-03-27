@@ -95,7 +95,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-SendCloudFormationResponse
       CodeUri: ../app
       Handler: aws.sendCloudFormationResponse
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
 
   SetupCustomResource:
     Type: AWS::Serverless::Function
@@ -103,7 +103,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-SetupCustomResource
       CodeUri: ../app
       Handler: aws.setupCustomResource
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Timeout: 10
       Policies:
         Statement:
@@ -128,7 +128,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-CalculateSubnets
       CodeUri: ../app
       Handler: vpc.calculateSubnets
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
 
   CreateSubnets:
     Type: AWS::Serverless::Function
@@ -136,7 +136,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-CreateSubnets
       CodeUri: ../app
       Handler: vpc.createSubnets
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -150,7 +150,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-ModifySubnets
       CodeUri: ../app
       Handler: vpc.modifySubnets
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -164,7 +164,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-RouteSubnets
       CodeUri: ../app
       Handler: vpc.routeSubnets
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Environment:
         Variables:
           ROUTE_TABLE: !Ref BackendRouteTable
@@ -181,7 +181,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-DescribeSubnets
       CodeUri: ../app
       Handler: vpc.describeSubnets
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -195,7 +195,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-DeleteSubnets
       CodeUri: ../app
       Handler: vpc.deleteSubnets
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -209,7 +209,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-InstancesInit
       CodeUri: ../app
       Handler: aws.executeStateMachine
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Environment:
         Variables:
           STATE_MACHINE: !Ref InstancesInitStateMachine
@@ -238,7 +238,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-DescribeInstance
       CodeUri: ../app
       Handler: instances.describeInstance
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Timeout: 5
       Policies:
         Statement:
@@ -258,7 +258,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-CreateSSHKey
       CodeUri: ../app
       Handler: instances.createSSHKey
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Environment:
         Variables:
           ENCRYPTION_KEY_ID: !Ref EncryptionKeyId
@@ -273,7 +273,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-DeleteSSHKey
       CodeUri: ../app
       Handler: instances.deleteSSHKey
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Environment:
         Variables:
           SSH_KEY_NAME: !Ref SSHKeyName
@@ -295,7 +295,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-CheckSSHKeyName
       CodeUri: ../app
       Handler: instances.checkSSHKeyName
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Environment:
         Variables:
           SSH_KEY_NAME: !Ref SSHKeyName
@@ -306,7 +306,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-CalculateVolumeSizes
       CodeUri: ../app
       Handler: instances.calculateVolumeSizes
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
 
   CreateVolumes:
     Type: AWS::Serverless::Function
@@ -314,7 +314,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-CreateVolumes
       CodeUri: ../app
       Handler: instances.createVolumes
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -327,7 +327,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-WaitForVolumesAvailable
       CodeUri: ../app
       Handler: instances.waitForVolumesAvailable
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Timeout: 20
       Policies:
         Statement:
@@ -341,7 +341,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-CalculateVolumeDevices
       CodeUri: ../app
       Handler: instances.calculateVolumeDevices
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
 
   AttachVolumes:
     Type: AWS::Serverless::Function
@@ -349,7 +349,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-AttachVolumes
       CodeUri: ../app
       Handler: instances.attachVolumes
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -362,7 +362,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-DetachVolumes
       CodeUri: ../app
       Handler: instances.detachVolumes
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -375,7 +375,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-DeleteVolumes
       CodeUri: ../app
       Handler: instances.deleteVolumes
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -388,7 +388,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-DeleteVolumesOnTermination
       CodeUri: ../app
       Handler: instances.deleteVolumesOnTermination
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -401,7 +401,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-TransferInitScript
       CodeUri: ../app
       Handler: instances.transferInitScript
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Timeout: 10
       Environment:
         Variables:
@@ -419,7 +419,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-ExecuteInitScript
       CodeUri: ../app
       Handler: instances.executeInitScript
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Timeout: 15
       Environment:
         Variables:
@@ -451,7 +451,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-RotateAndStoreAuth0Secret
       CodeUri: ../app
       Handler: auth0.rotateAndStoreClientSecret
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${Auth0CloudFormationSecretsRole}
 
   DeleteS3Object:
@@ -460,7 +460,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-DeleteS3Object
       CodeUri: ../app
       Handler: aws.deleteS3Object
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -473,7 +473,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-GetProjects
       CodeUri: ../app
       Handler: projects.get
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
 
   Authorizer:
     Type: AWS::Serverless::Function
@@ -481,7 +481,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-Authorizer
       CodeUri: ../app
       Handler: members.authorize
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
 
   AuthorizerInvocationRole:
     Type: AWS::IAM::Role
@@ -1035,7 +1035,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-GetIPSetDescriptors
       CodeUri: ../app
       Handler: web.getIPSetDescriptors
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
 
   WebBucketPolicy:
     Type: AWS::S3::BucketPolicy
@@ -1143,7 +1143,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-StoreOriginAccessIdentity
       CodeUri: ../app
       Handler: web.storeOriginAccessIdentity
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -1157,7 +1157,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-RetrieveOriginAccessIdentity
       CodeUri: ../app
       Handler: web.retrieveOriginAccessIdentity
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -1171,7 +1171,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-CreateOriginAccessIdentity
       CodeUri: ../app
       Handler: web.createOriginAccessIdentity
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -1184,7 +1184,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-UpdateOriginAccessIdentity
       CodeUri: ../app
       Handler: web.updateOriginAccessIdentity
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -1197,7 +1197,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-DeleteOriginAccessIdentity
       CodeUri: ../app
       Handler: web.deleteOriginAccessIdentity
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -1331,7 +1331,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-CreateApiDomainName
       CodeUri: ../app
       Handler: apig.createDomainName
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -1345,7 +1345,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-UpdateApiDomainName
       CodeUri: ../app
       Handler: apig.updateDomainName
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
@@ -1359,7 +1359,7 @@ Resources:
       FunctionName: !Sub ${AWS::StackName}-DeleteApiDomainName
       CodeUri: ../app
       Handler: apig.deleteDomainName
-      Runtime: nodejs4.3
+      Runtime: nodejs6.10
       Policies:
         Statement:
           - Effect: Allow
