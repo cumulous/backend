@@ -1,4 +1,5 @@
 export { IPSetDescriptor } from 'aws-sdk/clients/waf';
+import * as stringify from 'json-stable-stringify';
 
 import { cloudFront, s3,
          CloudFormationRequest, CloudFormationResponse, sendCloudFormationResponse } from './aws';
@@ -37,29 +38,21 @@ export const createOriginAccessIdentity = (event: CloudFormationRequest,
           Comment: event.ResourceProperties['Comment'],
         },
       }).promise())
-    .then(data => callback(null, data.CloudFrontOriginAccessIdentity))
+    .then(data => callback(null, {
+      Id: data.CloudFrontOriginAccessIdentity.Id,
+      S3CanonicalUserId: data.CloudFrontOriginAccessIdentity.S3CanonicalUserId,
+      ETag: data.ETag,
+    }))
     .catch(callback);
 };
 
-export const updateOriginAccessIdentity = (event: CloudFormationRequest,
+export const deleteOriginAccessIdentity = (event: { Id: string, ETag: string },
                                          context: any, callback: Callback) => {
   Promise.resolve(event)
-    .then(event => cloudFront.updateCloudFrontOriginAccessIdentity({
-        CloudFrontOriginAccessIdentityConfig: {
-          CallerReference:  event.RequestId,
-          Comment: event.ResourceProperties['Comment'],
-        },
-        Id: event.ResourceProperties['Id'],
+    .then(event => cloudFront.deleteCloudFrontOriginAccessIdentity({
+        Id: event.Id,
+        IfMatch: event.ETag,
       }).promise())
-    .then(data => callback(null, data.CloudFrontOriginAccessIdentity))
-    .catch(callback);
-};
-
-export const deleteOriginAccessIdentity = (id: string,
-                                         context: any, callback: Callback) => {
-  cloudFront.deleteCloudFrontOriginAccessIdentity({
-    Id: id,
-  }).promise()
     .then(() => callback())
     .catch(callback);
 };
@@ -70,7 +63,10 @@ export const storeOriginAccessIdentity = (event: CloudFormationRequest & CloudFo
     .then(event => s3.putObject({
         Bucket: event.ResourceProperties['Bucket'],
         Key: event.ResourceProperties['Path'],
-        Body: event.Data['Id'],
+        Body: stringify({
+          Id: event.Data.Id,
+          ETag: event.Data.ETag,
+        }),
       }).promise())
     .then(() => callback())
     .catch(callback);
@@ -83,6 +79,9 @@ export const retrieveOriginAccessIdentity = (event: { Bucket: string, Path: stri
         Bucket: event.Bucket,
         Key: event.Path,
       }).promise())
-    .then(data => callback(null, data.Body.toString()))
+    .then(data => {
+      const config = data.Body.toString();
+      callback(null, JSON.parse(config));
+    })
     .catch(callback);
 };

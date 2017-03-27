@@ -1,3 +1,5 @@
+import * as stringify from 'json-stable-stringify';
+
 import * as aws from './aws';
 import { cloudFront, s3 } from './aws';
 import { Callback, Dict } from './types';
@@ -9,6 +11,7 @@ const fakePhysicalResourceId = 'fake-physical-resource-id-1234-abcd';
 const fakeRequestId = 'fake-request-1234';
 const fakeIdentityComment = 'OAI for fake.example.org';
 const fakeIdentityId = 'fake-oai-abcd';
+const fakeETag = 'fake-ETag-1234';
 const fakeCanonicalUserId = 'fake-user-1234-abcd';
 const fakeIdBucket = 'fake-id-bucket';
 const fakeIdPath = '/fake/Id';
@@ -181,42 +184,26 @@ testMethod('createOriginAccessIdentity', cloudFront, 'createCloudFrontOriginAcce
     Id: fakeIdentityId,
     S3CanonicalUserId: fakeCanonicalUserId,
   },
+  ETag: fakeETag,
 }), {
   Id: fakeIdentityId,
   S3CanonicalUserId: fakeCanonicalUserId,
+  ETag: fakeETag,
 });
 
-testMethod('updateOriginAccessIdentity', cloudFront, 'updateCloudFrontOriginAccessIdentity', () => ({
-  RequestId: fakeRequestId,
-  ResourceProperties: {
-    Comment: fakeIdentityComment,
-    Id: fakeIdentityId,
-  },
+testMethod('deleteOriginAccessIdentity', cloudFront, 'deleteCloudFrontOriginAccessIdentity', () => ({
+  Id: fakeIdentityId,
+  ETag: fakeETag,
 }), () => ({
-  CloudFrontOriginAccessIdentityConfig: {
-    CallerReference: fakeRequestId,
-    Comment: fakeIdentityComment,
-  },
   Id: fakeIdentityId,
-}), () => ({
-  CloudFrontOriginAccessIdentity: {
-    Id: fakeIdentityId,
-    S3CanonicalUserId: fakeCanonicalUserId,
-  },
-}), {
-  Id: fakeIdentityId,
-  S3CanonicalUserId: fakeCanonicalUserId,
-});
-
-testMethod('deleteOriginAccessIdentity', cloudFront, 'deleteCloudFrontOriginAccessIdentity', () =>
-  fakeIdentityId,
-() => ({
-  Id: fakeIdentityId,
+  IfMatch: fakeETag,
 }));
 
 testMethod('storeOriginAccessIdentity', s3, 'putObject', () => ({
   Data: {
     Id: fakeIdentityId,
+    S3CanonicalUserId: fakeCanonicalUserId,
+    ETag: fakeETag,
   },
   ResourceProperties: {
     Bucket: fakeIdBucket,
@@ -225,7 +212,10 @@ testMethod('storeOriginAccessIdentity', s3, 'putObject', () => ({
 }), () => ({
   Bucket: fakeIdBucket,
   Key: fakeIdPath,
-  Body: fakeIdentityId,
+  Body: stringify({
+    Id: fakeIdentityId,
+    ETag: fakeETag,
+  }),
 }));
 
 testMethod('retrieveOriginAccessIdentity', s3, 'getObject', () => ({
@@ -235,5 +225,11 @@ testMethod('retrieveOriginAccessIdentity', s3, 'getObject', () => ({
   Bucket: fakeIdBucket,
   Key: fakeIdPath,
 }), () => ({
-  Body: Buffer.from(fakeIdentityId),
-}), fakeIdentityId);
+  Body: Buffer.from(stringify({
+    Id: fakeIdentityId,
+    ETag: fakeETag,
+  })),
+}), {
+  Id: fakeIdentityId,
+  ETag: fakeETag,
+});

@@ -1135,7 +1135,7 @@ Resources:
       StateMachine: !Ref SetupOriginAccessStateMachine
       Comment: !Ref WebDomain
       Bucket: !Ref WebBucket
-      Path: !Sub conf/id
+      Path: !Sub conf/origin.json
 
   StoreOriginAccessIdentity:
     Type: AWS::Serverless::Function
@@ -1149,7 +1149,7 @@ Resources:
           - Effect: Allow
             Action: s3:PutObject
             Resource:
-              - !Sub arn:aws:s3:::${WebBucket}/conf/id
+              - !Sub arn:aws:s3:::${WebBucket}/conf/origin.json
 
   RetrieveOriginAccessIdentity:
     Type: AWS::Serverless::Function
@@ -1163,7 +1163,7 @@ Resources:
           - Effect: Allow
             Action: s3:GetObject
             Resource:
-              - !Sub arn:aws:s3:::${WebBucket}/conf/id
+              - !Sub arn:aws:s3:::${WebBucket}/conf/origin.json
 
   CreateOriginAccessIdentity:
     Type: AWS::Serverless::Function
@@ -1244,13 +1244,13 @@ Resources:
                   "RetrieveOriginAccessIdentity": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties",
-                    "ResultPath": "$.ResourceProperties.Id",
+                    "ResultPath": "$.Data",
                     "Resource": "${RetrieveOriginAccessIdentity.Arn}",
                     "Next": "DeleteOriginAccessIdentity"
                   },
                   "DeleteOriginAccessIdentity": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Id",
+                    "InputPath": "$.Data",
                     "ResultPath": null,
                     "Resource": "${DeleteOriginAccessIdentity.Arn}",
                     "Next": "CheckUpdate"
