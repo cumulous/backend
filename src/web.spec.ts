@@ -191,6 +191,34 @@ testMethod('createOriginAccessIdentity', cloudFront, 'createCloudFrontOriginAcce
   ETag: fakeETag,
 });
 
+testMethod('updateOriginAccessIdentity', cloudFront, 'updateCloudFrontOriginAccessIdentity', () => ({
+  RequestId: fakeRequestId,
+  ResourceProperties: {
+    Comment: fakeIdentityComment,
+  },
+  Data: {
+    Id: fakeIdentityId,
+    ETag: fakeETag,
+  },
+}), () => ({
+  CloudFrontOriginAccessIdentityConfig: {
+    CallerReference: fakeRequestId,
+    Comment: fakeIdentityComment,
+  },
+  Id: fakeIdentityId,
+  IfMatch: fakeETag,
+}), () => ({
+  CloudFrontOriginAccessIdentity: {
+    Id: fakeIdentityId,
+    S3CanonicalUserId: fakeCanonicalUserId,
+  },
+  ETag: `${fakeETag}-new`,
+}), {
+  Id: fakeIdentityId,
+  S3CanonicalUserId: fakeCanonicalUserId,
+  ETag: `${fakeETag}-new`,
+});
+
 testMethod('deleteOriginAccessIdentity', cloudFront, 'deleteCloudFrontOriginAccessIdentity', () => ({
   Id: fakeIdentityId,
   ETag: fakeETag,

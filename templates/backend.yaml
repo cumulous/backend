@@ -1246,25 +1246,35 @@ Resources:
                     "InputPath": "$.ResourceProperties",
                     "ResultPath": "$.Data",
                     "Resource": "${RetrieveOriginAccessIdentity.Arn}",
-                    "Next": "DeleteOriginAccessIdentity"
+                    "Next": "CheckUpdateOrDelete"
+                  },
+                  "CheckUpdateOrDelete": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Update",
+                        "Next": "UpdateOriginAccessIdentity"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "DeleteOriginAccessIdentity"
+                      }
+                    ]
+                  },
+                  "UpdateOriginAccessIdentity": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "${UpdateOriginAccessIdentity.Arn}",
+                    "Next": "StoreOriginAccessIdentity"
                   },
                   "DeleteOriginAccessIdentity": {
                     "Type": "Task",
                     "InputPath": "$.Data",
                     "ResultPath": null,
                     "Resource": "${DeleteOriginAccessIdentity.Arn}",
-                    "Next": "CheckUpdate"
-                  },
-                  "CheckUpdate": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Update",
-                        "Next": "CreateOriginAccessIdentity"
-                      }
-                    ],
-                    "Default": "Success"
+                    "Next": "Success"
                   },
                   "Success": {
                     "Type": "Pass",

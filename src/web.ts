@@ -57,6 +57,25 @@ export const deleteOriginAccessIdentity = (event: { Id: string, ETag: string },
     .catch(callback);
 };
 
+export const updateOriginAccessIdentity = (event: CloudFormationRequest & CloudFormationResponse,
+                                         context: any, callback: Callback) => {
+  Promise.resolve(event)
+    .then(event => cloudFront.updateCloudFrontOriginAccessIdentity({
+        CloudFrontOriginAccessIdentityConfig: {
+          CallerReference:  event.RequestId,
+          Comment: event.ResourceProperties['Comment'],
+        },
+        Id: event.Data['Id'],
+        IfMatch: event.Data['ETag'],
+      }).promise())
+    .then(data => callback(null, {
+      Id: data.CloudFrontOriginAccessIdentity.Id,
+      S3CanonicalUserId: data.CloudFrontOriginAccessIdentity.S3CanonicalUserId,
+      ETag: data.ETag,
+    }))
+    .catch(callback);
+};
+
 export const storeOriginAccessIdentity = (event: CloudFormationRequest & CloudFormationResponse,
                                         context: any, callback: Callback) => {
   Promise.resolve(event)
