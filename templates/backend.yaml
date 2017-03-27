@@ -1265,7 +1265,7 @@ Resources:
                   },
                   "UpdateOriginAccessIdentity": {
                     "Type": "Task",
-                    "ResultPath": null,
+                    "ResultPath": "$.Data",
                     "Resource": "${UpdateOriginAccessIdentity.Arn}",
                     "Next": "StoreOriginAccessIdentity"
                   },
