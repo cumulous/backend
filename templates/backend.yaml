@@ -1246,35 +1246,25 @@ Resources:
                     "InputPath": "$.ResourceProperties",
                     "ResultPath": "$.ResourceProperties.Id",
                     "Resource": "${RetrieveOriginAccessIdentity.Arn}",
-                    "Next": "ChooseUpdateOrDelete"
-                  },
-                  "ChooseUpdateOrDelete": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Update",
-                        "Next": "UpdateOriginAccessIdentity"
-                      },
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Delete",
-                        "Next": "DeleteOriginAccessIdentity"
-                      }
-                    ]
-                  },
-                  "UpdateOriginAccessIdentity": {
-                    "Type": "Task",
-                    "ResultPath": "$.Data",
-                    "Resource": "${UpdateOriginAccessIdentity.Arn}",
-                    "Next": "StoreOriginAccessIdentity"
+                    "Next": "DeleteOriginAccessIdentity"
                   },
                   "DeleteOriginAccessIdentity": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.Id",
                     "ResultPath": null,
                     "Resource": "${DeleteOriginAccessIdentity.Arn}",
-                    "Next": "Success"
+                    "Next": "CheckUpdate"
+                  },
+                  "CheckUpdate": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Update",
+                        "Next": "CreateOriginAccessIdentity"
+                      }
+                    ],
+                    "Default": "Success"
                   },
                   "Success": {
                     "Type": "Pass",
