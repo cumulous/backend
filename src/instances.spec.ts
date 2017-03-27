@@ -561,7 +561,9 @@ describe('deleteVolumesOnTermination()', () => {
 });
 
 describe('', () => {
-  let fakeSSHKey: Buffer;
+  const fakeSSHKey = 'FAKE_KEY';
+
+  let fakeSSHKeyBody: Buffer;
 
   let spyOnGetSSHKey: jasmine.Spy;
   let spyOnSSHClientEvent: jasmine.Spy;
@@ -569,14 +571,14 @@ describe('', () => {
   let spyOnSSHClientEnd: jasmine.Spy;
 
   beforeEach(() => {
-    fakeSSHKey = new Buffer(16);
+    fakeSSHKeyBody = Buffer.from(fakeSSHKey);
 
     process.env[envNames.sshKeyS3Bucket] = fakeSSHKeyS3Bucket;
     process.env[envNames.sshKeyS3Path] = fakeSSHKeyS3Path;
     process.env[envNames.sshUser] = fakeSSHUser;
 
     spyOnGetSSHKey = spyOn(s3, 'getObject')
-      .and.returnValue(fakeResolve({ Body: fakeSSHKey }));
+      .and.returnValue(fakeResolve({ Body: fakeSSHKeyBody }));
 
     spyOnSSHClientEvent = spyOn(SSHClient.prototype, 'on')
       .and.callFake(function(event: 'ready', callback: (data: any) => void) {
@@ -625,7 +627,7 @@ describe('', () => {
             expect(spyOnSSHClientConnect).toHaveBeenCalledWith({
               host: fakeInstanceAddress,
               username: user,
-              privateKey: fakeSSHKey,
+              privateKey: fakeSSHKeyBody,
             });
             expect(spyOnSSHClientConnect).toHaveBeenCalledTimes(1);
             done();
