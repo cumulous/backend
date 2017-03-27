@@ -55,12 +55,11 @@ export const updateOriginAccessIdentity = (event: CloudFormationRequest,
     .catch(callback);
 };
 
-export const deleteOriginAccessIdentity = (event: CloudFormationRequest,
+export const deleteOriginAccessIdentity = (id: string,
                                          context: any, callback: Callback) => {
-  Promise.resolve(event)
-    .then(event => cloudFront.deleteCloudFrontOriginAccessIdentity({
-        Id: event.ResourceProperties['Id'],
-      }).promise())
+  cloudFront.deleteCloudFrontOriginAccessIdentity({
+    Id: id,
+  }).promise()
     .then(() => callback())
     .catch(callback);
 };

@@ -208,11 +208,9 @@ testMethod('updateOriginAccessIdentity', cloudFront, 'updateCloudFrontOriginAcce
   S3CanonicalUserId: fakeCanonicalUserId,
 });
 
-testMethod('deleteOriginAccessIdentity', cloudFront, 'deleteCloudFrontOriginAccessIdentity', () => ({
-  ResourceProperties: {
-    Id: fakeIdentityId,
-  },
-}), () => ({
+testMethod('deleteOriginAccessIdentity', cloudFront, 'deleteCloudFrontOriginAccessIdentity', () =>
+  fakeIdentityId,
+() => ({
   Id: fakeIdentityId,
 }));
 
