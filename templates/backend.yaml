@@ -1133,7 +1133,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupOriginAccessStateMachine
-      Comment: !Sub ${WebDomain}-test
+      Comment: !Ref WebDomain
       Bucket: !Ref WebBucket
       Path: !Sub conf/origin.json
 
