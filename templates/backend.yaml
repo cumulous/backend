@@ -20,7 +20,7 @@ Parameters:
     Type: String
   APIDomain:
     Type: String
-  ApiStage:
+  ApiStageName:
     Type: String
     Default: Latest
   WebDomain:
@@ -1507,11 +1507,17 @@ Resources:
   #       DNSName: !GetAtt ApiDomainName.DistributionDomainName
   #       HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
 
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      StageName: !Ref ApiStageName
+      RestApiId: !Ref Api
+      DeploymentId: !Ref ApiDeployment
+
   ApiDeployment:
     Type: AWS::ApiGateway::Deployment
     Properties:
       RestApiId: !Ref Api
-      StageName: !Ref ApiStage
 
   GetApi:
     Type: AWS::Serverless::Function
