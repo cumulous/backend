@@ -10,6 +10,25 @@ produces:
   - application/json
 
 paths:
+  /:
+    get:
+      summary: Retrieve the API spec
+      description: Returns the current specification of this API.
+      security:
+        - member_token: []
+      responses:
+        200:
+          description: OpenAPI/Swagger 2.0 definition of this API.
+          schema:
+            type: object
+        default:
+          $ref: '#/responses/Error'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: GET
+        uri: "\
+          arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/\
+          ${GetApi.Arn}/invocations"
   /projects:
     get:
       summary: Search projects

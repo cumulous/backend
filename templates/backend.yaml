@@ -1516,6 +1516,14 @@ Resources:
     Properties:
       RestApiId: !Ref Api
 
+  GetApi:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-GetApi
+      CodeUri: ../app
+      Handler: apig.getApiSpec
+      Runtime: nodejs6.10
+
   # WARNING: this resource should be the last one in this template!
   # We concatenate it with the Swagger template afterwards.
   Api:
