@@ -20,9 +20,6 @@ Parameters:
     Type: String
   APIDomain:
     Type: String
-  ApiStageName:
-    Type: String
-    Default: Latest
   WebDomain:
     Type: String
   WebBucket:
@@ -1492,6 +1489,7 @@ Resources:
   #   Type: AWS::ApiGateway::BasePathMapping
   #   DependsOn:
   #     - ApiDomainName
+  #     - ApiLatestStage
   #   Properties:
   #     DomainName: !Ref APIDomain
   #     RestApiId: !Ref Api
@@ -1507,18 +1505,6 @@ Resources:
   #       DNSName: !GetAtt ApiDomainName.DistributionDomainName
   #       HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
 
-  ApiStage:
-    Type: AWS::ApiGateway::Stage
-    Properties:
-      StageName: !Ref ApiStageName
-      RestApiId: !Ref Api
-      DeploymentId: !Ref ApiDeployment
-
-  ApiDeployment:
-    Type: AWS::ApiGateway::Deployment
-    Properties:
-      RestApiId: !Ref Api
-
   GetApi:
     Type: AWS::Serverless::Function
     Properties:
@@ -1530,6 +1516,7 @@ Resources:
   # WARNING: this resource should be the last one in this template!
   # We concatenate it with the Swagger template afterwards.
   Api:
-    Type: AWS::ApiGateway::RestApi
+    Type: AWS::Serverless::Api
     Properties:
-      Body: !Sub |-
+      StageName: Latest
+      DefinitionBody: !Sub |-
