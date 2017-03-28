@@ -9,7 +9,11 @@ phases:
   build:
     commands:
       - npm run build
+  post_build:
+    commands:
+      - echo ${CODEBUILD_SOURCE_VERSION} > .version
 artifacts:
   files:
     - app/**/*
     - tmp/backend.yaml
+    - .version
