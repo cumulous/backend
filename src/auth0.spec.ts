@@ -14,7 +14,7 @@ describe('authenticate', () => {
   let fakeBaseUrl: string;
   let fakeClientConfig: Auth0ClientConfig;
   let fakeResponse: () => any;
-  let spyOnHttpsRequest: jasmine.Spy;
+  let spyOnJsonRequest: jasmine.Spy;
 
   beforeEach(() => {
     fakeBaseUrl = 'https://' + fakeDomain;
@@ -29,15 +29,15 @@ describe('authenticate', () => {
       access_token: fakeCloudFormationToken,
     });
 
-    spyOnHttpsRequest = spyOn(helpers, 'httpsRequest').and.callFake(
+    spyOnJsonRequest = spyOn(helpers, 'jsonRequest').and.callFake(
         (method: 'POST', Url: string, headers: Dict<string>, body: any, callback: Callback) =>
       callback(null, fakeResponse()));
   });
 
   describe('calls', () => {
-    it('httpsRequest() with correct parameters', (done: Callback) => {
+    it('jsonRequest() with correct parameters', (done: Callback) => {
       const callback = () => {
-        expect(spyOnHttpsRequest).toHaveBeenCalledWith(
+        expect(spyOnJsonRequest).toHaveBeenCalledWith(
           'POST', fakeBaseUrl + '/oauth/token', {
             'Content-Type': 'application/json',
           }, {
@@ -46,16 +46,16 @@ describe('authenticate', () => {
             client_id: fakeCloudFormationClientId,
             client_secret: fakeCloudFormationClientSecret,
           }, jasmine.any(Function));
-        expect(spyOnHttpsRequest).toHaveBeenCalledTimes(1);
+        expect(spyOnJsonRequest).toHaveBeenCalledTimes(1);
         done();
       };
       authenticate(fakeClientConfig, fakeBaseUrl, callback);
     });
     describe('callback with an error if', () => {
-      it('httpsRequest() returns an error', (done: Callback) => {
-        spyOnHttpsRequest.and.callFake(
+      it('jsonRequest() returns an error', (done: Callback) => {
+        spyOnJsonRequest.and.callFake(
             (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
-          callback(Error('httpsRequest()')));
+          callback(Error('jsonRequest()')));
         authenticate(fakeClientConfig, fakeBaseUrl, (err: Error) => {
           expect(err).toBeTruthy();
           done();
@@ -64,7 +64,7 @@ describe('authenticate', () => {
       describe('response is', () => {
         let response: any;
         afterEach((done: Callback) => {
-          spyOnHttpsRequest.and.callFake(
+          spyOnJsonRequest.and.callFake(
               (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
             callback(null, response));
           authenticate(fakeClientConfig, fakeBaseUrl, (err: Error) => {
@@ -114,7 +114,7 @@ describe('manage', () => {
   let fakeManagePayload: () => any;
 
   let spyOnAuthenticate: jasmine.Spy;
-  let spyOnHttpsRequest: jasmine.Spy;
+  let spyOnJsonRequest: jasmine.Spy;
 
   beforeEach(() => {
     fakeBaseUrl = 'https://' + fakeDomain + '/api/v2';
@@ -132,7 +132,7 @@ describe('manage', () => {
     spyOnAuthenticate = spyOn(auth0, 'authenticate').and.callFake(
         (client: Auth0ClientConfig, audience: string, callback: Callback) =>
       callback(null, fakeCloudFormationToken));
-    spyOnHttpsRequest = spyOn(helpers, 'httpsRequest').and.callFake(
+    spyOnJsonRequest = spyOn(helpers, 'jsonRequest').and.callFake(
         (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
       callback());
   });
@@ -160,13 +160,13 @@ describe('manage', () => {
       };
       testManage(callback);
     });
-    it('httpsRequest() with correct parameters', (done: Callback) => {
+    it('jsonRequest() with correct parameters', (done: Callback) => {
       const callback = (err: Error) => {
-        expect(spyOnHttpsRequest).toHaveBeenCalledWith(
+        expect(spyOnJsonRequest).toHaveBeenCalledWith(
           fakeManageMethod, fakeBaseUrl + fakeManageEndpoint, {
             Authorization: 'Bearer ' + fakeCloudFormationToken,
           }, fakeManagePayload(), callback);
-        expect(spyOnHttpsRequest).toHaveBeenCalledTimes(1);
+        expect(spyOnJsonRequest).toHaveBeenCalledTimes(1);
         done();
       };
       testManage(callback);

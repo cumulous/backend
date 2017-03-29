@@ -2,7 +2,8 @@ import * as https from 'https';
 import * as stringify from 'json-stable-stringify';
 import * as url from 'url';
 
-import { httpsRequest } from './helpers';
+import * as helpers from './helpers';
+import { httpsRequest, jsonRequest } from './helpers';
 import { Callback, Dict } from './types';
 
 describe('httpsRequest()', () => {
@@ -15,7 +16,7 @@ describe('httpsRequest()', () => {
   let fakeUrl: string;
   let fakeBody: any;
   let fakeHeaders: () => Dict<any>;
-  let fakeResponse: any;
+  let fakeResponse: string;
 
   let spyOnHttpsRequest: jasmine.Spy;
   let spyOnHttpsResponse: jasmine.Spy;
@@ -30,9 +31,9 @@ describe('httpsRequest()', () => {
     fakeHeaders = () => ({
       'fake-header': 'fake-value',
     });
-    fakeResponse = {
+    fakeResponse = stringify({
       fake: 'response',
-    };
+    });
 
     spyOnHttpsRequest = jasmine.createSpyObj('spyOnHttpsRequest', ['on', 'end']);
     spyOnHttpsRequestConstructor = spyOn(https, 'request')
@@ -44,8 +45,8 @@ describe('httpsRequest()', () => {
     (spyOnHttpsResponse as any).on
       .and.callFake((event: string, callback: (data?: any) => void) => {
         if (event === 'data') {
-          callback(stringify(fakeResponse).substring(0, 5));
-          callback(stringify(fakeResponse).substring(5));
+          callback(fakeResponse.substring(0, 5));
+          callback(fakeResponse.substring(5));
         } else if (event === 'end') {
           callback();
         }
@@ -173,20 +174,67 @@ describe('httpsRequest()', () => {
         };
         testMethod(callback);
       });
-      it('if data could not be parsed', (done: Callback) => {
-        (spyOnHttpsResponse as any).on
-          .and.callFake((event: string, callback: (data?: any) => void) => {
-            if (event === 'data') {
-              callback(stringify(fakeResponse) + '{');
-            } else if (event === 'end') {
-              callback();
-            }
-          });
-        const callback = (err: Error) => {
-          expect(err).toBeTruthy();
-          done();
-        };
-        testMethod(callback);
+    });
+  });
+});
+
+describe('jsonRequest()', () => {
+  const fakeRequestMethod = 'GET';
+  const fakeUrl = 'https://api.example.com/fake/resource';
+
+  let fakeBody: () => any;
+  let fakeHeaders: () => Dict<string>;
+  let fakeResponse: any;
+
+  let spyOnHttpsRequest: jasmine.Spy;
+
+  beforeEach(() => {
+    fakeBody = () => ({
+      fake: 'input',
+    });
+    fakeHeaders = () => ({
+      'Fake-Header': 'fake-value',
+    });
+    fakeResponse = {
+      fake: 'data',
+    };
+
+    spyOnHttpsRequest = spyOn(helpers, 'httpsRequest')
+      .and.callFake(
+        (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
+          callback(null, stringify(fakeResponse)));
+  });
+
+  const testMethod = (callback: Callback) => {
+    jsonRequest(fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody(), callback);
+  };
+
+  describe('calls', () => {
+    it('httpsRequest() once with correct parameters', (done: Callback) => {
+      testMethod(() => {
+        expect(spyOnHttpsRequest).toHaveBeenCalledWith(
+          fakeRequestMethod, fakeUrl, fakeHeaders(), fakeBody(), jasmine.any(Function));
+        expect(spyOnHttpsRequest).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+
+    describe('callback with an error', () => {
+      const testError = (done: Callback) => (err: Error) => {
+        expect(err).toBeTruthy();
+        done();
+      };
+      it('if response could not be parsed', (done: Callback) => {
+        spyOnHttpsRequest.and.callFake(
+          (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
+            callback(null, '{'));
+        testMethod(testError(done));
+      });
+      it('if httpsRequest() produces an error', (done: Callback) => {
+        spyOnHttpsRequest.and.callFake(
+          (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
+            callback(Error('httpsRequest()')));
+        testMethod(testError(done));
       });
     });
   });

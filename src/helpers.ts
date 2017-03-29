@@ -4,6 +4,8 @@ import * as url from 'url';
 
 import { Callback, Dict } from './types';
 
+type HttpMethod = 'GET' | 'PUT' | 'POST';
+
 export const assertNonEmptyArray = (array: any[], name: string) => {
   if (!Array.isArray(array) || array.length === 0) {
     throw Error('Expected non-empty ' + name + '[]');
@@ -11,7 +13,7 @@ export const assertNonEmptyArray = (array: any[], name: string) => {
 };
 
 export const httpsRequest = (
-    method: 'GET' | 'PUT' | 'POST',
+    method: HttpMethod,
     Url: string,
     headers: Dict<string>,
     body: any,
@@ -36,7 +38,7 @@ export const httpsRequest = (
       response.on('data', (chunk: string) => chunks.push(chunk));
       response.on('end', () => {
         const data = chunks.join('');
-        data ? callback(null, JSON.parse(data)) : callback();
+        data ? callback(null, data) : callback();
       });
     });
     request.on('error', callback);
@@ -45,3 +47,20 @@ export const httpsRequest = (
     callback(err);
   }
 };
+
+export const jsonRequest = (
+    method: HttpMethod,
+    Url: string,
+    headers: Dict<string>,
+    body: any,
+    callback: Callback) => {
+
+  httpsRequest(method, Url, headers, body, (err: Error, data: string) => {
+    if (err) return callback(err);
+    try {
+      callback(null, JSON.parse(data));
+    } catch (error) {
+      return callback(error);
+    }
+  });
+}

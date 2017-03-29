@@ -1,7 +1,7 @@
 import * as stringify from 'json-stable-stringify';
 
 import { s3 } from './aws';
-import { httpsRequest } from './helpers';
+import { jsonRequest } from './helpers';
 import { Callback } from './types';
 
 export interface Auth0ClientConfig {
@@ -21,7 +21,7 @@ export const authenticate = (client: Auth0ClientConfig, audience: string, callba
   } else if (client.Secret == null) {
     return callback(Error('Expected client secret to be defined'));
   }
-  httpsRequest('POST', 'https://' + client.Domain + '/oauth/token', {
+  jsonRequest('POST', 'https://' + client.Domain + '/oauth/token', {
     'Content-Type': 'application/json',
   }, {
     grant_type: 'client_credentials',
@@ -49,7 +49,7 @@ export const manage = (
   authenticate(client, baseUrl + '/', (err: Error, jwt: string) => {
     if (err) return callback(err);
 
-    httpsRequest(method, baseUrl + endpoint, { Authorization: 'Bearer ' + jwt }, payload, callback);
+    jsonRequest(method, baseUrl + endpoint, { Authorization: 'Bearer ' + jwt }, payload, callback);
   });
 };
 
