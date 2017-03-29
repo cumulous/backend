@@ -14,17 +14,17 @@ paths:
     get:
       summary: Retrieve the API spec
       description: Returns the current specification of this API.
-      security:
-        - member_token: []
+      # security:
+      #   - member_token: []
       tags:
         - API
       responses:
         200:
           description: OpenAPI/Swagger 2.0 definition of this API.
           schema:
-            $ref: '#'
-        default:
-          $ref: '#/responses/Error'
+            type: object
+        # default:
+        #   $ref: '#/responses/Error'
       # x-amazon-apigateway-integration:
       #   type: aws_proxy
       #   httpMethod: GET
@@ -42,8 +42,8 @@ paths:
         *projects:describe*,
         *projects:describe_details (conditional)*
         **
-      security:
-        - member_token: []
+      # security:
+      #   - member_token: []
       tags:
         - Projects
       parameters:
@@ -57,8 +57,8 @@ paths:
       responses:
         200:
           $ref: '#/responses/ListOfProjects'
-        default:
-          $ref: '#/responses/Error'
+        # default:
+        #   $ref: '#/responses/Error'
       # x-amazon-apigateway-integration:
       #   type: aws_proxy
       #   httpMethod: GET
@@ -194,16 +194,16 @@ responses:
           items:
             $ref: '#/definitions/Error'
 
-securityDefinitions:
-  member_token:
-    type: apiKey
-    in: header
-    name: Authorization
-    x-amazon-apigateway-authtype: custom
-    x-amazon-apigateway-authorizer:
-      type: token
-      authorizerUri:
-        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Authorizer.Arn}/invocations
-      authorizerCredentials: ${AuthorizerInvocationRole.Arn}
-      identityValidationExpression: '^[\w-]{36,}\.[\w-]{128,}\.[\w-]{256,}$'
-      authorizerResultTtlInSeconds: 60
+# securityDefinitions:
+#   member_token:
+#     type: apiKey
+#     in: header
+#     name: Authorization
+#     x-amazon-apigateway-authtype: custom
+#     x-amazon-apigateway-authorizer:
+#       type: token
+#       authorizerUri:
+#         Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Authorizer.Arn}/invocations
+#       authorizerCredentials: ${AuthorizerInvocationRole.Arn}
+#       identityValidationExpression: '^[\w-]{36,}\.[\w-]{128,}\.[\w-]{256,}$'
+#       authorizerResultTtlInSeconds: 60
