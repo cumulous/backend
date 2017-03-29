@@ -582,9 +582,11 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/lambda/*
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend.yaml
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/swagger.yaml
               - Effect: Allow
                 Action:
                   - cloudformation:CreateChangeSet
+                  - cloudformation:DescribeChangeSet
                   - cloudformation:DeleteChangeSet
                 Resource:
                   - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/backend-beta/*
@@ -615,6 +617,7 @@ Resources:
                   - cloudformation:CreateChangeSet
                 Resource:
                   - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Include
               - Effect: Allow
                 Action:
                   - iam:GetRole
@@ -656,6 +659,7 @@ Resources:
                   - s3:GetObject
                 Resource:
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/lambda/*
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/swagger.yaml
               - Effect: Allow
                 Action:
                   - s3:GetBucketPolicy
