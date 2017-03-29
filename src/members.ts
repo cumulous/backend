@@ -1,4 +1,4 @@
-import { getCertificate }  from './auth0';
+import { getCertificate, verifyJwt }  from './jwt';
 import { envNames } from './env';
 import { Callback } from './types';
 
@@ -18,13 +18,4 @@ export const authorize = (
     verifyJwt(event.authorizationToken, cert, (tokenErr: Error) =>
       callback(tokenErr ? 'Unauthorized' : null));
   });
-};
-
-export const verifyJwt = (token: string, cert: string, callback: Callback) => {
-  try {
-    const isValid = jsrsasign.jws.JWS.verifyJWT(token, cert, { alg: ['RS256'] });
-    callback(isValid ? null : Error('Invalid token'));
-  } catch (err) {
-    callback(err);
-  }
 };

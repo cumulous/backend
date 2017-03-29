@@ -1,17 +1,15 @@
 const jsrsasign = require('jsrsasign');
 
-import * as auth0 from './auth0';
-import { getCertificate } from './auth0';
+import * as jwt from './jwt';
+import { getCertificate, verifyJwt } from './jwt';
 import { envNames } from './env';
-import * as members from './members';
-import { authorize, verifyJwt } from './members';
+import { authorize } from './members';
 import { Callback } from './types';
-
-const fakeToken = 'ey.ab.cd';
-const fakeCert = 'FAKE_CERT ABCD';
 
 describe('authorize()', () => {
   const fakeDomain = 'tenant.auth0.com';
+  const fakeToken = 'ey.ab.cd';
+  const fakeCert = 'FAKE_CERT ABCD';
 
   let fakeEvent = () => ({
     authorizationToken: fakeToken,
@@ -23,10 +21,10 @@ describe('authorize()', () => {
   beforeEach(() => {
     process.env[envNames.auth0Domain] = fakeDomain;
 
-    spyOnGetCertificate = spyOn(auth0, 'getCertificate')
+    spyOnGetCertificate = spyOn(jwt, 'getCertificate')
       .and.callFake((domain: string, callback: Callback) =>
         callback ? callback(null, fakeCert) : null);
-    spyOnVerifyJwt = spyOn(members, 'verifyJwt')
+    spyOnVerifyJwt = spyOn(jwt, 'verifyJwt')
       .and.callFake((token: string, cert: string, callback: Callback) =>
         callback ? callback(): null);
   });
@@ -35,7 +33,7 @@ describe('authorize()', () => {
     authorize(fakeEvent(), null, callback);
   };
 
-  it('calls auth0.getCertificate() once with correct parameters', (done: Callback) => {
+  it('calls jwt.getCertificate() once with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnGetCertificate).toHaveBeenCalledWith(fakeDomain, jasmine.any(Function));
       expect(spyOnGetCertificate).toHaveBeenCalledTimes(1);
@@ -76,10 +74,10 @@ describe('authorize()', () => {
     });
   });
 
-  it('immediately calls callback with an Error if auth0.getCertificate() returns an error',
+  it('immediately calls callback with an Error if jwt.getCertificate() returns an error',
       (done: Callback) => {
     spyOnGetCertificate.and.callFake((domain: string, callback: Callback) =>
-      callback ? callback(Error('auth0.getCertificate()')) : null);
+      callback ? callback(Error('jwt.getCertificate()')) : null);
     testMethod((err: Error | string) => {
       expect(err).toBeTruthy();
       expect(err).not.toEqual('Unauthorized');
@@ -95,54 +93,6 @@ describe('authorize()', () => {
     testMethod((err: string) => {
       expect(err).toEqual('Unauthorized');
       done();
-    });
-  });
-});
-
-describe('verifyJwt()', () => {
-
-  let spyOnVerifyJWT: jasmine.Spy;
-
-  beforeEach(() => {
-    spyOnVerifyJWT = spyOn(jsrsasign.jws.JWS, 'verifyJWT')
-      .and.returnValue(true);
-  });
-
-  const testMethod = (callback: Callback) => {
-    verifyJwt(fakeToken, fakeCert, callback);
-  };
-
-  it('calls jsrsasign.jws.JWS.verifyJWT() with correct parameters', (done: Callback) => {
-    testMethod(() => {
-      expect(spyOnVerifyJWT).toHaveBeenCalledWith(
-        fakeToken, fakeCert, { alg: ['RS256'] });
-      expect(spyOnVerifyJWT).toHaveBeenCalledTimes(1);
-      done();
-    });
-  });
-
-  it('calls callback without an Error if jsrsasign.jws.JWS.verifyJwt() returns "true"',
-      (done: Callback) => {
-    testMethod((err: Error) => {
-      expect(err).toBeFalsy();
-      done();
-    });
-  });
-
-  describe('calls callback with an Error if jsrsasign.jws.JWS.verifyJwt()', () => {
-    const testError = (done: Callback) => {
-      testMethod((err: Error) => {
-        expect(err).toBeTruthy();
-        done();
-      });
-    };
-    it('returns "false"', (done: Callback) => {
-      spyOnVerifyJWT.and.returnValue(false);
-      testError(done);
-    });
-    it('throws an Error', (done: Callback) => {
-      spyOnVerifyJWT.and.throwError('verifyJwt()');
-      testError(done);
     });
   });
 });
