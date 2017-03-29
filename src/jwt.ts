@@ -15,3 +15,13 @@ export const verifyJwt = (token: string, cert: string, callback: Callback) => {
     callback(err);
   }
 };
+
+export const authenticate = (domain: string, token: string, callback: Callback) => {
+
+  getCertificate(domain, (certErr: Error, cert: string) => {
+    if (certErr) return callback(certErr);
+
+    verifyJwt(token, cert, (tokenErr: Error) =>
+      callback(tokenErr ? 'Unauthorized' : null));
+  });
+};

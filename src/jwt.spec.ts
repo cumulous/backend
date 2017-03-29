@@ -1,5 +1,6 @@
 import * as helpers from './helpers';
-import { getCertificate, verifyJwt } from './jwt';
+import * as jwt from './jwt';
+import { authenticate, getCertificate, verifyJwt } from './jwt';
 import { Callback, Dict } from './types';
 
 const jsrsasign = require('jsrsasign');
@@ -69,6 +70,73 @@ describe('verifyJwt()', () => {
     it('throws an Error', (done: Callback) => {
       spyOnVerifyJWT.and.throwError('verifyJwt()');
       testError(done);
+    });
+  });
+});
+
+describe('authenticate()', () => {
+  const fakeDomain = 'tenant.auth0.com';
+  const fakeToken = 'ey.ab.cd';
+  const fakeCert = 'FAKE_CERT ABCD';
+
+  let spyOnGetCertificate: jasmine.Spy;
+  let spyOnVerifyJwt: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnGetCertificate = spyOn(jwt, 'getCertificate')
+      .and.callFake((domain: string, callback: Callback) =>
+        callback ? callback(null, fakeCert) : null);
+    spyOnVerifyJwt = spyOn(jwt, 'verifyJwt')
+      .and.callFake((token: string, cert: string, callback: Callback) =>
+        callback ? callback(): null);
+  });
+
+  const testMethod = (callback: Callback) => {
+    authenticate(fakeDomain, fakeToken, callback);
+  };
+
+  it('calls jwt.getCertificate() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnGetCertificate).toHaveBeenCalledWith(fakeDomain, jasmine.any(Function));
+      expect(spyOnGetCertificate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls verifyJwt() with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnVerifyJwt).toHaveBeenCalledWith(
+        fakeToken, fakeCert, jasmine.any(Function));
+      expect(spyOnVerifyJwt).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback without an error if JWT is valid', (done: Callback) => {
+    testMethod((err: Error) => {
+      expect(err).toBeFalsy();
+      done();
+    });
+  });
+
+  it('immediately calls callback with an Error if jwt.getCertificate() returns an error',
+      (done: Callback) => {
+    spyOnGetCertificate.and.callFake((domain: string, callback: Callback) =>
+      callback ? callback(Error('jwt.getCertificate()')) : null);
+    testMethod((err: Error) => {
+      expect(err).toEqual(jasmine.any(Error));
+      expect(spyOnVerifyJwt).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('calls callback with "Unauthorized" response if verifyJwt() returns an Error',
+      (done: Callback) => {
+    spyOnVerifyJwt.and.callFake((token: string, cert: string, callback: Callback) =>
+        callback ? callback(Error('verifyJwt()')): null);
+    testMethod((err: string) => {
+      expect(err).toEqual('Unauthorized');
+      done();
     });
   });
 });

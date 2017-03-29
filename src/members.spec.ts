@@ -1,7 +1,4 @@
-const jsrsasign = require('jsrsasign');
-
 import * as jwt from './jwt';
-import { getCertificate, verifyJwt } from './jwt';
 import { envNames } from './env';
 import { authorize } from './members';
 import { Callback } from './types';
@@ -9,23 +6,18 @@ import { Callback } from './types';
 describe('authorize()', () => {
   const fakeDomain = 'tenant.auth0.com';
   const fakeToken = 'ey.ab.cd';
-  const fakeCert = 'FAKE_CERT ABCD';
 
   let fakeEvent = () => ({
     authorizationToken: fakeToken,
   });
 
-  let spyOnGetCertificate: jasmine.Spy;
-  let spyOnVerifyJwt: jasmine.Spy;
+  let spyOnAuthenticate: jasmine.Spy;
 
   beforeEach(() => {
     process.env[envNames.auth0Domain] = fakeDomain;
 
-    spyOnGetCertificate = spyOn(jwt, 'getCertificate')
-      .and.callFake((domain: string, callback: Callback) =>
-        callback ? callback(null, fakeCert) : null);
-    spyOnVerifyJwt = spyOn(jwt, 'verifyJwt')
-      .and.callFake((token: string, cert: string, callback: Callback) =>
+    spyOnAuthenticate = spyOn(jwt, 'authenticate')
+      .and.callFake((domain: string, token: string, callback: Callback) =>
         callback ? callback(): null);
   });
 
@@ -33,24 +25,17 @@ describe('authorize()', () => {
     authorize(fakeEvent(), null, callback);
   };
 
-  it('calls jwt.getCertificate() once with correct parameters', (done: Callback) => {
+  it('calls jwt.authenticate() with correct parameters', (done: Callback) => {
     testMethod(() => {
-      expect(spyOnGetCertificate).toHaveBeenCalledWith(fakeDomain, jasmine.any(Function));
-      expect(spyOnGetCertificate).toHaveBeenCalledTimes(1);
+      expect(spyOnAuthenticate).toHaveBeenCalledWith(
+        fakeDomain, fakeToken, jasmine.any(Function));
+      expect(spyOnAuthenticate).toHaveBeenCalledTimes(1);
       done();
     });
   });
 
-  it('calls verifyJwt() with correct parameters', (done: Callback) => {
-    testMethod(() => {
-      expect(spyOnVerifyJwt).toHaveBeenCalledWith(
-        fakeToken, fakeCert, jasmine.any(Function));
-      expect(spyOnVerifyJwt).toHaveBeenCalledTimes(1);
-      done();
-    });
-  });
-
-  it('calls callback without an error if JWT is valid', (done: Callback) => {
+  it('calls callback without an error if jwt.authenticate() does not return an error',
+      (done: Callback) => {
     testMethod((err: Error) => {
       expect(err).toBeFalsy();
       done();
@@ -58,10 +43,9 @@ describe('authorize()', () => {
   });
 
   describe('immediately calls callback with an Error if', () => {
-    const testError = (done: Callback) => (err: Error | string) => {
-      expect(err).toBeTruthy();
-      expect(err).not.toEqual('Unauthorized');
-      expect(spyOnGetCertificate).not.toHaveBeenCalled();
+    const testError = (done: Callback) => (err: Error) => {
+      expect(err).toEqual(jasmine.any(Error));
+      expect(spyOnAuthenticate).not.toHaveBeenCalled();
       done();
     };
     describe('event is', () => {
@@ -74,22 +58,20 @@ describe('authorize()', () => {
     });
   });
 
-  it('immediately calls callback with an Error if jwt.getCertificate() returns an error',
+  it('calls callback with an Error if jwt.authenticate() returns an Error',
       (done: Callback) => {
-    spyOnGetCertificate.and.callFake((domain: string, callback: Callback) =>
-      callback ? callback(Error('jwt.getCertificate()')) : null);
-    testMethod((err: Error | string) => {
-      expect(err).toBeTruthy();
-      expect(err).not.toEqual('Unauthorized');
-      expect(spyOnVerifyJwt).not.toHaveBeenCalled();
+    spyOnAuthenticate.and.callFake((domain: string, token: string, callback: Callback) =>
+      callback ? callback(Error('jwt.authenticate()')) : null);
+    testMethod((err: Error) => {
+      expect(err).toEqual(jasmine.any(Error));
       done();
     });
   });
 
-  it('calls callback with "Unauthorized" keyword if verifyJwt() returns an Error',
+  it('calls callback with "Unauthorized" response if jwt.authenticate() returns "Unauthorized"',
       (done: Callback) => {
-    spyOnVerifyJwt.and.callFake((token: string, cert: string, callback: Callback) =>
-        callback ? callback(Error('verifyJwt()')): null);
+    spyOnAuthenticate.and.callFake((domain: string, token: string, callback: Callback) =>
+        callback ? callback('Unauthorized'): null);
     testMethod((err: string) => {
       expect(err).toEqual('Unauthorized');
       done();
