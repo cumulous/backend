@@ -21,7 +21,8 @@ describe('authorize()', () => {
     process.env[envNames.auth0Domain] = fakeDomain;
 
     spyOnGetCertificate = spyOn(auth0, 'getCertificate')
-      .and.callFake((domain: string, callback: Callback) => callback(null, fakeCert));
+      .and.callFake((domain: string, callback: Callback) =>
+        callback ? callback(null, fakeCert) : null);
     spyOnVerifyJwt = spyOn(jwt, 'verifyJwt').and.returnValue(true);
   });
 
@@ -73,7 +74,7 @@ describe('authorize()', () => {
   it('immediately calls callback with an Error if auth0.getCertificate() returns an error',
       (done: Callback) => {
     spyOnGetCertificate.and.callFake((domain: string, callback: Callback) =>
-      callback(Error('auth0.getCertificate()')));
+      callback ? callback(Error('auth0.getCertificate()')) : null);
     testMethod((err: Error | string) => {
       expect(err).toBeTruthy();
       expect(err).not.toEqual('Unauthorized');
@@ -82,10 +83,11 @@ describe('authorize()', () => {
     });
   });
 
-  describe('calls callback with "Unauthorized" if', () => {
+  describe('calls callback with "Unauthorized" without an exception if', () => {
     const testError = (done: Callback) => {
       testMethod((err: string) => {
         expect(err).toEqual('Unauthorized');
+        expect(spyOnGetCertificate).not.toThrow();
         done();
       });
     };

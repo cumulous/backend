@@ -17,6 +17,7 @@ export const authorize = (
     let isValid = false;
     try {
       isValid = verifyJwt(event.authorizationToken, cert, { alg: ['RS256'] });
+    } catch (e) {
     } finally {
       callback(isValid ? null : 'Unauthorized');
     }
