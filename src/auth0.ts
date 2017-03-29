@@ -1,7 +1,7 @@
 import * as stringify from 'json-stable-stringify';
 
 import { s3 } from './aws';
-import { jsonRequest } from './helpers';
+import { httpsRequest, jsonRequest } from './helpers';
 import { Callback } from './types';
 
 export interface Auth0ClientConfig {
@@ -67,4 +67,8 @@ export const rotateAndStoreClientSecret = (client: Auth0ClientConfig, context: a
       ServerSideEncryption: 'aws:kms',
     }, callback);
   });
+};
+
+export const getJWTCertificate = (domain: string, callback: Callback) => {
+  httpsRequest('GET', `https://${domain}/cer`, null, null, callback);
 };

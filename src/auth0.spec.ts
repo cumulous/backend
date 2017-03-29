@@ -1,5 +1,6 @@
 import * as auth0 from './auth0';
-import { Auth0ClientConfig, authenticate, manage, rotateAndStoreClientSecret } from './auth0';
+import { Auth0ClientConfig, authenticate, getJWTCertificate,
+         manage, rotateAndStoreClientSecret } from './auth0';
 import { s3 } from './aws';
 import { testError } from './fixtures/support';
 import * as helpers from './helpers';
@@ -259,5 +260,22 @@ describe('rotateAndStoreClientSecret', () => {
         });
       });
     });
+  });
+});
+
+describe('getJWTCertificate()', () => {
+  it('calls spyOnHttpsRequest() with correct parameters', (done: Callback) => {
+    const spyOnHttpsRequest = spyOn(helpers, 'httpsRequest').and.callFake(
+        (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
+      callback(null, 'FAKE_CERT 1234'));
+
+    const callback = () => {
+      expect(spyOnHttpsRequest).toHaveBeenCalledWith(
+        'GET', `https://${fakeDomain}/cer`, null, null, callback);
+      expect(spyOnHttpsRequest).toHaveBeenCalledTimes(1);
+      done();
+    };
+
+    getJWTCertificate(fakeDomain, callback);
   });
 });
