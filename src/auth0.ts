@@ -69,6 +69,6 @@ export const rotateAndStoreClientSecret = (client: Auth0ClientConfig, context: a
   });
 };
 
-export const getJWTCertificate = (domain: string, callback: Callback) => {
+export const getCertificate = (domain: string, callback: Callback) => {
   httpsRequest('GET', `https://${domain}/cer`, null, null, callback);
 };

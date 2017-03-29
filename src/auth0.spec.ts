@@ -1,5 +1,5 @@
 import * as auth0 from './auth0';
-import { Auth0ClientConfig, authenticate, getJWTCertificate,
+import { Auth0ClientConfig, authenticate, getCertificate,
          manage, rotateAndStoreClientSecret } from './auth0';
 import { s3 } from './aws';
 import { testError } from './fixtures/support';
@@ -263,7 +263,7 @@ describe('rotateAndStoreClientSecret', () => {
   });
 });
 
-describe('getJWTCertificate()', () => {
+describe('getCertificate()', () => {
   it('calls spyOnHttpsRequest() with correct parameters', (done: Callback) => {
     const spyOnHttpsRequest = spyOn(helpers, 'httpsRequest').and.callFake(
         (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
@@ -276,6 +276,6 @@ describe('getJWTCertificate()', () => {
       done();
     };
 
-    getJWTCertificate(fakeDomain, callback);
+    getCertificate(fakeDomain, callback);
   });
 });
