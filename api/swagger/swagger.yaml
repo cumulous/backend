@@ -23,8 +23,8 @@ paths:
           description: OpenAPI/Swagger 2.0 definition of this API.
           schema:
             type: object
-        # default:
-        #   $ref: '#/responses/Error'
+        default:
+          $ref: '#/responses/Error'
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
@@ -56,8 +56,8 @@ paths:
       responses:
         200:
           $ref: '#/responses/ListOfProjects'
-        # default:
-        #   $ref: '#/responses/Error'
+        default:
+          $ref: '#/responses/Error'
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
