@@ -28,9 +28,8 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: GET
-        uri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/\
-            functions/${GetApi.Arn}/invocations"
+        uri: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/\
+          functions/${GetApi.Arn}/invocations"
   /projects:
     get:
       summary: Search projects
@@ -62,9 +61,8 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: GET
-        uri:
-          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/\
-            functions/${GetProjects.Arn}/invocations"
+        uri: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/\
+          functions/${GetProjects.Arn}/invocations"
 
 definitions:
   Project:
@@ -202,9 +200,9 @@ securityDefinitions:
     x-amazon-apigateway-authtype: custom
     x-amazon-apigateway-authorizer:
       type: token
-      authorizerUri:
-        Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/\
-          functions/${Authorizer.Arn}/invocations"
+      authorizerUri: "\
+        arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/\
+        functions/${Authorizer.Arn}/invocations"
       authorizerCredentials: ${AuthorizerInvocationRole.Arn}
       identityValidationExpression: '^[\w-]{36,}\.[\w-]{128,}\.[\w-]{256,}$'
       authorizerResultTtlInSeconds: 60

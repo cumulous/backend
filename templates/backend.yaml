@@ -1523,8 +1523,8 @@ Resources:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Latest
-      DefinitionBody:
+      DefinitionBody: !Sub |-
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: !Sub s3://${ArtifactsBucket}/swagger.yaml
+            Location: s3://${ArtifactsBucket}/swagger.yaml
