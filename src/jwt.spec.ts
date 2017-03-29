@@ -24,6 +24,169 @@ describe('getCertificate()', () => {
   });
 });
 
+describe('parseTokenInfo()', () => {
+  const fakeToken = 'ey.ab.cd';
+
+  let spyOnParseJWS: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnParseJWS = spyOn(jsrsasign.jws.JWS, 'parse');
+  });
+
+  const testMethod = (callback: Callback) => {
+    parseTokenInfo(fakeToken, callback);
+  };
+
+  it('calls jsrsasign.jws.JWS.parse() with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnParseJWS).toHaveBeenCalledWith(fakeToken);
+      expect(spyOnParseJWS).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback with correct parameters upon successful parsing', (done: Callback) => {
+    const fakeTokenInfo = () => ({
+      headerObj: {
+        kid: '1234',
+      },
+      payloadObj: {
+        fake: 'claim',
+      },
+    });
+    spyOnParseJWS.and.returnValue(fakeTokenInfo());
+    testMethod((err: Error, tokenInfo: any) => {
+      expect(err).toBeFalsy();
+      expect(tokenInfo).toEqual(fakeTokenInfo());
+      done();
+    });
+  });
+
+  it('calls callback with an Error if jsrsasign.jws.JWS.parse() throws an Error',
+      (done: Callback) => {
+    spyOnParseJWS.and.throwError('jsrsasign.jws.JWS.parse()');
+    testMethod((err: Error) => {
+      expect(err).toEqual(jasmine.any(Error));
+      done();
+    });
+  });
+});
+
+describe('parseTokenHeader()', () => {
+  const fakeToken = 'ey.ab.cd';
+
+  let fakeTokenHeader: () => Dict<string>;
+  let fakeTokenInfo: () => { headerObj: Dict<string> };
+
+  let spyOnParseTokenInfo: jasmine.Spy;
+
+  beforeEach(() => {
+    fakeTokenHeader = () => ({
+      alg: 'RS256',
+    });
+    fakeTokenInfo = () => ({
+      headerObj: fakeTokenHeader(),
+    });
+
+    spyOnParseTokenInfo = spyOn(jwt, 'parseTokenInfo')
+      .and.callFake((token: string, callback: Callback) =>
+        callback ? callback(null, fakeTokenInfo()) : null);
+  });
+
+  const testMethod = (callback: Callback) => {
+    parseTokenHeader(fakeToken, callback);
+  };
+
+  it('calls parseTokenInfo() with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnParseTokenInfo).toHaveBeenCalledWith(fakeToken, jasmine.any(Function));
+      expect(spyOnParseTokenInfo).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback with correct parameters', (done: Callback) => {
+    testMethod((err: Error, header: any) => {
+      expect(err).toBeFalsy();
+      expect(header).toEqual(fakeTokenHeader());
+      done();
+    });
+  });
+
+  describe('calls callback with an error if', () => {
+    const testError = (done: Callback) => {
+      testMethod((err: Error) => {
+        expect(err).toEqual(jasmine.any(Error));
+        done();
+      });
+    };
+    it('parseTokenInfo() returns an error', (done: Callback) => {
+      spyOnParseTokenInfo.and.callFake((token: string, callback: Callback) =>
+        callback ? callback(Error('parseTokenInfo()')) : null);
+      testError(done);
+    });
+    describe('parseTokenInfo() returns', () => {
+      let tokenInfo: any;
+      afterEach((done: Callback) => {
+        spyOnParseTokenInfo.and.callFake((token: string, callback: Callback) =>
+          callback ? callback(null, tokenInfo) : null);
+        testError(done);
+      })
+      it('undefined object', () => tokenInfo = undefined);
+      it('null object', () => tokenInfo = null);
+    });
+  });
+});
+
+describe('parseCertId()', () => {
+  const fakeToken = 'ey.ab.cd';
+  const fakeCertId = 'FAKE_CERT_ID'
+
+  let spyOnParseTokenHeader: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnParseTokenHeader = spyOn(jwt, 'parseTokenHeader');
+  });
+
+  const testMethod = (callback: Callback) => {
+    parseCertId(fakeToken, callback);
+  };
+
+  it('calls parseTokenHeader() with correct parameters', (done: Callback) => {
+    spyOnParseTokenHeader.and.callFake((token: string, callback: Callback) =>
+      callback ? callback() : null);
+    testMethod(() => {
+      expect(spyOnParseTokenHeader).toHaveBeenCalledWith(fakeToken, jasmine.any(Function));
+      expect(spyOnParseTokenHeader).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  describe('calls callback with correct parameters if header contains', () => {
+    let fakeHeader: { kid?: string, x5t?: string };
+    afterEach((done: Callback) => {
+      spyOnParseTokenHeader.and.callFake((token: string, callback: Callback) =>
+        callback ? callback(null, fakeHeader) : null);
+      testMethod((err: Error, certId: any) => {
+        expect(err).toBeFalsy();
+        expect(certId).toEqual(fakeCertId);
+        done();
+      });
+    });
+    it('"kid"', () => fakeHeader = { kid: fakeCertId });
+    it('"x5t"', () => fakeHeader = { x5t: fakeCertId });
+  });
+
+  it('calls callback with an error if parseTokenHeader() returns an error', (done: Callback) => {
+    spyOnParseTokenHeader.and.callFake((token: string, callback: Callback) =>
+      callback ? callback(Error('parseTokenHeader()')) : null);
+    testMethod((err: Error) => {
+      expect(err).toEqual(jasmine.any(Error));
+      done();
+    });
+  });
+});
+
 describe('verifyJwt()', () => {
   const fakeToken = 'ey.ab.cd';
   const fakeCert = 'FAKE_CERT ABCD';
