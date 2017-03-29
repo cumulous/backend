@@ -202,6 +202,7 @@ securityDefinitions:
       type: token
       authorizerUri:
         Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Authorizer.Arn}/invocations
-      authorizerCredentials: ${AuthorizerInvocationRole.Arn}
+      authorizerCredentials:
+        Fn::Sub: ${AuthorizerInvocationRole.Arn}
       identityValidationExpression: '^[\w-]{36,}\.[\w-]{128,}\.[\w-]{256,}$'
       authorizerResultTtlInSeconds: 60

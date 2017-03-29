@@ -1528,15 +1528,3 @@ Resources:
           Name: AWS::Include
           Parameters:
             Location: !Sub s3://${ArtifactsBucket}/swagger.yaml
-        # swagger: 2.0
-        # info:
-        #   title: Backend API
-        # paths:
-        #   "/get":
-        #     get:
-        #       x-amazon-apigateway-integration:
-        #         httpMethod: POST
-        #         type: aws_proxy
-        #         uri:
-        #           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetApi.Arn}/invocations
-        #       responses: {}
