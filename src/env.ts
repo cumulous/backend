@@ -7,4 +7,5 @@ export const envNames = {
   sshKeyS3Path: 'SSH_KEY_S3_PATH',
   sshUser: 'SSH_USER',
   mountPath: 'MOUNT_PATH',
+  auth0Domain: 'AUTH0_DOMAIN',
 };
