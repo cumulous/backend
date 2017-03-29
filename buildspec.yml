@@ -12,4 +12,5 @@ phases:
 artifacts:
   files:
     - app/**/*
-    - tmp/backend.yaml
+    - templates/backend.yaml
+    - api/swagger/swagger.yaml

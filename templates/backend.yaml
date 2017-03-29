@@ -2,6 +2,8 @@ AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 
 Parameters:
+  ArtifactsBucket:
+    Type: String
   VpcRange:
     Type: String
   EncryptionKeyId:
@@ -1517,10 +1519,12 @@ Resources:
       Handler: apig.getApiSpec
       Runtime: nodejs6.10
 
-  # WARNING: this resource should be the last one in this template!
-  # We concatenate it with the Swagger template afterwards.
   Api:
     Type: AWS::Serverless::Api
     Properties:
       StageName: Latest
-      DefinitionBody: !Sub |-
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: s3://${ArtifactsBucket}/swagger.yaml

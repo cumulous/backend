@@ -301,9 +301,10 @@ Resources:
 
               build:
                 commands:
+                  - aws s3 cp api/swagger/swagger.yaml s3://${BackendArtifactsBucket}
                   - |-
                     aws cloudformation package \
-                      --template-file tmp/backend.yaml \
+                      --template-file templates/backend.yaml \
                       --output-template-file backend.yaml \
                       --s3-bucket ${BackendArtifactsBucket} \
                       --s3-prefix lambda
@@ -327,6 +328,7 @@ Resources:
                         --change-set-name Deploy \
                         --capabilities CAPABILITY_IAM \
                         --parameters \
+                          ParameterKey=ArtifactsBucket,ParameterValue=${BackendArtifactsBucket} \
                           ParameterKey=VpcRange,ParameterValue=$vpc_range \
                           ParameterKey=EncryptionKeyId,ParameterValue=${EncryptionKey} \
                           ParameterKey=SecretsBucket,ParameterValue=${SecretsBucket} \

@@ -12,7 +12,7 @@ const yaml = require('gulp-yaml');
 const tsProject = ts.createProject('tsconfig.json');
 
 const paths = {
-  api: () => 'api/swagger/' + paths.swagger,
+  api: 'api/swagger/swagger.yaml',
   bin: 'bin',
   conf: () => ['src/**/*.json', paths.templates + '/*.json'],
   coverage: () => paths.reports + '/coverage',
@@ -20,9 +20,7 @@ const paths = {
   backend: 'backend.yaml',
   src: 'src/**/!(*.spec).ts',
   specs: 'src/*.spec.ts',
-  swagger: 'swagger.yaml',
   templates: 'templates',
-  tmp: 'tmp',
 };
 
 let watching = false;
@@ -30,7 +28,7 @@ let failed = false;
 
 gulp.task('watch', () => {
   watching = true;
-  gulp.watch(paths.api(), ['test']);
+  gulp.watch(paths.api, ['test']);
   gulp.watch(paths.conf(), ['test']);
   gulp.watch(paths.src, ['test']);
   gulp.watch(paths.specs, ['test']);
@@ -49,17 +47,9 @@ gulp.task('compile', () => {
     .src(paths.conf())
     .pipe(gulp.dest(paths.bin));
   gulp
-    .src(paths.api())
-    .pipe(replace(/^/gm, '        '))
-    .pipe(gulp.dest(paths.tmp))
+    .src(paths.api)
     .pipe(yaml())
-    .pipe(gulp.dest(paths.bin))
-    .on('end', () => {
-      gulp
-        .src([paths.templates + '/' + paths.backend, paths.tmp + '/' + paths.swagger])
-        .pipe(concat(paths.backend))
-        .pipe(gulp.dest(paths.tmp));
-    });
+    .pipe(gulp.dest(paths.bin));
   return tsProject.src()
     .pipe(sourcemaps.init())
     .pipe(tsProject())
