@@ -194,16 +194,16 @@ responses:
           items:
             $ref: '#/definitions/Error'
 
-# securityDefinitions:
-#   member_token:
-#     type: apiKey
-#     in: header
-#     name: Authorization
-#     x-amazon-apigateway-authtype: custom
-#     x-amazon-apigateway-authorizer:
-#       type: token
-#       authorizerUri:
-#         Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Authorizer.Arn}/invocations
-#       authorizerCredentials: ${AuthorizerInvocationRole.Arn}
-#       identityValidationExpression: '^[\w-]{36,}\.[\w-]{128,}\.[\w-]{256,}$'
-#       authorizerResultTtlInSeconds: 60
+securityDefinitions:
+  member_token:
+    type: apiKey
+    in: header
+    name: Authorization
+    x-amazon-apigateway-authtype: custom
+    x-amazon-apigateway-authorizer:
+      type: token
+      authorizerUri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Authorizer.Arn}/invocations
+      authorizerCredentials: ${AuthorizerInvocationRole.Arn}
+      identityValidationExpression: '^[\w-]{36,}\.[\w-]{128,}\.[\w-]{256,}$'
+      authorizerResultTtlInSeconds: 60
