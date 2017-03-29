@@ -482,6 +482,7 @@ Resources:
       CodeUri: ../app
       Handler: members.authorize
       Runtime: nodejs6.10
+      Timeout: 10
       Environment:
         Variables:
           AUTH0_DOMAIN: !Ref Auth0Domain
