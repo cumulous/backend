@@ -14,8 +14,8 @@ paths:
     get:
       summary: Retrieve the API spec
       description: Returns the current specification of this API.
-      # security:
-      #   - member_token: []
+      security:
+        - member_token: []
       tags:
         - API
       responses:
@@ -25,12 +25,11 @@ paths:
             type: object
         # default:
         #   $ref: '#/responses/Error'
-      # x-amazon-apigateway-integration:
-      #   type: aws_proxy
-      #   httpMethod: GET
-      #   uri:
-      #     Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/\
-      #       functions/${GetApi.Arn}/invocations"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: GET
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetApi.Arn}/invocations
   /projects:
     get:
       summary: Search projects
@@ -42,8 +41,8 @@ paths:
         *projects:describe*,
         *projects:describe_details (conditional)*
         **
-      # security:
-      #   - member_token: []
+      security:
+        - member_token: []
       tags:
         - Projects
       parameters:
@@ -59,12 +58,11 @@ paths:
           $ref: '#/responses/ListOfProjects'
         # default:
         #   $ref: '#/responses/Error'
-      # x-amazon-apigateway-integration:
-      #   type: aws_proxy
-      #   httpMethod: GET
-      #   uri:
-      #     Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/\
-      #       functions/${GetProjects.Arn}/invocations"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: GET
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetProjects.Arn}/invocations
 
 definitions:
   Project:
