@@ -1,7 +1,8 @@
 import { getCertificate }  from './auth0';
 import { envNames } from './env';
-import { verifyJwt } from './jwt';
 import { Callback } from './types';
+
+const jsrsasign = require('jsrsasign');
 
 export const authorize = (
     event: { authorizationToken: string },
@@ -11,15 +12,19 @@ export const authorize = (
     return callback(Error('Expected non-empty event'));
   }
 
-  getCertificate(process.env[envNames.auth0Domain], (err: Error, cert: string) => {
-    if (err) return callback(err);
+  getCertificate(process.env[envNames.auth0Domain], (certErr: Error, cert: string) => {
+    if (certErr) return callback(certErr);
 
-    let isValid = false;
-    try {
-      isValid = verifyJwt(event.authorizationToken, cert, { alg: ['RS256'] });
-    } catch (e) {
-    } finally {
-      callback(isValid ? null : 'Unauthorized');
-    }
+    verifyJwt(event.authorizationToken, cert, (tokenErr: Error) =>
+      callback(tokenErr ? 'Unauthorized' : null));
   });
+};
+
+export const verifyJwt = (token: string, cert: string, callback: Callback) => {
+  try {
+    const isValid = jsrsasign.jws.JWS.verifyJWT(token, cert, { alg: ['RS256'] });
+    callback(isValid ? null : Error('Invalid token'));
+  } catch (err) {
+    callback(err);
+  }
 };
