@@ -1,17 +1,18 @@
+import * as request from 'request-promise-native';
+
 import * as aws from './aws';
 import { CloudFormationRequest, CloudFormationResponse,
          sendCloudFormationResponse, deleteS3Object, executeStateMachine,
          s3, setupCustomResource, stepFunctions } from './aws';
 import { envNames } from './env';
-import * as helpers from './helpers';
+
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
 import * as stringify from 'json-stable-stringify';
 import { Callback, Dict } from './types';
 
 describe('sendCloudFormationResponse()', () => {
   const fakeRequestType = 'Update';
-  const fakeResponseHostname = 'fake-response-endpoint.s3.amazonaws.com';
-  const fakeResponsePath = '/fake/path';
+  const fakeResponseUrl = 'https://fake-response-endpoint.s3.amazonaws.com/fake/path';
   const fakeStackId = 'fake-stack';
   const fakeRequestId = 'fake-request-abcd-1234';
   const fakeResponseType = 'fake-response-type';
@@ -20,15 +21,13 @@ describe('sendCloudFormationResponse()', () => {
   const fakeResponseStatus = 'FAILED';
   const fakeResponseReason = 'Fake reason';
 
-  let fakeResponseUrl: string;
   let fakeEvent: CloudFormationRequest & CloudFormationResponse;
   let fakeResponseData: Dict<any>;
   let fakeResponse: (responseId: string) => any;
 
-  let spyOnHttpsRequest: jasmine.Spy;
+  let spyOnPutRequest: jasmine.Spy;
 
   beforeEach(() => {
-    fakeResponseUrl = 'https://' + fakeResponseHostname + fakeResponsePath,
     fakeResponseData = {
       fake: 'data',
     };
@@ -56,12 +55,11 @@ describe('sendCloudFormationResponse()', () => {
       Data: fakeResponseData,
     });
 
-    spyOnHttpsRequest = spyOn(helpers, 'httpsRequest').and.callFake(
-        (Url: string, method: string, headers: Dict<string>, body: any, callback: Callback) =>
-      callback());
+    spyOnPutRequest = spyOn(request, 'put')
+      .and.returnValue(Promise.resolve());
   });
 
-  describe('calls helpers.httpsRequest() once with correct parameters when PhysicalResourceId is', () => {
+  describe('calls request.put() once with correct parameters when PhysicalResourceId is', () => {
     it('defined', (done: Callback) => {
       checkPut(fakePhysicalResourceId, done);
     });
@@ -70,11 +68,12 @@ describe('sendCloudFormationResponse()', () => {
       checkPut(fakeLogicalResourceId, done);
     });
 
-    function checkPut(resourceId: any, done: Callback) {
+    const checkPut = (resourceId: any, done: Callback) => {
       const callback = () => {
-        expect(spyOnHttpsRequest).toHaveBeenCalledWith(
-          'PUT', fakeResponseUrl, null, fakeResponse(resourceId), callback);
-        expect(spyOnHttpsRequest).toHaveBeenCalledTimes(1);
+        expect(spyOnPutRequest).toHaveBeenCalledWith(fakeResponseUrl, {
+          body: stringify(fakeResponse(resourceId)),
+        });
+        expect(spyOnPutRequest).toHaveBeenCalledTimes(1);
         done();
       };
       sendCloudFormationResponse(fakeEvent, null, callback);

@@ -1,105 +1,107 @@
+import * as request from 'request-promise-native';
+
 import * as auth0 from './auth0';
 import { Auth0ClientConfig, authenticate,
          manage, rotateAndStoreClientSecret } from './auth0';
 import { s3 } from './aws';
-import { testError } from './fixtures/support';
-import * as helpers from './helpers';
+import { fakeResolve, testError } from './fixtures/support';
 import { Callback, Dict } from './types';
 
 const fakeDomain = 'account.auth0.com';
-const fakeCloudFormationClientId = '012345abcdEFGH';
-const fakeCloudFormationClientSecret = 'fak3-s3cr3t';
-const fakeCloudFormationToken = 'ey.12.34';
+const fakeClientId = '012345abcdEFGH';
+const fakeClientSecret = 'fak3-s3cr3t';
+const fakeToken = 'ey.12.34';
 
 describe('authenticate', () => {
-  let fakeBaseUrl: string;
-  let fakeClientConfig: Auth0ClientConfig;
-  let fakeResponse: () => any;
-  let spyOnJsonRequest: jasmine.Spy;
-
-  beforeEach(() => {
-    fakeBaseUrl = 'https://' + fakeDomain;
-    fakeClientConfig = {
-      Domain: fakeDomain,
-      ID: fakeCloudFormationClientId,
-      Secret: {
-        Value: fakeCloudFormationClientSecret,
-      },
-    };
-    fakeResponse = () => ({
-      access_token: fakeCloudFormationToken,
-    });
-
-    spyOnJsonRequest = spyOn(helpers, 'jsonRequest').and.callFake(
-        (method: 'POST', Url: string, headers: Dict<string>, body: any, callback: Callback) =>
-      callback(null, fakeResponse()));
+  let fakeBaseUrl = 'https://' + fakeDomain;
+  let fakeClientConfig = () => ({
+    Domain: fakeDomain,
+    ID: fakeClientId,
+    Secret: {
+      Value: fakeClientSecret,
+    },
+  });
+  let fakeResponse = () => ({
+    access_token: fakeToken,
   });
 
-  describe('calls', () => {
-    it('jsonRequest() with correct parameters', (done: Callback) => {
-      const callback = () => {
-        expect(spyOnJsonRequest).toHaveBeenCalledWith(
-          'POST', fakeBaseUrl + '/oauth/token', {
-            'Content-Type': 'application/json',
-          }, {
+  let spyOnPostRequest: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnPostRequest = spyOn(request, 'post')
+      .and.returnValue(Promise.resolve(fakeResponse()));
+  });
+
+  const testMethod = () => authenticate(fakeClientConfig(), fakeBaseUrl);
+
+  it('calls request.post() with correct parameters', (done: Callback) => {
+    testMethod().then(() => {
+      expect(spyOnPostRequest).toHaveBeenCalledWith(
+        fakeBaseUrl + '/oauth/token', {
+          json: true,
+          body: {
             grant_type: 'client_credentials',
             audience: fakeBaseUrl,
-            client_id: fakeCloudFormationClientId,
-            client_secret: fakeCloudFormationClientSecret,
-          }, jasmine.any(Function));
-        expect(spyOnJsonRequest).toHaveBeenCalledTimes(1);
-        done();
-      };
-      authenticate(fakeClientConfig, fakeBaseUrl, callback);
+            client_id: fakeClientId,
+            client_secret: fakeClientSecret,
+          },
+        });
+      expect(spyOnPostRequest).toHaveBeenCalledTimes(1);
+      done();
     });
-    describe('callback with an error if', () => {
-      it('jsonRequest() returns an error', (done: Callback) => {
-        spyOnJsonRequest.and.callFake(
-            (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
-          callback(Error('jsonRequest()')));
-        authenticate(fakeClientConfig, fakeBaseUrl, (err: Error) => {
-          expect(err).toBeTruthy();
+  });
+  it('returns correct response extracted from request.post()', (done: Callback) => {
+    testMethod().then(token => {
+      expect(token).toEqual(fakeToken);
+      done();
+    });
+  });
+  describe('returns an error if', () => {
+    it('request.post() returns an error', (done: Callback) => {
+      spyOnPostRequest.and.returnValue(Promise.reject(Error('request.post()')));
+      testMethod().catch(err => {
+        expect(err).toEqual(jasmine.any(Error));
+        done();
+      });
+    });
+    describe('request.post() response is', () => {
+      let response: any;
+      afterEach((done: Callback) => {
+        spyOnPostRequest.and.returnValue(Promise.resolve(response));
+        testMethod().catch(err => {
+          expect(err).toEqual(jasmine.any(Error));
           done();
         });
       });
-      describe('response is', () => {
-        let response: any;
-        afterEach((done: Callback) => {
-          spyOnJsonRequest.and.callFake(
-              (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
-            callback(null, response));
-          authenticate(fakeClientConfig, fakeBaseUrl, (err: Error) => {
-            expect(err).toBeTruthy();
-            done();
-          });
-        });
-        it('undefined', () => response = undefined);
-        it('null', () => response = null);
-        it('missing access_token', () => response = { error: 'invalid_request' });
-      });
+      it('undefined', () => response = undefined);
+      it('null', () => response = null);
+    });
 
-      describe('client', () => {
-        afterEach((done: Callback) => {
-          authenticate(fakeClientConfig, fakeBaseUrl, (err: Error) => {
-            expect(err).toBeTruthy();
-            done();
-          });
+    describe('client', () => {
+      let fakeConfig: any;
+      beforeEach(() => {
+        fakeConfig = fakeClientConfig();
+      });
+      afterEach((done: Callback) => {
+        authenticate(fakeConfig, fakeBaseUrl).catch(err => {
+          expect(err).toEqual(jasmine.any(Error));
+          done();
         });
-        describe('is', () => {
-          it('undefined', () => {
-            fakeClientConfig = undefined;
-          });
-          it('null', () => {
-            fakeClientConfig = null;
-          });
+      });
+      describe('is', () => {
+        it('undefined', () => {
+          fakeConfig = undefined;
         });
-        describe('secret config is', () => {
-          it('undefined', () => {
-            delete fakeClientConfig.Secret;
-          });
-          it('null', () => {
-            fakeClientConfig.Secret = null;
-          });
+        it('null', () => {
+          fakeConfig = null;
+        });
+      });
+      describe('secret config is', () => {
+        it('undefined', () => {
+          delete fakeConfig.Secret;
+        });
+        it('null', () => {
+          fakeConfig.Secret = null;
         });
       });
     });
@@ -110,67 +112,83 @@ describe('manage', () => {
   const fakeManageMethod = 'POST';
   const fakeManageEndpoint = '/clients';
 
-  let fakeBaseUrl: string;
-  let fakeClientConfig: () => Auth0ClientConfig;
-  let fakeManagePayload: () => any;
-
-  let spyOnAuthenticate: jasmine.Spy;
-  let spyOnJsonRequest: jasmine.Spy;
-
-  beforeEach(() => {
-    fakeBaseUrl = 'https://' + fakeDomain + '/api/v2';
-    fakeClientConfig = () => ({
-      Domain: fakeDomain,
-      ID: fakeCloudFormationClientId,
-      Secret: {
-        Value: fakeCloudFormationClientSecret,
-      },
-    });
-    fakeManagePayload = () => ({
-      fake: 'input',
-    });
-
-    spyOnAuthenticate = spyOn(auth0, 'authenticate').and.callFake(
-        (client: Auth0ClientConfig, audience: string, callback: Callback) =>
-      callback(null, fakeCloudFormationToken));
-    spyOnJsonRequest = spyOn(helpers, 'jsonRequest').and.callFake(
-        (method: string, Url: string, headers: Dict<string>, body: any, callback: Callback) =>
-      callback());
+  let fakeBaseUrl = 'https://' + fakeDomain + '/api/v2';
+  let fakeClientConfig = () => ({
+    Domain: fakeDomain,
+    ID: fakeClientId,
+    Secret: {
+      Value: fakeClientSecret,
+    },
+  });
+  let fakePayload = () => ({
+    fake: 'input',
+  });
+  let fakeResponse = () => ({
+    fake: 'output',
   });
 
-  const testManage = (callback: Callback) => {
-    manage(fakeClientConfig(), fakeManageMethod, fakeManageEndpoint, fakeManagePayload(), callback);
-  };
+  let spyOnAuthenticate: jasmine.Spy;
+  let spyOnRequest: jasmine.Spy;
 
-  describe('calls', () => {
-    it('authenticate() with correct parameters', (done: Callback) => {
-      const callback = () => {
-        expect(spyOnAuthenticate).toHaveBeenCalledWith(
-          fakeClientConfig(), fakeBaseUrl + '/', jasmine.any(Function));
-        expect(spyOnAuthenticate).toHaveBeenCalledTimes(1);
-        done();
-      };
-      testManage(callback);
+  beforeEach(() => {
+    spyOnAuthenticate = spyOn(auth0, 'authenticate')
+      .and.returnValue(Promise.resolve(fakeToken));
+    spyOnRequest = spyOn(auth0, 'request')
+      .and.returnValue(Promise.resolve(fakeResponse()));
+  });
+
+  const testManage = () =>
+    manage(fakeClientConfig(), fakeManageMethod, fakeManageEndpoint, fakePayload());
+
+  it('calls authenticate() with correct parameters', (done: Callback) => {
+    testManage().then(() => {
+      expect(spyOnAuthenticate).toHaveBeenCalledWith(
+        fakeClientConfig(), fakeBaseUrl + '/');
+      expect(spyOnAuthenticate).toHaveBeenCalledTimes(1);
+      done();
     });
-    it('callback with an error if authenticate() returns an error', (done: Callback) => {
-      spyOnAuthenticate.and.callFake((client: Auth0ClientConfig, audience: string, callback: Callback) =>
-        callback(Error('authenticate()')));
-      const callback = (err: Error) => {
-        expect(err).toBeTruthy();
-        done();
-      };
-      testManage(callback);
+  });
+  it('request() with correct parameters', (done: Callback) => {
+    testManage().then(() => {
+      expect(spyOnRequest).toHaveBeenCalledWith(fakeBaseUrl + fakeManageEndpoint, {
+          method: fakeManageMethod,
+          headers: {
+            Authorization: `Bearer ${fakeToken}`,
+          },
+          json: true,
+          body: fakePayload(),
+        });
+      expect(spyOnRequest).toHaveBeenCalledTimes(1);
+      done();
     });
-    it('jsonRequest() with correct parameters', (done: Callback) => {
-      const callback = (err: Error) => {
-        expect(spyOnJsonRequest).toHaveBeenCalledWith(
-          fakeManageMethod, fakeBaseUrl + fakeManageEndpoint, {
-            Authorization: 'Bearer ' + fakeCloudFormationToken,
-          }, fakeManagePayload(), callback);
-        expect(spyOnJsonRequest).toHaveBeenCalledTimes(1);
+  });
+  describe('immediately returns with an error if', () => {
+    it('authenticate() produces an error', (done: Callback) => {
+      spyOnAuthenticate.and.returnValue(Promise.reject(Error('authenticate()')));
+      testManage().catch(err => {
+        expect(err).toEqual(jasmine.any(Error));
+        expect(spyOnRequest).not.toHaveBeenCalled();
         done();
-      };
-      testManage(callback);
+      });
+    });
+    describe('client config is', () => {
+      let config: any;
+      afterEach((done: Callback) => {
+        manage(config, fakeManageMethod, fakeManageEndpoint, fakePayload()).catch(err => {
+          expect(err).toEqual(jasmine.any(Error));
+          expect(spyOnRequest).not.toHaveBeenCalled();
+          done();
+        });
+      });
+      it('undefined', () => config = undefined);
+      it('null', () => config = null);
+    });
+  });
+  it('returns with an error if request() produces an error', (done: Callback) => {
+    spyOnRequest.and.returnValue(Promise.reject(Error('request()')));
+    testManage().catch(err => {
+      expect(err).toEqual(jasmine.any(Error));
+      done();
     });
   });
 });
@@ -181,82 +199,85 @@ describe('rotateAndStoreClientSecret', () => {
   const fakeSecretValue = 'fAkEs3cr3t';
   const fakeEncryptionKeyId = 'fake-encryption-key-1234';
 
-  let fakeClientConfig: () => Auth0ClientConfig;
-  let fakeClientResponse: () => { client_secret: string };
+  let fakeClientConfig = () => ({
+    Domain: fakeDomain,
+    ID: fakeClientId,
+    Secret: {
+      Value: fakeClientSecret,
+      Bucket: fakeSecretBucket,
+      Path: fakeSecretPath,
+      EncryptionKeyId: fakeEncryptionKeyId,
+    },
+  });
+  let fakeClientResponse = () => ({
+    client_secret: fakeSecretValue,
+  });
 
   let spyOnManage: jasmine.Spy;
   let spyOnS3PutObject: jasmine.Spy;
 
   beforeEach(() => {
-    fakeClientConfig = () => ({
-      Domain: fakeDomain,
-      ID: fakeCloudFormationClientId,
-      Secret: {
-        Value: fakeCloudFormationClientSecret,
-        Bucket: fakeSecretBucket,
-        Path: fakeSecretPath,
-        EncryptionKeyId: fakeEncryptionKeyId,
-      },
-    });
-    fakeClientResponse = () => ({
-      client_secret: fakeSecretValue,
-    });
-
-    spyOnManage = spyOn(auth0, 'manage').and.callFake(
-        (client: Auth0ClientConfig, method: string, endpoint: string, payload: any, callback: Callback) =>
-      callback(null, fakeClientResponse()));
+    spyOnManage = spyOn(auth0, 'manage')
+      .and.returnValue(Promise.resolve(fakeClientResponse()));
     spyOnS3PutObject = spyOn(s3, 'putObject')
-      .and.callFake((params: any, callback: Callback) => callback());
+      .and.returnValue(fakeResolve());
   });
 
   const testMethod = (callback: Callback) => {
     rotateAndStoreClientSecret(fakeClientConfig(), null, callback);
   };
 
-  describe('calls', () => {
-    it('manage() with correct parameters', (done: Callback) => {
-      const callback = () => {
-        expect(spyOnManage).toHaveBeenCalledWith(fakeClientConfig(), 'POST',
-          '/clients/' + fakeCloudFormationClientId + '/rotate-secret', null, jasmine.any(Function));
-        expect(spyOnManage).toHaveBeenCalledTimes(1);
-        done();
-      };
-      testMethod(callback);
+  it('calls manage() with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnManage).toHaveBeenCalledWith(
+        fakeClientConfig(), 'POST', `/clients/${fakeClientId}/rotate-secret`);
+      expect(spyOnManage).toHaveBeenCalledTimes(1);
+      done();
     });
-    it('s3.putObject() with correct parameters', (done: Callback) => {
-      const callback = () => {
-        expect(spyOnS3PutObject).toHaveBeenCalledWith({
-          Bucket: fakeSecretBucket,
-          Key: fakeSecretPath,
-          Body: fakeSecretValue,
-          SSEKMSKeyId: fakeEncryptionKeyId,
-          ServerSideEncryption: 'aws:kms',
-        }, callback);
-        expect(spyOnS3PutObject).toHaveBeenCalledTimes(1);
-        done();
-      };
-      testMethod(callback);
-    });
-    describe('callback with an error if', () => {
-      it('manage() returns an error', (done: Callback) => {
-        spyOnManage.and.callFake(
-            (client: Auth0ClientConfig, method: string, endpoint: string, payload: any, callback: Callback) =>
-          callback(Error('authenticate()')));
-        const callback = (err: Error) => {
-          expect(err).toBeTruthy();
-          done();
-        };
-        testMethod(callback);
+  });
+  it('calls s3.putObject() with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnS3PutObject).toHaveBeenCalledWith({
+        Bucket: fakeSecretBucket,
+        Key: fakeSecretPath,
+        Body: fakeSecretValue,
+        SSEKMSKeyId: fakeEncryptionKeyId,
+        ServerSideEncryption: 'aws:kms',
       });
-      describe('manage() response is', () => {
+      expect(spyOnS3PutObject).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+  describe('immediately calls callback with an error if', () => {
+    describe('client config is', () => {
+      let config: any;
+      afterEach((done: Callback) => {
+        rotateAndStoreClientSecret(config, null, (err: Error) => {
+          expect(err).toEqual(jasmine.any(Error));
+          expect(spyOnManage).not.toHaveBeenCalled();
+          done();
+        });
+      });
+      it('undefined', () => config = undefined);
+      it('null', () => config = null);
+    });
+    describe('manage()', () => {
+      afterEach((done: Callback) => {
+        testMethod((err: Error) => {
+          expect(err).toEqual(jasmine.any(Error));
+          expect(spyOnS3PutObject).not.toHaveBeenCalled();
+          done();
+        });
+      });
+      it('returns an error', () => {
+        spyOnManage.and.returnValue(Promise.reject(Error('authenticate()')));
+      });
+      describe('response is', () => {
         it('undefined', () => {
-          fakeClientResponse = () => undefined;
+          spyOnManage.and.returnValue(Promise.resolve(undefined));
         });
         it('null', () => {
-          fakeClientResponse = () => null;
-        });
-        afterEach((done: Callback) => {
-          testError(rotateAndStoreClientSecret, fakeClientConfig(), done);
+          spyOnManage.and.returnValue(Promise.resolve(null));
         });
       });
     });

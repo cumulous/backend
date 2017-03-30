@@ -1,8 +1,8 @@
 import { APIGateway, CloudFront, EC2, S3, StepFunctions } from 'aws-sdk';
 import * as stringify from 'json-stable-stringify';
+import { put } from 'request-promise-native';
 
 import { envNames } from './env';
-import { httpsRequest } from './helpers';
 import { log } from './log';
 import { Callback, Dict } from './types';
 
@@ -32,15 +32,18 @@ export interface CloudFormationResponse {
 
 export const sendCloudFormationResponse = (event: CloudFormationRequest & CloudFormationResponse,
                                          context: any, callback: Callback) => {
-  httpsRequest('PUT', event.ResponseURL, null, {
-    Status: event.Status,
-    Reason: event.Reason,
-    PhysicalResourceId: event.PhysicalResourceId || event.LogicalResourceId,
-    StackId: event.StackId,
-    RequestId: event.RequestId,
-    LogicalResourceId: event.LogicalResourceId,
-    Data: event.Data,
-  }, callback);
+  put(event.ResponseURL, {
+    body: stringify({
+      Status: event.Status,
+      Reason: event.Reason,
+      PhysicalResourceId: event.PhysicalResourceId || event.LogicalResourceId,
+      StackId: event.StackId,
+      RequestId: event.RequestId,
+      LogicalResourceId: event.LogicalResourceId,
+      Data: event.Data,
+    }),
+  }).then(() => callback())
+    .catch(callback);
 }
 
 const sendCloudFormationOnError = (request: CloudFormationRequest, err: Error, callback: Callback) => {
