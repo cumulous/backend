@@ -6,7 +6,7 @@ import { authenticate, getCertificate } from './jwt';
 import { Callback, Dict } from './types';
 
 describe('getCertificate()', () => {
-  const fakeAuth0Domain = 'example.auth0.com';
+  const fakeAuthDomain = 'example.auth0.com';
   const fakeKid = 'FAKE_KEY_ID';
   const fakeKey = 'FAKE_KEY';
 
@@ -22,13 +22,13 @@ describe('getCertificate()', () => {
   });
 
   const testMethod = () => {
-    return getCertificate(fakeAuth0Domain, fakeKid);
+    return getCertificate(fakeAuthDomain, fakeKid);
   };
 
   it('calls jwksClient() once with correct parameters', (done: Callback) => {
     testMethod().then(() => {
       expect(spyOnJwksClient).toHaveBeenCalledWith({
-        jwksUri: `https://${fakeAuth0Domain}/.well-known/jwks.json`,
+        jwksUri: `https://${fakeAuthDomain}/.well-known/jwks.json`,
         cache: true,
         rateLimit: true,
       });
@@ -88,7 +88,7 @@ describe('getCertificate()', () => {
 
 describe('authenticate()', () => {
   const fakeApiDomain = 'api.example.org';
-  const fakeAuth0Domain = 'tenant.auth0.com';
+  const fakeAuthDomain = 'tenant.auth0.com';
   const fakeToken = 'ey.ab.cd';
   const fakeKid = 'FAKE_KID';
   const fakeCert = 'FAKE_CERT ABCD';
@@ -119,7 +119,7 @@ describe('authenticate()', () => {
   });
 
   const testMethod = () => {
-    return authenticate(fakeAuth0Domain, fakeToken);
+    return authenticate(fakeAuthDomain, fakeToken);
   };
 
   it('calls jsonwebtoken.decode() once with correct parameters', (done: Callback) => {
@@ -132,7 +132,7 @@ describe('authenticate()', () => {
 
   it('calls getCertificate() once with correct parameters', (done: Callback) => {
     testMethod().then(() => {
-      expect(spyOnGetCertificate).toHaveBeenCalledWith(fakeAuth0Domain, fakeKid);
+      expect(spyOnGetCertificate).toHaveBeenCalledWith(fakeAuthDomain, fakeKid);
       expect(spyOnGetCertificate).toHaveBeenCalledTimes(1);
       done();
     });
