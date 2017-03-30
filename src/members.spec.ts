@@ -1,26 +1,47 @@
 import * as jwt from './jwt';
 import { envNames } from './env';
-import { authorize } from './members';
+import * as members from './members';
+import { authorize, getPolicy, Policy } from './members';
 import { Callback } from './types';
 
-describe('authorize()', () => {
-  const fakeDomain = 'tenant.auth0.com';
-  const fakeToken = 'ey.ab.cd';
+const fakeAuth0Domain = 'tenant.auth0.com';
+const fakeToken = 'ey.ab.cd';
+const fakeSub = 'abcd@1234';
+const fakeMethodArn = 'arn:aws:execute-api:us-west-2:123456789012:ymy8tbxw7b/*/GET/';
 
+describe('authorize()', () => {
   let fakeEvent = () => ({
     authorizationToken: fakeToken,
+    methodArn: fakeMethodArn,
   });
   let fakePayload = () => ({
-    sub: 'abcd',
+    sub: fakeSub,
+  });
+  let fakePolicy = (): Policy => ({
+    principalId: fakeSub,
+    policyDocument: {
+      Version: '2012-10-17',
+      Statement: [{
+        Action: 'execute-api:Invoke',
+        Effect: 'Allow',
+        Resource: fakeMethodArn + 'resource',
+      }],
+    },
+    context: {
+      memberships: 'any',
+    },
   });
 
   let spyOnAuthenticate: jasmine.Spy;
+  let spyOnGetPolicy: jasmine.Spy;
 
   beforeEach(() => {
-    process.env[envNames.auth0Domain] = fakeDomain;
+    process.env[envNames.auth0Domain] = fakeAuth0Domain;
 
     spyOnAuthenticate = spyOn(jwt, 'authenticate')
       .and.returnValue(Promise.resolve(fakePayload()));
+    spyOnGetPolicy = spyOn(members, 'getPolicy')
+      .and.returnValue(Promise.resolve(fakePolicy()));
   });
 
   const testMethod = (callback: Callback) => {
@@ -29,42 +50,108 @@ describe('authorize()', () => {
 
   it('calls jwt.authenticate() with correct parameters', (done: Callback) => {
     testMethod(() => {
-      expect(spyOnAuthenticate).toHaveBeenCalledWith(fakeDomain, fakeToken);
+      expect(spyOnAuthenticate).toHaveBeenCalledWith(fakeAuth0Domain, fakeToken);
       expect(spyOnAuthenticate).toHaveBeenCalledTimes(1);
       done();
     });
   });
 
-  it('calls callback without an error if jwt.authenticate() does not return an error',
-      (done: Callback) => {
-    testMethod((err: Error) => {
+  it('calls getPolicy() with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnGetPolicy).toHaveBeenCalledWith(fakeSub, fakeMethodArn);
+      expect(spyOnGetPolicy).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback with correct parameters if there were no errors', (done: Callback) => {
+    testMethod((err: Error, policy: Policy) => {
       expect(err).toBeFalsy();
+      expect(policy).toEqual(fakePolicy());
       done();
     });
   });
 
   describe('immediately calls callback with "Unauthorized" response if', () => {
-    const testError = (done: Callback) => (err: string) => {
+    const testError = (last: Callback, done: Callback) => (err: string) => {
       expect(err).toEqual('Unauthorized');
-      expect(spyOnAuthenticate).not.toHaveBeenCalled();
+      last();
       done();
     };
     describe('event is', () => {
-      it('undefined', (done: Callback) => {
-        authorize(undefined, null, testError(done));
+      let event: any;
+      afterEach((done: Callback) => {
+        authorize(event, null, testError(() =>
+          expect(spyOnAuthenticate).not.toHaveBeenCalled(), done));
       });
-      it('null', (done: Callback) => {
-        authorize(null, null, testError(done));
+      it('undefined', () => event = undefined);
+      it('null', () => event = null);
+    });
+    describe('jwt.authenticate()', () => {
+      afterEach((done: Callback) => {
+        authorize(fakeEvent(), null, testError(() =>
+          expect(spyOnGetPolicy).not.toHaveBeenCalled(), done));
       });
+      it('produces an error', () => {
+        spyOnAuthenticate.and.returnValue(Promise.reject(Error('jwt.authenticate()')));
+      });
+      describe('payload is', () => {
+        let payload: string;
+        afterEach(() => {
+          spyOnAuthenticate.and.returnValue(Promise.resolve(payload));
+        });
+        it('undefined', () => payload = undefined);
+        it('null', () => payload = null);
+      });
+    });
+    it('getPolicy() produces an error', (done: Callback) => {
+      spyOnGetPolicy.and.returnValue(Promise.reject(Error('getPolicy()')));
+      authorize(fakeEvent(), null, testError(() => {}, done));
+    });
+  });
+});
+
+describe('getPolicy()', () => {
+
+  it('returns correct policy response if there were no errors', (done: Callback) => {
+    getPolicy(fakeSub, fakeMethodArn).then((policy: Policy) => {
+      expect(policy).toEqual({
+        principalId: fakeSub,
+        policyDocument: {
+          Version: '2012-10-17',
+          Statement: [{
+            Action: 'execute-api:Invoke',
+            Effect: 'Allow',
+            Resource: fakeMethodArn,
+          }],
+        },
+      });
+      done();
     });
   });
 
-  it('calls callback with "Unauthorized" response if jwt.authenticate() produces an error',
-      (done: Callback) => {
-    spyOnAuthenticate.and.returnValue(Promise.reject(Error('jwt.authenticate()')));
-    testMethod(err => {
-      expect(err).toEqual('Unauthorized');
-      done();
+  describe('produces an error if', () => {
+    let principalId: string;
+    let methodArn: string;
+    beforeEach(() => {
+      principalId = fakeSub;
+      methodArn = fakeMethodArn;
+    });
+    afterEach((done: Callback) => {
+      getPolicy(principalId, methodArn).catch(err => {
+        expect(err).toEqual(jasmine.any(Error));
+        done();
+      });
+    });
+    describe('principalId is', () => {
+      it('undefined', () => principalId = undefined);
+      it('null', () => principalId = null);
+      it('empty', () => principalId = '');
+    });
+    describe('methodArn is', () => {
+      it('undefined', () => methodArn = undefined);
+      it('null', () => methodArn = null);
+      it('empty', () => methodArn = '');
     });
   });
 });
