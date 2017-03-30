@@ -1,11 +1,12 @@
 import * as jsonwebtoken from 'jsonwebtoken';
 
+import { envNames } from './env';
 import * as jwt from './jwt';
 import { authenticate, getCertificate } from './jwt';
 import { Callback, Dict } from './types';
 
 describe('getCertificate()', () => {
-  const fakeDomain = 'example.auth0.com';
+  const fakeAuth0Domain = 'example.auth0.com';
   const fakeKid = 'FAKE_KEY_ID';
   const fakeKey = 'FAKE_KEY';
 
@@ -21,13 +22,13 @@ describe('getCertificate()', () => {
   });
 
   const testMethod = () => {
-    return getCertificate(fakeDomain, fakeKid);
+    return getCertificate(fakeAuth0Domain, fakeKid);
   };
 
   it('calls jwksClient() once with correct parameters', (done: Callback) => {
     testMethod().then(() => {
       expect(spyOnJwksClient).toHaveBeenCalledWith({
-        jwksUri: `https://${fakeDomain}/.well-known/jwks.json`,
+        jwksUri: `https://${fakeAuth0Domain}/.well-known/jwks.json`,
         cache: true,
         rateLimit: true,
       });
@@ -86,7 +87,8 @@ describe('getCertificate()', () => {
 });
 
 describe('authenticate()', () => {
-  const fakeDomain = 'tenant.auth0.com';
+  const fakeApiDomain = 'api.example.org';
+  const fakeAuth0Domain = 'tenant.auth0.com';
   const fakeToken = 'ey.ab.cd';
   const fakeKid = 'FAKE_KID';
   const fakeCert = 'FAKE_CERT ABCD';
@@ -102,6 +104,8 @@ describe('authenticate()', () => {
       sub: '1234',
     });
 
+    process.env[envNames.apiDomain] = fakeApiDomain;
+
     spyOnDecodeJwt = spyOn(jsonwebtoken, 'decode')
       .and.returnValue({
         header: {
@@ -115,7 +119,7 @@ describe('authenticate()', () => {
   });
 
   const testMethod = () => {
-    return authenticate(fakeDomain, fakeToken);
+    return authenticate(fakeAuth0Domain, fakeToken);
   };
 
   it('calls jsonwebtoken.decode() once with correct parameters', (done: Callback) => {
@@ -128,7 +132,7 @@ describe('authenticate()', () => {
 
   it('calls getCertificate() once with correct parameters', (done: Callback) => {
     testMethod().then(() => {
-      expect(spyOnGetCertificate).toHaveBeenCalledWith(fakeDomain, fakeKid);
+      expect(spyOnGetCertificate).toHaveBeenCalledWith(fakeAuth0Domain, fakeKid);
       expect(spyOnGetCertificate).toHaveBeenCalledTimes(1);
       done();
     });
@@ -137,7 +141,10 @@ describe('authenticate()', () => {
   it('calls jsonwebtoken.verify() with correct parameters', (done: Callback) => {
     testMethod().then(() => {
       expect(spyOnVerifyJwt).toHaveBeenCalledWith(
-        fakeToken, fakeCert, { algorithms: ['RS256'] });
+        fakeToken, fakeCert, {
+          algorithms: ['RS256'],
+          audience: fakeApiDomain,
+        });
       expect(spyOnVerifyJwt).toHaveBeenCalledTimes(1);
       done();
     });

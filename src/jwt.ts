@@ -2,6 +2,7 @@ import { decode, verify } from 'jsonwebtoken';
 
 export const jwksClient = require('jwks-rsa');
 
+import { envNames } from './env';
 import { Callback } from './types';
 
 interface SigningKey {
@@ -32,5 +33,8 @@ export const authenticate = (domain: string, token: string) => {
   return Promise.resolve(token)
     .then(token => decode(token, {complete: true}))
     .then(decoded => getCertificate(domain, decoded.header.kid))
-    .then(cert => verify(token, cert, { algorithms: ['RS256'] }));
+    .then(cert => verify(token, cert, {
+      algorithms: ['RS256'],
+      audience: process.env[envNames.apiDomain],
+    }));
 };

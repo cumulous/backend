@@ -487,6 +487,7 @@ Resources:
       Timeout: 10
       Environment:
         Variables:
+          API_DOMAIN: !Ref APIDomain
           AUTH0_DOMAIN: !Ref Auth0Domain
 
   AuthorizerInvocationRole:
