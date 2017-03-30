@@ -28,7 +28,7 @@ export const getCertificate = (domain: string, kid: string, callback: Callback) 
 export const authenticate = (domain: string, token: string, callback: Callback) => {
 
   Promise.resolve(token)
-    .then(decode)
+    .then(token => decode(token, {complete: true}))
     .then(decoded =>
       getCertificate(domain, decoded.header.kid, (err: Error, cert: string) => {
         if (err) throw err;

@@ -121,7 +121,7 @@ describe('authenticate()', () => {
 
   it('calls jsonwebtoken.decode() once with correct parameters', (done: Callback) => {
     testMethod(() => {
-      expect(spyOnDecodeJwt).toHaveBeenCalledWith(fakeToken);
+      expect(spyOnDecodeJwt).toHaveBeenCalledWith(fakeToken, {complete: true});
       expect(spyOnDecodeJwt).toHaveBeenCalledTimes(1);
       done();
     });
