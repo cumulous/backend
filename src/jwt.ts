@@ -1,11 +1,7 @@
-import { httpsRequest } from './helpers';
-import { Callback, Dict } from './types';
-
 const jsrsasign = require('jsrsasign');
+export const jwksClient = require('jwks-rsa');
 
-export const getCertificate = (domain: string, callback: Callback) => {
-  httpsRequest('GET', `https://${domain}/cer`, null, null, callback);
-};
+import { Callback, Dict } from './types';
 
 export const parseTokenInfo = (token: string, callback: Callback) => {
   try {
@@ -27,7 +23,7 @@ export const parseTokenHeader = (token: string, callback: Callback) => {
   });
 };
 
-export const parseCertId = (token: string, callback: Callback) => {
+export const parseKid = (token: string, callback: Callback) => {
   parseTokenHeader(token, (err: Error, tokenHeader: { kid?: string, x5t?: string }) => {
     if (err) {
       callback(err);
@@ -37,6 +33,21 @@ export const parseCertId = (token: string, callback: Callback) => {
       callback(null, tokenHeader.kid || tokenHeader.x5t);
     }
   });
+};
+
+export const getCertificate = (domain: string, kid: string, callback: Callback) => {
+  Promise.resolve(domain)
+    .then(domain => jwksClient({
+      jwksUri: `https://${domain}/.well-known/jwks.json`,
+      rateLimit: true,
+      cache: true,
+    }))
+    .then(client => client.getSigningKey(kid,
+        (err: Error, key: { publicKey?: string, rsaPublicKey?: string }) => {
+      if (err) return callback(err);
+      callback(null, key.publicKey || key.rsaPublicKey);
+    }))
+    .catch(callback);
 };
 
 export const verifyJwt = (token: string, cert: string, callback: Callback) => {
@@ -50,10 +61,14 @@ export const verifyJwt = (token: string, cert: string, callback: Callback) => {
 
 export const authenticate = (domain: string, token: string, callback: Callback) => {
 
-  getCertificate(domain, (certErr: Error, cert: string) => {
-    if (certErr) return callback(certErr);
+  parseKid(token, (decodeErr: Error, kid: string) => {
+    if (decodeErr) return callback('Unauthorized');
 
-    verifyJwt(token, cert, (tokenErr: Error) =>
-      callback(tokenErr ? 'Unauthorized' : null));
+    getCertificate(domain, kid, (certErr: Error, cert: string) => {
+      if (certErr) return callback(certErr);
+
+      verifyJwt(token, cert, (signErr: Error) =>
+        callback(signErr ? 'Unauthorized' : null));
+    });
   });
 };
