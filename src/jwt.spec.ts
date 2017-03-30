@@ -143,7 +143,7 @@ describe('authenticate()', () => {
       expect(spyOnVerifyJwt).toHaveBeenCalledWith(
         fakeToken, fakeCert, {
           algorithms: ['RS256'],
-          audience: fakeApiDomain,
+          audience: `https://${fakeApiDomain}`,
         });
       expect(spyOnVerifyJwt).toHaveBeenCalledTimes(1);
       done();

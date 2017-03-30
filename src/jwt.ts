@@ -35,6 +35,6 @@ export const authenticate = (domain: string, token: string) => {
     .then(decoded => getCertificate(domain, decoded.header.kid))
     .then(cert => verify(token, cert, {
       algorithms: ['RS256'],
-      audience: process.env[envNames.apiDomain],
+      audience: `https://${process.env[envNames.apiDomain]}`,
     }));
 };
