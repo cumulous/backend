@@ -2,8 +2,6 @@ import { authenticate } from './jwt';
 import { envNames } from './env';
 import { Callback } from './types';
 
-const jsrsasign = require('jsrsasign');
-
 export const authorize = (
     event: { authorizationToken: string },
     context: any, callback: Callback) => {
