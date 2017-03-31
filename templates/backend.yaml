@@ -476,6 +476,13 @@ Resources:
       CodeUri: ../app
       Handler: projects.get
       Runtime: nodejs6.10
+      Events:
+        GetProjects:
+          Type: Api
+          Properties:
+            Path: /projects
+            Method: GET
+            RestApiId: !Ref Api
 
   Authorizer:
     Type: AWS::Serverless::Function
@@ -1519,6 +1526,13 @@ Resources:
       CodeUri: ../app
       Handler: apig.getSpec
       Runtime: nodejs6.10
+      Events:
+        GetApi:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+            RestApiId: !Ref Api
 
   Api:
     Type: AWS::Serverless::Api
