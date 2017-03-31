@@ -1,7 +1,7 @@
 import * as stringify from 'json-stable-stringify';
 
 import * as apig from './apig';
-import { getSpec, Response } from './apig';
+import { getSpec, makeResponse, Response } from './apig';
 import { apiGateway } from './aws';
 import { fakeResolve, fakeReject, testError } from './fixtures/support';
 import { Callback } from './types';
@@ -97,14 +97,52 @@ testMethod('deleteDomainName', () =>
   domainName: fakeDomainName,
 }));
 
+describe('makeResponse()', () => {
+  describe('returns correct output if', () => {
+    const statusCode = 400;
+    const headers = () => ({'x-header': 'fake'});
+    const body = () => ({ fake: 'value' });
+
+    it('all inputs are specified', () => {
+      const response = makeResponse(body(), statusCode, headers());
+      expect(response).toEqual({
+        body: stringify(body(), {space: 2}),
+        headers: headers(),
+        statusCode: statusCode,
+      });
+    });
+    it('only body and statusCode are specified', () => {
+      const response = makeResponse(body(), statusCode);
+      expect(response).toEqual({
+        body: stringify(body(), {space: 2}),
+        headers: undefined,
+        statusCode: statusCode,
+      });
+    });
+    it('only body is specified', () => {
+      const response = makeResponse(body());
+      expect(response).toEqual({
+        body: stringify(body(), {space: 2}),
+        headers: undefined,
+        statusCode: 200,
+      });
+    });
+    it('no arguments are specified', () => {
+      const response = makeResponse();
+      expect(response).toEqual({
+        body: undefined,
+        headers: undefined,
+        statusCode: 200,
+      });
+    });
+  });
+});
+
 describe('getSpec()', () => {
-  it ('calls callback with correct output', (done: Callback) => {
+  it('calls callback with correct output', (done: Callback) => {
     getSpec(null, null, (err: Error, response: Response) => {
       expect(err).toBeFalsy();
-      expect(response).toEqual({
-        statusCode: 200,
-        body: stringify(spec),
-      });
+      expect(response).toEqual(makeResponse(spec));
       done();
     });
   });

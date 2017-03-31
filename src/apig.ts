@@ -46,14 +46,19 @@ export const deleteDomainName = (name: string,
 };
 
 export interface Response {
-  statusCode: number;
+  statusCode?: number;
   headers?: Dict<string>;
-  body: string;
+  body?: string;
+};
+
+export const makeResponse = (body?: any, statusCode: number = 200, headers?: Dict<string>) => {
+  return {
+    statusCode: statusCode,
+    headers: headers,
+    body: stringify(body, {space: 2}),
+  };
 };
 
 export const getSpec = (event: any, context: any, callback: Callback) => {
-  callback(null, {
-    statusCode: 200,
-    body: stringify(spec),
-  });
+  callback(null, makeResponse(spec));
 };
