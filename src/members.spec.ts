@@ -7,7 +7,8 @@ import { Callback } from './types';
 const fakeAuth0Domain = 'tenant.auth0.com';
 const fakeToken = 'ey.ab.cd';
 const fakeSub = 'abcd@1234';
-const fakeMethodArn = 'arn:aws:execute-api:us-west-2:123456789012:ymy8tbxw7b/*/GET/';
+const fakeBaseArn = 'arn:aws:execute-api:us-west-2:123456789012:ymy8tbxw7b/Stage';
+const fakeMethodArn = `${fakeBaseArn}/GET/resource`;
 
 describe('authorize()', () => {
   let fakeEvent = () => ({
@@ -24,7 +25,7 @@ describe('authorize()', () => {
       Statement: [{
         Action: 'execute-api:Invoke',
         Effect: 'Allow',
-        Resource: fakeMethodArn + 'resource',
+        Resource: fakeMethodArn,
       }],
     },
     context: {
@@ -122,7 +123,7 @@ describe('getPolicy()', () => {
           Statement: [{
             Action: 'execute-api:Invoke',
             Effect: 'Allow',
-            Resource: `${fakeMethodArn}*`,
+            Resource: `${fakeBaseArn}/GET/`,
           }],
         },
       });
@@ -151,7 +152,6 @@ describe('getPolicy()', () => {
     describe('methodArn is', () => {
       it('undefined', () => methodArn = undefined);
       it('null', () => methodArn = null);
-      it('empty', () => methodArn = '');
     });
   });
 });

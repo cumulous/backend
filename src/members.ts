@@ -33,19 +33,19 @@ export interface Policy {
 export const getPolicy = (principalId: string, methodArn: string): Promise<Policy> => {
   if (!principalId) {
     return Promise.reject(Error('Expected non-empty principalId'));
-  } else if (!methodArn) {
-    return Promise.reject(Error('Expected non-empty methodArn'));
   } else {
-    return Promise.resolve({
-      principalId: principalId,
-      policyDocument: {
-        Version: '2012-10-17',
-        Statement: [{
-          Action: 'execute-api:Invoke',
-          Effect: 'Allow',
-          Resource: `${methodArn}*`,
-        }],
-      },
-    });
+    return Promise.resolve(methodArn)
+      .then(methodArn => methodArn.split('/', 2).join('/'))
+      .then(baseArn => ({
+        principalId: principalId,
+        policyDocument: {
+          Version: '2012-10-17',
+          Statement: [{
+            Action: 'execute-api:Invoke',
+            Effect: 'Allow',
+            Resource: `${baseArn}/GET/`,
+          }],
+        },
+      }));
   }
 };
