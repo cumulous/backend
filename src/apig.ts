@@ -1,5 +1,9 @@
+import * as stringify from 'json-stable-stringify';
+
 import { apiGateway } from './aws';
-import { Callback } from './types';
+import { Callback, Dict } from './types';
+
+const spec = require('./swagger');
 
 export const createDomainName = (event: { Name: string, Certificate: string },
                                context: any, callback: Callback) => {
@@ -13,7 +17,7 @@ export const createDomainName = (event: { Name: string, Certificate: string },
   }).promise()
     .then(data => callback(null, data.distributionDomainName))
     .catch(callback);
-}
+};
 
 export const updateDomainName = (event: { Name: string, Certificate: string },
                                context: any, callback: Callback) => {
@@ -30,7 +34,7 @@ export const updateDomainName = (event: { Name: string, Certificate: string },
   }).promise()
     .then(() => callback())
     .catch(callback);
-}
+};
 
 export const deleteDomainName = (name: string,
                               context: any, callback: Callback) => {
@@ -39,4 +43,17 @@ export const deleteDomainName = (name: string,
   }).promise()
     .then(() => callback())
     .catch(callback);
-}
+};
+
+export interface Response {
+  statusCode: number;
+  headers?: Dict<string>;
+  body: string;
+};
+
+export const getSpec = (event: any, context: any, callback: Callback) => {
+  callback(null, {
+    statusCode: 200,
+    body: stringify(spec),
+  });
+}''

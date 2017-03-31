@@ -1,7 +1,12 @@
+import * as stringify from 'json-stable-stringify';
+
 import * as apig from './apig';
+import { getSpec, Response } from './apig';
 import { apiGateway } from './aws';
 import { fakeResolve, fakeReject, testError } from './fixtures/support';
 import { Callback } from './types';
+
+const spec = require('./swagger');
 
 const fakeDomainName = 'api.example.org';
 const fakeApiCertificate = 'arn:aws:acm:us-east-1:012345678910:certificate/abcd-1234';
@@ -91,3 +96,16 @@ testMethod('deleteDomainName', () =>
 () => ({
   domainName: fakeDomainName,
 }));
+
+describe('getSpec()', () => {
+  it ('calls callback with correct output', (done: Callback) => {
+    getSpec(null, null, (err: Error, response: Response) => {
+      expect(err).toBeFalsy();
+      expect(response).toEqual({
+        statusCode: 200,
+        body: stringify(spec),
+      });
+      done();
+    });
+  });
+});
