@@ -3,6 +3,7 @@ import { decode, verify } from 'jsonwebtoken';
 export const jwksClient = require('jwks-rsa');
 
 import { envNames } from './env';
+import { promise } from './helpers';
 import { Callback } from './types';
 
 interface SigningKey {
@@ -18,13 +19,7 @@ export const getCertificate = (domain: string, kid: string) => {
         rateLimit: true,
         cache: true,
       }))
-    .then(client => new Promise(
-        (resolve: (key: SigningKey) => void,
-          reject: Callback) =>
-      client.getSigningKey(kid, (err: Error, key: SigningKey) => {
-        if (err) return reject(err);
-        resolve(key);
-      })))
+    .then(client => promise(client.getSigningKey, kid))
     .then(key => key.publicKey || key.rsaPublicKey);
 };
 
