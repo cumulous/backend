@@ -56,4 +56,4 @@ export const getSpec = (event: any, context: any, callback: Callback) => {
     statusCode: 200,
     body: stringify(spec),
   });
-}''
+};
