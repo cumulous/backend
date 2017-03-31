@@ -43,7 +43,7 @@ export const getPolicy = (principalId: string, methodArn: string): Promise<Polic
         Statement: [{
           Action: 'execute-api:Invoke',
           Effect: 'Allow',
-          Resource: methodArn,
+          Resource: `${methodArn}*`,
         }],
       },
     });

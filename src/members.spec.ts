@@ -122,7 +122,7 @@ describe('getPolicy()', () => {
           Statement: [{
             Action: 'execute-api:Invoke',
             Effect: 'Allow',
-            Resource: fakeMethodArn,
+            Resource: `${fakeMethodArn}*`,
           }],
         },
       });
