@@ -3,8 +3,8 @@ import * as stringify from 'json-stable-stringify';
 
 import { cloudFront, s3,
          CloudFormationRequest, CloudFormationResponse, sendCloudFormationResponse } from './aws';
-import { assertNonEmptyArray } from './helpers';
 import { Callback } from './types';
+import { assertNonEmptyArray } from './util';
 
 export const getIPSetDescriptors = (event: CloudFormationRequest,
                                   context: any, callback: Callback) => {

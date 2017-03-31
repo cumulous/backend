@@ -2,8 +2,8 @@ import { Netmask } from 'netmask';
 
 import { ec2 } from './aws';
 import { envNames } from './env';
-import { assertNonEmptyArray } from './helpers';
 import { Callback } from './types';
+import { assertNonEmptyArray } from './util';
 
 export const calculateSubnets = (event: any, context: any, callback: Callback) => {
   try {

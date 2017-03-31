@@ -3,8 +3,8 @@ import { decode, verify } from 'jsonwebtoken';
 export const jwksClient = require('jwks-rsa');
 
 import { envNames } from './env';
-import { promise } from './helpers';
 import { Callback } from './types';
+import { promise } from './util';
 
 interface SigningKey {
   publicKey?: string;

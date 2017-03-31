@@ -4,8 +4,8 @@ import { Client as SSHClient, ClientChannel as SSHClientChannel, SFTPWrapper } f
 import { ec2, s3 } from './aws';
 import { envNames } from './env';
 import { log } from './log';
-import { assertNonEmptyArray } from './helpers';
 import { AWSError, Callback } from './types';
+import { assertNonEmptyArray } from './util';
 
 // shim to be replaced with a DB lookup
 const instanceTypes = require('./instance-types.json');
