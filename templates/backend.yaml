@@ -477,7 +477,7 @@ Resources:
       Handler: projects.get
       Runtime: nodejs6.10
       Events:
-        GetProjects:
+        Api:
           Type: Api
           Properties:
             Path: /projects
@@ -1527,7 +1527,7 @@ Resources:
       Handler: apig.getSpec
       Runtime: nodejs6.10
       Events:
-        GetApi:
+        Api:
           Type: Api
           Properties:
             Path: /
