@@ -17,12 +17,10 @@ paths:
       security:
         - member_token: []
       tags:
-        - API
+        - Spec
       responses:
         200:
-          description: OpenAPI/Swagger 2.0 definition of this API.
-          schema:
-            type: object
+          $ref: '#/responses/Api'
         default:
           $ref: '#/responses/Error'
       x-amazon-apigateway-integration:
@@ -177,6 +175,10 @@ parameters:
     default: 10
 
 responses:
+  Api:
+    description: OpenAPI/Swagger 2.0 definition of this API.
+    schema:
+      type: object
   ListOfProjects:
     description: List of projects
     schema:
