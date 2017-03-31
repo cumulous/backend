@@ -48,7 +48,10 @@ gulp.task('compile', () => {
     .pipe(gulp.dest(paths.bin));
   gulp
     .src(paths.api)
-    .pipe(yaml())
+    .pipe(yaml({
+      replacer: (key: string, value: any) =>
+        key.startsWith('x-amazon') ? undefined : value,
+    }))
     .pipe(gulp.dest(paths.bin));
   return tsProject.src()
     .pipe(sourcemaps.init())
