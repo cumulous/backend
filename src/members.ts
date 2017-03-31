@@ -1,5 +1,8 @@
+import * as stringify from 'json-stable-stringify';
+
 import { authenticate } from './jwt';
 import { envNames } from './env';
+import { log } from './log';
 import { Callback, Dict } from './types';
 
 export const authorize = (event: { authorizationToken: string, methodArn: string },
@@ -7,7 +10,10 @@ export const authorize = (event: { authorizationToken: string, methodArn: string
   Promise.resolve(event)
     .then(event => authenticate(process.env[envNames.auth0Domain], event.authorizationToken))
     .then((payload: Dict<string>) => getPolicy(payload.sub, event.methodArn))
-    .then(policy => callback(null, policy))
+    .then(policy => {
+      log.debug(stringify(policy));
+      callback(null, policy);
+    })
     .catch(err => callback('Unauthorized'));
 };
 
