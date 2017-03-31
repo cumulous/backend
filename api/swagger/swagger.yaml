@@ -35,7 +35,7 @@ paths:
         Returns a list of projects for the current member,
         filtered by optional parameters.
 
-        **requires scopes:  
+        **requires scopes:
         *projects:describe*,
         *projects:describe_details (conditional)*
         **
@@ -136,7 +136,7 @@ parameters:
     description: |
       filter by project 'hidden' flag
 
-      **requires scope:  
+      **requires scope:
       *projects:describe_details*
       **
     type: boolean
@@ -154,7 +154,7 @@ parameters:
     description: |
       project IRB (might not be unique)
 
-      **requires scope:  
+      **requires scope:
       *projects:describe_details*
       **
     type: string
