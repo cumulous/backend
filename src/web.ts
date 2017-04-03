@@ -1,4 +1,5 @@
 export { IPSetDescriptor } from 'aws-sdk/clients/waf';
+import { execSync } from 'child_process';
 import * as stringify from 'json-stable-stringify';
 
 import { cloudFront, s3,
@@ -103,4 +104,37 @@ export const retrieveOriginAccessIdentity = (event: { Bucket: string, Path: stri
       callback(null, JSON.parse(config));
     })
     .catch(callback);
+};
+
+export const createAndExportSigningKey = (key: {
+    Bucket: string,
+    Path: string,
+    EncryptionKeyId: string,
+    Size: number,
+  }, context: any, callback: Callback) => {
+
+  Promise.resolve(key)
+    .then(key => execSync(`openssl genrsa ${key.Size}`))
+    .then(keyValue => storeSigningKey(key.Bucket, key.Path, keyValue, key.EncryptionKeyId))
+    .then(keyValue => execSync('openssl rsa -pubout', { input: keyValue }))
+    .then(pubkey => callback(null, {
+      PublicKey: pubkey.toString(),
+      PrivateKey: {
+        Bucket: key.Bucket,
+        Path: key.Path,
+        EncryptionKeyId: key.EncryptionKeyId,
+      },
+    }))
+    .catch(callback);
+};
+
+const storeSigningKey = (bucket: string, path: string, value: Buffer, encryptionKeyId: string) => {
+  return s3.putObject({
+      Bucket: bucket,
+      Key: path,
+      Body: value,
+      SSEKMSKeyId: encryptionKeyId,
+      ServerSideEncryption: 'aws:kms',
+    }).promise()
+      .then(() => value);
 };

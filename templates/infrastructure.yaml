@@ -346,6 +346,7 @@ Resources:
                           ParameterKey=WebPriceClass,ParameterValue=${WebPriceClass} \
                           ParameterKey=WebLocations,ParameterValue=${WebLocations} \
                           ParameterKey=WebFirewallRanges,ParameterValue=${WebFirewallRanges} \
+                          ParameterKey=WebSigningKeyPutRole,ParameterValue=${WebSigningKeyPutRole} \
                           ParameterKey=Auth0Domain,ParameterValue=${Auth0Domain} \
                           ParameterKey=Auth0CloudFormationClientID,ParameterValue=${Auth0CloudFormationClientID} \
                           ParameterKey=Auth0CloudFormationClientSecret,ParameterValue=${Auth0CloudFormationClientSecret} \
@@ -436,6 +437,17 @@ Resources:
               StringLike:
                 'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*.key
             Resource: '*'
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt WebSigningKeyPutRole.Arn
+            Action:
+              - kms:GenerateDataKey
+            Condition:
+              StringEquals:
+                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
+              StringLike:
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/web/*.signing.pem
+            Resource: '*'
           - Effect: Deny
             NotPrincipal:
               AWS:
@@ -462,6 +474,12 @@ Resources:
                       ${Auth0CloudFormationSecretsRole}/backend-beta-RotateAndStoreAuth0Secret"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
                       ${Auth0CloudFormationSecretsRole}/backend-release-RotateAndStoreAuth0Secret"
+
+              - !GetAtt WebSigningKeyPutRole.Arn
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${WebSigningKeyPutRole}/backend-beta-CreateAndExportWebSigningKeyPair"
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${WebSigningKeyPutRole}/backend-release-CreateAndExportWebSigningKeyPair"
 
               - !If
                 - EnableStackAdmin
@@ -878,6 +896,28 @@ Resources:
                   - s3:PutObject
                 Resource:
                   - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*
+
+  WebSigningKeyPutRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: WebSigningKeyPutPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${SecretsBucket}/web/*.signing.pem
 
   FrontendPipeline:
     Type: AWS::CodePipeline::Pipeline
