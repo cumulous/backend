@@ -1334,126 +1334,126 @@ Resources:
           }
         }
 
-  # WebSigningKey:
-  #   Type: AWS::CloudFormation::CustomResource
-  #   Properties:
-  #     ServiceToken: !GetAtt SetupCustomResource.Arn
-  #     StateMachine: !Ref SetupWebSigningKeyPairStateMachine
-  #     Bucket: !Ref SecretsBucket
-  #     Path: !Sub web/${AWS::StackName}.signing.pem
-  #     EncryptionKeyId: !Ref EncryptionKeyId
-  #     Size: 4096
+  WebSigningKey:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupWebSigningKeyPairStateMachine
+      Bucket: !Ref SecretsBucket
+      Path: !Sub web/${AWS::StackName}.signing.pem
+      EncryptionKeyId: !Ref EncryptionKeyId
+      Size: 4096
 
-  # CreateAndExportWebSigningKeyPair:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     FunctionName: !Sub ${AWS::StackName}-CreateAndExportWebSigningKeyPair
-  #     CodeUri: ../app
-  #     Handler: web.createAndExportSigningKey
-  #     Runtime: nodejs6.10
-  #     Timeout: 30
-  #     Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyPutRole}
+  CreateAndExportWebSigningKeyPair:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CreateAndExportWebSigningKeyPair
+      CodeUri: ../app
+      Handler: web.createAndExportSigningKey
+      Runtime: nodejs6.10
+      Timeout: 30
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyPutRole}
 
-  # GenerateSignedCookies:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     FunctionName: !Sub ${AWS::StackName}-GenerateSignedCookies
-  #     CodeUri: ../app
-  #     Handler: web.generateSignedCookies
-  #     Runtime: nodejs6.10
-  #     Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyGetRole}
-  #     Environment:
-  #       Variables:
-  #         WEB_DOMAIN: !Ref WebDomain
-  #         WEB_DISTRIBUTION_ID: !Ref WebDistribution
-  #         WEB_SIGNING_KEY_BUCKET: !Ref SecretsBucket
-  #         WEB_SIGNING_KEY_PATH: !Sub web/${AWS::StackName}.signing.pem
-  #     Events:
-  #       Api:
-  #         Type: Api
-  #         Properties:
-  #           Path: /weblogin
-  #           Method: GET
-  #           RestApiId: !Ref Api
+  GenerateSignedCookies:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-GenerateSignedCookies
+      CodeUri: ../app
+      Handler: web.generateSignedCookies
+      Runtime: nodejs6.10
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyGetRole}
+      Environment:
+        Variables:
+          WEB_DOMAIN: !Ref WebDomain
+          WEB_DISTRIBUTION_ID: !Ref WebDistribution
+          WEB_SIGNING_KEY_BUCKET: !Ref SecretsBucket
+          WEB_SIGNING_KEY_PATH: !Sub web/${AWS::StackName}.signing.pem
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /weblogin
+            Method: GET
+            RestApiId: !Ref Api
 
-  # SetupWebSigningKeyPairStateMachine:
-  #   Type: AWS::StepFunctions::StateMachine
-  #   Properties:
-  #     RoleArn: !GetAtt StatesExecutionRole.Arn
-  #     DefinitionString: !Sub |-
-  #       {
-  #         "StartAt": "SetupWebSigningKeyPair",
-  #         "States": {
-  #           "SetupWebSigningKeyPair": {
-  #             "Type": "Parallel",
-  #             "Next": "Succeed",
-  #             "Branches": [{
-  #               "StartAt": "ChooseEventType",
-  #               "States": {
-  #                 "ChooseEventType": {
-  #                   "Type": "Choice",
-  #                   "Choices": [
-  #                     {
-  #                       "Variable": "$.RequestType",
-  #                       "StringEquals": "Delete",
-  #                       "Next": "DeleteWebSigningKey"
-  #                     }
-  #                   ],
-  #                   "Default": "CreateAndExportWebSigningKeyPair"
-  #                 },
-  #                 "CreateAndExportWebSigningKeyPair": {
-  #                   "Type": "Task",
-  #                   "InputPath": "$.ResourceProperties",
-  #                   "ResultPath": "$.Data.PublicKey",
-  #                   "Resource": "${CreateAndExportWebSigningKeyPair.Arn}",
-  #                   "Next": "Success"
-  #                 },
-  #                 "DeleteWebSigningKey": {
-  #                   "Type": "Task",
-  #                   "InputPath": "$.ResourceProperties",
-  #                   "ResultPath": null,
-  #                   "Resource": "${DeleteS3Secret.Arn}",
-  #                   "Next": "Success"
-  #                 },
-  #                 "Success": {
-  #                   "Type": "Pass",
-  #                   "ResultPath": "$.Status",
-  #                   "Result": "SUCCESS",
-  #                   "End": true
-  #                 }
-  #               }
-  #             }],
-  #             "Catch": [{
-  #               "ErrorEquals": [ "States.ALL" ],
-  #               "ResultPath": "$.Error",
-  #               "Next": "PassReason"
-  #             }]
-  #           },
-  #           "Succeed": {
-  #             "InputPath": "$.[0]",
-  #             "Type": "Pass",
-  #             "Next": "End"
-  #           },
-  #           "PassReason": {
-  #             "Type": "Pass",
-  #             "InputPath": "$.Error.Cause",
-  #             "ResultPath": "$.Reason",
-  #             "Next": "Fail"
-  #           },
-  #           "Fail": {
-  #             "Type": "Pass",
-  #             "ResultPath": "$.Status",
-  #             "Result": "FAILED",
-  #             "Next": "End"
-  #           },
-  #           "End": {
-  #             "Type": "Task",
-  #             "ResultPath": null,
-  #             "Resource": "${SendCloudFormationResponse.Arn}",
-  #             "End": true
-  #           }
-  #         }
-  #       }
+  SetupWebSigningKeyPairStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupWebSigningKeyPair",
+          "States": {
+            "SetupWebSigningKeyPair": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "ChooseEventType",
+                "States": {
+                  "ChooseEventType": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "DeleteWebSigningKey"
+                      }
+                    ],
+                    "Default": "CreateAndExportWebSigningKeyPair"
+                  },
+                  "CreateAndExportWebSigningKeyPair": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.Data.PublicKey",
+                    "Resource": "${CreateAndExportWebSigningKeyPair.Arn}",
+                    "Next": "Success"
+                  },
+                  "DeleteWebSigningKey": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": null,
+                    "Resource": "${DeleteS3Secret.Arn}",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
 
   # ApiDomainName:
   #   Type: AWS::CloudFormation::CustomResource
