@@ -36,6 +36,8 @@ Parameters:
     Type: CommaDelimitedList
   WebSigningKeyPutRole:
     Type: String
+  WebSigningKeyGetRole:
+    Type: String
   Auth0Domain:
     Type: String
   Auth0CloudFormationClientID:
@@ -1351,6 +1353,21 @@ Resources:
       Runtime: nodejs6.10
       Timeout: 30
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyPutRole}
+
+  GenerateSignedCookies:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-GenerateSignedCookies
+      CodeUri: ../app
+      Handler: web.generateSignedCookies
+      Runtime: nodejs6.10
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyGetRole}
+      Environment:
+        Variables:
+          WEB_DOMAIN: !Ref WebDomain
+          WEB_DISTRIBUTION_ID: !Ref WebDistribution
+          WEB_SIGNING_KEY_BUCKET: !Sub ${WebSigningKey.PrivateKey.Bucket}
+          WEB_SIGNING_KEY_PATH: !Sub ${WebSigningKey.PrivateKey.Path}
 
   SetupWebSigningKeyPairStateMachine:
     Type: AWS::StepFunctions::StateMachine

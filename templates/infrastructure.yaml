@@ -347,6 +347,7 @@ Resources:
                           ParameterKey=WebLocations,ParameterValue=${WebLocations} \
                           ParameterKey=WebFirewallRanges,ParameterValue=${WebFirewallRanges} \
                           ParameterKey=WebSigningKeyPutRole,ParameterValue=${WebSigningKeyPutRole} \
+                          ParameterKey=WebSigningKeyGetRole,ParameterValue=${WebSigningKeyGetRole} \
                           ParameterKey=Auth0Domain,ParameterValue=${Auth0Domain} \
                           ParameterKey=Auth0CloudFormationClientID,ParameterValue=${Auth0CloudFormationClientID} \
                           ParameterKey=Auth0CloudFormationClientSecret,ParameterValue=${Auth0CloudFormationClientSecret} \
@@ -448,6 +449,17 @@ Resources:
               StringLike:
                 'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/web/*.signing.pem
             Resource: '*'
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt WebSigningKeyGetRole.Arn
+            Action:
+              - kms:Decrypt
+            Condition:
+              StringEquals:
+                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
+              StringLike:
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/web/*.signing.pem
+            Resource: '*'
           - Effect: Deny
             NotPrincipal:
               AWS:
@@ -480,6 +492,12 @@ Resources:
                       ${WebSigningKeyPutRole}/backend-beta-CreateAndExportWebSigningKeyPair"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
                       ${WebSigningKeyPutRole}/backend-release-CreateAndExportWebSigningKeyPair"
+
+              - !GetAtt WebSigningKeyGetRole.Arn
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${WebSigningKeyGetRole}/backend-beta-GenerateSignedCookies"
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${WebSigningKeyGetRole}/backend-release-GenerateSignedCookies"
 
               - !If
                 - EnableStackAdmin
@@ -666,6 +684,7 @@ Resources:
                   - !GetAtt SSHKeyGetRole.Arn
                   - !GetAtt Auth0CloudFormationSecretsRole.Arn
                   - !GetAtt WebSigningKeyPutRole.Arn
+                  - !GetAtt WebSigningKeyGetRole.Arn
               - Effect: Allow
                 Action:
                   - iam:AttachRolePolicy
@@ -919,6 +938,31 @@ Resources:
                 Action: s3:PutObject
                 Resource:
                   - !Sub arn:aws:s3:::${SecretsBucket}/web/*.signing.pem
+
+  WebSigningKeyGetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: WebSigningKeyGetPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${SecretsBucket}/web/*.signing.pem
+              - Effect: Allow
+                Action: cloudfront:GetDistribution
+                Resource: '*'
 
   FrontendPipeline:
     Type: AWS::CodePipeline::Pipeline

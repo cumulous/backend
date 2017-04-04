@@ -1,11 +1,14 @@
 export { IPSetDescriptor } from 'aws-sdk/clients/waf';
+import { Signer } from 'aws-sdk/clients/cloudfront';
 import { execSync } from 'child_process';
 import * as stringify from 'json-stable-stringify';
 
+import { makeResponse } from './apig';
 import { cloudFront, s3,
          CloudFormationRequest, CloudFormationResponse, sendCloudFormationResponse } from './aws';
-import { Callback } from './types';
-import { assertNonEmptyArray } from './util';
+import { envNames } from './env';
+import { Callback, Dict } from './types';
+import { assertNonEmptyArray, promise } from './util';
 
 export const getIPSetDescriptors = (event: CloudFormationRequest,
                                   context: any, callback: Callback) => {
@@ -122,7 +125,6 @@ export const createAndExportSigningKey = (key: {
       PrivateKey: {
         Bucket: key.Bucket,
         Path: key.Path,
-        EncryptionKeyId: key.EncryptionKeyId,
       },
     }))
     .catch(callback);
@@ -137,4 +139,46 @@ const storeSigningKey = (bucket: string, path: string, value: Buffer, encryption
       ServerSideEncryption: 'aws:kms',
     }).promise()
       .then(() => value);
+};
+
+export const generateSignedCookies = (event: any, context: { authorizer: { expiresAt: number } },
+                                   callback: Callback) => {
+  Promise.resolve()
+    .then(() => cloudFront.getDistribution({Id: process.env[envNames.webDistributionId]}).promise())
+    .then(data => data.Distribution.ActiveTrustedSigners.Items[0].KeyPairIds.Items[0])
+    .then(keyPairId =>
+      getSigningKey(process.env[envNames.webSigningKeyBucket], process.env[envNames.webSigningKeyPath])
+      .then(key => new Signer(keyPairId, key)))
+    .then(signer =>
+      getCookieParams(signer, process.env[envNames.webDomain], context.authorizer.expiresAt))
+    .then(cookie => getCookieHeaders(cookie, process.env[envNames.webDomain]))
+    .then(headers => callback(null, makeResponse(undefined, 200, headers)))
+    .catch(callback);
+};
+
+const getSigningKey = (bucket: string, path: string) => {
+  return s3.getObject({
+      Bucket: bucket,
+      Key: path,
+    }).promise()
+      .then(data => data.Body.toString());
+};
+
+const getCookieParams = (signer: Signer, domain: string, expiresAt: number) => {
+  if (expiresAt == null) {
+    throw Error('Expected "expiresAt" to be defined!');
+  }
+  return signer.getSignedCookie({
+    url: `https://${domain}/*`,
+    expires: expiresAt,
+  });
+};
+
+const getCookieHeaders = (cookieParams: Signer.CannedPolicy, domain: string) => {
+  const prefix = `Domain=${domain}; Path=/*; Secure; HttpOnly;`;
+  const headers: Dict<string> = {};
+  headers['Set-Cookie'] = `${prefix} CloudFront-Expires=${cookieParams['CloudFront-Expires']}`;
+  headers['Set-cookie'] = `${prefix} CloudFront-Key-Pair-Id=${cookieParams['CloudFront-Key-Pair-Id']}`;
+  headers['set-cookie'] = `${prefix} CloudFront-Signature=${cookieParams['CloudFront-Signature']}`;
+  return headers;
 };

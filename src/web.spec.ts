@@ -1,12 +1,16 @@
 import * as child_process from 'child_process';
+import * as cloudFrontTypes from 'aws-sdk/clients/cloudfront';
 import * as stringify from 'json-stable-stringify';
 
+import { makeResponse, Response } from './apig';
 import * as aws from './aws';
 import { cloudFront, s3 } from './aws';
+import { envNames } from './env';
 import { Callback, Dict } from './types';
 import { fakeResolve, fakeReject, testArray, testError } from './fixtures/support';
 import * as web from './web';
-import { createAndExportSigningKey, getIPSetDescriptors, IPSetDescriptor } from './web';
+import { createAndExportSigningKey, generateSignedCookies,
+         getIPSetDescriptors, IPSetDescriptor } from './web';
 
 const fakePhysicalResourceId = 'fake-physical-resource-id-1234-abcd';
 const fakeResourceId = 'fake-request-1234';
@@ -263,28 +267,34 @@ testMethod('retrieveOriginAccessIdentity', s3, 'getObject', () => ({
   ETag: fakeETag,
 });
 
+const fakeSigningKeyBucket = 'fake-secrets-bucket';
+const fakeSigningKeyPath = 'fake/key.pem';
+const fakeEncryptionKeyId = 'fake-encryption-key-1234';
+
 describe('createAndExportSigningKey()', () => {
-  const fakeKeyBucket = 'fake-secrets-bucket';
-  const fakeKeyPath = 'fake/key.pem';
-  const fakeEncryptionKeyId = 'fake-encryption-key-1234';
+
   const fakeKeySize = 2048;
-  const fakeKey = Buffer.from('FAKE RSA_KEY');
-  const fakePubKey = Buffer.from('FAKE PUBKEY');
+
+  let fakeSigningKey: () => Buffer;
+  let fakeSigningPubKey: () => Buffer;
 
   let spyOnExecSync: jasmine.Spy;
   let spyOnS3PutObject: jasmine.Spy;
 
   beforeEach(() => {
+    fakeSigningKey = () => Buffer.from('FAKE RSA_KEY');
+    fakeSigningPubKey = () => Buffer.from('FAKE PUBKEY');
+
     spyOnExecSync = spyOn(child_process, 'execSync')
-      .and.returnValues(fakeKey, fakePubKey);
+      .and.returnValues(fakeSigningKey(), fakeSigningPubKey());
     spyOnS3PutObject = spyOn(s3, 'putObject')
       .and.returnValue(fakeResolve());
   });
 
   const testMethod = (callback: Callback) => {
     createAndExportSigningKey({
-      Bucket: fakeKeyBucket,
-      Path: fakeKeyPath,
+      Bucket: fakeSigningKeyBucket,
+      Path: fakeSigningKeyPath,
       EncryptionKeyId: fakeEncryptionKeyId,
       Size: fakeKeySize,
     }, null, callback);
@@ -293,7 +303,7 @@ describe('createAndExportSigningKey()', () => {
   it('calls child_process.execSync() with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnExecSync).toHaveBeenCalledWith(`openssl genrsa ${fakeKeySize}`);
-      expect(spyOnExecSync).toHaveBeenCalledWith('openssl rsa -pubout', {input: fakeKey});
+      expect(spyOnExecSync).toHaveBeenCalledWith('openssl rsa -pubout', {input: fakeSigningKey()});
       expect(spyOnExecSync).toHaveBeenCalledTimes(2);
       done();
     });
@@ -302,9 +312,9 @@ describe('createAndExportSigningKey()', () => {
   it('calls s3.putObject() once with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnS3PutObject).toHaveBeenCalledWith({
-        Bucket: fakeKeyBucket,
-        Key: fakeKeyPath,
-        Body: fakeKey,
+        Bucket: fakeSigningKeyBucket,
+        Key: fakeSigningKeyPath,
+        Body: fakeSigningKey(),
         SSEKMSKeyId: fakeEncryptionKeyId,
         ServerSideEncryption: 'aws:kms',
       });
@@ -317,11 +327,10 @@ describe('createAndExportSigningKey()', () => {
     testMethod((err: Error, data: any) => {
       expect(err).toBeFalsy();
       expect(data).toEqual({
-        PublicKey: fakePubKey.toString(),
+        PublicKey: fakeSigningPubKey().toString(),
         PrivateKey: {
-          Bucket: fakeKeyBucket,
-          Path: fakeKeyPath,
-          EncryptionKeyId: fakeEncryptionKeyId,
+          Bucket: fakeSigningKeyBucket,
+          Path: fakeSigningKeyPath,
         },
       });
       done();
@@ -356,7 +365,7 @@ describe('createAndExportSigningKey()', () => {
       it('extracting the public key', (done: Callback) => {
         let execCount = 1;
         spyOnExecSync.and.callFake(() => {
-          if (execCount--) return fakeResolve(fakeKey);
+          if (execCount--) return fakeResolve(fakeSigningKey());
           else throw Error('child_process.execSync(): pubout');
         });
         testError(() => expect(spyOnExecSync).toHaveBeenCalledTimes(2), done);
@@ -369,6 +378,192 @@ describe('createAndExportSigningKey()', () => {
     it('child_process.execSync() throws an error when ', (done: Callback) => {
       spyOnS3PutObject.and.returnValue(fakeReject('s3.putObject()'));
       testError(() => expect(spyOnExecSync).toHaveBeenCalledTimes(1), done);
+    });
+  });
+});
+
+describe('generateSignedCookies()', () => {
+  const fakeDistributionId = 'distrib-1234';
+  const fakeKeyPairId = 'fake-key-pair-abcd';
+  const fakeWebDomain = 'example.org';
+  const fakeExpiresAt = 1483228800;
+
+  const fakeContext = () => ({
+    authorizer: {
+      expiresAt: fakeExpiresAt,
+    },
+  });
+  const fakeSigningKey = () => Buffer.from('FAKE RSA_KEY');
+  const fakeCookieParams = (): Dict<number|string> => ({
+    'CloudFront-Expires': fakeExpiresAt,
+    'CloudFront-Key-Pair-Id': '1234ABCD',
+    'CloudFront-Signature': 'abcd1234',
+  });
+
+  let spyOnGetDistribution: jasmine.Spy;
+  let spyOnS3GetObject: jasmine.Spy;
+  let spyOnSignerConstructor: jasmine.Spy;
+  let spyOnSigner: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.webDomain] = fakeWebDomain;
+    process.env[envNames.webDistributionId] = fakeDistributionId;
+    process.env[envNames.webSigningKeyBucket] = fakeSigningKeyBucket;
+    process.env[envNames.webSigningKeyPath] = fakeSigningKeyPath;
+
+    spyOnGetDistribution = spyOn(cloudFront, 'getDistribution')
+      .and.returnValue(fakeResolve({
+        Distribution: {
+          ActiveTrustedSigners: {
+            Items: [{
+              KeyPairIds: {
+                Items: [fakeKeyPairId],
+              },
+            }],
+          },
+        },
+      }));
+    spyOnS3GetObject = spyOn(s3, 'getObject')
+      .and.returnValue(fakeResolve({Body: fakeSigningKey()}));
+    spyOnSigner = jasmine.createSpyObj('signer', ['getSignedCookie']);
+    spyOnSignerConstructor = spyOn(cloudFrontTypes, 'Signer')
+      .and.returnValue(spyOnSigner);
+    (spyOnSigner as any).getSignedCookie
+      .and.returnValue(fakeCookieParams());
+  });
+
+  const testMethod = (callback: Callback) => {
+    generateSignedCookies(null, fakeContext(), callback);
+  };
+
+  it('calls cloudFront.getDistribution() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnGetDistribution).toHaveBeenCalledWith({
+        Id: fakeDistributionId,
+      });
+      expect(spyOnGetDistribution).toHaveBeenCalledTimes(1);
+      done();
+    })
+  });
+
+  it('calls s3.getObject() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnS3GetObject).toHaveBeenCalledWith({
+        Bucket: fakeSigningKeyBucket,
+        Key: fakeSigningKeyPath,
+      });
+      expect(spyOnS3GetObject).toHaveBeenCalledTimes(1);
+      done();
+    })
+  });
+
+  it('constructs cloudFront.Signer() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnSignerConstructor).toHaveBeenCalledWith(
+        fakeKeyPairId, fakeSigningKey().toString());
+      expect(spyOnSignerConstructor).toHaveBeenCalledTimes(1);
+      done();
+    })
+  });
+
+  it('calls Signer.getSignedCookie() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect((spyOnSigner as any).getSignedCookie).toHaveBeenCalledWith({
+        url: `https://${fakeWebDomain}/*`,
+        expires: fakeExpiresAt,
+      });
+      expect((spyOnSigner as any).getSignedCookie).toHaveBeenCalledTimes(1);
+      done();
+    })
+  });
+
+  it('calls callback with correct parameters', (done: Callback) => {
+    const cookiePrefix = `Domain=${fakeWebDomain}; Path=/*; Secure; HttpOnly;`;
+    const cookieParams = fakeCookieParams();
+    const cookieContent: string[] = [];
+    for (let cookie in cookieParams) {
+      cookieContent.push(`${cookiePrefix} ${cookie}=${cookieParams[cookie]}`);
+    }
+    const headers: Dict<string> = {};
+    headers['Set-Cookie'] = cookieContent[0];
+    headers['Set-cookie'] = cookieContent[1];
+    headers['set-cookie'] = cookieContent[2];
+
+    testMethod((err: Error, data: Response) => {
+      expect(err).toBeFalsy();
+      expect(data).toEqual(makeResponse(undefined, 200, headers));
+      done();
+    })
+  });
+
+  describe('calls callback immediately with an error if', () => {
+    const testError = (last: Callback, done: Callback) => {
+      testMethod((err: Error) => {
+        expect(err).toEqual(jasmine.any(Error));
+        last();
+        done();
+      });
+    };
+    describe('cloudFront.getDistribution()', () => {
+      let data: any;
+      afterEach((done: Callback) => {
+        spyOnGetDistribution.and.returnValue(data);
+        testError(() => expect(spyOnS3GetObject).not.toHaveBeenCalled(), done);
+      });
+      it('produces an error', () => data = fakeReject('cloudFront.getDistribution()'));
+      it('data is undefined', () => data = fakeResolve(undefined));
+      it('data is null', () => data = fakeResolve(null));
+      it('data.Distribution is undefined', () => data = fakeResolve({}));
+      it('data.Distribution is null', () => data = fakeResolve({Distribution: null}));
+      it('data.Distribution.ActiveTrustedSigners is undefined', () =>
+        data = fakeResolve({Distribution: {}}));
+      it('data.Distribution.ActiveTrustedSigners is null', () =>
+        data = fakeResolve({Distribution: {ActiveTrustedSigners: null}}));
+      it('data.Distribution.ActiveTrustedSigners.Items is undefined', () =>
+        data = fakeResolve({Distribution: {ActiveTrustedSigners: {}}}));
+      it('data.Distribution.ActiveTrustedSigners.Items is null', () =>
+        data = fakeResolve({Distribution: {ActiveTrustedSigners: {Items: null}}}));
+      it('data.Distribution.ActiveTrustedSigners.Items is empty', () =>
+        data = fakeResolve({Distribution: {ActiveTrustedSigners: {Items: []}}}));
+      it('data.Distribution.ActiveTrustedSigners.Items[0].KeyPairIds is undefined', () =>
+        data = fakeResolve({Distribution: {ActiveTrustedSigners: {Items: [{}]}}}));
+      it('data.Distribution.ActiveTrustedSigners.Items[0].KeyPairIds is null', () =>
+        data = fakeResolve({Distribution: {ActiveTrustedSigners: {Items: [{KeyPairIds: null}]}}}));
+      it('data.Distribution.ActiveTrustedSigners.Items[0].KeyPairIds.Items is undefined', () =>
+        data = fakeResolve({Distribution: {ActiveTrustedSigners: {Items: [{KeyPairIds: {}}]}}}));
+      it('data.Distribution.ActiveTrustedSigners.Items[0].KeyPairIds.Items is null', () =>
+        data = fakeResolve({Distribution: {ActiveTrustedSigners: {Items: [{KeyPairIds: {Items: null}}]}}}));
+    });
+    describe('s3.getObject()', () => {
+      let data: any;
+      afterEach((done: Callback) => {
+        spyOnS3GetObject.and.returnValue(data);
+        testError(() => expect(spyOnSignerConstructor).not.toHaveBeenCalled(), done);
+      });
+      it('produces an error', () => data = fakeReject('s3.getObject()'));
+      it('data is undefined', () => data = fakeResolve(undefined));
+      it('data is null', () => data = fakeResolve(null));
+      it('data.Body is undefined', () => data = fakeResolve({}));
+      it('data.Body is null', () => data = fakeResolve({Body: null}));
+    });
+    describe('context', () => {
+      let context: any;
+      beforeEach(() => {
+        context = fakeContext();
+      });
+      afterEach((done: Callback) => {
+        generateSignedCookies(null, context, (err: Error) => {
+          expect(err).toEqual(jasmine.any(Error));
+          expect((spyOnSigner as any).getSignedCookie).not.toHaveBeenCalled();
+          done();
+        });
+      });
+      it('is undefined', () => context = undefined);
+      it('is null', () => context = null);
+      it('authorizer is undefined', () => context.authorizer = undefined);
+      it('authorizer is null', () => context.authorizer = null);
+      it('expiresAt is undefined', () => context.authorizer.expiresAt = undefined);
+      it('expiresAt is null', () => context.authorizer.expiresAt = null);
     });
   });
 });

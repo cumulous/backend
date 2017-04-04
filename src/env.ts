@@ -8,5 +8,9 @@ export const envNames = {
   sshUser: 'SSH_USER',
   mountPath: 'MOUNT_PATH',
   apiDomain: 'API_DOMAIN',
+  webDomain: 'WEB_DOMAIN',
+  webDistributionId: 'WEB_DISTRIBUTION_ID',
+  webSigningKeyBucket: 'WEB_SIGNING_KEY_BUCKET',
+  webSigningKeyPath: 'WEB_SIGNING_KEY_PATH',
   auth0Domain: 'AUTH0_DOMAIN',
 };
