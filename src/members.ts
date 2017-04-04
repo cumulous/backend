@@ -9,7 +9,7 @@ export const authorize = (event: { authorizationToken: string, methodArn: string
                         context: any, callback: Callback) => {
   Promise.resolve(event)
     .then(event => authenticate(process.env[envNames.auth0Domain], event.authorizationToken))
-    .then((payload: Dict<string>) => getPolicy(payload.sub, event.methodArn))
+    .then((payload: Dict<any>) => getPolicy(payload.sub, payload.exp, event.methodArn))
     .then(policy => {
       log.debug(stringify(policy));
       callback(null, policy);
@@ -17,20 +17,22 @@ export const authorize = (event: { authorizationToken: string, methodArn: string
     .catch(err => callback('Unauthorized'));
 };
 
+type PolicyEffect = 'Allow' | 'Deny';
+
 export interface Policy {
   principalId: string;
   policyDocument: {
     Version: string;
-    Statement: [{
+    Statement: {
       Action: string;
-      Effect: 'Allow' | 'Deny';
+      Effect: PolicyEffect;
       Resource: string;
-    }];
-  }
+    }[];
+  };
   context?: Dict<any>;
 };
 
-export const getPolicy = (principalId: string, methodArn: string): Promise<Policy> => {
+export const getPolicy = (principalId: string, expiresAt: number, methodArn: string): Promise<Policy> => {
   if (!principalId) {
     return Promise.reject(Error('Expected non-empty principalId'));
   } else {
@@ -42,9 +44,12 @@ export const getPolicy = (principalId: string, methodArn: string): Promise<Polic
           Version: '2012-10-17',
           Statement: [{
             Action: 'execute-api:Invoke',
-            Effect: 'Allow',
+            Effect: 'Allow' as PolicyEffect,
             Resource: `${baseArn}/GET/`,
           }],
+        },
+        context: {
+          expiresAt: expiresAt,
         },
       }));
   }
