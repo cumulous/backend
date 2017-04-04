@@ -1349,6 +1349,7 @@ Resources:
       CodeUri: ../app
       Handler: web.createAndExportSigningKey
       Runtime: nodejs6.10
+      Timeout: 30
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyPutRole}
 
   SetupWebSigningKeyPairStateMachine:
