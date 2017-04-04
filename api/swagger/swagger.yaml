@@ -28,24 +28,24 @@ paths:
         httpMethod: POST
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetApi.Arn}/invocations
-  # /weblogin:
-  #   get:
-  #     summary: Set website cookies
-  #     description: Sets browser cookies for accessing protected content on the website.
-  #     security:
-  #       - member_token: []
-  #     tags:
-  #       - Web
-  #     responses:
-  #       200:
-  #         $ref: '#/responses/Cookies'
-  #       default:
-  #         $ref: '#/responses/Error'
-  #     x-amazon-apigateway-integration:
-  #       type: aws_proxy
-  #       httpMethod: POST
-  #       uri:
-  #         Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GenerateSignedCookies.Arn}/invocations
+  /weblogin:
+    get:
+      summary: Set website cookies
+      description: Sets browser cookies for accessing protected content on the website.
+      security:
+        - aws_iam: []
+      tags:
+        - Web
+      responses:
+        200:
+          $ref: '#/responses/Cookies'
+        default:
+          $ref: '#/responses/Error'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GenerateSignedCookies.Arn}/invocations
   /projects:
     get:
       summary: Search projects
@@ -197,18 +197,18 @@ responses:
     description: OpenAPI/Swagger 2.0 definition of this API.
     schema:
       type: object
-  # Cookies:
-  #   description: Set-Cookie headers for accessing the website
-  #   headers:
-  #     Set-Cookie:
-  #       description: '"CloudFront-Expires" header'
-  #       type: string
-  #     Set-cookie:
-  #       description: '"CloudFront-Key-Pair-Id" header'
-  #       type: string
-  #     set-cookie:
-  #       description: '"CloudFront-Signature" header'
-  #       type: string
+  Cookies:
+    description: Set-Cookie headers for accessing the website
+    headers:
+      Set-Cookie:
+        description: '"CloudFront-Expires" header'
+        type: string
+      Set-cookie:
+        description: '"CloudFront-Key-Pair-Id" header'
+        type: string
+      set-cookie:
+        description: '"CloudFront-Signature" header'
+        type: string
   ListOfProjects:
     description: List of projects
     schema:
@@ -238,3 +238,8 @@ securityDefinitions:
         Fn::Sub: ${AuthorizerInvocationRole.Arn}
       identityValidationExpression: '^[\w-]{100,200}\.[\w-]{200,400}\.[\w-]{300,600}$'
       authorizerResultTtlInSeconds: 60
+  aws_iam:
+    type: apiKey
+    in: header
+    name: Authorization
+    x-amazon-apigateway-authtype: awsSigv4
