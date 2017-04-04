@@ -1366,8 +1366,8 @@ Resources:
         Variables:
           WEB_DOMAIN: !Ref WebDomain
           WEB_DISTRIBUTION_ID: !Ref WebDistribution
-          WEB_SIGNING_KEY_BUCKET: !Sub ${WebSigningKey.PrivateKey.Bucket}
-          WEB_SIGNING_KEY_PATH: !Sub ${WebSigningKey.PrivateKey.Path}
+          WEB_SIGNING_KEY_BUCKET: !Sub ${WebSigningKey.PrivateKeyBucket}
+          WEB_SIGNING_KEY_PATH: !Sub ${WebSigningKey.PrivateKeyPath}
 
   SetupWebSigningKeyPairStateMachine:
     Type: AWS::StepFunctions::StateMachine

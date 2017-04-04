@@ -122,10 +122,8 @@ export const createAndExportSigningKey = (key: {
     .then(keyValue => execSync('openssl rsa -pubout', { input: keyValue }))
     .then(pubkey => callback(null, {
       PublicKey: pubkey.toString(),
-      PrivateKey: {
-        Bucket: key.Bucket,
-        Path: key.Path,
-      },
+      PrivateKeyBucket: key.Bucket,
+      PrivateKeyPath: key.Path,
     }))
     .catch(callback);
 };

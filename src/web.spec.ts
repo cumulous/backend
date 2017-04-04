@@ -328,10 +328,8 @@ describe('createAndExportSigningKey()', () => {
       expect(err).toBeFalsy();
       expect(data).toEqual({
         PublicKey: fakeSigningPubKey().toString(),
-        PrivateKey: {
-          Bucket: fakeSigningKeyBucket,
-          Path: fakeSigningKeyPath,
-        },
+        PrivateKeyBucket: fakeSigningKeyBucket,
+        PrivateKeyPath: fakeSigningKeyPath,
       });
       done();
     });
