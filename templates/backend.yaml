@@ -1647,4 +1647,4 @@ Resources:
 
 Outputs:
   WebSigningKey:
-    Value: !Sub ${WebSigningKey}.PublicKey
+    Value: !GetAtt WebSigningKey.PublicKey
