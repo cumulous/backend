@@ -665,6 +665,7 @@ Resources:
                   - !GetAtt SSHKeyPutRole.Arn
                   - !GetAtt SSHKeyGetRole.Arn
                   - !GetAtt Auth0CloudFormationSecretsRole.Arn
+                  - !GetAtt WebSigningKeyPutRole.Arn
               - Effect: Allow
                 Action:
                   - iam:AttachRolePolicy
