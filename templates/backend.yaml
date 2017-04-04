@@ -1368,6 +1368,13 @@ Resources:
           WEB_DISTRIBUTION_ID: !Ref WebDistribution
           WEB_SIGNING_KEY_BUCKET: !Sub ${WebSigningKey.PrivateKeyBucket}
           WEB_SIGNING_KEY_PATH: !Sub ${WebSigningKey.PrivateKeyPath}
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /weblogin
+            Method: GET
+            RestApiId: !Ref Api
 
   SetupWebSigningKeyPairStateMachine:
     Type: AWS::StepFunctions::StateMachine
