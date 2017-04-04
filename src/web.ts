@@ -120,11 +120,7 @@ export const createAndExportSigningKey = (key: {
     .then(key => execSync(`openssl genrsa ${key.Size}`))
     .then(keyValue => storeSigningKey(key.Bucket, key.Path, keyValue, key.EncryptionKeyId))
     .then(keyValue => execSync('openssl rsa -pubout', { input: keyValue }))
-    .then(pubkey => callback(null, {
-      PublicKey: pubkey.toString(),
-      PrivateKeyBucket: key.Bucket,
-      PrivateKeyPath: key.Path,
-    }))
+    .then(pubkey => callback(null, pubkey.toString()))
     .catch(callback);
 };
 

@@ -324,13 +324,9 @@ describe('createAndExportSigningKey()', () => {
   });
 
   it('calls callback with correct parameters', (done: Callback) => {
-    testMethod((err: Error, data: any) => {
+    testMethod((err: Error, pubkey: string) => {
       expect(err).toBeFalsy();
-      expect(data).toEqual({
-        PublicKey: fakeSigningPubKey().toString(),
-        PrivateKeyBucket: fakeSigningKeyBucket,
-        PrivateKeyPath: fakeSigningKeyPath,
-      });
+      expect(pubkey).toEqual(fakeSigningPubKey().toString());
       done();
     });
   });

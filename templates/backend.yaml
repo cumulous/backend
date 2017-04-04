@@ -1366,8 +1366,8 @@ Resources:
         Variables:
           WEB_DOMAIN: !Ref WebDomain
           WEB_DISTRIBUTION_ID: !Ref WebDistribution
-          WEB_SIGNING_KEY_BUCKET: !Sub ${WebSigningKey.PrivateKeyBucket}
-          WEB_SIGNING_KEY_PATH: !Sub ${WebSigningKey.PrivateKeyPath}
+          WEB_SIGNING_KEY_BUCKET: !Ref SecretsBucket
+          WEB_SIGNING_KEY_PATH: !Sub web/${AWS::StackName}.signing.pem
       Events:
         Api:
           Type: Api
@@ -1404,7 +1404,7 @@ Resources:
                   "CreateAndExportWebSigningKeyPair": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties",
-                    "ResultPath": "$.Data",
+                    "ResultPath": "$.Data.PublicKey",
                     "Resource": "${CreateAndExportWebSigningKeyPair.Arn}",
                     "Next": "Success"
                   },
