@@ -2,7 +2,7 @@ import * as request from 'request-promise-native';
 
 import * as auth0 from './auth0';
 import { Auth0ClientConfig, authenticate,
-         manage, rotateAndStoreClientSecret } from './auth0';
+         manageClient, rotateAndStoreClientSecret } from './auth0';
 import { s3 } from './aws';
 import { fakeResolve, testError } from './fixtures/support';
 import { Callback, Dict } from './types';
@@ -108,7 +108,7 @@ describe('authenticate', () => {
   });
 });
 
-describe('manage', () => {
+describe('manageClient', () => {
   const fakeManageMethod = 'POST';
   const fakeManageEndpoint = '/clients';
 
@@ -137,11 +137,11 @@ describe('manage', () => {
       .and.returnValue(Promise.resolve(fakeResponse()));
   });
 
-  const testManage = () =>
-    manage(fakeClientConfig(), fakeManageMethod, fakeManageEndpoint, fakePayload());
+  const testMethod = () =>
+    manageClient(fakeClientConfig(), fakeManageMethod, fakeManageEndpoint, fakePayload());
 
   it('calls authenticate() with correct parameters', (done: Callback) => {
-    testManage().then(() => {
+    testMethod().then(() => {
       expect(spyOnAuthenticate).toHaveBeenCalledWith(
         fakeClientConfig(), fakeBaseUrl + '/');
       expect(spyOnAuthenticate).toHaveBeenCalledTimes(1);
@@ -149,7 +149,7 @@ describe('manage', () => {
     });
   });
   it('request() with correct parameters', (done: Callback) => {
-    testManage().then(() => {
+    testMethod().then(() => {
       expect(spyOnRequest).toHaveBeenCalledWith(fakeBaseUrl + fakeManageEndpoint, {
           method: fakeManageMethod,
           headers: {
@@ -165,7 +165,7 @@ describe('manage', () => {
   describe('immediately returns with an error if', () => {
     it('authenticate() produces an error', (done: Callback) => {
       spyOnAuthenticate.and.returnValue(Promise.reject(Error('authenticate()')));
-      testManage().catch(err => {
+      testMethod().catch(err => {
         expect(err).toEqual(jasmine.any(Error));
         expect(spyOnRequest).not.toHaveBeenCalled();
         done();
@@ -174,7 +174,7 @@ describe('manage', () => {
     describe('client config is', () => {
       let config: any;
       afterEach((done: Callback) => {
-        manage(config, fakeManageMethod, fakeManageEndpoint, fakePayload()).catch(err => {
+        manageClient(config, fakeManageMethod, fakeManageEndpoint, fakePayload()).catch(err => {
           expect(err).toEqual(jasmine.any(Error));
           expect(spyOnRequest).not.toHaveBeenCalled();
           done();
@@ -186,7 +186,7 @@ describe('manage', () => {
   });
   it('returns with an error if request() produces an error', (done: Callback) => {
     spyOnRequest.and.returnValue(Promise.reject(Error('request()')));
-    testManage().catch(err => {
+    testMethod().catch(err => {
       expect(err).toEqual(jasmine.any(Error));
       done();
     });
@@ -217,7 +217,7 @@ describe('rotateAndStoreClientSecret', () => {
   let spyOnS3PutObject: jasmine.Spy;
 
   beforeEach(() => {
-    spyOnManage = spyOn(auth0, 'manage')
+    spyOnManage = spyOn(auth0, 'manageClient')
       .and.returnValue(Promise.resolve(fakeClientResponse()));
     spyOnS3PutObject = spyOn(s3, 'putObject')
       .and.returnValue(fakeResolve());
@@ -227,7 +227,7 @@ describe('rotateAndStoreClientSecret', () => {
     rotateAndStoreClientSecret(fakeClientConfig(), null, callback);
   };
 
-  it('calls manage() with correct parameters', (done: Callback) => {
+  it('calls manageClient() with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnManage).toHaveBeenCalledWith(
         fakeClientConfig(), 'POST', `/clients/${fakeClientId}/rotate-secret`);
@@ -261,7 +261,7 @@ describe('rotateAndStoreClientSecret', () => {
       it('undefined', () => config = undefined);
       it('null', () => config = null);
     });
-    describe('manage()', () => {
+    describe('manageClient()', () => {
       afterEach((done: Callback) => {
         testMethod((err: Error) => {
           expect(err).toEqual(jasmine.any(Error));

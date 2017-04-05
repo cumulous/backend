@@ -29,7 +29,7 @@ export const authenticate = (client: Auth0ClientConfig, audience: string) => {
     .then((data: any) => data.access_token);
 };
 
-export const manage = (
+export const manageClient = (
     client: Auth0ClientConfig,
     method: 'GET' | 'POST',
     endpoint: string,
@@ -49,7 +49,7 @@ export const manage = (
 
 export const rotateAndStoreClientSecret = (client: Auth0ClientConfig, context: any, callback: Callback) => {
   Promise.resolve(client)
-    .then(client => manage(client, 'POST', `/clients/${client.ID}/rotate-secret`))
+    .then(client => manageClient(client, 'POST', `/clients/${client.ID}/rotate-secret`))
     .then((data: any) => s3.putObject({
       Bucket: client.Secret.Bucket,
       Key: client.Secret.Path,
