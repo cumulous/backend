@@ -7,7 +7,6 @@ import { makeResponse } from './apig';
 import { cloudFront, s3,
          CloudFormationRequest, CloudFormationResponse, sendCloudFormationResponse } from './aws';
 import { envNames } from './env';
-import { log } from './log';
 import { Callback, Dict } from './types';
 import { assertNonEmptyArray, promise } from './util';
 
@@ -136,9 +135,12 @@ const storeSigningKey = (bucket: string, path: string, value: Buffer, encryption
       .then(() => value);
 };
 
-export const generateSignedCookies = (event: any, context: { authorizer: { expiresAt: number } },
-                                   callback: Callback) => {
-  log.debug(stringify(event));
+export const generateSignedCookies = (event: { requestContext: { authorizer: { expiresAt: number } } },
+                                    context: any, callback: Callback) => {
+  if (event == null || event.requestContext == null ||
+      event.requestContext.authorizer == null || event.requestContext.authorizer.expiresAt == null) {
+    return callback(Error('Expected non-empty event.requestContext.authorizer.expiresAt'));
+  }
   Promise.resolve()
     .then(() => cloudFront.getDistribution({Id: process.env[envNames.webDistributionId]}).promise())
     .then(data => data.Distribution.ActiveTrustedSigners.Items[0].KeyPairIds.Items[0])
@@ -146,7 +148,7 @@ export const generateSignedCookies = (event: any, context: { authorizer: { expir
       getSigningKey(process.env[envNames.webSigningKeyBucket], process.env[envNames.webSigningKeyPath])
       .then(key => new Signer(keyPairId, key)))
     .then(signer =>
-      getCookieParams(signer, process.env[envNames.webDomain], context.authorizer.expiresAt))
+      getCookieParams(signer, process.env[envNames.webDomain], event.requestContext.authorizer.expiresAt))
     .then(cookie => getCookieHeaders(cookie, process.env[envNames.webDomain]))
     .then(headers => callback(null, makeResponse(undefined, 200, headers)))
     .catch(callback);

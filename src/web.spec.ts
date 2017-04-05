@@ -382,9 +382,11 @@ describe('generateSignedCookies()', () => {
   const fakeWebDomain = 'example.org';
   const fakeExpiresAt = 1483228800;
 
-  const fakeContext = () => ({
-    authorizer: {
-      expiresAt: fakeExpiresAt,
+  const fakeEvent = () => ({
+    requestContext: {
+      authorizer: {
+        expiresAt: fakeExpiresAt,
+      },
     },
   });
   const fakeSigningKey = () => Buffer.from('FAKE RSA_KEY');
@@ -427,7 +429,7 @@ describe('generateSignedCookies()', () => {
   });
 
   const testMethod = (callback: Callback) => {
-    generateSignedCookies(null, fakeContext(), callback);
+    generateSignedCookies(fakeEvent(), null, callback);
   };
 
   it('calls cloudFront.getDistribution() once with correct parameters', (done: Callback) => {
@@ -491,6 +493,27 @@ describe('generateSignedCookies()', () => {
   });
 
   describe('calls callback immediately with an error if', () => {
+    describe('event', () => {
+      let event: any;
+      beforeEach(() => {
+        event = fakeEvent();
+      });
+      afterEach((done: Callback) => {
+        generateSignedCookies(event, null, (err: Error) => {
+          expect(err).toEqual(jasmine.any(Error));
+          expect(spyOnGetDistribution).not.toHaveBeenCalled();
+          done();
+        });
+      });
+      it('is undefined', () => event = undefined);
+      it('is null', () => event = null);
+      it('requestContext is undefined', () => event.requestContext = undefined);
+      it('requestContext is null', () => event.requestContext = null);
+      it('authorizer is undefined', () => event.requestContext.authorizer = undefined);
+      it('authorizer is null', () => event.requestContext.authorizer = null);
+      it('expiresAt is undefined', () => event.requestContext.authorizer.expiresAt = undefined);
+      it('expiresAt is null', () => event.requestContext.authorizer.expiresAt = null);
+    });
     const testError = (last: Callback, done: Callback) => {
       testMethod((err: Error) => {
         expect(err).toEqual(jasmine.any(Error));
@@ -539,25 +562,6 @@ describe('generateSignedCookies()', () => {
       it('data is null', () => data = fakeResolve(null));
       it('data.Body is undefined', () => data = fakeResolve({}));
       it('data.Body is null', () => data = fakeResolve({Body: null}));
-    });
-    describe('context', () => {
-      let context: any;
-      beforeEach(() => {
-        context = fakeContext();
-      });
-      afterEach((done: Callback) => {
-        generateSignedCookies(null, context, (err: Error) => {
-          expect(err).toEqual(jasmine.any(Error));
-          expect((spyOnSigner as any).getSignedCookie).not.toHaveBeenCalled();
-          done();
-        });
-      });
-      it('is undefined', () => context = undefined);
-      it('is null', () => context = null);
-      it('authorizer is undefined', () => context.authorizer = undefined);
-      it('authorizer is null', () => context.authorizer = null);
-      it('expiresAt is undefined', () => context.authorizer.expiresAt = undefined);
-      it('expiresAt is null', () => context.authorizer.expiresAt = null);
     });
   });
 });
