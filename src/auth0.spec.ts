@@ -12,7 +12,7 @@ const fakeClientId = '012345abcdEFGH';
 const fakeClientSecret = 'fak3-s3cr3t';
 const fakeToken = 'ey.12.34';
 
-describe('authenticate', () => {
+describe('authenticate()', () => {
   let fakeBaseUrl = 'https://' + fakeDomain;
   let fakeClientConfig = () => ({
     Domain: fakeDomain,
@@ -108,7 +108,7 @@ describe('authenticate', () => {
   });
 });
 
-describe('manageClient', () => {
+describe('manageClient()', () => {
   const fakeManageMethod = 'POST';
   const fakeManageEndpoint = '/clients';
 
@@ -193,7 +193,7 @@ describe('manageClient', () => {
   });
 });
 
-describe('rotateAndStoreClientSecret', () => {
+describe('rotateAndStoreClientSecret()', () => {
   const fakeSecretBucket = 'fake-bucket';
   const fakeSecretPath = 'auth0/fake.key';
   const fakeSecretValue = 'fAkEs3cr3t';
