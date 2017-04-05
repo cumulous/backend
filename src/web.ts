@@ -138,7 +138,7 @@ const storeSigningKey = (bucket: string, path: string, value: Buffer, encryption
 
 export const generateSignedCookies = (event: any, context: { authorizer: { expiresAt: number } },
                                    callback: Callback) => {
-  log.debug(stringify(context));
+  log.debug(stringify(event));
   Promise.resolve()
     .then(() => cloudFront.getDistribution({Id: process.env[envNames.webDistributionId]}).promise())
     .then(data => data.Distribution.ActiveTrustedSigners.Items[0].KeyPairIds.Items[0])
