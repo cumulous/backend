@@ -1373,7 +1373,7 @@ Resources:
           Type: Api
           Properties:
             Path: /weblogin
-            Method: GET
+            Method: POST
             RestApiId: !Ref Api
 
   SetupWebSigningKeyPairStateMachine:
