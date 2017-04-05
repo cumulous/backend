@@ -351,7 +351,8 @@ Resources:
                           ParameterKey=Auth0Domain,ParameterValue=${Auth0Domain} \
                           ParameterKey=Auth0CloudFormationClientID,ParameterValue=${Auth0CloudFormationClientID} \
                           ParameterKey=Auth0CloudFormationClientSecret,ParameterValue=${Auth0CloudFormationClientSecret} \
-                          ParameterKey=Auth0CloudFormationSecretsRole,ParameterValue=${Auth0CloudFormationSecretsRole} "
+                          ParameterKey=Auth0CloudFormationSecretsPutRole,ParameterValue=${Auth0CloudFormationSecretsPutRole} \
+                          ParameterKey=Auth0CloudFormationSecretsGetRole,ParameterValue=${Auth0CloudFormationSecretsGetRole} "
 
                       $cfm delete-change-set $change_set || true
                       $cfm create-change-set $args || $cfm create-change-set --change-set-type CREATE $args
@@ -428,9 +429,19 @@ Resources:
             Resource: '*'
           - Effect: Allow
             Principal:
-              AWS: !GetAtt Auth0CloudFormationSecretsRole.Arn
+              AWS: !GetAtt Auth0CloudFormationSecretsPutRole.Arn
             Action:
               - kms:GenerateDataKey
+            Condition:
+              StringEquals:
+                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
+              StringLike:
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*.key
+            Resource: '*'
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt Auth0CloudFormationSecretsGetRole.Arn
+            Action:
               - kms:Decrypt
             Condition:
               StringEquals:
@@ -481,11 +492,17 @@ Resources:
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
                       ${SSHKeyGetRole}/backend-release-ExecuteInitScript"
 
-              - !GetAtt Auth0CloudFormationSecretsRole.Arn
+              - !GetAtt Auth0CloudFormationSecretsPutRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0CloudFormationSecretsRole}/backend-beta-RotateAndStoreAuth0Secret"
+                      ${Auth0CloudFormationSecretsPutRole}/backend-beta-RotateAndStoreAuth0Secret"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0CloudFormationSecretsRole}/backend-release-RotateAndStoreAuth0Secret"
+                      ${Auth0CloudFormationSecretsPutRole}/backend-release-RotateAndStoreAuth0Secret"
+
+              - !GetAtt Auth0CloudFormationSecretsGetRole.Arn
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${Auth0CloudFormationSecretsGetRole}/backend-beta-ManageAuth0Resource"
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${Auth0CloudFormationSecretsGetRole}/backend-release-ManageAuth0Resource"
 
               - !GetAtt WebSigningKeyPutRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
@@ -682,7 +699,8 @@ Resources:
                 Resource:
                   - !GetAtt SSHKeyPutRole.Arn
                   - !GetAtt SSHKeyGetRole.Arn
-                  - !GetAtt Auth0CloudFormationSecretsRole.Arn
+                  - !GetAtt Auth0CloudFormationSecretsPutRole.Arn
+                  - !GetAtt Auth0CloudFormationSecretsGetRole.Arn
                   - !GetAtt WebSigningKeyPutRole.Arn
                   - !GetAtt WebSigningKeyGetRole.Arn
               - Effect: Allow
@@ -893,7 +911,7 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
 
-  Auth0CloudFormationSecretsRole:
+  Auth0CloudFormationSecretsPutRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -906,14 +924,36 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: Auth0CloudFormationSecretsPolicy
+        - PolicyName: Auth0CloudFormationSecretsPutPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*
+
+  Auth0CloudFormationSecretsGetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: Auth0CloudFormationSecretsGetPolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
               - Effect: Allow
                 Action:
                   - s3:GetObject
-                  - s3:PutObject
                 Resource:
                   - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*
 

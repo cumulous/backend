@@ -45,12 +45,16 @@ export const manageClient = (
     }));
 };
 
-export const manage = (
-    method: HttpMethod,
-    endpoint: string,
-    payload?: any) => {
+export const manage = (event: {
+      method: HttpMethod,
+      endpoint: string,
+      payload?: any,
+    }, context: any, callback: Callback) => {
 
-  return Promise.resolve()
+  if (event == null) {
+    return callback(Error('Expected non-empty event with method, endpoint, [payload]'));
+  }
+  Promise.resolve()
     .then(() => s3.getObject({
       Bucket: process.env[envNames.auth0SecretBucket],
       Key: process.env[envNames.auth0SecretPath],
@@ -60,7 +64,9 @@ export const manage = (
       Domain: process.env[envNames.auth0Domain],
       ID: process.env[envNames.auth0ClientId],
       Secret: secret,
-    }, method, endpoint, payload));
+    }, event.method, event.endpoint, event.payload))
+    .then(data => callback(null, data))
+    .catch(callback);
 };
 
 export const rotateAndStoreClientSecret = (secret: string, context: any, callback: Callback) => {

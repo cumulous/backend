@@ -105,6 +105,10 @@ describe('manage()', () => {
     fake: 'payload',
   });
 
+  const fakeResponse = () => ({
+    fake: 'response',
+  });
+
   let spyOnS3GetObject: jasmine.Spy;
   let spyOnManageClient: jasmine.Spy;
 
@@ -119,14 +123,17 @@ describe('manage()', () => {
         Body: Buffer.from(fakeClientSecret),
       }));
     spyOnManageClient = spyOn(auth0, 'manageClient')
-      .and.returnValue(Promise.resolve());
+      .and.returnValue(Promise.resolve(fakeResponse()));
   });
 
-  const testMethod = () =>
-    manage(fakeManageMethod, fakeManageEndpoint, fakePayload());
+  const testMethod = (callback: Callback) => manage({
+    method: fakeManageMethod,
+    endpoint: fakeManageEndpoint,
+    payload: fakePayload(),
+  }, null, callback);
 
   it('calls s3.getObject() once with correct parameters', (done: Callback) => {
-    testMethod().then(() => {
+    testMethod(() => {
       expect(spyOnS3GetObject).toHaveBeenCalledWith({
         Bucket: fakeSecretBucket,
         Key: fakeSecretPath,
@@ -137,7 +144,7 @@ describe('manage()', () => {
   });
 
   it('calls manageClient() once with correct parameters', (done: Callback) => {
-    testMethod().then(() => {
+    testMethod(() => {
       expect(spyOnManageClient).toHaveBeenCalledWith({
         Domain: fakeDomain,
         ID: fakeClientId,
@@ -148,21 +155,51 @@ describe('manage()', () => {
     });
   });
 
-  describe('immediately returns an error if', () => {
-    const testError = (last: Callback, done: Callback) => {
-      testMethod().catch(err => {
-        expect(err).toEqual(jasmine.any(Error));
-        last();
-        done();
+  it('calls callback with correct parameters', (done: Callback) => {
+    testMethod((err: Error, data: any) => {
+      expect(err).toBeFalsy();
+      expect(data).toEqual(fakeResponse());
+      done();
+    });
+  });
+
+  describe('immediately calls callback with an error if', () => {
+    describe('event is', () => {
+      let event: any;
+      afterEach((done: Callback) => {
+        manage(event, null, err => {
+          expect(err).toEqual(jasmine.any(Error));
+          expect(spyOnS3GetObject).not.toHaveBeenCalled();
+          done();
+        });
       });
-    };
-    it('s3.getObject() produces and error', (done: Callback) => {
-      spyOnS3GetObject.and.returnValue(fakeReject('s3.getObject()'));
-      testError(() => expect(spyOnManageClient).not.toHaveBeenCalled(), done);
+      it('undefined', () => event = undefined);
+      it('null', () => event = null);
+    });
+    describe('s3.getObject()', () => {
+      let data: any;
+      afterEach((done: Callback) => {
+        spyOnS3GetObject.and.returnValue(data);
+        testMethod(err => {
+          expect(err).toEqual(jasmine.any(Error));
+          expect(spyOnManageClient).not.toHaveBeenCalled();
+          done();
+        });
+      });
+      it('produces and error', () => data = fakeReject('s3.getObject()'));
+      describe('data', () => {
+        it('is undefined', () => data = fakeResolve(undefined));
+        it('is null', () => data = fakeResolve(null));
+        it('Body is undefined', () => data = fakeResolve({}));
+        it('Body is null', () => data = fakeResolve({Body: null}));
+      });
     });
     it('manageClient() produces and error', (done: Callback) => {
       spyOnManageClient.and.returnValue(Promise.reject(Error('manageClient()')));
-      testError(() => {}, done);
+      testMethod(err => {
+        expect(err).toEqual(jasmine.any(Error));
+        done();
+      });
     });
   });
 });
