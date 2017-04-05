@@ -18,9 +18,7 @@ describe('authenticate()', () => {
   let fakeClientConfig = () => ({
     Domain: fakeDomain,
     ID: fakeClientId,
-    Secret: {
-      Value: fakeClientSecret,
-    },
+    Secret: fakeClientSecret,
   });
   let fakeResponse = () => ({
     access_token: fakeToken,
@@ -90,20 +88,8 @@ describe('authenticate()', () => {
         });
       });
       describe('is', () => {
-        it('undefined', () => {
-          fakeConfig = undefined;
-        });
-        it('null', () => {
-          fakeConfig = null;
-        });
-      });
-      describe('secret config is', () => {
-        it('undefined', () => {
-          delete fakeConfig.Secret;
-        });
-        it('null', () => {
-          fakeConfig.Secret = null;
-        });
+        it('undefined', () =>  fakeConfig = undefined);
+        it('null', () => fakeConfig = null);
       });
     });
   });
@@ -155,9 +141,7 @@ describe('manage()', () => {
       expect(spyOnManageClient).toHaveBeenCalledWith({
         Domain: fakeDomain,
         ID: fakeClientId,
-        Secret: {
-          Value: fakeClientSecret,
-        },
+        Secret: fakeClientSecret,
       }, fakeManageMethod, fakeManageEndpoint, fakePayload());
       expect(spyOnManageClient).toHaveBeenCalledTimes(1);
       done();
@@ -191,9 +175,7 @@ describe('manageClient()', () => {
   let fakeClientConfig = () => ({
     Domain: fakeDomain,
     ID: fakeClientId,
-    Secret: {
-      Value: fakeClientSecret,
-    },
+    Secret: fakeClientSecret,
   });
   let fakePayload = () => ({
     fake: 'input',
@@ -277,12 +259,7 @@ describe('rotateAndStoreClientSecret()', () => {
   let fakeClientConfig = () => ({
     Domain: fakeDomain,
     ID: fakeClientId,
-    Secret: {
-      Value: fakeClientSecret,
-      Bucket: fakeSecretBucket,
-      Path: fakeSecretPath,
-      EncryptionKeyId: fakeEncryptionKeyId,
-    },
+    Secret: fakeClientSecret,
   });
   let fakeClientResponse = () => ({
     client_secret: fakeSecretValue,
@@ -292,6 +269,12 @@ describe('rotateAndStoreClientSecret()', () => {
   let spyOnS3PutObject: jasmine.Spy;
 
   beforeEach(() => {
+    process.env[envNames.auth0Domain] = fakeDomain;
+    process.env[envNames.auth0ClientId] = fakeClientId;
+    process.env[envNames.auth0SecretBucket] = fakeSecretBucket;
+    process.env[envNames.auth0SecretPath] = fakeSecretPath;
+    process.env[envNames.encryptionKeyId] = fakeEncryptionKeyId;
+
     spyOnManage = spyOn(auth0, 'manageClient')
       .and.returnValue(Promise.resolve(fakeClientResponse()));
     spyOnS3PutObject = spyOn(s3, 'putObject')
@@ -299,7 +282,7 @@ describe('rotateAndStoreClientSecret()', () => {
   });
 
   const testMethod = (callback: Callback) => {
-    rotateAndStoreClientSecret(fakeClientConfig(), null, callback);
+    rotateAndStoreClientSecret(fakeClientSecret, null, callback);
   };
 
   it('calls manageClient() with correct parameters', (done: Callback) => {
@@ -323,19 +306,7 @@ describe('rotateAndStoreClientSecret()', () => {
       done();
     });
   });
-  describe('immediately calls callback with an error if', () => {
-    describe('client config is', () => {
-      let config: any;
-      afterEach((done: Callback) => {
-        rotateAndStoreClientSecret(config, null, (err: Error) => {
-          expect(err).toEqual(jasmine.any(Error));
-          expect(spyOnManage).not.toHaveBeenCalled();
-          done();
-        });
-      });
-      it('undefined', () => config = undefined);
-      it('null', () => config = null);
-    });
+  describe('immediately calls callback with an error if', () => {;
     describe('manageClient()', () => {
       afterEach((done: Callback) => {
         testMethod((err: Error) => {
@@ -355,6 +326,13 @@ describe('rotateAndStoreClientSecret()', () => {
           spyOnManage.and.returnValue(Promise.resolve(null));
         });
       });
+    });
+  });
+  it('s3.putObject() produces an error', (done: Callback) => {
+    spyOnS3PutObject.and.returnValue(fakeReject('s3.putObject()'));
+    testMethod((err: Error) => {
+      expect(err).toEqual(jasmine.any(Error));
+      done();
     });
   });
 });

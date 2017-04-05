@@ -9,12 +9,7 @@ import { Callback } from './types';
 export interface Auth0ClientConfig {
   Domain: string;
   ID: string;
-  Secret: {
-    Value: string;
-    Bucket?: string;
-    Path?: string;
-    EncryptionKeyId?: string;
-  };
+  Secret: string;
 };
 
 type HttpMethod = 'GET' | 'POST';
@@ -26,7 +21,7 @@ export const authenticate = (client: Auth0ClientConfig, audience: string) => {
       body: {
         grant_type: 'client_credentials',
         client_id: client.ID,
-        client_secret: client.Secret.Value,
+        client_secret: client.Secret,
         audience: audience,
       }}))
     .then((data: any) => data.access_token);
@@ -64,20 +59,22 @@ export const manage = (
     .then(secret => manageClient({
       Domain: process.env[envNames.auth0Domain],
       ID: process.env[envNames.auth0ClientId],
-      Secret: {
-        Value: secret,
-      },
+      Secret: secret,
     }, method, endpoint, payload));
 };
 
-export const rotateAndStoreClientSecret = (client: Auth0ClientConfig, context: any, callback: Callback) => {
-  Promise.resolve(client)
-    .then(client => manageClient(client, 'POST', `/clients/${client.ID}/rotate-secret`))
+export const rotateAndStoreClientSecret = (secret: string, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => manageClient({
+      Domain: process.env[envNames.auth0Domain],
+      ID: process.env[envNames.auth0ClientId],
+      Secret: secret,
+    }, 'POST', `/clients/${process.env[envNames.auth0ClientId]}/rotate-secret`))
     .then((data: any) => s3.putObject({
-      Bucket: client.Secret.Bucket,
-      Key: client.Secret.Path,
+      Bucket: process.env[envNames.auth0SecretBucket],
+      Key: process.env[envNames.auth0SecretPath],
       Body: data.client_secret,
-      SSEKMSKeyId: client.Secret.EncryptionKeyId,
+      SSEKMSKeyId: process.env[envNames.encryptionKeyId],
       ServerSideEncryption: 'aws:kms',
     }).promise())
     .then(() => callback())

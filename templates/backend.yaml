@@ -442,14 +442,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupAuth0StateMachine
-      CloudFormation:
-        Domain: !Ref Auth0Domain
-        ID: !Ref Auth0CloudFormationClientID
-        Secret:
-          Value: !Ref Auth0CloudFormationClientSecret
-          Bucket: !Ref SecretsBucket
-          Path: !Sub auth0/${AWS::StackName}-cf.key
-          EncryptionKeyId: !Ref EncryptionKeyId
+      Secret: !Ref Auth0CloudFormationClientSecret
 
   RotateAndStoreAuth0Secret:
     Type: AWS::Serverless::Function
@@ -459,6 +452,13 @@ Resources:
       Handler: auth0.rotateAndStoreClientSecret
       Runtime: nodejs6.10
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${Auth0CloudFormationSecretsRole}
+      Environment:
+        Variables:
+          ENCRYPTION_KEY_ID: !Ref EncryptionKeyId
+          AUTH0_DOMAIN: !Ref Auth0Domain
+          AUTH0_CLIENT_ID: !Ref Auth0CloudFormationClientID
+          AUTH0_SECRET_BUCKET: !Ref SecretsBucket
+          AUTH0_SECRET_PATH: !Sub auth0/${AWS::StackName}-cf.key
 
   DeleteS3Secret:
     Type: AWS::Serverless::Function
@@ -915,12 +915,12 @@ Resources:
                     "Type": "Choice",
                     "Choices": [
                       {
-                        "Variable": "$.ResourceProperties.CloudFormation.Secret.Value",
-                        "StringGreaterThan": "",
-                        "Next": "ChooseEventType"
+                        "Variable": "$.ResourceProperties.Secret",
+                        "StringEquals": "",
+                        "Next": "Success"
                       }
                     ],
-                    "Default": "Success"
+                    "Default": "ChooseEventType"
                   },
                   "ChooseEventType": {
                     "Type": "Choice",
@@ -946,7 +946,7 @@ Resources:
                     "Type": "Choice",
                     "Choices": [
                       {
-                        "Variable": "$.OldResourceProperties.CloudFormation.Secret.Value",
+                        "Variable": "$.OldResourceProperties.Secret",
                         "StringEquals": "${Auth0CloudFormationClientSecret}",
                         "Next": "Success"
                       }
@@ -955,14 +955,14 @@ Resources:
                   },
                   "RotateAndStoreSecret": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.CloudFormation",
+                    "InputPath": "$.ResourceProperties.Secret",
                     "ResultPath": null,
                     "Resource": "${RotateAndStoreAuth0Secret.Arn}",
                     "Next": "Success"
                   },
                   "DeleteSecret": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.CloudFormation.Secret",
+                    "InputPath": "$.ResourceProperties.Secret",
                     "ResultPath": null,
                     "Resource": "${DeleteS3Secret.Arn}",
                     "Next": "Success"
