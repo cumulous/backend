@@ -163,9 +163,6 @@ const getSigningKey = (bucket: string, path: string) => {
 };
 
 const getCookieParams = (signer: Signer, domain: string, expiresAt: number) => {
-  if (expiresAt == null) {
-    throw Error('Expected "expiresAt" to be defined!');
-  }
   return signer.getSignedCookie({
     url: `https://${domain}/*`,
     expires: expiresAt,
