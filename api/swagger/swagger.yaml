@@ -29,7 +29,7 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetApi.Arn}/invocations
   /weblogin:
-    get:
+    post:
       summary: Set website cookies
       description: Sets browser cookies for accessing protected content on the website.
       security:
