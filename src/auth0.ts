@@ -1,8 +1,9 @@
 import * as stringify from 'json-stable-stringify';
-
-import { s3 } from './aws';
 export import request = require('request-promise-native');
 import { post } from 'request-promise-native';
+
+import { s3 } from './aws';
+import { envNames } from './env';
 import { Callback } from './types';
 
 export interface Auth0ClientConfig {
@@ -14,7 +15,9 @@ export interface Auth0ClientConfig {
     Path?: string;
     EncryptionKeyId?: string;
   };
-}
+};
+
+type HttpMethod = 'GET' | 'POST';
 
 export const authenticate = (client: Auth0ClientConfig, audience: string) => {
   return Promise.resolve(client)
@@ -31,7 +34,7 @@ export const authenticate = (client: Auth0ClientConfig, audience: string) => {
 
 export const manageClient = (
     client: Auth0ClientConfig,
-    method: 'GET' | 'POST',
+    method: HttpMethod,
     endpoint: string,
     payload?: any) => {
 
@@ -45,6 +48,26 @@ export const manageClient = (
       json: true,
       body: payload,
     }));
+};
+
+export const manage = (
+    method: HttpMethod,
+    endpoint: string,
+    payload?: any) => {
+
+  return Promise.resolve()
+    .then(() => s3.getObject({
+      Bucket: process.env[envNames.auth0SecretBucket],
+      Key: process.env[envNames.auth0SecretPath],
+    }).promise())
+    .then(data => data.Body.toString())
+    .then(secret => manageClient({
+      Domain: process.env[envNames.auth0Domain],
+      ID: process.env[envNames.auth0ClientId],
+      Secret: {
+        Value: secret,
+      },
+    }, method, endpoint, payload));
 };
 
 export const rotateAndStoreClientSecret = (client: Auth0ClientConfig, context: any, callback: Callback) => {

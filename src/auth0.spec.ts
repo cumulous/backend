@@ -2,9 +2,10 @@ import * as request from 'request-promise-native';
 
 import * as auth0 from './auth0';
 import { Auth0ClientConfig, authenticate,
-         manageClient, rotateAndStoreClientSecret } from './auth0';
+         manage, manageClient, rotateAndStoreClientSecret } from './auth0';
 import { s3 } from './aws';
-import { fakeResolve, testError } from './fixtures/support';
+import { envNames } from './env';
+import { fakeReject, fakeResolve, testError } from './fixtures/support';
 import { Callback, Dict } from './types';
 
 const fakeDomain = 'account.auth0.com';
@@ -104,6 +105,80 @@ describe('authenticate()', () => {
           fakeConfig.Secret = null;
         });
       });
+    });
+  });
+});
+
+describe('manage()', () => {
+  const fakeSecretBucket = 'fake-secrets-bucket';
+  const fakeSecretPath = 'auth0/secret.key';
+  const fakeManageMethod = 'GET';
+  const fakeManageEndpoint = '/clients';
+
+  const fakePayload = () => ({
+    fake: 'payload',
+  });
+
+  let spyOnS3GetObject: jasmine.Spy;
+  let spyOnManageClient: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.auth0Domain] = fakeDomain;
+    process.env[envNames.auth0ClientId] = fakeClientId;
+    process.env[envNames.auth0SecretBucket] = fakeSecretBucket;
+    process.env[envNames.auth0SecretPath] = fakeSecretPath;
+
+    spyOnS3GetObject = spyOn(s3, 'getObject')
+      .and.returnValue(fakeResolve({
+        Body: Buffer.from(fakeClientSecret),
+      }));
+    spyOnManageClient = spyOn(auth0, 'manageClient')
+      .and.returnValue(Promise.resolve());
+  });
+
+  const testMethod = () =>
+    manage(fakeManageMethod, fakeManageEndpoint, fakePayload());
+
+  it('calls s3.getObject() once with correct parameters', (done: Callback) => {
+    testMethod().then(() => {
+      expect(spyOnS3GetObject).toHaveBeenCalledWith({
+        Bucket: fakeSecretBucket,
+        Key: fakeSecretPath,
+      });
+      expect(spyOnS3GetObject).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls manageClient() once with correct parameters', (done: Callback) => {
+    testMethod().then(() => {
+      expect(spyOnManageClient).toHaveBeenCalledWith({
+        Domain: fakeDomain,
+        ID: fakeClientId,
+        Secret: {
+          Value: fakeClientSecret,
+        },
+      }, fakeManageMethod, fakeManageEndpoint, fakePayload());
+      expect(spyOnManageClient).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  describe('immediately returns an error if', () => {
+    const testError = (last: Callback, done: Callback) => {
+      testMethod().catch(err => {
+        expect(err).toEqual(jasmine.any(Error));
+        last();
+        done();
+      });
+    };
+    it('s3.getObject() produces and error', (done: Callback) => {
+      spyOnS3GetObject.and.returnValue(fakeReject('s3.getObject()'));
+      testError(() => expect(spyOnManageClient).not.toHaveBeenCalled(), done);
+    });
+    it('manageClient() produces and error', (done: Callback) => {
+      spyOnManageClient.and.returnValue(Promise.reject(Error('manageClient()')));
+      testError(() => {}, done);
     });
   });
 });

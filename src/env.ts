@@ -13,4 +13,7 @@ export const envNames = {
   webSigningKeyBucket: 'WEB_SIGNING_KEY_BUCKET',
   webSigningKeyPath: 'WEB_SIGNING_KEY_PATH',
   auth0Domain: 'AUTH0_DOMAIN',
+  auth0ClientId: 'AUTH0_CLIENT_ID',
+  auth0SecretBucket: 'AUTH0_SECRET_BUCKET',
+  auth0SecretPath: 'AUTH0_SECRET_PATH',
 };
