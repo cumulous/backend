@@ -46,9 +46,9 @@ Parameters:
     Type: String
     NoEcho: true
     Default: ''
-  Auth0CloudFormationSecretsPutRole:
+  Auth0CloudFormationSecretPutRole:
     Type: String
-  Auth0CloudFormationSecretsGetRole:
+  Auth0CloudFormationSecretGetRole:
     Type: String
 
 Resources:
@@ -453,7 +453,7 @@ Resources:
       CodeUri: ../app
       Handler: auth0.rotateAndStoreClientSecret
       Runtime: nodejs6.10
-      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${Auth0CloudFormationSecretsPutRole}
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${Auth0CloudFormationSecretPutRole}
       Environment:
         Variables:
           ENCRYPTION_KEY_ID: !Ref EncryptionKeyId
@@ -469,7 +469,7 @@ Resources:
       CodeUri: ../app
       Handler: auth0.manage
       Runtime: nodejs6.10
-      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${Auth0CloudFormationSecretsGetRole}
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${Auth0CloudFormationSecretGetRole}
       Environment:
         Variables:
           AUTH0_DOMAIN: !Ref Auth0Domain
