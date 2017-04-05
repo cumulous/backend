@@ -7,6 +7,7 @@ import { makeResponse } from './apig';
 import { cloudFront, s3,
          CloudFormationRequest, CloudFormationResponse, sendCloudFormationResponse } from './aws';
 import { envNames } from './env';
+import { log } from './log';
 import { Callback, Dict } from './types';
 import { assertNonEmptyArray, promise } from './util';
 
@@ -137,6 +138,7 @@ const storeSigningKey = (bucket: string, path: string, value: Buffer, encryption
 
 export const generateSignedCookies = (event: any, context: { authorizer: { expiresAt: number } },
                                    callback: Callback) => {
+  log.debug(stringify(context));
   Promise.resolve()
     .then(() => cloudFront.getDistribution({Id: process.env[envNames.webDistributionId]}).promise())
     .then(data => data.Distribution.ActiveTrustedSigners.Items[0].KeyPairIds.Items[0])
