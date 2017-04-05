@@ -26,7 +26,7 @@ export interface Policy {
     Statement: {
       Action: string;
       Effect: PolicyEffect;
-      Resource: string;
+      Resource: string | string[];
     }[];
   };
   context?: Dict<any>;
@@ -45,7 +45,10 @@ export const getPolicy = (principalId: string, expiresAt: number, methodArn: str
           Statement: [{
             Action: 'execute-api:Invoke',
             Effect: 'Allow' as PolicyEffect,
-            Resource: `${baseArn}/GET/`,
+            Resource: [
+              `${baseArn}/GET/`,
+              `${baseArn}/POST/weblogin`,
+            ],
           }],
         },
         context: {

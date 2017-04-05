@@ -124,7 +124,10 @@ describe('getPolicy()', () => {
           Statement: [{
             Action: 'execute-api:Invoke',
             Effect: 'Allow',
-            Resource: `${fakeBaseArn}/GET/`,
+            Resource: [
+              `${fakeBaseArn}/GET/`,
+              `${fakeBaseArn}/POST/weblogin`,
+            ],
           }],
         },
         context: {
