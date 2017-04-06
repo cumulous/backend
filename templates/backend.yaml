@@ -1024,6 +1024,223 @@ Resources:
           }
         }
 
+  Auth0Api:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupAuth0ApiStateMachine
+      Audience: !Sub https://${APIDomain}
+
+  StoreAuth0Config:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-StoreAuth0Config
+      CodeUri: ../app
+      Handler: aws.putS3Object
+      Runtime: nodejs6.10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: s3:PutObject
+            Resource:
+              - !Sub arn:aws:s3:::${ArtifactsBucket}/conf/auth0/*
+
+  RetrieveAuth0Config:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-RetrieveAuth0Config
+      CodeUri: ../app
+      Handler: aws.getS3Object
+      Runtime: nodejs6.10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: s3:GetObject
+            Resource:
+              - !Sub arn:aws:s3:::${ArtifactsBucket}/conf/auth0/*
+
+  SetupAuth0ApiStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupAuth0Api",
+          "States": {
+            "SetupAuth0Api": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "ChooseEventType",
+                "States": {
+                  "ChooseEventType": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Create",
+                        "Next": "PassCreateAuth0Api"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Update",
+                        "Next": "CheckAudienceUpdate"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "PassRetrieveApiId"
+                      }
+                    ]
+                  },
+                  "PassCreateAuth0Api": {
+                    "Type": "Pass",
+                    "Result": {
+                      "method": "POST",
+                      "endpoint": ["/resource-servers"],
+                      "payload": {
+                        "identifier": "{audience}",
+                        "name": "${APIDomain}"
+                      }
+                    },
+                    "ResultPath": "$.ResourceProperties.Api.Request",
+                    "Next": "PassAudienceCreateAuth0Api"
+                  },
+                  "PassAudienceCreateAuth0Api": {
+                    "Type": "Pass",
+                    "InputPath": "$.ResourceProperties.Audience",
+                    "ResultPath": "$.ResourceProperties.Api.Request.payload.identifier",
+                    "Next": "CreateAuth0Api"
+                  },
+                  "CreateAuth0Api": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Api.Request",
+                    "ResultPath": "$.ResourceProperties.Api.Config",
+                    "Resource": "${ManageAuth0Resource.Arn}",
+                    "Next": "PassStoreApiId"
+                  },
+                  "PassStoreApiId": {
+                    "Type": "Pass",
+                    "Result": {
+                      "Bucket": "${ArtifactsBucket}",
+                      "Path": "conf/auth0/${AWS::StackName}-api.id"
+                    },
+                    "ResultPath": "$.ResourceProperties.Api.Store",
+                    "Next": "PassBodyStoreApiId"
+                  },
+                  "PassBodyStoreApiId": {
+                    "Type": "Pass",
+                    "InputPath": "$.ResourceProperties.Api.Config.id",
+                    "ResultPath": "$.ResourceProperties.Api.Store.Body",
+                    "Next": "StoreApiId"
+                  },
+                  "StoreApiId": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Api.Store",
+                    "ResultPath": "$.Data.Id",
+                    "Resource": "${StoreAuth0Config.Arn}",
+                    "Next": "Success"
+                  },
+                  "CheckAudienceUpdate": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.OldResourceProperties.Audience",
+                        "StringEquals": "https://${ApiDomain}",
+                        "Next": "Success"
+                      }
+                    ],
+                    "Default": "PassRetrieveApiId"
+                  },
+                  "PassRetrieveApiId": {
+                    "Type": "Pass",
+                    "Result": {
+                      "Bucket": "${ArtifactsBucket}",
+                      "Path": "conf/auth0/${AWS::StackName}-api.id"
+                    },
+                    "ResultPath": "$.ResourceProperties.Api.Retrieve",
+                    "Next": "RetrieveApiId"
+                  },
+                  "RetrieveApiId": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Api.Retrieve",
+                    "ResultPath": "$.ResourceProperties.Api.Id",
+                    "Resource": "${RetrieveAuth0Config.Arn}",
+                    "Next": "PassDeleteAuth0Api"
+                  },
+                  "PassDeleteAuth0Api": {
+                    "Type": "Pass",
+                    "Result": {
+                      "method": "DELETE",
+                      "endpoint": ["/resource-servers", "/{id}"]
+                    },
+                    "ResultPath": "$.ResourceProperties.Api.Request",
+                    "Next": "PassEndpointDeleteAuth0Api"
+                  },
+                  "PassEndpointDeleteAuth0Api": {
+                    "Type": "Pass",
+                    "InputPath": "$.ResourceProperties.Api.Id",
+                    "ResultPath": "$.ResourceProperties.Api.Request.endpoint[1]",
+                    "Next": "DeleteAuth0Api"
+                  },
+                  "DeleteAuth0Api": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Api.Request",
+                    "ResultPath": null,
+                    "Resource": "${ManageAuth0Resource.Arn}",
+                    "Next": "CheckCreateAfterDelete"
+                  },
+                  "CheckCreateAfterDelete": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Update",
+                        "Next": "PassCreateAuth0Api"
+                      }
+                    ],
+                    "Default": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
+
   WebCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
