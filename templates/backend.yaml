@@ -1026,18 +1026,18 @@ Resources:
           }
         }
 
-  Auth0Api:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupAuth0ApiStateMachine
-      Audience: !Sub https://${APIDomain}
+  # Auth0Api:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   Properties:
+  #     ServiceToken: !GetAtt SetupCustomResource.Arn
+  #     StateMachine: !Ref SetupAuth0ApiStateMachine
+  #     Audience: !Sub https://${APIDomain}
 
-  Auth0SPA:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupAuth0SPAStateMachine
+  # Auth0SPA:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   Properties:
+  #     ServiceToken: !GetAtt SetupCustomResource.Arn
+  #     StateMachine: !Ref SetupAuth0SPAStateMachine
 
   StoreAuth0Config:
     Type: AWS::Serverless::Function
