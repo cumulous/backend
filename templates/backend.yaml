@@ -1395,7 +1395,7 @@ Resources:
                   },
                   "PassEndpointUpdateOrDeleteClient": {
                     "Type": "Pass",
-                    "InputPath": "$.ResourceProperties.Id",
+                    "InputPath": "$.Data.Id",
                     "ResultPath": "$.ResourceProperties.Request.endpoint[1]",
                     "Next": "UpdateOrDeleteClient"
                   },
