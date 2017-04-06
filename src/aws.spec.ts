@@ -186,51 +186,91 @@ describe('setupCustomResource()', () => {
   });
 });
 
-describe('deleteS3Object()', () => {
-  const fakeBucket = 'fake-bucket';
-  const fakePath = 'fake/path';
+const testS3Method = (
+      method: string,
+      serviceMethod: string,
+      fakeEvent: () => any,
+      fakeRequest: () => any,
+      fakeResponse?: () => any,
+      expectedResponse?: any
+    ) => {
 
-  let fakeEvent: any;
+  describe(`${method}()`, () => {
+    let spyOnS3Method: jasmine.Spy;
 
-  let spyOnS3DeleteObject: jasmine.Spy;
+    beforeEach(() => {
+      spyOnS3Method = spyOn(s3, serviceMethod as any)
+        .and.returnValue(fakeResolve(fakeResponse ? fakeResponse() : undefined));
+    });
 
-  beforeEach(() => {
-    fakeEvent = {
-      Bucket: fakeBucket,
-      Path: fakePath,
-    };
-
-    spyOnS3DeleteObject = spyOn(s3, 'deleteObject')
-      .and.returnValue(fakeResolve());
-  });
-
-  it('calls s3.deleteObject() with correct parameters', (done: Callback) => {
-    deleteS3Object(fakeEvent, null, () => {
-      expect(spyOnS3DeleteObject).toHaveBeenCalledWith({
-        Bucket: fakeBucket,
-        Key: fakePath,
+    it(`calls s3.${serviceMethod}() once with correct parameters`, (done: Callback) => {
+      (aws as any)[method](fakeEvent(), null, () => {
+        expect(spyOnS3Method).toHaveBeenCalledWith(fakeRequest());
+        expect(spyOnS3Method).toHaveBeenCalledTimes(1);
+        done();
       });
-      done();
+    });
+
+    it(`calls callback with correct parameters`, (done: Callback) => {
+      (aws as any)[method](fakeEvent(), null, (err: Error, response: any) => {
+        expect(err).toBeFalsy();
+        expect(response).toEqual(expectedResponse);
+        done();
+      });
+    });
+
+    describe('calls callback with an error if', () => {
+      let event: any;
+      beforeEach(() => {
+        event = fakeEvent();
+      });
+
+      it(`s3.${serviceMethod}() produces an error`, () => {
+        spyOnS3Method.and.returnValue(fakeReject(`s3.${serviceMethod}()`));
+      });
+
+      describe('event is', () => {
+        it('null', () => event = null);
+        it('undefined', () => event = undefined);
+      });
+
+      afterEach((done: Callback) => {
+        testError((aws as any)[method], event, done);
+      });
     });
   });
+};
 
-  describe('calls callback with an error if', () => {
-    it('s3.deleteObject() produces an error', () => {
-      spyOnS3DeleteObject.and.returnValue(fakeReject('s3.deleteObject()'));
-    });
-
-    describe('event is', () => {
-      it('null', () => fakeEvent = null);
-      it('undefined', () => fakeEvent = undefined);
-    });
-
-    afterEach((done: Callback) => {
-      testError(deleteS3Object, fakeEvent, done);
-    });
-  });
-
-  it('does not produce an error when called with correct parameters ' +
-     'and s3.deleteObject() does not produce an error', (done: Callback) => {
-    testError(deleteS3Object, fakeEvent, done, false);
-  });
+const fakeBucket = 'fake-bucket';
+const fakePath = 'fake/path';
+const fakeBody = () => ({
+  fake: 'body',
 });
+
+testS3Method('putS3Object', 'putObject', () => ({
+  Bucket: fakeBucket,
+  Path: fakePath,
+  Body: fakeBody(),
+}), () => ({
+  Bucket: fakeBucket,
+  Key: fakePath,
+  Body: stringify(fakeBody()),
+}));
+
+testS3Method('getS3Object', 'getObject', () => ({
+  Bucket: fakeBucket,
+  Path: fakePath,
+}), () => ({
+  Bucket: fakeBucket,
+  Key: fakePath,
+}), () => ({
+  Body: Buffer.from(stringify(fakeBody())),
+}), stringify(fakeBody()));
+
+testS3Method('deleteS3Object', 'deleteObject', () => ({
+  Bucket: fakeBucket,
+  Path: fakePath,
+}), () => ({
+  Bucket: fakeBucket,
+  Key: fakePath,
+}));

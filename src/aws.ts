@@ -22,13 +22,13 @@ export interface CloudFormationRequest {
   PhysicalResourceId?: string;
   ResourceProperties?: Dict<any>;
   OldResourceProperties: Dict<any>;
-}
+};
 
 export interface CloudFormationResponse {
   Status: 'SUCCESS' | 'FAILED';
   Reason?: string;
   Data?: Dict<any>;
-}
+};
 
 export const sendCloudFormationResponse = (event: CloudFormationRequest & CloudFormationResponse,
                                          context: any, callback: Callback) => {
@@ -44,7 +44,7 @@ export const sendCloudFormationResponse = (event: CloudFormationRequest & CloudF
     }),
   }).then(() => callback())
     .catch(callback);
-}
+};
 
 const sendCloudFormationOnError = (request: CloudFormationRequest, err: Error, callback: Callback) => {
   if (err) {
@@ -56,7 +56,7 @@ const sendCloudFormationOnError = (request: CloudFormationRequest, err: Error, c
   } else {
     callback();
   }
-}
+};
 
 export const executeStateMachine = (event: any, context: any, callback: Callback) => {
   stepFunctions.startExecution({
@@ -65,7 +65,7 @@ export const executeStateMachine = (event: any, context: any, callback: Callback
   }).promise()
     .then(() => callback())
     .catch(callback);
-}
+};
 
 export const setupCustomResource = (request: CloudFormationRequest, context: any, callback: Callback) => {
   log.info(stringify(request));
@@ -75,7 +75,34 @@ export const setupCustomResource = (request: CloudFormationRequest, context: any
   executeStateMachine(request, null, (err: Error) => {
     sendCloudFormationOnError(request, err, callback);
   });
-}
+};
+
+export const putS3Object = (event: { Bucket: string, Path: string, Body: any },
+                          context: any, callback: Callback) => {
+  if (event == null) {
+    return callback(Error('Expected non-empty event with Bucket, Path and Body'));
+  };
+  s3.putObject({
+    Bucket: event.Bucket,
+    Key: event.Path,
+    Body: stringify(event.Body),
+  }).promise()
+    .then(() => callback())
+    .catch(callback);
+};
+
+export const getS3Object = (event: { Bucket: string, Path: string },
+                          context: any, callback: Callback) => {
+  if (event == null) {
+    return callback(Error('Expected non-empty event with Bucket and Path'));
+  };
+  s3.getObject({
+    Bucket: event.Bucket,
+    Key: event.Path,
+  }).promise()
+    .then(data => callback(null, data.Body.toString()))
+    .catch(callback);
+};
 
 export const deleteS3Object = (event: { Bucket: string, Path: string },
                              context: any, callback: Callback) => {
@@ -88,4 +115,4 @@ export const deleteS3Object = (event: { Bucket: string, Path: string },
   }).promise()
     .then(() => callback())
     .catch(callback);
-}
+};
