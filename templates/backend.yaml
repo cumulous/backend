@@ -1077,51 +1077,42 @@ Resources:
               "Type": "Parallel",
               "Next": "Succeed",
               "Branches": [{
-                "StartAt": "ChooseEventType",
+                "StartAt": "CheckCreate",
                 "States": {
-                  "ChooseEventType": {
+                  "CheckCreate": {
                     "Type": "Choice",
                     "Choices": [
                       {
                         "Variable": "$.RequestType",
                         "StringEquals": "Create",
-                        "Next": "PassCreateAuth0Api"
-                      },
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Update",
-                        "Next": "CheckAudienceUpdate"
-                      },
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Delete",
-                        "Next": "PassRetrieveApiId"
+                        "Next": "PassCreateApi"
                       }
-                    ]
+                    ],
+                    "Default": "PassRetrieveApiId"
                   },
-                  "PassCreateAuth0Api": {
+                  "PassCreateApi": {
                     "Type": "Pass",
                     "Result": {
                       "method": "POST",
                       "endpoint": ["/resource-servers"],
                       "payload": {
-                        "identifier": "{audience}",
                         "name": "${APIDomain}"
-                      }
+                      },
+                      "datapath": "id"
                     },
-                    "ResultPath": "$.ResourceProperties.Api.Request",
-                    "Next": "PassAudienceCreateAuth0Api"
+                    "ResultPath": "$.ResourceProperties.Request",
+                    "Next": "PassAudienceCreateApi"
                   },
-                  "PassAudienceCreateAuth0Api": {
+                  "PassAudienceCreateApi": {
                     "Type": "Pass",
                     "InputPath": "$.ResourceProperties.Audience",
-                    "ResultPath": "$.ResourceProperties.Api.Request.payload.identifier",
-                    "Next": "CreateAuth0Api"
+                    "ResultPath": "$.ResourceProperties.Request.payload.identifier",
+                    "Next": "CreateApi"
                   },
-                  "CreateAuth0Api": {
+                  "CreateApi": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Api.Request",
-                    "ResultPath": "$.ResourceProperties.Api.Config",
+                    "InputPath": "$.ResourceProperties.Request",
+                    "ResultPath": "$.Data.Id",
                     "Resource": "${ManageAuth0Resource.Arn}",
                     "Next": "PassStoreApiId"
                   },
@@ -1131,32 +1122,21 @@ Resources:
                       "Bucket": "${ArtifactsBucket}",
                       "Path": "conf/auth0/${AWS::StackName}-api.id"
                     },
-                    "ResultPath": "$.ResourceProperties.Api.Store",
+                    "ResultPath": "$.ResourceProperties.Store",
                     "Next": "PassBodyStoreApiId"
                   },
                   "PassBodyStoreApiId": {
                     "Type": "Pass",
-                    "InputPath": "$.ResourceProperties.Api.Config.id",
-                    "ResultPath": "$.ResourceProperties.Api.Store.Body",
+                    "InputPath": "$.Data.Id",
+                    "ResultPath": "$.ResourceProperties.Store.Body",
                     "Next": "StoreApiId"
                   },
                   "StoreApiId": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Api.Store",
-                    "ResultPath": "$.Data.Id",
+                    "InputPath": "$.ResourceProperties.Store",
+                    "ResultPath": null,
                     "Resource": "${StoreAuth0Config.Arn}",
                     "Next": "Success"
-                  },
-                  "CheckAudienceUpdate": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.OldResourceProperties.Audience",
-                        "StringEquals": "https://${APIDomain}",
-                        "Next": "Success"
-                      }
-                    ],
-                    "Default": "PassRetrieveApiId"
                   },
                   "PassRetrieveApiId": {
                     "Type": "Pass",
@@ -1164,34 +1144,53 @@ Resources:
                       "Bucket": "${ArtifactsBucket}",
                       "Path": "conf/auth0/${AWS::StackName}-api.id"
                     },
-                    "ResultPath": "$.ResourceProperties.Api.Retrieve",
+                    "ResultPath": "$.ResourceProperties.Retrieve",
                     "Next": "RetrieveApiId"
                   },
                   "RetrieveApiId": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Api.Retrieve",
-                    "ResultPath": "$.ResourceProperties.Api.Id",
+                    "InputPath": "$.ResourceProperties.Retrieve",
+                    "ResultPath": "$.Data.Id",
                     "Resource": "${RetrieveAuth0Config.Arn}",
-                    "Next": "PassDeleteAuth0Api"
+                    "Next": "CheckUpdate"
                   },
-                  "PassDeleteAuth0Api": {
+                  "CheckUpdate": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "And": [
+                          {
+                            "Variable": "$.RequestType",
+                            "StringEquals": "Update"
+                          },
+                          {
+                            "Variable": "$.OldResourceProperties.Audience",
+                            "StringEquals": "https://${APIDomain}"
+                          }
+                        ],
+                        "Next": "Success"
+                      }
+                    ],
+                    "Default": "PassDeleteApi"
+                  },
+                  "PassDeleteApi": {
                     "Type": "Pass",
                     "Result": {
                       "method": "DELETE",
                       "endpoint": ["/resource-servers", "/{id}"]
                     },
-                    "ResultPath": "$.ResourceProperties.Api.Request",
-                    "Next": "PassEndpointDeleteAuth0Api"
+                    "ResultPath": "$.ResourceProperties.Request",
+                    "Next": "PassEndpointDeleteApi"
                   },
-                  "PassEndpointDeleteAuth0Api": {
+                  "PassEndpointDeleteApi": {
                     "Type": "Pass",
-                    "InputPath": "$.ResourceProperties.Api.Id",
-                    "ResultPath": "$.ResourceProperties.Api.Request.endpoint[1]",
-                    "Next": "DeleteAuth0Api"
+                    "InputPath": "$.Data.Id",
+                    "ResultPath": "$.ResourceProperties.Request.endpoint[1]",
+                    "Next": "DeleteApi"
                   },
-                  "DeleteAuth0Api": {
+                  "DeleteApi": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Api.Request",
+                    "InputPath": "$.ResourceProperties.Request",
                     "ResultPath": null,
                     "Resource": "${ManageAuth0Resource.Arn}",
                     "Next": "CheckCreateAfterDelete"
@@ -1202,7 +1201,7 @@ Resources:
                       {
                         "Variable": "$.RequestType",
                         "StringEquals": "Update",
-                        "Next": "PassCreateAuth0Api"
+                        "Next": "PassCreateApi"
                       }
                     ],
                     "Default": "Success"
