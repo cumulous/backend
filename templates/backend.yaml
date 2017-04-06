@@ -1294,7 +1294,8 @@ Resources:
                     "Type": "Pass",
                     "Result": {
                       "method": "POST",
-                      "endpoint": ["/clients"]
+                      "endpoint": ["/clients"],
+                      "datapath": "client_id"
                     },
                     "ResultPath": "$.ResourceProperties.Request",
                     "Next": "PassCreatePayload"
@@ -1308,7 +1309,7 @@ Resources:
                   "CreateClient": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.Request",
-                    "ResultPath": "$.ResourceProperties.Response",
+                    "ResultPath": "$.Data.Id",
                     "Resource": "${ManageAuth0Resource.Arn}",
                     "Next": "PassStoreId"
                   },
@@ -1323,7 +1324,7 @@ Resources:
                   },
                   "PassBodyStoreId": {
                     "Type": "Pass",
-                    "InputPath": "$.ResourceProperties.Response.client_id",
+                    "InputPath": "$.Data.Id",
                     "ResultPath": "$.ResourceProperties.Store.Body",
                     "Next": "StoreId"
                   },
@@ -1332,7 +1333,7 @@ Resources:
                     "InputPath": "$.ResourceProperties.Store",
                     "ResultPath": null,
                     "Resource": "${StoreAuth0Config.Arn}",
-                    "Next": "PassClientId"
+                    "Next": "Success"
                   },
                   "PassRetrieveClientId": {
                     "Type": "Pass",
@@ -1346,7 +1347,7 @@ Resources:
                   "RetrieveClientId": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.Retrieve",
-                    "ResultPath": "$.ResourceProperties.Id",
+                    "ResultPath": "$.Data.Id",
                     "Resource": "${RetrieveAuth0Config.Arn}",
                     "Next": "CheckUpdateOrDelete"
                   },
@@ -1369,7 +1370,8 @@ Resources:
                     "Type": "Pass",
                     "Result": {
                       "method": "POST",
-                      "endpoint": ["/clients", "{id}"]
+                      "endpoint": ["/clients", "{id}"],
+                      "datapath": "client_id"
                     },
                     "ResultPath": "$.ResourceProperties.Request",
                     "Next": "PassUpdatePayload"
@@ -1400,12 +1402,6 @@ Resources:
                     "InputPath": "$.ResourceProperties.Request",
                     "ResultPath": "$.ResourceProperties.Response",
                     "Resource": "${ManageAuth0Resource.Arn}",
-                    "Next": "PassClientId"
-                  },
-                  "PassClientId": {
-                    "Type": "Pass",
-                    "InputPath": "$.ResourceProperties.Response.client_id",
-                    "ResultPath": "$.Data.Id",
                     "Next": "Success"
                   },
                   "Success": {
