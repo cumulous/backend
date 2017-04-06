@@ -47,12 +47,12 @@ export const manageClient = (
 
 export const manage = (event: {
       method: HttpMethod,
-      endpoint: string,
+      endpoint: string[],
       payload?: any,
     }, context: any, callback: Callback) => {
 
-  if (event == null) {
-    return callback(Error('Expected non-empty event with method, endpoint, [payload]'));
+  if (event == null || !Array.isArray(event.endpoint)) {
+    return callback(Error('Expected non-empty event with method, endpoint[], [payload]'));
   }
   Promise.resolve()
     .then(() => s3.getObject({
@@ -64,7 +64,7 @@ export const manage = (event: {
       Domain: process.env[envNames.auth0Domain],
       ID: process.env[envNames.auth0ClientId],
       Secret: secret,
-    }, event.method, event.endpoint, event.payload))
+    }, event.method, event.endpoint.join('/'), event.payload))
     .then(data => callback(null, data))
     .catch(callback);
 };

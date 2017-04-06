@@ -99,7 +99,7 @@ describe('manage()', () => {
   const fakeSecretBucket = 'fake-secrets-bucket';
   const fakeSecretPath = 'auth0/secret.key';
   const fakeManageMethod = 'GET';
-  const fakeManageEndpoint = '/clients';
+  const fakeManageEndpoint = () => ['/clients', '1234abcd'];
 
   const fakePayload = () => ({
     fake: 'payload',
@@ -128,7 +128,7 @@ describe('manage()', () => {
 
   const testMethod = (callback: Callback) => manage({
     method: fakeManageMethod,
-    endpoint: fakeManageEndpoint,
+    endpoint: fakeManageEndpoint(),
     payload: fakePayload(),
   }, null, callback);
 
@@ -149,7 +149,7 @@ describe('manage()', () => {
         Domain: fakeDomain,
         ID: fakeClientId,
         Secret: fakeClientSecret,
-      }, fakeManageMethod, fakeManageEndpoint, fakePayload());
+      }, fakeManageMethod, fakeManageEndpoint().join('/'), fakePayload());
       expect(spyOnManageClient).toHaveBeenCalledTimes(1);
       done();
     });
@@ -164,7 +164,7 @@ describe('manage()', () => {
   });
 
   describe('immediately calls callback with an error if', () => {
-    describe('event is', () => {
+    describe('event', () => {
       let event: any;
       afterEach((done: Callback) => {
         manage(event, null, err => {
@@ -173,8 +173,11 @@ describe('manage()', () => {
           done();
         });
       });
-      it('undefined', () => event = undefined);
-      it('null', () => event = null);
+      it('is undefined', () => event = undefined);
+      it('is null', () => event = null);
+      it('endpoint is undefined', () => event = {});
+      it('endpoint is null', () => event = { endpoint: null });
+      it('endpoint is not an array', () => event = { endpoint: {} });
     });
     describe('s3.getObject()', () => {
       let data: any;
