@@ -1,7 +1,7 @@
 import * as request from 'request-promise-native';
 
 import * as auth0 from './auth0';
-import { Auth0ClientConfig, authenticate,
+import { Auth0ClientConfig, authenticate, HttpMethod,
          manage, manageClient, rotateAndStoreClientSecret } from './auth0';
 import { s3 } from './aws';
 import { envNames } from './env';
@@ -98,16 +98,28 @@ describe('authenticate()', () => {
 describe('manage()', () => {
   const fakeSecretBucket = 'fake-secrets-bucket';
   const fakeSecretPath = 'auth0/secret.key';
-  const fakeManageMethod = 'GET';
+  const fakeManageMethod: HttpMethod = 'GET';
   const fakeManageEndpoint = () => ['/clients', '1234abcd'];
+  const fakeDataKey = 'data';
+  const fakeDataValue = 'value';
+  const fakeDataPath = `$.${fakeDataKey}`;
 
   const fakePayload = () => ({
     fake: 'payload',
   });
 
-  const fakeResponse = () => ({
-    fake: 'response',
+  const fakeEvent = () => ({
+    method: fakeManageMethod,
+    endpoint: fakeManageEndpoint(),
+    payload: fakePayload(),
+    datapath: fakeDataPath,
   });
+
+  const fakeResponse = () => {
+    const response: any = {};
+    response[fakeDataKey] = fakeDataValue;
+    return response;
+  };
 
   let spyOnS3GetObject: jasmine.Spy;
   let spyOnManageClient: jasmine.Spy;
@@ -126,11 +138,7 @@ describe('manage()', () => {
       .and.returnValue(Promise.resolve(fakeResponse()));
   });
 
-  const testMethod = (callback: Callback) => manage({
-    method: fakeManageMethod,
-    endpoint: fakeManageEndpoint(),
-    payload: fakePayload(),
-  }, null, callback);
+  const testMethod = (callback: Callback) => manage(fakeEvent(), null, callback);
 
   it('calls s3.getObject() once with correct parameters', (done: Callback) => {
     testMethod(() => {
@@ -155,11 +163,21 @@ describe('manage()', () => {
     });
   });
 
-  it('calls callback with correct parameters', (done: Callback) => {
-    testMethod((err: Error, data: any) => {
-      expect(err).toBeFalsy();
-      expect(data).toEqual(fakeResponse());
-      done();
+  describe('calls callback with correct parameters when "datapath" is', () => {
+    it('defined', (done: Callback) => {
+      testMethod((err: Error, data: any) => {
+        expect(err).toBeFalsy();
+        expect(data).toEqual(fakeDataValue);
+        done();
+      });
+    });
+    it('omitted', (done: Callback) => {
+      const event = Object.assign(fakeEvent(), {datapath: undefined});
+      manage(event, null, (err: Error, data: any) => {
+        expect(err).toBeFalsy();
+        expect(data).toEqual(fakeResponse());
+        done();
+      });
     });
   });
 
@@ -200,6 +218,12 @@ describe('manage()', () => {
     it('manageClient() produces and error', (done: Callback) => {
       spyOnManageClient.and.returnValue(Promise.reject(Error('manageClient()')));
       testMethod(err => {
+        expect(err).toEqual(jasmine.any(Error));
+        done();
+      });
+    });
+    it('datapath does not conform to JSONPath syntax', (done: Callback) => {
+      manage(Object.assign(fakeEvent(), {datapath: '%'}), null, err => {
         expect(err).toEqual(jasmine.any(Error));
         done();
       });

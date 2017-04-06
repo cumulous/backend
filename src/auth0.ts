@@ -1,3 +1,4 @@
+import * as jsonpath from 'jsonpath';
 import * as stringify from 'json-stable-stringify';
 export import request = require('request-promise-native');
 import { post } from 'request-promise-native';
@@ -12,7 +13,7 @@ export interface Auth0ClientConfig {
   Secret: string;
 };
 
-type HttpMethod = 'GET' | 'POST';
+export type HttpMethod = 'GET' | 'POST';
 
 export const authenticate = (client: Auth0ClientConfig, audience: string) => {
   return Promise.resolve(client)
@@ -49,10 +50,11 @@ export const manage = (event: {
       method: HttpMethod,
       endpoint: string[],
       payload?: any,
+      datapath?: string,
     }, context: any, callback: Callback) => {
 
   if (event == null || !Array.isArray(event.endpoint)) {
-    return callback(Error('Expected non-empty event with method, endpoint[], [payload]'));
+    return callback(Error('Expected non-empty event with method, endpoint[], payload?, datapath?'));
   }
   Promise.resolve()
     .then(() => s3.getObject({
@@ -65,6 +67,7 @@ export const manage = (event: {
       ID: process.env[envNames.auth0ClientId],
       Secret: secret,
     }, event.method, event.endpoint.join('/'), event.payload))
+    .then(data => event.datapath ? jsonpath.value(data, event.datapath) : data)
     .then(data => callback(null, data))
     .catch(callback);
 };
