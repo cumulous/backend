@@ -265,7 +265,7 @@ testS3Method('getS3Object', 'getObject', () => ({
   Key: fakePath,
 }), () => ({
   Body: Buffer.from(stringify(fakeBody())),
-}), stringify(fakeBody()));
+}), fakeBody());
 
 testS3Method('deleteS3Object', 'deleteObject', () => ({
   Bucket: fakeBucket,

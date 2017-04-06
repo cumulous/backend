@@ -100,7 +100,8 @@ export const getS3Object = (event: { Bucket: string, Path: string },
     Bucket: event.Bucket,
     Key: event.Path,
   }).promise()
-    .then(data => callback(null, data.Body.toString()))
+    .then(data => JSON.parse(data.Body.toString()))
+    .then(body => callback(null, body))
     .catch(callback);
 };
 
