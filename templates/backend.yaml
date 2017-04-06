@@ -1079,15 +1079,28 @@ Resources:
               "Type": "Parallel",
               "Next": "Succeed",
               "Branches": [{
-                "StartAt": "CheckCreate",
+                "StartAt": "CheckCreateOrUpdate",
                 "States": {
-                  "CheckCreate": {
+                  "CheckCreateOrUpdate": {
                     "Type": "Choice",
                     "Choices": [
                       {
                         "Variable": "$.RequestType",
                         "StringEquals": "Create",
                         "Next": "PassCreateApi"
+                      },
+                      {
+                        "And": [
+                          {
+                            "Variable": "$.RequestType",
+                            "StringEquals": "Update"
+                          },
+                          {
+                            "Variable": "$.OldResourceProperties.Audience",
+                            "StringEquals": "https://${APIDomain}"
+                          }
+                        ],
+                        "Next": "Success"
                       }
                     ],
                     "Default": "PassRetrieveApiId"
@@ -1154,26 +1167,7 @@ Resources:
                     "InputPath": "$.ResourceProperties.Retrieve",
                     "ResultPath": "$.Data.Id",
                     "Resource": "${RetrieveAuth0Config.Arn}",
-                    "Next": "CheckUpdate"
-                  },
-                  "CheckUpdate": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "And": [
-                          {
-                            "Variable": "$.RequestType",
-                            "StringEquals": "Update"
-                          },
-                          {
-                            "Variable": "$.OldResourceProperties.Audience",
-                            "StringEquals": "https://${APIDomain}"
-                          }
-                        ],
-                        "Next": "Success"
-                      }
-                    ],
-                    "Default": "PassDeleteApi"
+                    "Next": "PassDeleteApi"
                   },
                   "PassDeleteApi": {
                     "Type": "Pass",
