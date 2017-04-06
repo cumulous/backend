@@ -1146,7 +1146,7 @@ Resources:
                     "Choices": [
                       {
                         "Variable": "$.OldResourceProperties.Audience",
-                        "StringEquals": "https://${ApiDomain}",
+                        "StringEquals": "https://${APIDomain}",
                         "Next": "Success"
                       }
                     ],
