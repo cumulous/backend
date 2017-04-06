@@ -74,6 +74,11 @@ Parameters:
     Type: String
     NoEcho: true
     MinLength: 1
+  Auth0UserTokenLifetime:
+    Description: "Number of seconds that user tokens are valid for (*)"
+    Type: Number
+    MinValue: 1
+    Default: 36000
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -113,6 +118,7 @@ Metadata:
           - Auth0Domain
           - Auth0CloudFormationClientID
           - Auth0CloudFormationClientSecret
+          - Auth0UserTokenLifetime
 
 Conditions:
   EnableStackAdmin: !Not [!Equals [!Ref StackAdmin, '']]
@@ -351,6 +357,7 @@ Resources:
                           ParameterKey=Auth0Domain,ParameterValue=${Auth0Domain} \
                           ParameterKey=Auth0CloudFormationClientID,ParameterValue=${Auth0CloudFormationClientID} \
                           ParameterKey=Auth0CloudFormationClientSecret,ParameterValue=${Auth0CloudFormationClientSecret} \
+                          ParameterKey=Auth0UserTokenLifetime,ParameterValue=${Auth0UserTokenLifetime} \
                           ParameterKey=Auth0CloudFormationSecretPutRole,ParameterValue=${Auth0CloudFormationSecretPutRole} \
                           ParameterKey=Auth0CloudFormationSecretGetRole,ParameterValue=${Auth0CloudFormationSecretGetRole} "
 

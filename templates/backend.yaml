@@ -46,6 +46,8 @@ Parameters:
     Type: String
     NoEcho: true
     Default: ''
+  Auth0UserTokenLifetime:
+    Type: Number
   Auth0CloudFormationSecretPutRole:
     Type: String
   Auth0CloudFormationSecretGetRole:
@@ -1269,7 +1271,7 @@ Resources:
                         "https://${WebDomain}"
                       ],
                       "jwt_configuration": {
-                        "lifetime_in_seconds": 36000,
+                        "lifetime_in_seconds": ${Auth0UserTokenLifetime},
                         "alg": "RS256"
                       },
                       "resource_servers": [{
