@@ -21,8 +21,6 @@ paths:
       responses:
         200:
           $ref: '#/responses/Api'
-        default:
-          $ref: '#/responses/Error'
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
@@ -91,8 +89,6 @@ paths:
       responses:
         200:
           $ref: '#/responses/ListOfProjects'
-        default:
-          $ref: '#/responses/Error'
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
@@ -150,10 +146,6 @@ definitions:
   PaginationNext:
     type: integer
     minimum: 1
-  Error:
-    properties:
-      message:
-        type: string
 
 parameters:
   ProjectsQueryNameContains:
@@ -244,16 +236,6 @@ responses:
     description: List of projects
     schema:
       $ref: '#/definitions/ListOfProjects'
-  Error:
-    description: Error response
-    schema:
-      properties:
-        message:
-          type: string
-        errors:
-          type: array
-          items:
-            $ref: '#/definitions/Error'
 
 securityDefinitions:
   member_token:
