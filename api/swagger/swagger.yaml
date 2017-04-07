@@ -4,10 +4,6 @@ info:
   version: '1'
 schemes:
   - https
-consumes:
-  - application/json
-produces:
-  - application/json
 
 paths:
   /:
@@ -18,6 +14,8 @@ paths:
         - member_token: []
       tags:
         - Spec
+      produces:
+        - application/json
       responses:
         200:
           $ref: '#/responses/Api'
@@ -41,7 +39,7 @@ paths:
             statusCode: 200
             responseParameters:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
-              method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: "'${WebDomain}'"
     post:
       summary: Set website cookies
@@ -78,6 +76,8 @@ paths:
         - member_token: []
       tags:
         - Projects
+      produces:
+        - application/json
       parameters:
         - $ref: '#/parameters/ProjectsQueryNameContains'
         - $ref: '#/parameters/ProjectsQueryIsMember'
