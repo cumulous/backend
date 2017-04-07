@@ -29,6 +29,19 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetApi.Arn}/invocations
   /weblogin:
+    options:
+      responses:
+        200:
+          $ref: '#/responses/CORS'
+        default:
+          $ref: '#/responses/Error'
+      x-amazon-apigateway-integration:
+        allOf:
+          - $ref: '#/x-amazon-options-integration'
+          - responses:
+              default:
+                responseParameters:
+                  method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
     post:
       summary: Set website cookies
       description: Sets browser cookies for accessing protected content on the website.
@@ -193,6 +206,18 @@ parameters:
     default: 10
 
 responses:
+  CORS:
+    description: CORS headers
+    headers:
+      Access-Control-Allow-Methods:
+        description: CORS "Methods" header
+        type: string
+      Access-Control-Allow-Headers:
+        description: CORS "Headers" header
+        type: string
+      Access-Control-Allow-Origin:
+        description: CORS "Origin" header
+        type: string
   Api:
     description: OpenAPI/Swagger 2.0 definition of this API.
     schema:
@@ -223,6 +248,17 @@ responses:
           type: array
           items:
             $ref: '#/definitions/Error'
+
+x-amazon-options-integration:
+  type: mock
+  requestTemplates:
+    application/json: '{"statusCode": 200}'
+  responses:
+    default:
+      statusCode: 200
+      responseParameters:
+        method.response.header.Access-Control-Allow-Headers: "'Content-Type,Authorization'"
+        method.response.header.Access-Control-Allow-Origin: "'${WebDomain}'"
 
 securityDefinitions:
   member_token:
