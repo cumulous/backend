@@ -33,12 +33,11 @@ paths:
       responses:
         200:
           $ref: '#/responses/CORS'
-        default:
-          $ref: '#/responses/Error'
       x-amazon-apigateway-integration:
         type: mock
         requestTemplates:
           application/json: '{"statusCode": 200}'
+        passthroughBehavior: when_no_match
         responses:
           default:
             statusCode: 200
@@ -56,13 +55,16 @@ paths:
       responses:
         200:
           $ref: '#/responses/Cookies'
-        default:
-          $ref: '#/responses/Error'
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GenerateSignedCookies.Arn}/invocations
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Origin: "'${WebDomain}'"
   /projects:
     get:
       summary: Search projects
