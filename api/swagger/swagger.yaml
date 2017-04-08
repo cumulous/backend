@@ -33,7 +33,6 @@ paths:
         type: mock
         requestTemplates:
           application/json: '{"statusCode": 200}'
-        passthroughBehavior: when_no_match
         responses:
           default:
             statusCode: 200
@@ -231,6 +230,9 @@ responses:
         type: string
       set-cookie:
         description: '"CloudFront-Signature" header'
+        type: string
+      Access-Control-Allow-Origin:
+        description: CORS "Origin" header
         type: string
   ListOfProjects:
     description: List of projects
