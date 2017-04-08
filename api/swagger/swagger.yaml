@@ -33,13 +33,10 @@ paths:
           description: CORS headers
           headers:
             Access-Control-Allow-Methods:
-              description: CORS "Methods" header
               type: string
             Access-Control-Allow-Headers:
-              description: CORS "Headers" header
               type: string
             Access-Control-Allow-Origin:
-              description: CORS "Origin" header
               type: string
       x-amazon-apigateway-integration:
         type: mock
@@ -73,7 +70,6 @@ paths:
               description: '"CloudFront-Signature" header'
               type: string
             Access-Control-Allow-Origin:
-              description: CORS "Origin" header
               type: string
       x-amazon-apigateway-integration:
         type: aws_proxy
