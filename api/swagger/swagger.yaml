@@ -48,7 +48,8 @@ paths:
             responseParameters:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
-              method.response.header.Access-Control-Allow-Origin: "'${WebDomain}'"
+              method.response.header.Access-Control-Allow-Origin:
+                Fn::Sub: "'https://${WebDomain}'"
     post:
       summary: Set website cookies
       description: Sets browser cookies for accessing protected content on the website.
@@ -80,7 +81,8 @@ paths:
           default:
             statusCode: 200
             responseParameters:
-              method.response.header.Access-Control-Allow-Origin: "'${WebDomain}'"
+              method.response.header.Access-Control-Allow-Origin:
+                Fn::Sub: "'https://${WebDomain}'"
   /projects:
     get:
       summary: Search projects
