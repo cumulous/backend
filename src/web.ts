@@ -175,5 +175,6 @@ const getCookieHeaders = (cookieParams: Signer.CannedPolicy, domain: string) => 
   headers['Set-Cookie'] = `${prefix} CloudFront-Expires=${cookieParams['CloudFront-Expires']}`;
   headers['Set-cookie'] = `${prefix} CloudFront-Key-Pair-Id=${cookieParams['CloudFront-Key-Pair-Id']}`;
   headers['set-cookie'] = `${prefix} CloudFront-Signature=${cookieParams['CloudFront-Signature']}`;
+  headers['Access-Control-Allow-Origin'] = `https://${process.env[envNames.webDomain]}`;
   return headers;
 };

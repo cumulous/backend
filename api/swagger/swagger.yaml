@@ -70,19 +70,11 @@ paths:
             set-cookie:
               description: '"CloudFront-Signature" header'
               type: string
-            Access-Control-Allow-Origin:
-              type: string
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GenerateSignedCookies.Arn}/invocations
-        responses:
-          default:
-            statusCode: 200
-            responseParameters:
-              method.response.header.Access-Control-Allow-Origin:
-                Fn::Sub: "'https://${WebDomain}'"
   /projects:
     get:
       summary: Search projects
