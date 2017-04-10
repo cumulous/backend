@@ -484,7 +484,6 @@ describe('generateSignedCookies()', () => {
     headers['Set-Cookie'] = cookieContent[0];
     headers['Set-cookie'] = cookieContent[1];
     headers['set-cookie'] = cookieContent[2];
-    headers['Access-Control-Allow-Origin'] = `https://${fakeWebDomain}`;
 
     testMethod((err: Error, data: Response) => {
       expect(err).toBeFalsy();
