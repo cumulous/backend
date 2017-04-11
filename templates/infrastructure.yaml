@@ -525,9 +525,9 @@ Resources:
 
               - !GetAtt Auth0PutSecretRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0PutSecretRole}/backend-beta-RotateAndStoreAuth0Secret"
+                      ${Auth0PutSecretRole}/backend-beta-RotateAndStoreAuth0ManagementSecret"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0PutSecretRole}/backend-release-RotateAndStoreAuth0Secret"
+                      ${Auth0PutSecretRole}/backend-release-RotateAndStoreAuth0ManagementSecret"
 
               - !GetAtt Auth0GetManagementSecretRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
