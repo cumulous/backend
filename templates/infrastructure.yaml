@@ -74,8 +74,8 @@ Parameters:
     Description: "Comma-separated names of Auth0 connections for frontend authentication \
       [without spaces] (*)"
     Type: String
-    AllowedPattern: ^\w+(,\w+)*$
-    Default: email
+    AllowedPattern: ^[\w-]+(,[\w-]+)*$
+    Default: google-oauth2
   Auth0ManagementClientID:
     Description: "Your Auth0 Management cliend ID (*)"
     Type: String
