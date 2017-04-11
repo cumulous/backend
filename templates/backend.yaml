@@ -468,7 +468,6 @@ Resources:
 
   ManageAuth0Resource:
     Type: AWS::Serverless::Function
-    DependsOn: Auth0ManagementClient
     Properties:
       FunctionName: !Sub ${AWS::StackName}-ManageAuth0Resource
       CodeUri: ../app
@@ -1031,16 +1030,11 @@ Resources:
 
   Auth0Api:
     Type: AWS::CloudFormation::CustomResource
+    DependsOn: Auth0ManagementClient
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupAuth0ApiStateMachine
       Audience: !Sub https://${APIDomain}
-
-  Auth0SPA:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupAuth0SPAStateMachine
 
   StoreAuth0Config:
     Type: AWS::Serverless::Function
@@ -1244,6 +1238,13 @@ Resources:
             }
           }
         }
+
+  Auth0SPA:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn: Auth0ManagementClient
+    Properties:
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupAuth0SPAStateMachine
 
   SetupAuth0SPAStateMachine:
     Type: AWS::StepFunctions::StateMachine
