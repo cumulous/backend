@@ -468,6 +468,7 @@ Resources:
 
   ManageAuth0Resource:
     Type: AWS::Serverless::Function
+    DependsOn: Auth0ManagementClient
     Properties:
       FunctionName: !Sub ${AWS::StackName}-ManageAuth0Resource
       CodeUri: ../app
