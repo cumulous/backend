@@ -1,7 +1,8 @@
 import * as request from 'request-promise-native';
 
 import * as auth0 from './auth0';
-import { Auth0ClientConfig, authenticate, HttpMethod,
+import { Auth0ClientConfig, Auth0ClientPayload, Auth0Request,
+         authenticate, createClient, HttpMethod,
          manage, manageClient, rotateAndStoreClientSecret } from './auth0';
 import { s3 } from './aws';
 import { envNames } from './env';
@@ -380,7 +381,7 @@ describe('rotateAndStoreClientSecret()', () => {
         });
       });
       it('returns an error', () => {
-        spyOnManage.and.returnValue(Promise.reject(Error('authenticate()')));
+        spyOnManage.and.returnValue(Promise.reject(Error('manageClient()')));
       });
       describe('response is', () => {
         it('undefined', () => {
@@ -398,5 +399,142 @@ describe('rotateAndStoreClientSecret()', () => {
       expect(err).toEqual(jasmine.any(Error));
       done();
     });
+  });
+});
+
+describe('createClient()', () => {
+  const fakeSecretBucket = 'fake-bucket';
+  const fakeSecretPath = 'auth0/fake.key';
+  const fakeSecretValue = 'fAkEs3cr3t';
+  const fakeEncryptionKeyId = 'fake-encryption-key-1234';
+
+  let fakePayload = (): Auth0ClientPayload => ({
+    name: 'fake client',
+    app_type: 'spa',
+    callbacks: [
+      'https://example.org',
+    ],
+    jwt_configuration: {
+      lifetime_in_seconds: 7200,
+      alg: 'RS256',
+    },
+    resource_servers: [
+      'https://api.example.org',
+    ],
+  });
+  let fakeSecret = () => ({
+    Bucket: fakeSecretBucket,
+    Path: fakeSecretPath,
+    EncryptionKeyId: fakeEncryptionKeyId,
+  });
+
+  let spyOnManage: jasmine.Spy;
+  let spyOnS3PutObject: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnManage = spyOn(auth0, 'manage')
+      .and.callFake((event: Auth0Request, context: any, callback: Callback) =>
+        callback(null, { client_id: fakeClientId, client_secret: fakeSecretValue }));
+    spyOnS3PutObject = spyOn(s3, 'putObject')
+      .and.returnValue(fakeResolve());
+  });
+
+  const testMethod = (callback: Callback) => {
+    createClient({
+      Payload: fakePayload(),
+      Secret: fakeSecret(),
+    }, null, callback);
+  };
+
+  it('calls manage() with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnManage).toHaveBeenCalledWith({
+        method: 'POST',
+        endpoint: ['/clients'],
+        payload: fakePayload(),
+      }, null, jasmine.any(Function));
+      expect(spyOnManage).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+  it('calls s3.putObject() with correct parameters if Secret is present', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnS3PutObject).toHaveBeenCalledWith({
+        Bucket: fakeSecretBucket,
+        Key: fakeSecretPath,
+        Body: fakeSecretValue,
+        SSEKMSKeyId: fakeEncryptionKeyId,
+        ServerSideEncryption: 'aws:kms',
+      });
+      expect(spyOnS3PutObject).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+  it('does not call s3.putObject() if Secret is absent', (done: Callback) => {
+    createClient({
+      Payload: fakePayload(),
+    }, null, () => {
+      expect(spyOnS3PutObject).not.toHaveBeenCalled();
+      done();
+    });
+  });
+  describe('calls callback with correct parameters if Secret is', () => {
+    let secret: any;
+    afterEach((done: Callback) => {
+      createClient({
+        Payload: fakePayload(),
+        Secret: secret,
+      }, null, (err?: Error, client_id?: string) => {
+        expect(err).toBeFalsy();
+        expect(client_id).toEqual(fakeClientId);
+        done();
+      });
+    });
+    it('present', () => secret = fakeSecret());
+    it('absent', () => {});
+  });
+  describe('immediately calls callback with an error if', () => {;
+    describe('manage()', () => {
+      afterEach((done: Callback) => {
+        testMethod((err: Error) => {
+          expect(err).toEqual(jasmine.any(Error));
+          expect(spyOnS3PutObject).not.toHaveBeenCalled();
+          done();
+        });
+      });
+      it('returns an error', () => {
+        spyOnManage.and.callFake(
+          (event: Auth0Request, context: any, callback: Callback) => callback(Error('manage()')));
+      });
+      describe('response is', () => {
+        it('undefined', () => {
+          spyOnManage.and.callFake(
+            (event: Auth0Request, context: any, callback: Callback) => callback());
+        });
+        it('null', () => {
+          spyOnManage.and.callFake(
+            (event: Auth0Request, context: any, callback: Callback) => callback(null, null));
+        });
+      });
+    });
+  });
+  it('s3.putObject() produces an error', (done: Callback) => {
+    spyOnS3PutObject.and.returnValue(fakeReject('s3.putObject()'));
+    testMethod((err: Error) => {
+      expect(err).toEqual(jasmine.any(Error));
+      done();
+    });
+  });
+  describe('event is', () => {
+    let event: any;
+    afterEach((done: Callback) => {
+      createClient(event, null, (err: Error) => {
+        expect(err).toEqual(jasmine.any(Error));
+        expect(spyOnManage).not.toHaveBeenCalled();
+        done();
+      });
+    });
+    it('undefined', () => event = undefined);
+    it('null', () => event = null);
   });
 });

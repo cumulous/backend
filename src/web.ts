@@ -8,7 +8,7 @@ import { cloudFront, s3,
          CloudFormationRequest, CloudFormationResponse, sendCloudFormationResponse } from './aws';
 import { envNames } from './env';
 import { Callback, Dict } from './types';
-import { assertNonEmptyArray, promise } from './util';
+import { assertNonEmptyArray } from './util';
 
 export const getIPSetDescriptors = (event: CloudFormationRequest,
                                   context: any, callback: Callback) => {

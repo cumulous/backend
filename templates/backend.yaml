@@ -441,46 +441,6 @@ Resources:
           - !GetAtt BackendVPC.DefaultSecurityGroup
         SubnetIds: !GetAtt Subnets.SubnetIds
 
-  Auth0ManagementClient:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupAuth0ManagementClientStateMachine
-      Secret: !Ref Auth0ManagementClientSecret
-      Bucket: !Ref SecretsBucket
-      Path: !Sub auth0/${AWS::StackName}-manage.key
-
-  RotateAndStoreAuth0ManagementSecret:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-RotateAndStoreAuth0ManagementSecret
-      CodeUri: ../app
-      Handler: auth0.rotateAndStoreClientSecret
-      Runtime: nodejs6.10
-      Role: !Ref Auth0PutSecretRoleArn
-      Environment:
-        Variables:
-          ENCRYPTION_KEY_ID: !Ref EncryptionKeyId
-          AUTH0_DOMAIN: !Ref Auth0Domain
-          AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
-          AUTH0_SECRET_BUCKET: !Ref SecretsBucket
-          AUTH0_SECRET_PATH: !Sub auth0/${AWS::StackName}-manage.key
-
-  ManageAuth0Resource:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-ManageAuth0Resource
-      CodeUri: ../app
-      Handler: auth0.manage
-      Runtime: nodejs6.10
-      Role: !Ref Auth0GetManagementSecretRoleArn
-      Environment:
-        Variables:
-          AUTH0_DOMAIN: !Ref Auth0Domain
-          AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
-          AUTH0_SECRET_BUCKET: !Ref SecretsBucket
-          AUTH0_SECRET_PATH: !Sub auth0/${AWS::StackName}-manage.key
-
   DeleteS3Secret:
     Type: AWS::Serverless::Function
     Properties:
@@ -918,6 +878,31 @@ Resources:
           }
         }
 
+  Auth0ManagementClient:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupAuth0ManagementClientStateMachine
+      Secret: !Ref Auth0ManagementClientSecret
+      Bucket: !Ref SecretsBucket
+      Path: !Sub auth0/${AWS::StackName}-manage.key
+
+  RotateAndStoreAuth0ManagementSecret:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-RotateAndStoreAuth0ManagementSecret
+      CodeUri: ../app
+      Handler: auth0.rotateAndStoreClientSecret
+      Runtime: nodejs6.10
+      Role: !Ref Auth0PutSecretRoleArn
+      Environment:
+        Variables:
+          ENCRYPTION_KEY_ID: !Ref EncryptionKeyId
+          AUTH0_DOMAIN: !Ref Auth0Domain
+          AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
+          AUTH0_SECRET_BUCKET: !Ref SecretsBucket
+          AUTH0_SECRET_PATH: !Sub auth0/${AWS::StackName}-manage.key
+
   SetupAuth0ManagementClientStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
@@ -1035,6 +1020,21 @@ Resources:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupAuth0ApiStateMachine
       Audience: !Sub https://${APIDomain}
+
+  ManageAuth0Resource:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-ManageAuth0Resource
+      CodeUri: ../app
+      Handler: auth0.manage
+      Runtime: nodejs6.10
+      Role: !Ref Auth0GetManagementSecretRoleArn
+      Environment:
+        Variables:
+          AUTH0_DOMAIN: !Ref Auth0Domain
+          AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
+          AUTH0_SECRET_BUCKET: !Ref SecretsBucket
+          AUTH0_SECRET_PATH: !Sub auth0/${AWS::StackName}-manage.key
 
   StoreAuth0Config:
     Type: AWS::Serverless::Function
@@ -1244,109 +1244,106 @@ Resources:
     DependsOn: Auth0ManagementClient
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupAuth0SPAStateMachine
+      StateMachine: !Ref SetupAuth0ClientStateMachine
+      Payload:
+        name: !Ref WebDomain
+        app_type: spa
+        callbacks:
+          - !Sub https://${WebDomain}
+        jwt_configuration:
+          lifetime_in_seconds: !Ref Auth0UserTokenLifetime
+          alg: RS256
+        resource_servers:
+          - identifier: !Sub https://${APIDomain}
+      Id:
+        Bucket: !Ref ArtifactsBucket
+        Path: !Sub conf/auth0/${AWS::StackName}-spa.id
 
-  SetupAuth0SPAStateMachine:
+  Auth0SPATestClient:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn: Auth0ManagementClient
+    Properties:
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupAuth0ClientStateMachine
+      Payload:
+        name: !Sub "${WebDomain} - Test"
+        app_type: non_interactive
+        jwt_configuration:
+          lifetime_in_seconds: 3600
+          alg: RS256
+        resource_servers:
+          - identifier: !Sub https://${APIDomain}
+      Id:
+        Bucket: ArtifactsBucket
+        Path: !Sub conf/auth0/${AWS::StackName}-spa-test.id
+      Secret:
+        Bucket: SecretsBucket
+        Path: !Sub auth0/${AWS::StackName}-spa-test.key
+        EncryptionKeyId: !Ref EncryptionKeyId
+
+  CreateAuth0Client:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CreateAuth0Client
+      CodeUri: ../app
+      Handler: auth0.createClient
+      Runtime: nodejs6.10
+      Role: !Ref Auth0PutSecretRoleArn
+      Environment:
+        Variables:
+          AUTH0_DOMAIN: !Ref Auth0Domain
+          AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
+          AUTH0_SECRET_BUCKET: !Ref SecretsBucket
+          AUTH0_SECRET_PATH: !Sub auth0/${AWS::StackName}-manage.key
+
+  SetupAuth0ClientStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
       RoleArn: !GetAtt StatesExecutionRole.Arn
       DefinitionString: !Sub |-
         {
-          "StartAt": "SetupAuth0SPA",
+          "StartAt": "SetupAuth0ClientWithSecret",
           "States": {
-            "SetupAuth0SPA": {
+            "SetupAuth0ClientWithSecret": {
               "Type": "Parallel",
               "Next": "Succeed",
               "Branches": [{
-                "StartAt": "PassPayload",
+                "StartAt": "CheckCreate",
                 "States": {
-                  "PassPayload": {
-                    "Type": "Pass",
-                    "Result": {
-                      "name": "${WebDomain}",
-                      "app_type": "spa",
-                      "callbacks": [
-                        "https://${WebDomain}"
-                      ],
-                      "jwt_configuration": {
-                        "lifetime_in_seconds": ${Auth0UserTokenLifetime},
-                        "alg": "RS256"
-                      },
-                      "resource_servers": [{
-                        "identifier": "${APIDomain}"
-                      }]
-                    },
-                    "ResultPath": "$.ResourceProperties.Payload",
-                    "Next": "CheckCreate"
-                  },
                   "CheckCreate": {
                     "Type": "Choice",
                     "Choices": [
                       {
                         "Variable": "$.RequestType",
                         "StringEquals": "Create",
-                        "Next": "PassCreateClient"
+                        "Next": "CreateClient"
                       }
                     ],
-                    "Default": "PassRetrieveClientId"
-                  },
-                  "PassCreateClient": {
-                    "Type": "Pass",
-                    "Result": {
-                      "method": "POST",
-                      "endpoint": ["/clients"],
-                      "datapath": "client_id"
-                    },
-                    "ResultPath": "$.ResourceProperties.Request",
-                    "Next": "PassCreatePayload"
-                  },
-                  "PassCreatePayload": {
-                    "Type": "Pass",
-                    "InputPath": "$.ResourceProperties.Payload",
-                    "ResultPath": "$.ResourceProperties.Request.payload",
-                    "Next": "CreateClient"
+                    "Default": "RetrieveClientId"
                   },
                   "CreateClient": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Request",
+                    "InputPath": "$.ResourceProperties",
+                    "Resource": "${CreateAuth0Client.Arn}",
                     "ResultPath": "$.Data.Id",
-                    "Resource": "${ManageAuth0Resource.Arn}",
-                    "Next": "PassStoreId"
-                  },
-                  "PassStoreId": {
-                    "Type": "Pass",
-                    "Result": {
-                      "Bucket": "${ArtifactsBucket}",
-                      "Path": "conf/auth0/${AWS::StackName}-spa.id"
-                    },
-                    "ResultPath": "$.ResourceProperties.Store",
                     "Next": "PassBodyStoreId"
                   },
                   "PassBodyStoreId": {
                     "Type": "Pass",
                     "InputPath": "$.Data.Id",
-                    "ResultPath": "$.ResourceProperties.Store.Body",
+                    "ResultPath": "$.ResourceProperties.Id.Body",
                     "Next": "StoreId"
                   },
                   "StoreId": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Store",
+                    "InputPath": "$.ResourceProperties.Id",
                     "ResultPath": null,
                     "Resource": "${StoreAuth0Config.Arn}",
                     "Next": "Success"
                   },
-                  "PassRetrieveClientId": {
-                    "Type": "Pass",
-                    "Result": {
-                      "Bucket": "${ArtifactsBucket}",
-                      "Path": "conf/auth0/${AWS::StackName}-spa.id"
-                    },
-                    "ResultPath": "$.ResourceProperties.Retrieve",
-                    "Next": "RetrieveClientId"
-                  },
                   "RetrieveClientId": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Retrieve",
+                    "InputPath": "$.ResourceProperties.Id",
                     "ResultPath": "$.Data.Id",
                     "Resource": "${RetrieveAuth0Config.Arn}",
                     "Next": "CheckUpdateOrDelete"
@@ -1400,8 +1397,8 @@ Resources:
                   "UpdateOrDeleteClient": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.Request",
-                    "ResultPath": "$.ResourceProperties.Response",
                     "Resource": "${ManageAuth0Resource.Arn}",
+                    "ResultPath": null,
                     "Next": "Success"
                   },
                   "Success": {

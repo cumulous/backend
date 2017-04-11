@@ -6,6 +6,7 @@ import { post } from 'request-promise-native';
 import { s3 } from './aws';
 import { envNames } from './env';
 import { Callback } from './types';
+import { promise2 } from './util';
 
 export interface Auth0ClientConfig {
   Domain: string;
@@ -13,7 +14,7 @@ export interface Auth0ClientConfig {
   Secret: string;
 };
 
-export type HttpMethod = 'GET' | 'POST';
+export type HttpMethod = 'POST' | 'GET' | 'DELETE';
 
 export const authenticate = (client: Auth0ClientConfig, audience: string) => {
   return Promise.resolve(client)
@@ -46,12 +47,14 @@ export const manageClient = (
     }));
 };
 
-export const manage = (event: {
-      method: HttpMethod,
-      endpoint: string[],
-      payload?: any,
-      datapath?: string,
-    }, context: any, callback: Callback) => {
+export interface Auth0Request {
+  method: HttpMethod;
+  endpoint: string[];
+  payload?: any;
+  datapath?: string;
+};
+
+export const manage = (event: Auth0Request, context: any, callback: Callback) => {
 
   if (event == null || !Array.isArray(event.endpoint)) {
     return callback(Error('Expected non-empty event with method, endpoint[], payload?, datapath?'));
@@ -87,5 +90,48 @@ export const rotateAndStoreClientSecret = (secret: string, context: any, callbac
       ServerSideEncryption: 'aws:kms',
     }).promise())
     .then(() => callback())
+    .catch(callback);
+};
+
+export interface Auth0ClientPayload {
+  name: string;
+  app_type: 'spa' | 'non_interactive';
+  callbacks?: string[];
+  jwt_configuration?: {
+    lifetime_in_seconds?: number;
+    alg?: 'RS256' | 'HS256';
+  },
+  resource_servers?: [{
+    identifier?: string;
+    scopes?: string[];
+  }];
+};
+
+export const createClient = (event: {
+    Payload: Auth0ClientPayload,
+    Secret?: { Bucket: string, Path: string, EncryptionKeyId: string },
+  }, context: any, callback: Callback) => {
+
+  Promise.resolve(event)
+    .then(event => promise2(manage, {
+        method: 'POST' as HttpMethod,
+        endpoint: ['/clients'],
+        payload: event.Payload,
+      }, null) as Promise<{ client_id: string; client_secret: string }>)
+    .then(data => {
+        if (event.Secret) {
+          return s3.putObject({
+            Bucket: event.Secret.Bucket,
+            Key: event.Secret.Path,
+            Body: data.client_secret,
+            SSEKMSKeyId: event.Secret.EncryptionKeyId,
+            ServerSideEncryption: 'aws:kms',
+          }).promise()
+            .then(() => data.client_id);
+        } else {
+          return data.client_id;
+        }
+      })
+    .then(client_id => callback(null, client_id))
     .catch(callback);
 };

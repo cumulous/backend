@@ -528,6 +528,10 @@ Resources:
                       ${Auth0PutSecretRole}/backend-beta-RotateAndStoreAuth0ManagementSecret"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
                       ${Auth0PutSecretRole}/backend-release-RotateAndStoreAuth0ManagementSecret"
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${Auth0PutSecretRole}/backend-beta-CreateAuth0Client"
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${Auth0PutSecretRole}/backend-release-CreateAuth0Client"
 
               - !GetAtt Auth0GetManagementSecretRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
@@ -1415,7 +1419,7 @@ Resources:
                   - s3:GetObject
                 Resource:
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/conf/auth0/*-spa.id
-                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-spa-test.json
+                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-spa-test.key
                   - !Sub arn:aws:s3:::${FrontendArtifactsBucket}/*
               - Effect: Allow
                 Action:
