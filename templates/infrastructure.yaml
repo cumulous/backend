@@ -76,12 +76,12 @@ Parameters:
     Type: String
     AllowedPattern: ^\w+(,\w+)*$
     Default: email
-  Auth0CloudFormationClientID:
-    Description: "Your Auth0 CloudFormation cliend ID (*)"
+  Auth0ManagementClientID:
+    Description: "Your Auth0 Management cliend ID (*)"
     Type: String
     MinLength: 1
-  Auth0CloudFormationClientSecret:
-    Description: "Your Auth0 CloudFormation cliend secret (*)"
+  Auth0ManagementClientSecret:
+    Description: "Your Auth0 Management cliend secret (*)"
     Type: String
     NoEcho: true
     MinLength: 1
@@ -129,8 +129,8 @@ Metadata:
         Parameters:
           - Auth0Domain
           - Auth0Connections
-          - Auth0CloudFormationClientID
-          - Auth0CloudFormationClientSecret
+          - Auth0ManagementClientID
+          - Auth0ManagementClientSecret
           - Auth0UserTokenLifetime
 
 Conditions:
@@ -368,11 +368,11 @@ Resources:
                           ParameterKey=WebSigningKeyPutRole,ParameterValue=${WebSigningKeyPutRole} \
                           ParameterKey=WebSigningKeyGetRole,ParameterValue=${WebSigningKeyGetRole} \
                           ParameterKey=Auth0Domain,ParameterValue=${Auth0Domain} \
-                          ParameterKey=Auth0CloudFormationClientID,ParameterValue=${Auth0CloudFormationClientID} \
-                          ParameterKey=Auth0CloudFormationClientSecret,ParameterValue=${Auth0CloudFormationClientSecret} \
+                          ParameterKey=Auth0ManagementClientID,ParameterValue=${Auth0ManagementClientID} \
+                          ParameterKey=Auth0ManagementClientSecret,ParameterValue=${Auth0ManagementClientSecret} \
                           ParameterKey=Auth0UserTokenLifetime,ParameterValue=${Auth0UserTokenLifetime} \
-                          ParameterKey=Auth0CloudFormationSecretPutRole,ParameterValue=${Auth0CloudFormationSecretPutRole} \
-                          ParameterKey=Auth0CloudFormationSecretGetRole,ParameterValue=${Auth0CloudFormationSecretGetRole} "
+                          ParameterKey=Auth0PutSecretRoleArn,ParameterValue=${Auth0PutSecretRole.Arn} \
+                          ParameterKey=Auth0GetManagementSecretRoleArn,ParameterValue=${Auth0GetManagementSecretRole.Arn} "
 
                       $cfm delete-change-set $change_set || true
                       $cfm create-change-set $args || $cfm create-change-set --change-set-type CREATE $args
@@ -449,25 +449,36 @@ Resources:
             Resource: '*'
           - Effect: Allow
             Principal:
-              AWS: !GetAtt Auth0CloudFormationSecretPutRole.Arn
+              AWS: !GetAtt Auth0PutSecretRole.Arn
             Action:
               - kms:GenerateDataKey
             Condition:
               StringEquals:
                 'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
               StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*.key
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*
             Resource: '*'
           - Effect: Allow
             Principal:
-              AWS: !GetAtt Auth0CloudFormationSecretGetRole.Arn
+              AWS: !GetAtt Auth0GetManagementSecretRole.Arn
             Action:
               - kms:Decrypt
             Condition:
               StringEquals:
                 'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
               StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*.key
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-manage.key
+            Resource: '*'
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt FrontendAuthBuildRole.Arn
+            Action:
+              - kms:Decrypt
+            Condition:
+              StringEquals:
+                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
+              StringLike:
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-spa-test.key
             Resource: '*'
           - Effect: Allow
             Principal:
@@ -512,17 +523,19 @@ Resources:
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
                       ${SSHKeyGetRole}/backend-release-ExecuteInitScript"
 
-              - !GetAtt Auth0CloudFormationSecretPutRole.Arn
+              - !GetAtt Auth0PutSecretRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0CloudFormationSecretPutRole}/backend-beta-RotateAndStoreAuth0Secret"
+                      ${Auth0PutSecretRole}/backend-beta-RotateAndStoreAuth0Secret"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0CloudFormationSecretPutRole}/backend-release-RotateAndStoreAuth0Secret"
+                      ${Auth0PutSecretRole}/backend-release-RotateAndStoreAuth0Secret"
 
-              - !GetAtt Auth0CloudFormationSecretGetRole.Arn
+              - !GetAtt Auth0GetManagementSecretRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0CloudFormationSecretGetRole}/backend-beta-ManageAuth0Resource"
+                      ${Auth0GetManagementSecretRole}/backend-beta-ManageAuth0Resource"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0CloudFormationSecretGetRole}/backend-release-ManageAuth0Resource"
+                      ${Auth0GetManagementSecretRole}/backend-release-ManageAuth0Resource"
+
+              - !GetAtt FrontendAuthBuildRole.Arn
 
               - !GetAtt WebSigningKeyPutRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
@@ -719,8 +732,8 @@ Resources:
                 Resource:
                   - !GetAtt SSHKeyPutRole.Arn
                   - !GetAtt SSHKeyGetRole.Arn
-                  - !GetAtt Auth0CloudFormationSecretPutRole.Arn
-                  - !GetAtt Auth0CloudFormationSecretGetRole.Arn
+                  - !GetAtt Auth0PutSecretRole.Arn
+                  - !GetAtt Auth0GetManagementSecretRole.Arn
                   - !GetAtt WebSigningKeyPutRole.Arn
                   - !GetAtt WebSigningKeyGetRole.Arn
               - Effect: Allow
@@ -931,7 +944,7 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
 
-  Auth0CloudFormationSecretPutRole:
+  Auth0PutSecretRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -954,7 +967,7 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*
 
-  Auth0CloudFormationSecretGetRole:
+  Auth0GetManagementSecretRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -975,7 +988,7 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
-                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*
+                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-manage.key
 
   WebSigningKeyPutRole:
     Type: AWS::IAM::Role
@@ -1289,6 +1302,10 @@ Resources:
         Image: aws/codebuild/nodejs:7.0.0
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
+          - Name: ARTIFACTS_BUCKET
+            Value: !Ref BackendArtifactsBucket
+          - Name: SECRETS_BUCKET
+            Value: !Ref SecretsBucket
           - Name: WEB_BUCKET
             Value: !Ref BetaWebBucket
           - Name: STACK_NAME
@@ -1314,6 +1331,10 @@ Resources:
         Image: aws/codebuild/nodejs:7.0.0
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
+          - Name: ARTIFACTS_BUCKET
+            Value: !Ref BackendArtifactsBucket
+          - Name: SECRETS_BUCKET
+            Value: !Ref SecretsBucket
           - Name: WEB_BUCKET
             Value: !Ref ReleaseWebBucket
           - Name: STACK_NAME
@@ -1393,6 +1414,8 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/conf/auth0/*-spa.id
+                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-spa-test.json
                   - !Sub arn:aws:s3:::${FrontendArtifactsBucket}/*
               - Effect: Allow
                 Action:

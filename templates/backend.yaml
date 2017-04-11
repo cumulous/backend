@@ -40,17 +40,17 @@ Parameters:
     Type: String
   Auth0Domain:
     Type: String
-  Auth0CloudFormationClientID:
+  Auth0ManagementClientID:
     Type: String
-  Auth0CloudFormationClientSecret:
+  Auth0ManagementClientSecret:
     Type: String
     NoEcho: true
     Default: ''
   Auth0UserTokenLifetime:
     Type: Number
-  Auth0CloudFormationSecretPutRole:
+  Auth0PutSecretRoleArn:
     Type: String
-  Auth0CloudFormationSecretGetRole:
+  Auth0GetManagementSecretRoleArn:
     Type: String
 
 Resources:
@@ -441,28 +441,28 @@ Resources:
           - !GetAtt BackendVPC.DefaultSecurityGroup
         SubnetIds: !GetAtt Subnets.SubnetIds
 
-  Auth0:
+  Auth0ManagementClient:
     Type: AWS::CloudFormation::CustomResource
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupAuth0StateMachine
-      Secret: !Ref Auth0CloudFormationClientSecret
+      StateMachine: !Ref SetupAuth0ManagementClientStateMachine
+      Secret: !Ref Auth0ManagementClientSecret
 
-  RotateAndStoreAuth0Secret:
+  RotateAndStoreAuth0ManagementSecret:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-RotateAndStoreAuth0Secret
+      FunctionName: !Sub ${AWS::StackName}-RotateAndStoreAuth0ManagementSecret
       CodeUri: ../app
       Handler: auth0.rotateAndStoreClientSecret
       Runtime: nodejs6.10
-      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${Auth0CloudFormationSecretPutRole}
+      Role: !Ref Auth0PutSecretRoleArn
       Environment:
         Variables:
           ENCRYPTION_KEY_ID: !Ref EncryptionKeyId
           AUTH0_DOMAIN: !Ref Auth0Domain
-          AUTH0_CLIENT_ID: !Ref Auth0CloudFormationClientID
+          AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
           AUTH0_SECRET_BUCKET: !Ref SecretsBucket
-          AUTH0_SECRET_PATH: !Sub auth0/${AWS::StackName}-cf.key
+          AUTH0_SECRET_PATH: !Sub auth0/${AWS::StackName}-manage.key
 
   ManageAuth0Resource:
     Type: AWS::Serverless::Function
@@ -471,13 +471,13 @@ Resources:
       CodeUri: ../app
       Handler: auth0.manage
       Runtime: nodejs6.10
-      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${Auth0CloudFormationSecretGetRole}
+      Role: !Ref Auth0GetManagementSecretRoleArn
       Environment:
         Variables:
           AUTH0_DOMAIN: !Ref Auth0Domain
-          AUTH0_CLIENT_ID: !Ref Auth0CloudFormationClientID
+          AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
           AUTH0_SECRET_BUCKET: !Ref SecretsBucket
-          AUTH0_SECRET_PATH: !Sub auth0/${AWS::StackName}-cf.key
+          AUTH0_SECRET_PATH: !Sub auth0/${AWS::StackName}-manage.key
 
   DeleteS3Secret:
     Type: AWS::Serverless::Function
@@ -916,7 +916,7 @@ Resources:
           }
         }
 
-  SetupAuth0StateMachine:
+  SetupAuth0ManagementClientStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
       RoleArn: !GetAtt StatesExecutionRole.Arn
@@ -966,7 +966,7 @@ Resources:
                     "Choices": [
                       {
                         "Variable": "$.OldResourceProperties.Secret",
-                        "StringEquals": "${Auth0CloudFormationClientSecret}",
+                        "StringEquals": "${Auth0ManagementClientSecret}",
                         "Next": "Success"
                       }
                     ],
@@ -976,7 +976,7 @@ Resources:
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.Secret",
                     "ResultPath": null,
-                    "Resource": "${RotateAndStoreAuth0Secret.Arn}",
+                    "Resource": "${RotateAndStoreAuth0ManagementSecret.Arn}",
                     "Next": "Success"
                   },
                   "DeleteSecret": {
