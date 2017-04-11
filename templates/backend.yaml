@@ -447,6 +447,8 @@ Resources:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupAuth0ManagementClientStateMachine
       Secret: !Ref Auth0ManagementClientSecret
+      Bucket: !Ref SecretsBucket
+      Path: !Sub auth0/${AWS::StackName}-manage.key
 
   RotateAndStoreAuth0ManagementSecret:
     Type: AWS::Serverless::Function
@@ -981,7 +983,7 @@ Resources:
                   },
                   "DeleteSecret": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Secret",
+                    "InputPath": "$.ResourceProperties",
                     "ResultPath": null,
                     "Resource": "${DeleteS3Secret.Arn}",
                     "Next": "Success"
