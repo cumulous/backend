@@ -9,6 +9,11 @@ Parameters:
     Type: String
     AllowedPattern: ^[\w.-]{1,100}$
     Default: frontend
+  FrontendAuthRepo:
+    Description: "Name of CodeCommit repository for frontend authentication (*)"
+    Type: String
+    AllowedPattern: ^[\w.-]{1,100}$
+    Default: frontend-auth
   StackAdmin:
     Description: "IAM user whom to allow to administer this stack, including encryption keys"
     Type: String
@@ -65,6 +70,12 @@ Parameters:
     Description: "Your Auth0 domain name (*)"
     Type: String
     AllowedPattern: ^[a-z][a-z0-9\.]*\.[a-z]+$
+  Auth0Connections:
+    Description: "Comma-separated names of Auth0 connections for frontend authentication \
+      [without spaces] (*)"
+    Type: String
+    AllowedPattern: ^\w+(,\w+)*$
+    Default: email
   Auth0CloudFormationClientID:
     Description: "Your Auth0 CloudFormation cliend ID (*)"
     Type: String
@@ -89,6 +100,7 @@ Metadata:
         Parameters:
           - BackendRepo
           - FrontendRepo
+          - FrontendAuthRepo
       -
         Label:
           default: "Administration"
@@ -116,6 +128,7 @@ Metadata:
           default: "Auth0"
         Parameters:
           - Auth0Domain
+          - Auth0Connections
           - Auth0CloudFormationClientID
           - Auth0CloudFormationClientSecret
           - Auth0UserTokenLifetime
@@ -1188,6 +1201,206 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${BetaWebBucket}/app/*
                   - !Sub arn:aws:s3:::${ReleaseWebBucket}/app/*
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${BetaWebBucket}
+                  - !Sub arn:aws:s3:::${ReleaseWebBucket}
+
+  FrontendAuthPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: frontend-auth
+      RoleArn: !GetAtt FrontendAuthPipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref FrontendArtifactsBucket
+      RestartExecutionOnUpdate: true
+      Stages:
+        -
+          Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeCommit
+                Version: 1
+              Configuration:
+                RepositoryName: !Ref FrontendAuthRepo
+                BranchName: master
+              OutputArtifacts:
+                - Name: Source
+        -
+          Name: Beta
+          Actions:
+            -
+              Name: Beta
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref FrontendAuthBetaBuildProject
+              InputArtifacts:
+                - Name: Source
+        -
+          Name: Approval
+          Actions:
+            - Name: ApproveRelease
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Provider: Manual
+                Version: 1
+              Configuration:
+                NotificationArn: !If
+                  - CreateNotification
+                  - !Ref PipelineNotification
+                  - !Ref AWS::NoValue
+              RunOrder: 1
+        -
+          Name: Release
+          Actions:
+            -
+              Name: Release
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref FrontendAuthReleaseBuildProject
+              InputArtifacts:
+                - Name: Source
+
+  FrontendAuthBetaBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${FrontendAuthRepo}-beta
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/nodejs:7.0.0
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: WEB_BUCKET
+            Value: !Ref BetaWebBucket
+          - Name: STACK_NAME
+            Value: backend-beta
+          - Name: API_DOMAIN
+            Value: !Sub beta.api.${Domain}
+          - Name: AUTH0_DOMAIN
+            Value: !Ref Auth0Domain
+          - Name: AUTH0_CONNECTIONS
+            Value: !Ref Auth0Connections
+      ServiceRole: !Ref FrontendAuthBuildRole
+
+  FrontendAuthReleaseBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${FrontendAuthRepo}-release
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/nodejs:7.0.0
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: WEB_BUCKET
+            Value: !Ref ReleaseWebBucket
+          - Name: STACK_NAME
+            Value: backend-release
+          - Name: API_DOMAIN
+            Value: !Sub api.${Domain}
+          - Name: AUTH0_DOMAIN
+            Value: !Ref Auth0Domain
+          - Name: AUTH0_CONNECTIONS
+            Value: !Ref Auth0Connections
+      ServiceRole: !Ref FrontendAuthBuildRole
+
+  FrontendAuthPipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: FrontendPipelinePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codecommit:GetBranch
+                  - codecommit:GetCommit
+                  - codecommit:UploadArchive
+                  - codecommit:GetUploadArchiveStatus
+                  - codecommit:CancelUploadArchive
+                Resource:
+                  - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${FrontendAuthRepo}
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${FrontendArtifactsBucket}/*
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                Resource:
+                  - !GetAtt FrontendAuthBetaBuildProject.Arn
+                  - !GetAtt FrontendAuthReleaseBuildProject.Arn
+              - !If
+                - CreateNotification
+                - Effect: Allow
+                  Action:
+                    - sns:Publish
+                  Resource:
+                    - !Ref PipelineNotification
+                - !Ref AWS::NoValue
+
+  FrontendAuthBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: BuildPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub arn:aws:s3:::${FrontendArtifactsBucket}/*
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${BetaWebBucket}/login/*
+                  - !Sub arn:aws:s3:::${ReleaseWebBucket}/login/*
               - Effect: Allow
                 Action:
                   - s3:ListBucket
