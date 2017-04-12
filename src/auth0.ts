@@ -97,9 +97,9 @@ export interface Auth0ClientPayload {
   name: string;
   app_type: 'spa' | 'non_interactive';
   callbacks?: string[];
-  jwt_configuration?: {
-    lifetime_in_seconds?: number;
-    alg?: 'RS256' | 'HS256';
+  jwt_configuration: {
+    lifetime_in_seconds: number | string;
+    alg: 'RS256' | 'HS256';
   },
   resource_servers?: [{
     identifier?: string;
@@ -113,10 +113,16 @@ export const createClient = (event: {
   }, context: any, callback: Callback) => {
 
   Promise.resolve(event)
-    .then(event => promise2(manage, {
+    .then(event => event.Payload)
+    .then(payload => {
+      const config = payload.jwt_configuration;
+      config.lifetime_in_seconds = Number(config.lifetime_in_seconds);
+      return payload;
+    })
+    .then(payload => promise2(manage, {
         method: 'POST' as HttpMethod,
         endpoint: ['/clients'],
-        payload: event.Payload,
+        payload,
       }, null) as Promise<{ client_id: string; client_secret: string }>)
     .then(data => {
         if (event.Secret) {

@@ -407,6 +407,7 @@ describe('createClient()', () => {
   const fakeSecretPath = 'auth0/fake.key';
   const fakeSecretValue = 'fAkEs3cr3t';
   const fakeEncryptionKeyId = 'fake-encryption-key-1234';
+  const fakeLifetime = 7200;
 
   let fakePayload = (): Auth0ClientPayload => ({
     name: 'fake client',
@@ -415,7 +416,7 @@ describe('createClient()', () => {
       'https://example.org',
     ],
     jwt_configuration: {
-      lifetime_in_seconds: 7200,
+      lifetime_in_seconds: String(fakeLifetime),
       alg: 'RS256',
     },
     resource_servers: [
@@ -447,11 +448,13 @@ describe('createClient()', () => {
   };
 
   it('calls manage() with correct parameters', (done: Callback) => {
+    const payload = fakePayload();
+    payload.jwt_configuration.lifetime_in_seconds = fakeLifetime;
     testMethod(() => {
       expect(spyOnManage).toHaveBeenCalledWith({
         method: 'POST',
         endpoint: ['/clients'],
-        payload: fakePayload(),
+        payload,
       }, null, jasmine.any(Function));
       expect(spyOnManage).toHaveBeenCalledTimes(1);
       done();
