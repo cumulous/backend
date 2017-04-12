@@ -47,7 +47,7 @@ export const getPolicy = (principalId: string, expiresAt: number, methodArn: str
             Effect: 'Allow' as PolicyEffect,
             Resource: [
               `${baseArn}/GET/`,
-              `${baseArn}/POST/weblogin`,
+              `${baseArn}/GET/weblogin`,
             ],
           }],
         },
