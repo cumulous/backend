@@ -556,6 +556,10 @@ Resources:
                       ${Auth0GetManagementSecretRole}/backend-release-ManageAuth0Resource"
 
               - !GetAtt FrontendAuthBuildRole.Arn
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${FrontendAuthBuildRole}/AWSCodeBuild"
+              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
+                      ${FrontendAuthBuildRole}/AWSCodeBuild"
 
               - !GetAtt WebSigningKeyPutRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
