@@ -1259,14 +1259,14 @@ Resources:
         Bucket: !Ref ArtifactsBucket
         Path: !Sub conf/auth0/${AWS::StackName}-spa.id
 
-  Auth0SPATestClient:
+  Auth0ApiTestClient:
     Type: AWS::CloudFormation::CustomResource
     DependsOn: Auth0ManagementClient
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupAuth0ClientStateMachine
       Payload:
-        name: !Sub "${WebDomain} - Test"
+        name: !Sub "${APIDomain} - Test"
         app_type: non_interactive
         jwt_configuration:
           lifetime_in_seconds: 3600
@@ -1275,10 +1275,10 @@ Resources:
           - identifier: !Sub https://${APIDomain}
       Id:
         Bucket: ArtifactsBucket
-        Path: !Sub conf/auth0/${AWS::StackName}-spa-test.id
+        Path: !Sub conf/auth0/${AWS::StackName}-api-test.id
       Secret:
         Bucket: SecretsBucket
-        Path: !Sub auth0/${AWS::StackName}-spa-test.key
+        Path: !Sub auth0/${AWS::StackName}-api-test.key
         EncryptionKeyId: !Ref EncryptionKeyId
 
   CreateAuth0Client:

@@ -478,7 +478,7 @@ Resources:
               StringEquals:
                 'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
               StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-spa-test.key
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-api-test.key
             Resource: '*'
           - Effect: Allow
             Principal:
@@ -1419,7 +1419,8 @@ Resources:
                   - s3:GetObject
                 Resource:
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/conf/auth0/*-spa.id
-                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-spa-test.key
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/conf/auth0/*-api-test.id
+                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-api-test.key
                   - !Sub arn:aws:s3:::${FrontendArtifactsBucket}/*
               - Effect: Allow
                 Action:
