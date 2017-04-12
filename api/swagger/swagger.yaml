@@ -38,6 +38,8 @@ paths:
               type: string
             Access-Control-Allow-Origin:
               type: string
+            Access-Control-Allow-Credentials:
+              type: string
       x-amazon-apigateway-integration:
         type: mock
         requestTemplates:
@@ -50,6 +52,7 @@ paths:
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin:
                 Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Credentials: true
     post:
       summary: Set website cookies
       description: Sets browser cookies for accessing protected content on the website.
