@@ -1809,7 +1809,7 @@ Resources:
           Type: Api
           Properties:
             Path: /weblogin
-            Method: POST
+            Method: GET
             RestApiId: !Ref Api
 
   SetupWebSigningKeyPairStateMachine:
