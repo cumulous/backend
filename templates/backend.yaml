@@ -52,6 +52,8 @@ Parameters:
     Type: String
   Auth0GetManagementSecretRoleArn:
     Type: String
+  Auth0CreateClientRoleArn:
+    Type: String
 
 Resources:
   BackendVPC:
@@ -1275,10 +1277,10 @@ Resources:
           - identifier: !Sub https://${APIDomain}
       Id:
         Bucket: ArtifactsBucket
-        Path: !Sub conf/auth0/${AWS::StackName}-api-test.id
+        Path: !Sub conf/auth0/${AWS::StackName}-api-test-client.id
       Secret:
         Bucket: SecretsBucket
-        Path: !Sub auth0/${AWS::StackName}-api-test.key
+        Path: !Sub auth0/${AWS::StackName}-api-test-client.key
         EncryptionKeyId: !Ref EncryptionKeyId
 
   CreateAuth0Client:
@@ -1288,7 +1290,7 @@ Resources:
       CodeUri: ../app
       Handler: auth0.createClient
       Runtime: nodejs6.10
-      Role: !Ref Auth0PutSecretRoleArn
+      Role: !Ref Auth0CreateClientRoleArn
       Environment:
         Variables:
           AUTH0_DOMAIN: !Ref Auth0Domain

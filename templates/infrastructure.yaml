@@ -372,7 +372,8 @@ Resources:
                           ParameterKey=Auth0ManagementClientSecret,ParameterValue=${Auth0ManagementClientSecret} \
                           ParameterKey=Auth0UserTokenLifetime,ParameterValue=${Auth0UserTokenLifetime} \
                           ParameterKey=Auth0PutSecretRoleArn,ParameterValue=${Auth0PutSecretRole.Arn} \
-                          ParameterKey=Auth0GetManagementSecretRoleArn,ParameterValue=${Auth0GetManagementSecretRole.Arn} "
+                          ParameterKey=Auth0GetManagementSecretRoleArn,ParameterValue=${Auth0GetManagementSecretRole.Arn} \
+                          ParameterKey=Auth0CreateClientRoleArn,ParameterValue=${Auth0CreateClientRole.Arn} "
 
                       $cfm delete-change-set $change_set || true
                       $cfm create-change-set $args || $cfm create-change-set --change-set-type CREATE $args
@@ -460,7 +461,20 @@ Resources:
             Resource: '*'
           - Effect: Allow
             Principal:
-              AWS: !GetAtt Auth0GetManagementSecretRole.Arn
+              AWS: !GetAtt Auth0CreateClientRole.Arn
+            Action:
+              - kms:GenerateDataKey
+            Condition:
+              StringEquals:
+                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
+              StringLike:
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-client.key
+            Resource: '*'
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !GetAtt Auth0GetManagementSecretRole.Arn
+                - !GetAtt Auth0CreateClientRole.Arn
             Action:
               - kms:Decrypt
             Condition:
@@ -478,7 +492,7 @@ Resources:
               StringEquals:
                 'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
               StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-api-test.key
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-api-test-client.key
             Resource: '*'
           - Effect: Allow
             Principal:
@@ -528,10 +542,12 @@ Resources:
                       ${Auth0PutSecretRole}/backend-beta-RotateAndStoreAuth0ManagementSecret"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
                       ${Auth0PutSecretRole}/backend-release-RotateAndStoreAuth0ManagementSecret"
+
+              - !GetAtt Auth0CreateClientRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0PutSecretRole}/backend-beta-CreateAuth0Client"
+                      ${Auth0CreateClientRole}/backend-beta-CreateAuth0Client"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0PutSecretRole}/backend-release-CreateAuth0Client"
+                      ${Auth0CreateClientRole}/backend-release-CreateAuth0Client"
 
               - !GetAtt Auth0GetManagementSecretRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
@@ -738,6 +754,7 @@ Resources:
                   - !GetAtt SSHKeyGetRole.Arn
                   - !GetAtt Auth0PutSecretRole.Arn
                   - !GetAtt Auth0GetManagementSecretRole.Arn
+                  - !GetAtt Auth0CreateClientRole.Arn
                   - !GetAtt WebSigningKeyPutRole.Arn
                   - !GetAtt WebSigningKeyGetRole.Arn
               - Effect: Allow
@@ -961,7 +978,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: Auth0CloudFormationSecretPutPolicy
+        - PolicyName: Auth0PutSecretPolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -984,7 +1001,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: Auth0CloudFormationSecretGetPolicy
+        - PolicyName: Auth0GetManagementSecretPolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -993,6 +1010,34 @@ Resources:
                   - s3:GetObject
                 Resource:
                   - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-manage.key
+
+  Auth0CreateClientRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: Auth0CreateClientPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-manage.key
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-client.key
 
   WebSigningKeyPutRole:
     Type: AWS::IAM::Role
@@ -1419,8 +1464,8 @@ Resources:
                   - s3:GetObject
                 Resource:
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/conf/auth0/*-spa.id
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/conf/auth0/*-api-test.id
-                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-api-test.key
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/conf/auth0/*-api-test-client.id
+                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-api-test-client.key
                   - !Sub arn:aws:s3:::${FrontendArtifactsBucket}/*
               - Effect: Allow
                 Action:
