@@ -170,11 +170,11 @@ const getCookieParams = (signer: Signer, domain: string, expiresAt: number) => {
 };
 
 const getCookieHeaders = (cookieParams: Signer.CannedPolicy, domain: string) => {
-  const prefix = `Domain=${domain}; Path=/; Secure; HttpOnly;`;
+  const suffix = `Domain=${domain}; Path=/; Secure; HttpOnly`;
   const headers: Dict<string> = {};
-  headers['Set-Cookie'] = `${prefix} CloudFront-Expires=${cookieParams['CloudFront-Expires']}`;
-  headers['Set-cookie'] = `${prefix} CloudFront-Key-Pair-Id=${cookieParams['CloudFront-Key-Pair-Id']}`;
-  headers['set-cookie'] = `${prefix} CloudFront-Signature=${cookieParams['CloudFront-Signature']}`;
+  headers['Set-Cookie'] = `CloudFront-Expires=${cookieParams['CloudFront-Expires']}; ${suffix}`;
+  headers['Set-cookie'] = `CloudFront-Key-Pair-Id=${cookieParams['CloudFront-Key-Pair-Id']}; ${suffix}`;
+  headers['set-cookie'] = `CloudFront-Signature=${cookieParams['CloudFront-Signature']}; ${suffix}`;
   headers['Access-Control-Allow-Origin'] = `https://${domain}`;
   headers['Access-Control-Allow-Credentials'] = 'true';
   return headers;

@@ -474,11 +474,11 @@ describe('generateSignedCookies()', () => {
   });
 
   it('calls callback with correct parameters', (done: Callback) => {
-    const cookiePrefix = `Domain=${fakeWebDomain}; Path=/; Secure; HttpOnly;`;
+    const cookieSuffix = `Domain=${fakeWebDomain}; Path=/; Secure; HttpOnly`;
     const cookieParams = fakeCookieParams();
     const cookieContent: string[] = [];
     for (let cookie in cookieParams) {
-      cookieContent.push(`${cookiePrefix} ${cookie}=${cookieParams[cookie]}`);
+      cookieContent.push(`${cookie}=${cookieParams[cookie]}; ${cookieSuffix}`);
     }
     const headers: Dict<string> = {};
     headers['Set-Cookie'] = cookieContent[0];
