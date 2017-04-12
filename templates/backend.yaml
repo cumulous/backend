@@ -1276,10 +1276,10 @@ Resources:
         resource_servers:
           - identifier: !Sub https://${APIDomain}
       Id:
-        Bucket: ArtifactsBucket
+        Bucket: !Ref ArtifactsBucket
         Path: !Sub conf/auth0/${AWS::StackName}-api-test-client.id
       Secret:
-        Bucket: SecretsBucket
+        Bucket: !Ref SecretsBucket
         Path: !Sub auth0/${AWS::StackName}-api-test-client.key
         EncryptionKeyId: !Ref EncryptionKeyId
 
