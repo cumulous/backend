@@ -170,7 +170,7 @@ const getCookieParams = (signer: Signer, domain: string, expiresAt: number) => {
 };
 
 const getCookieHeaders = (cookieParams: Signer.CannedPolicy, domain: string) => {
-  const prefix = `Domain=${domain}; Path=/*; Secure; HttpOnly;`;
+  const prefix = `Domain=${domain}; Path=/; Secure; HttpOnly;`;
   const headers: Dict<string> = {};
   headers['Set-Cookie'] = `${prefix} CloudFront-Expires=${cookieParams['CloudFront-Expires']}`;
   headers['Set-cookie'] = `${prefix} CloudFront-Key-Pair-Id=${cookieParams['CloudFront-Key-Pair-Id']}`;

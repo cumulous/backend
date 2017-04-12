@@ -474,7 +474,7 @@ describe('generateSignedCookies()', () => {
   });
 
   it('calls callback with correct parameters', (done: Callback) => {
-    const cookiePrefix = `Domain=${fakeWebDomain}; Path=/*; Secure; HttpOnly;`;
+    const cookiePrefix = `Domain=${fakeWebDomain}; Path=/; Secure; HttpOnly;`;
     const cookieParams = fakeCookieParams();
     const cookieContent: string[] = [];
     for (let cookie in cookieParams) {
