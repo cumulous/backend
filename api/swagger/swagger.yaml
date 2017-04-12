@@ -53,7 +53,7 @@ paths:
               method.response.header.Access-Control-Allow-Origin:
                 Fn::Sub: "'https://${WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
-    post:
+    get:
       summary: Set website cookies
       description: Sets browser cookies for accessing protected content on the website.
       security:
