@@ -1513,58 +1513,58 @@ Resources:
             Resource:
               - !Sub arn:aws:s3:::${WebBucket}/*
 
-  WebDistribution:
-    Type: AWS::CloudFront::Distribution
-    Properties:
-      DistributionConfig:
-        Aliases:
-        - !Ref WebDomain
-        Enabled: true
-        Origins:
-        - Id: web
-          DomainName: !Sub ${WebBucket}.s3.amazonaws.com
-          S3OriginConfig:
-            OriginAccessIdentity:
-              !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
-        DefaultRootObject: login.html
-        DefaultCacheBehavior:
-          TargetOriginId: web
-          ViewerProtocolPolicy: redirect-to-https
-          ForwardedValues:
-            QueryString: false
-          MinTTL: !Ref WebTTL
-          DefaultTTL: !Ref WebTTL
-          Compress: true
-          TrustedSigners:
-            - !Ref AWS::AccountId
-        CacheBehaviors:
-        - TargetOriginId: web
-          PathPattern: login.*
-          ViewerProtocolPolicy: redirect-to-https
-          ForwardedValues:
-            QueryString: false
-          MinTTL: !Ref WebTTL
-          DefaultTTL: !Ref WebTTL
-          Compress: true
-        PriceClass: !Sub PriceClass_${WebPriceClass}
-        Restrictions:
-          GeoRestriction:
-            RestrictionType: whitelist
-            Locations: !Ref WebLocations
-        ViewerCertificate:
-          AcmCertificateArn: !Ref WebCertificate
-          SslSupportMethod: sni-only
-        WebACLId: !Ref WebACL
+  # WebDistribution:
+  #   Type: AWS::CloudFront::Distribution
+  #   Properties:
+  #     DistributionConfig:
+  #       Aliases:
+  #       - !Ref WebDomain
+  #       Enabled: true
+  #       Origins:
+  #       - Id: web
+  #         DomainName: !Sub ${WebBucket}.s3.amazonaws.com
+  #         S3OriginConfig:
+  #           OriginAccessIdentity:
+  #             !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
+  #       DefaultRootObject: login.html
+  #       DefaultCacheBehavior:
+  #         TargetOriginId: web
+  #         ViewerProtocolPolicy: redirect-to-https
+  #         ForwardedValues:
+  #           QueryString: false
+  #         MinTTL: !Ref WebTTL
+  #         DefaultTTL: !Ref WebTTL
+  #         Compress: true
+  #         TrustedSigners:
+  #           - !Ref AWS::AccountId
+  #       CacheBehaviors:
+  #       - TargetOriginId: web
+  #         PathPattern: login.*
+  #         ViewerProtocolPolicy: redirect-to-https
+  #         ForwardedValues:
+  #           QueryString: false
+  #         MinTTL: !Ref WebTTL
+  #         DefaultTTL: !Ref WebTTL
+  #         Compress: true
+  #       PriceClass: !Sub PriceClass_${WebPriceClass}
+  #       Restrictions:
+  #         GeoRestriction:
+  #           RestrictionType: whitelist
+  #           Locations: !Ref WebLocations
+  #       ViewerCertificate:
+  #         AcmCertificateArn: !Ref WebCertificate
+  #         SslSupportMethod: sni-only
+  #       WebACLId: !Ref WebACL
 
-  WebDnsRecord:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      Name: !Ref WebDomain
-      Type: A
-      HostedZoneId: !Ref DomainZone
-      AliasTarget:
-        DNSName: !GetAtt WebDistribution.DomainName
-        HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
+  # WebDnsRecord:
+  #   Type: AWS::Route53::RecordSet
+  #   Properties:
+  #     Name: !Ref WebDomain
+  #     Type: A
+  #     HostedZoneId: !Ref DomainZone
+  #     AliasTarget:
+  #       DNSName: !GetAtt WebDistribution.DomainName
+  #       HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
 
   WebOriginAccessIdentity:
     Type: AWS::CloudFormation::CustomResource
@@ -1774,27 +1774,27 @@ Resources:
       Timeout: 30
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyPutRole}
 
-  GenerateSignedCookies:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-GenerateSignedCookies
-      CodeUri: ../app
-      Handler: web.generateSignedCookies
-      Runtime: nodejs6.10
-      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyGetRole}
-      Environment:
-        Variables:
-          WEB_DOMAIN: !Ref WebDomain
-          WEB_DISTRIBUTION_ID: !Ref WebDistribution
-          WEB_SIGNING_KEY_BUCKET: !Ref SecretsBucket
-          WEB_SIGNING_KEY_PATH: !Sub web/${AWS::StackName}.signing.pem
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /weblogin
-            Method: GET
-            RestApiId: !Ref Api
+  # GenerateSignedCookies:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-GenerateSignedCookies
+  #     CodeUri: ../app
+  #     Handler: web.generateSignedCookies
+  #     Runtime: nodejs6.10
+  #     Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyGetRole}
+  #     Environment:
+  #       Variables:
+  #         WEB_DOMAIN: !Ref WebDomain
+  #         WEB_DISTRIBUTION_ID: !Ref WebDistribution
+  #         WEB_SIGNING_KEY_BUCKET: !Ref SecretsBucket
+  #         WEB_SIGNING_KEY_PATH: !Sub web/${AWS::StackName}.signing.pem
+  #     Events:
+  #       Api:
+  #         Type: Api
+  #         Properties:
+  #           Path: /weblogin
+  #           Method: GET
+  #           RestApiId: !Ref Api
 
   SetupWebSigningKeyPairStateMachine:
     Type: AWS::StepFunctions::StateMachine
