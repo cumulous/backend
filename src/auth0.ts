@@ -1,5 +1,4 @@
 import * as jsonpath from 'jsonpath';
-import * as stringify from 'json-stable-stringify';
 export import request = require('request-promise-native');
 import { post } from 'request-promise-native';
 
@@ -43,7 +42,7 @@ export const manageClient = (
         Authorization: `Bearer ${token}`,
       },
       json: true,
-      body: payload,
+      body: typeof payload === 'string' ? JSON.parse(payload) : payload,
     }));
 };
 
@@ -93,36 +92,16 @@ export const rotateAndStoreClientSecret = (secret: string, context: any, callbac
     .catch(callback);
 };
 
-export interface Auth0ClientPayload {
-  name: string;
-  app_type: 'spa' | 'non_interactive';
-  callbacks?: string[];
-  jwt_configuration: {
-    lifetime_in_seconds: number | string;
-    alg: 'RS256' | 'HS256';
-  },
-  resource_servers?: [{
-    identifier?: string;
-    scopes?: string[];
-  }];
-};
-
 export const createClient = (event: {
-    Payload: Auth0ClientPayload,
+    Payload: string,
     Secret?: { Bucket: string, Path: string, EncryptionKeyId: string },
   }, context: any, callback: Callback) => {
 
   Promise.resolve(event)
-    .then(event => event.Payload)
-    .then(payload => {
-      const config = payload.jwt_configuration;
-      config.lifetime_in_seconds = Number(config.lifetime_in_seconds);
-      return payload;
-    })
-    .then(payload => promise2(manage, {
+    .then(event => promise2(manage, {
         method: 'POST' as HttpMethod,
         endpoint: ['/clients'],
-        payload,
+        payload: event.Payload,
       }, null) as Promise<{ client_id: string; client_secret: string }>)
     .then(data => {
         if (event.Secret) {

@@ -1247,16 +1247,21 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupAuth0ClientStateMachine
-      Payload:
-        name: !Ref WebDomain
-        app_type: spa
-        callbacks:
-          - !Sub https://${WebDomain}
-        jwt_configuration:
-          lifetime_in_seconds: !Ref Auth0UserTokenLifetime
-          alg: RS256
-        resource_servers:
-          - identifier: !Sub https://${APIDomain}
+      Payload: !Sub |-
+        {
+          "name": "${WebDomain}",
+          "app_type": "spa",
+          "callbacks": [{
+            "https://${WebDomain}"
+          }],
+          "jwt_configuration": {
+            "lifetime_in_seconds": ${Auth0UserTokenLifetime},
+            "alg": "RS256"
+          },
+          "resource_servers": [{
+            "identifier": "https://${APIDomain}"
+          }]
+        }
       Id:
         Bucket: !Ref ArtifactsBucket
         Path: !Sub conf/auth0/${AWS::StackName}-spa.id
@@ -1267,14 +1272,18 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupAuth0ClientStateMachine
-      Payload:
-        name: !Sub "${APIDomain} - Test"
-        app_type: non_interactive
-        jwt_configuration:
-          lifetime_in_seconds: 3600
-          alg: RS256
-        resource_servers:
-          - identifier: !Sub https://${APIDomain}
+      Payload: !Sub |-
+        {
+          "name": "${APIDomain} - Test",
+          "app_type": "non_interactive",
+          "jwt_configuration": {
+            "lifetime_in_seconds": 3600,
+            "alg": "RS256"
+          },
+          "resource_servers": [{
+            "identifier": "https://${APIDomain}"
+          }]
+        }
       Id:
         Bucket: !Ref ArtifactsBucket
         Path: !Sub conf/auth0/${AWS::StackName}-api-test-client.id

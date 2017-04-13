@@ -1,7 +1,8 @@
 import * as request from 'request-promise-native';
+import * as stringify from 'json-stable-stringify';
 
 import * as auth0 from './auth0';
-import { Auth0ClientConfig, Auth0ClientPayload, Auth0Request,
+import { Auth0ClientConfig, Auth0Request,
          authenticate, createClient, HttpMethod,
          manage, manageClient, rotateAndStoreClientSecret } from './auth0';
 import { s3 } from './aws';
@@ -270,19 +271,24 @@ describe('manageClient()', () => {
       done();
     });
   });
-  it('request() with correct parameters', (done: Callback) => {
-    testMethod().then(() => {
-      expect(spyOnRequest).toHaveBeenCalledWith(fakeBaseUrl + fakeManageEndpoint, {
-          method: fakeManageMethod,
-          headers: {
-            Authorization: `Bearer ${fakeToken}`,
-          },
-          json: true,
-          body: fakePayload(),
-        });
-      expect(spyOnRequest).toHaveBeenCalledTimes(1);
-      done();
+  describe('request() with correct parameters if payload is', () => {
+    let payload: any;
+    afterEach((done: Callback) => {
+      manageClient(fakeClientConfig(), fakeManageMethod, fakeManageEndpoint, payload).then(() => {
+        expect(spyOnRequest).toHaveBeenCalledWith(fakeBaseUrl + fakeManageEndpoint, {
+            method: fakeManageMethod,
+            headers: {
+              Authorization: `Bearer ${fakeToken}`,
+            },
+            json: true,
+            body: fakePayload(),
+          });
+        expect(spyOnRequest).toHaveBeenCalledTimes(1);
+        done();
+      });
     });
+    it('an object', () => payload = fakePayload());
+    it('a stringified object', () => payload = stringify(fakePayload()));
   });
   describe('immediately returns with an error if', () => {
     it('authenticate() produces an error', (done: Callback) => {
@@ -409,19 +415,8 @@ describe('createClient()', () => {
   const fakeEncryptionKeyId = 'fake-encryption-key-1234';
   const fakeLifetime = 7200;
 
-  let fakePayload = (): Auth0ClientPayload => ({
+  let fakePayload = () => stringify({
     name: 'fake client',
-    app_type: 'spa',
-    callbacks: [
-      'https://example.org',
-    ],
-    jwt_configuration: {
-      lifetime_in_seconds: String(fakeLifetime),
-      alg: 'RS256',
-    },
-    resource_servers: [
-      'https://api.example.org',
-    ],
   });
   let fakeSecret = () => ({
     Bucket: fakeSecretBucket,
@@ -448,13 +443,11 @@ describe('createClient()', () => {
   };
 
   it('calls manage() with correct parameters', (done: Callback) => {
-    const payload = fakePayload();
-    payload.jwt_configuration.lifetime_in_seconds = fakeLifetime;
     testMethod(() => {
       expect(spyOnManage).toHaveBeenCalledWith({
         method: 'POST',
         endpoint: ['/clients'],
-        payload,
+        payload: fakePayload(),
       }, null, jasmine.any(Function));
       expect(spyOnManage).toHaveBeenCalledTimes(1);
       done();
