@@ -338,9 +338,8 @@ Resources:
                     create_change_set() {
                       local stack_name="$1"
                       local vpc_range="$2"
-                      local api_domain="$3"
-                      local web_domain="$4"
-                      local web_bucket="$5"
+                      local web_domain="$3"
+                      local web_bucket="$4"
                       local change_set="--stack-name $stack_name --change-set-name Deploy"
 
                       local args=" \
@@ -358,7 +357,7 @@ Resources:
                           ParameterKey=SSHKeyPutRole,ParameterValue=${SSHKeyPutRole} \
                           ParameterKey=SSHKeyGetRole,ParameterValue=${SSHKeyGetRole} \
                           ParameterKey=DomainZone,ParameterValue=${HostedZoneId} \
-                          ParameterKey=APIDomain,ParameterValue=$api_domain \
+                          ParameterKey=APIDomain,ParameterValue=api.$web_domain \
                           ParameterKey=WebDomain,ParameterValue=$web_domain \
                           ParameterKey=WebBucket,ParameterValue=$web_bucket \
                           ParameterKey=WebTTL,ParameterValue=${WebTTL} \
@@ -379,11 +378,9 @@ Resources:
                       $cfm create-change-set $args || $cfm create-change-set --change-set-type CREATE $args
                     } &&
 
-                    create_change_set backend-beta \
-                      "${BetaVPCRange}" "beta.api.${Domain}" "beta.${Domain}" "${BetaWebBucket}" &&
+                    create_change_set backend-beta "${BetaVPCRange}" "beta.${Domain}" "${BetaWebBucket}" &&
 
-                    create_change_set backend-release \
-                      "${ProductionVPCRange}" "api.${Domain}" "${Domain}" "${ReleaseWebBucket}" &&
+                    create_change_set backend-release "${ProductionVPCRange}" "${Domain}" "${ReleaseWebBucket}" &&
 
                     wait_change_set() {
                       local stack_name="$1"
@@ -862,7 +859,7 @@ Resources:
                 Resource:
                   - !Sub arn:aws:apigateway:${AWS::Region}::/restapis*
                   - !Sub arn:aws:apigateway:${AWS::Region}::/usageplans*
-                  - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/*api.${Domain}/basepathmappings
+                  - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/api.*${Domain}/basepathmappings
               - Effect: Allow
                 Action:
                   - acm:RequestCertificate
@@ -1364,7 +1361,7 @@ Resources:
           - Name: STACK_NAME
             Value: backend-beta
           - Name: API_DOMAIN
-            Value: !Sub beta.api.${Domain}
+            Value: !Sub api.beta.${Domain}
           - Name: AUTH0_DOMAIN
             Value: !Ref Auth0Domain
           - Name: AUTH0_CONNECTIONS
