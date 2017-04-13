@@ -1251,9 +1251,9 @@ Resources:
         {
           "name": "${WebDomain}",
           "app_type": "spa",
-          "callbacks": [{
+          "callbacks": [
             "https://${WebDomain}"
-          }],
+          ],
           "jwt_configuration": {
             "lifetime_in_seconds": ${Auth0UserTokenLifetime},
             "alg": "RS256"
