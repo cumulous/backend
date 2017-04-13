@@ -14,7 +14,7 @@ export interface Auth0ClientConfig {
   Secret: string;
 };
 
-export type HttpMethod = 'POST' | 'GET' | 'DELETE';
+export type HttpMethod = 'POST' | 'GET' | 'PATCH' | 'DELETE';
 
 export const authenticate = (client: Auth0ClientConfig, audience: string) => {
   return Promise.resolve(client)

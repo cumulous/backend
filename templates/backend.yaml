@@ -1368,7 +1368,7 @@ Resources:
                   "PassUpdateClient": {
                     "Type": "Pass",
                     "Result": {
-                      "method": "POST",
+                      "method": "PATCH",
                       "endpoint": ["/clients", "{id}"],
                       "datapath": "client_id"
                     },
