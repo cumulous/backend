@@ -390,8 +390,10 @@ describe('generateSignedCookies()', () => {
     },
   });
   const fakeSigningKey = () => Buffer.from('FAKE RSA_KEY');
-  const fakeCookieParams = (): Dict<number|string> => ({
-    'CloudFront-Expires': fakeExpiresAt,
+  const fakeCookieParams = (): Dict<string> => ({
+    'CloudFront-Policy': stringify({
+      Statement: { fake: 'policy' },
+    }),
     'CloudFront-Key-Pair-Id': '1234ABCD',
     'CloudFront-Signature': 'abcd1234',
   });
@@ -465,8 +467,12 @@ describe('generateSignedCookies()', () => {
   it('calls Signer.getSignedCookie() once with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect((spyOnSigner as any).getSignedCookie).toHaveBeenCalledWith({
-        url: `https://${fakeWebDomain}/*`,
-        expires: fakeExpiresAt,
+        policy: stringify({
+          Statement: [{
+            Resource: `https://${fakeWebDomain}/*`,
+            Condition: { DateLessThan: { 'AWS:EpochTime': fakeExpiresAt } },
+          }],
+        }),
       });
       expect((spyOnSigner as any).getSignedCookie).toHaveBeenCalledTimes(1);
       done();

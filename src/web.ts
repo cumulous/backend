@@ -164,15 +164,19 @@ const getSigningKey = (bucket: string, path: string) => {
 
 const getCookieParams = (signer: Signer, domain: string, expiresAt: number) => {
   return signer.getSignedCookie({
-    url: `https://${domain}/*`,
-    expires: expiresAt,
+    policy: stringify({
+      Statement: [{
+        Resource: `https://${domain}/*`,
+        Condition: { DateLessThan: { 'AWS:EpochTime': expiresAt } },
+      }],
+    }),
   });
 };
 
-const getCookieHeaders = (cookieParams: Signer.CannedPolicy, domain: string) => {
+const getCookieHeaders = (cookieParams: Signer.CustomPolicy, domain: string) => {
   const suffix = `Domain=${domain}; Path=/; Secure; HttpOnly`;
   const headers: Dict<string> = {};
-  headers['Set-Cookie'] = `CloudFront-Expires=${cookieParams['CloudFront-Expires']}; ${suffix}`;
+  headers['Set-Cookie'] = `CloudFront-Policy=${cookieParams['CloudFront-Policy']}; ${suffix}`;
   headers['Set-cookie'] = `CloudFront-Key-Pair-Id=${cookieParams['CloudFront-Key-Pair-Id']}; ${suffix}`;
   headers['set-cookie'] = `CloudFront-Signature=${cookieParams['CloudFront-Signature']}; ${suffix}`;
   headers['Access-Control-Allow-Origin'] = `https://${domain}`;
