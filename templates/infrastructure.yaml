@@ -1464,8 +1464,8 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/conf/auth0/*-spa.id
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/conf/auth0/*-api-test-client.id
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/auth0/*-spa.id
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/auth0/*-api-test-client.id
                   - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-api-test-client.key
                   - !Sub arn:aws:s3:::${FrontendArtifactsBucket}/*
               - Effect: Allow

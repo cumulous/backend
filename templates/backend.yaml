@@ -1050,7 +1050,7 @@ Resources:
           - Effect: Allow
             Action: s3:PutObject
             Resource:
-              - !Sub arn:aws:s3:::${ArtifactsBucket}/conf/auth0/*
+              - !Sub arn:aws:s3:::${ArtifactsBucket}/auth0/${AWS::StackName}-*
 
   RetrieveAuth0Config:
     Type: AWS::Serverless::Function
@@ -1064,7 +1064,7 @@ Resources:
           - Effect: Allow
             Action: s3:GetObject
             Resource:
-              - !Sub arn:aws:s3:::${ArtifactsBucket}/conf/auth0/*
+              - !Sub arn:aws:s3:::${ArtifactsBucket}/auth0/${AWS::StackName}-*
 
   SetupAuth0ApiStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -1134,7 +1134,7 @@ Resources:
                     "Type": "Pass",
                     "Result": {
                       "Bucket": "${ArtifactsBucket}",
-                      "Path": "conf/auth0/${AWS::StackName}-api.id"
+                      "Path": "auth0/${AWS::StackName}-api.id"
                     },
                     "ResultPath": "$.ResourceProperties.Store",
                     "Next": "PassBodyStoreApiId"
@@ -1156,7 +1156,7 @@ Resources:
                     "Type": "Pass",
                     "Result": {
                       "Bucket": "${ArtifactsBucket}",
-                      "Path": "conf/auth0/${AWS::StackName}-api.id"
+                      "Path": "auth0/${AWS::StackName}-api.id"
                     },
                     "ResultPath": "$.ResourceProperties.Retrieve",
                     "Next": "RetrieveApiId"
@@ -1264,7 +1264,7 @@ Resources:
         }
       Id:
         Bucket: !Ref ArtifactsBucket
-        Path: !Sub conf/auth0/${AWS::StackName}-spa.id
+        Path: !Sub auth0/${AWS::StackName}-spa.id
 
   Auth0ApiTestClient:
     Type: AWS::CloudFormation::CustomResource
@@ -1286,7 +1286,7 @@ Resources:
         }
       Id:
         Bucket: !Ref ArtifactsBucket
-        Path: !Sub conf/auth0/${AWS::StackName}-api-test-client.id
+        Path: !Sub auth0/${AWS::StackName}-api-test-client.id
       Secret:
         Bucket: !Ref SecretsBucket
         Path: !Sub auth0/${AWS::StackName}-api-test-client.key
