@@ -1473,8 +1473,8 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                 Resource:
-                  - !Sub arn:aws:s3:::${BetaWebBucket}/login/*
-                  - !Sub arn:aws:s3:::${ReleaseWebBucket}/login/*
+                  - !Sub arn:aws:s3:::${BetaWebBucket}/login.*
+                  - !Sub arn:aws:s3:::${ReleaseWebBucket}/login.*
               - Effect: Allow
                 Action:
                   - s3:ListBucket
