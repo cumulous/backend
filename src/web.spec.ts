@@ -465,7 +465,7 @@ describe('generateSignedCookies()', () => {
   it('calls Signer.getSignedCookie() once with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect((spyOnSigner as any).getSignedCookie).toHaveBeenCalledWith({
-        url: `https://${fakeWebDomain}/`,
+        url: `https://${fakeWebDomain}/*`,
         expires: fakeExpiresAt,
       });
       expect((spyOnSigner as any).getSignedCookie).toHaveBeenCalledTimes(1);

@@ -164,7 +164,7 @@ const getSigningKey = (bucket: string, path: string) => {
 
 const getCookieParams = (signer: Signer, domain: string, expiresAt: number) => {
   return signer.getSignedCookie({
-    url: `https://${domain}/`,
+    url: `https://${domain}/*`,
     expires: expiresAt,
   });
 };
