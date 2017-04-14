@@ -1875,14 +1875,14 @@ Resources:
           }
         }
 
-  # ApiDomainName:
-  #   Type: AWS::CloudFormation::CustomResource
-  #   Properties:
-  #     ServiceToken: !GetAtt SetupCustomResource.Arn
-  #     StateMachine: !Ref SetupApiDomainNameStateMachine
-  #     Domain:
-  #       Name: !Ref APIDomain
-  #       Certificate: !Ref ApiCertificate
+  ApiDomainName:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupApiDomainNameStateMachine
+      Domain:
+        Name: !Ref APIDomain
+        Certificate: !Ref ApiCertificate
 
   CreateApiDomainName:
     Type: AWS::Serverless::Function
