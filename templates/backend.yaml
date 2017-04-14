@@ -2052,7 +2052,7 @@ Resources:
     Properties:
       DomainName: !Ref APIDomain
       RestApiId: !Ref Api
-      Stage: !Ref ApiStage
+      Stage: Latest
 
   ApiDnsRecord:
     Type: AWS::Route53::RecordSet
