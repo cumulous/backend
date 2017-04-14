@@ -58,6 +58,6 @@
     "remap-istanbul": "^0.7.0",
     "rimraf": "^2.5.4",
     "ts-node": "^1.7.0",
-    "typescript": "^2.0.10"
+    "typescript": "^2.3.0"
   }
 }

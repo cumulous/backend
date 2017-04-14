@@ -19,7 +19,7 @@ export const getCertificate = (domain: string, kid: string) => {
         rateLimit: true,
         cache: true,
       }))
-    .then(client => promise(client.getSigningKey, kid))
+    .then(client => promise<string, SigningKey>(client.getSigningKey, kid))
     .then(key => key.publicKey || key.rsaPublicKey);
 };
 
