@@ -2056,25 +2056,25 @@ Resources:
     Properties:
       DomainName: !Ref APIDomain
 
-  # ApiPathMapping:
-  #   Type: AWS::ApiGateway::BasePathMapping
-  #   DependsOn:
-  #     - ApiDomainName
-  #     - ApiLatestStage
-  #   Properties:
-  #     DomainName: !Ref APIDomain
-  #     RestApiId: !Ref Api
-  #     Stage: Latest
+  ApiPathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    DependsOn:
+      - ApiDomainName
+      - ApiLatestStage
+    Properties:
+      DomainName: !Ref APIDomain
+      RestApiId: !Ref Api
+      Stage: Latest
 
-  # ApiDnsRecord:
-  #   Type: AWS::Route53::RecordSet
-  #   Properties:
-  #     Name: !Ref APIDomain
-  #     Type: A
-  #     HostedZoneId: !Ref DomainZone
-  #     AliasTarget:
-  #       DNSName: !GetAtt ApiDomainName.DistributionDomainName
-  #       HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
+  ApiDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: !Ref APIDomain
+      Type: A
+      HostedZoneId: !Ref DomainZone
+      AliasTarget:
+        DNSName: !GetAtt ApiDomainName.DistributionDomainName
+        HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
 
   GetApi:
     Type: AWS::Serverless::Function
