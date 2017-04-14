@@ -385,7 +385,7 @@ describe('generateSignedCookies()', () => {
   const fakeEvent = () => ({
     requestContext: {
       authorizer: {
-        expiresAt: fakeExpiresAt,
+        expiresAt: String(fakeExpiresAt),
       },
     },
   });
@@ -470,7 +470,9 @@ describe('generateSignedCookies()', () => {
         policy: stringify({
           Statement: [{
             Resource: `https://${fakeWebDomain}/*`,
-            Condition: { DateLessThan: { 'AWS:EpochTime': fakeExpiresAt } },
+            Condition: {
+              DateLessThan: { 'AWS:EpochTime': fakeExpiresAt },
+            },
           }],
         }),
       });

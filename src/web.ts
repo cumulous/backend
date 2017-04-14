@@ -135,8 +135,10 @@ const storeSigningKey = (bucket: string, path: string, value: Buffer, encryption
       .then(() => value);
 };
 
-export const generateSignedCookies = (event: { requestContext: { authorizer: { expiresAt: number } } },
-                                    context: any, callback: Callback) => {
+export const generateSignedCookies = (
+    event: { requestContext: { authorizer: { expiresAt: number | string } } },
+    context: any, callback: Callback) => {
+
   if (event == null || event.requestContext == null ||
       event.requestContext.authorizer == null || event.requestContext.authorizer.expiresAt == null) {
     return callback(Error('Expected non-empty event.requestContext.authorizer.expiresAt'));
@@ -162,12 +164,14 @@ const getSigningKey = (bucket: string, path: string) => {
       .then(data => data.Body.toString());
 };
 
-const getCookieParams = (signer: Signer, domain: string, expiresAt: number) => {
+const getCookieParams = (signer: Signer, domain: string, expiresAt: number | string) => {
   return signer.getSignedCookie({
     policy: stringify({
       Statement: [{
         Resource: `https://${domain}/*`,
-        Condition: { DateLessThan: { 'AWS:EpochTime': expiresAt } },
+        Condition: {
+          DateLessThan: { 'AWS:EpochTime': Number(expiresAt) },
+        },
       }],
     }),
   });
