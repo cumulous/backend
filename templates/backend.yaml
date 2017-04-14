@@ -1898,6 +1898,9 @@ Resources:
             Action: apigateway:POST
             Resource:
               - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames
+          - Effect: Allow
+            Action: cloudfront:UpdateDistribution
+            Resource: '*'
 
   UpdateApiDomainName:
     Type: AWS::Serverless::Function
@@ -1913,6 +1916,9 @@ Resources:
             Action: apigateway:PATCH
             Resource:
               - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${APIDomain}
+          - Effect: Allow
+            Action: cloudfront:UpdateDistribution
+            Resource: '*'
 
   DeleteApiDomainName:
     Type: AWS::Serverless::Function
@@ -1928,6 +1934,9 @@ Resources:
             Action: apigateway:DELETE
             Resource:
               - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${APIDomain}
+          - Effect: Allow
+            Action: cloudfront:DeleteDistribution
+            Resource: '*'
 
   SetupApiDomainNameStateMachine:
     Type: AWS::StepFunctions::StateMachine
