@@ -89,7 +89,9 @@ testMethod('updateDomainName', () => ({
     path: '/certificateArn',
     value: fakeApiCertificate,
   }],
-}));
+}), () => ({
+  distributionDomainName: fakeCloudFrontDistribution,
+}), fakeCloudFrontDistribution);
 
 testMethod('deleteDomainName', () =>
   fakeDomainName,

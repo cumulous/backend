@@ -32,7 +32,7 @@ export const updateDomainName = (event: { Name: string, Certificate: string },
       value: event.Certificate,
     }],
   }).promise()
-    .then(() => callback())
+    .then(data => callback(null, data.distributionDomainName))
     .catch(callback);
 };
 

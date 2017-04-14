@@ -1988,7 +1988,7 @@ Resources:
                   "UpdateApiDomainName": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.Domain",
-                    "ResultPath": null,
+                    "ResultPath": "$.Data.DistributionDomainName",
                     "Resource": "${UpdateApiDomainName.Arn}",
                     "Next": "Success"
                   },
