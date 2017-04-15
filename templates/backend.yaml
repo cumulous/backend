@@ -1078,9 +1078,9 @@ Resources:
               "Type": "Parallel",
               "Next": "Succeed",
               "Branches": [{
-                "StartAt": "CheckCreateOrUpdate",
+                "StartAt": "ChooseEventType",
                 "States": {
-                  "CheckCreateOrUpdate": {
+                  "ChooseEventType": {
                     "Type": "Choice",
                     "Choices": [
                       {
@@ -1099,7 +1099,7 @@ Resources:
                             "StringEquals": "https://${APIDomain}"
                           }
                         ],
-                        "Next": "Success"
+                        "Next": "PassUpdateApi"
                       }
                     ],
                     "Default": "PassRetrieveApiId"
@@ -1111,7 +1111,7 @@ Resources:
                       "endpoint": ["/resource-servers"],
                       "payload": {
                         "name": "${APIDomain}",
-                        "token_lifetime": "${Auth0UserTokenLifetime}"
+                        "token_lifetime_for_web": ${Auth0UserTokenLifetime}
                       },
                       "datapath": "id"
                     },
@@ -1151,6 +1151,33 @@ Resources:
                     "InputPath": "$.ResourceProperties.Store",
                     "ResultPath": null,
                     "Resource": "${StoreAuth0Config.Arn}",
+                    "Next": "Success"
+                  },
+                  "PassUpdateApi": {
+                    "Type": "Pass",
+                    "Result": {
+                      "method": "PATCH",
+                      "endpoint": ["/resource-servers", "/{id}"],
+                      "payload": {
+                        "name": "${APIDomain}",
+                        "token_lifetime_for_web": ${Auth0UserTokenLifetime}
+                      },
+                      "datapath": "id"
+                    },
+                    "ResultPath": "$.ResourceProperties.Request",
+                    "Next": "PassEndpointUpdateApi"
+                  },
+                  "PassEndpointUpdateApi": {
+                    "Type": "Pass",
+                    "InputPath": "$.Data.Id",
+                    "ResultPath": "$.ResourceProperties.Request.endpoint[1]",
+                    "Next": "UpdateApi"
+                  },
+                  "UpdateApi": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Request",
+                    "ResultPath": "$.Data.Id",
+                    "Resource": "${ManageAuth0Resource.Arn}",
                     "Next": "Success"
                   },
                   "PassRetrieveApiId": {
