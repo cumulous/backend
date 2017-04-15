@@ -1078,28 +1078,15 @@ Resources:
               "Type": "Parallel",
               "Next": "Succeed",
               "Branches": [{
-                "StartAt": "ChooseEventType",
+                "StartAt": "CheckCreate",
                 "States": {
-                  "ChooseEventType": {
+                  "CheckCreate": {
                     "Type": "Choice",
                     "Choices": [
                       {
                         "Variable": "$.RequestType",
                         "StringEquals": "Create",
                         "Next": "PassCreateApi"
-                      },
-                      {
-                        "And": [
-                          {
-                            "Variable": "$.RequestType",
-                            "StringEquals": "Update"
-                          },
-                          {
-                            "Variable": "$.OldResourceProperties.Audience",
-                            "StringEquals": "https://${APIDomain}"
-                          }
-                        ],
-                        "Next": "PassUpdateApi"
                       }
                     ],
                     "Default": "PassRetrieveApiId"
@@ -1153,33 +1140,6 @@ Resources:
                     "Resource": "${StoreAuth0Config.Arn}",
                     "Next": "Success"
                   },
-                  "PassUpdateApi": {
-                    "Type": "Pass",
-                    "Result": {
-                      "method": "PATCH",
-                      "endpoint": ["/resource-servers", "/{id}"],
-                      "payload": {
-                        "name": "${APIDomain}",
-                        "token_lifetime_for_web": ${Auth0UserTokenLifetime}
-                      },
-                      "datapath": "id"
-                    },
-                    "ResultPath": "$.ResourceProperties.Request",
-                    "Next": "PassEndpointUpdateApi"
-                  },
-                  "PassEndpointUpdateApi": {
-                    "Type": "Pass",
-                    "InputPath": "$.Data.Id",
-                    "ResultPath": "$.ResourceProperties.Request.endpoint[1]",
-                    "Next": "UpdateApi"
-                  },
-                  "UpdateApi": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Request",
-                    "ResultPath": "$.Data.Id",
-                    "Resource": "${ManageAuth0Resource.Arn}",
-                    "Next": "Success"
-                  },
                   "PassRetrieveApiId": {
                     "Type": "Pass",
                     "Result": {
@@ -1194,7 +1154,53 @@ Resources:
                     "InputPath": "$.ResourceProperties.Retrieve",
                     "ResultPath": "$.Data.Id",
                     "Resource": "${RetrieveAuth0Config.Arn}",
-                    "Next": "PassDeleteApi"
+                    "Next": "ChooseUpdateOrDelete"
+                  },
+                  "ChooseUpdateOrDelete": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "And": [
+                          {
+                            "Variable": "$.RequestType",
+                            "StringEquals": "Update"
+                          },
+                          {
+                            "Variable": "$.OldResourceProperties.Audience",
+                            "StringEquals": "https://${APIDomain}"
+                          }
+                        ],
+                        "Next": "PassUpdateApi"
+                      }
+                    ],
+                    "Default": "PassDeleteApi"
+                  },
+                  "PassUpdateApi": {
+                    "Type": "Pass",
+                    "Result": {
+                      "method": "PATCH",
+                      "endpoint": ["/resource-servers", "/{id}"],
+                      "payload": {
+                        "name": "${APIDomain}",
+                        "token_lifetime_for_web": ${Auth0UserTokenLifetime}
+                      },
+                      "datapath": "null"
+                    },
+                    "ResultPath": "$.ResourceProperties.Request",
+                    "Next": "PassEndpointUpdateApi"
+                  },
+                  "PassEndpointUpdateApi": {
+                    "Type": "Pass",
+                    "InputPath": "$.Data.Id",
+                    "ResultPath": "$.ResourceProperties.Request.endpoint[1]",
+                    "Next": "UpdateApi"
+                  },
+                  "UpdateApi": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Request",
+                    "ResultPath": null,
+                    "Resource": "${ManageAuth0Resource.Arn}",
+                    "Next": "Success"
                   },
                   "PassDeleteApi": {
                     "Type": "Pass",
