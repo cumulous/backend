@@ -1253,7 +1253,7 @@ Resources:
           "name": "${WebDomain}",
           "app_type": "spa",
           "callbacks": [
-            "https://${WebDomain}"
+            "https://${WebDomain}/login.html"
           ],
           "resource_servers": [{
             "identifier": "https://${APIDomain}"
