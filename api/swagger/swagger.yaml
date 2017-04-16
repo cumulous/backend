@@ -20,7 +20,7 @@ paths:
         200:
           description: OpenAPI/Swagger 2.0 definition of this API.
           schema:
-            type: object
+            $ref: '#/definitions/Spec'
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
@@ -28,6 +28,8 @@ paths:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetApi.Arn}/invocations
   /weblogin:
     options:
+      tags:
+        - Web
       responses:
         200:
           description: CORS headers
@@ -115,6 +117,8 @@ paths:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetProjects.Arn}/invocations
 
 definitions:
+  Spec:
+    type: object
   Project:
     required:
       - id
