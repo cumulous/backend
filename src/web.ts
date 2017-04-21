@@ -38,7 +38,7 @@ export const createOriginAccessIdentity = (event: CloudFormationRequest,
   Promise.resolve(event)
     .then(event => cloudFront.createCloudFrontOriginAccessIdentity({
         CloudFrontOriginAccessIdentityConfig: {
-          CallerReference:  event.LogicalResourceId,
+          CallerReference: event.StackId,
           Comment: event.ResourceProperties['Comment'],
         },
       }).promise())
@@ -66,7 +66,7 @@ export const updateOriginAccessIdentity = (event: CloudFormationRequest & CloudF
   Promise.resolve(event)
     .then(event => cloudFront.updateCloudFrontOriginAccessIdentity({
         CloudFrontOriginAccessIdentityConfig: {
-          CallerReference:  event.LogicalResourceId,
+          CallerReference: event.StackId,
           Comment: event.ResourceProperties['Comment'],
         },
         Id: event.Data['Id'],

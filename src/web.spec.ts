@@ -175,7 +175,7 @@ const testMethod = (
 };
 
 testMethod('createOriginAccessIdentity', cloudFront, 'createCloudFrontOriginAccessIdentity', () => ({
-  LogicalResourceId: fakeResourceId,
+  StackId: fakeResourceId,
   ResourceProperties: {
     Comment: fakeIdentityComment,
   },
@@ -197,7 +197,7 @@ testMethod('createOriginAccessIdentity', cloudFront, 'createCloudFrontOriginAcce
 });
 
 testMethod('updateOriginAccessIdentity', cloudFront, 'updateCloudFrontOriginAccessIdentity', () => ({
-  LogicalResourceId: fakeResourceId,
+  StackId: fakeResourceId,
   ResourceProperties: {
     Comment: fakeIdentityComment,
   },
