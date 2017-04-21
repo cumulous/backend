@@ -55,9 +55,6 @@ Parameters:
   Auth0CreateClientRoleArn:
     Type: String
 
-Conditions:
-  SetupAuth0ManagementClient: !Not [!Equals [!Ref Auth0ManagementClientSecret, '']]
-
 Resources:
   BackendVPC:
     Type: AWS::EC2::VPC
@@ -885,7 +882,6 @@ Resources:
 
   Auth0ManagementClient:
     Type: AWS::CloudFormation::CustomResource
-    Condition: SetupAuth0ManagementClient
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupAuth0ManagementClientStateMachine
@@ -895,7 +891,6 @@ Resources:
 
   RotateAndStoreAuth0ManagementSecret:
     Type: AWS::Serverless::Function
-    Condition: SetupAuth0ManagementClient
     Properties:
       FunctionName: !Sub ${AWS::StackName}-RotateAndStoreAuth0ManagementSecret
       CodeUri: ../app
@@ -912,7 +907,6 @@ Resources:
 
   SetupAuth0ManagementClientStateMachine:
     Type: AWS::StepFunctions::StateMachine
-    Condition: SetupAuth0ManagementClient
     Properties:
       RoleArn: !GetAtt StatesExecutionRole.Arn
       DefinitionString: !Sub |-
@@ -923,8 +917,19 @@ Resources:
               "Type": "Parallel",
               "Next": "Succeed",
               "Branches": [{
-                "StartAt": "ChooseEventType",
+                "StartAt": "CheckToSkipSetup",
                 "States": {
+                  "CheckToSkipSetup": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.ResourceProperties.Secret",
+                        "StringEquals": "",
+                        "Next": "Success"
+                      }
+                    ],
+                    "Default": "ChooseEventType"
+                  },
                   "ChooseEventType": {
                     "Type": "Choice",
                     "Choices": [
