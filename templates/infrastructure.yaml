@@ -480,7 +480,7 @@ Resources:
               StringEquals:
                 'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
               StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-manage.key
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/manage.key
             Resource: '*'
           - Effect: Allow
             Principal:
@@ -1012,7 +1012,7 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
-                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-manage.key
+                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/manage.key
 
   Auth0CreateClientRole:
     Type: AWS::IAM::Role
@@ -1035,7 +1035,7 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
-                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-manage.key
+                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/manage.key
               - Effect: Allow
                 Action:
                   - s3:PutObject

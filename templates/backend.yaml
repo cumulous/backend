@@ -887,7 +887,7 @@ Resources:
       StateMachine: !Ref SetupAuth0ManagementClientStateMachine
       Secret: !Ref Auth0ManagementClientSecret
       Bucket: !Ref SecretsBucket
-      Path: !Sub auth0/${AWS::StackName}-manage.key
+      Path: !Sub auth0/manage.key
 
   RotateAndStoreAuth0ManagementSecret:
     Type: AWS::Serverless::Function
@@ -903,7 +903,7 @@ Resources:
           AUTH0_DOMAIN: !Ref Auth0Domain
           AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
           AUTH0_SECRET_BUCKET: !Ref SecretsBucket
-          AUTH0_SECRET_PATH: !Sub auth0/${AWS::StackName}-manage.key
+          AUTH0_SECRET_PATH: !Sub auth0/manage.key
 
   SetupAuth0ManagementClientStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -1036,7 +1036,7 @@ Resources:
           AUTH0_DOMAIN: !Ref Auth0Domain
           AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
           AUTH0_SECRET_BUCKET: !Ref SecretsBucket
-          AUTH0_SECRET_PATH: !Sub auth0/${AWS::StackName}-manage.key
+          AUTH0_SECRET_PATH: !Sub auth0/manage.key
 
   StoreAuth0Config:
     Type: AWS::Serverless::Function
@@ -1331,7 +1331,7 @@ Resources:
           AUTH0_DOMAIN: !Ref Auth0Domain
           AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
           AUTH0_SECRET_BUCKET: !Ref SecretsBucket
-          AUTH0_SECRET_PATH: !Sub auth0/${AWS::StackName}-manage.key
+          AUTH0_SECRET_PATH: !Sub auth0/manage.key
 
   SetupAuth0ClientStateMachine:
     Type: AWS::StepFunctions::StateMachine
