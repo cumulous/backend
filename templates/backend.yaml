@@ -2151,4 +2151,5 @@ Resources:
 
 Outputs:
   WebSigningKey:
+    Condition: SetupWebSigningKeyPair
     Value: !GetAtt WebSigningKey.PublicKey
