@@ -366,8 +366,8 @@ Resources:
                           ParameterKey=WebPriceClass,ParameterValue=${WebPriceClass} \
                           ParameterKey=WebLocations,ParameterValue=${WebLocations} \
                           ParameterKey=WebFirewallRanges,ParameterValue=${WebFirewallRanges} \
-                          ParameterKey=WebSigningKeyPutRole,ParameterValue=$signing_put_role \
-                          ParameterKey=WebSigningKeyGetRole,ParameterValue=${WebSigningKeyGetRole} \
+                          ParameterKey=WebSigningKeyPutRoleArn,ParameterValue=$signing_put_role \
+                          ParameterKey=WebSigningKeyGetRoleArn,ParameterValue=${WebSigningKeyGetRole.Arn} \
                           ParameterKey=Auth0Domain,ParameterValue=${Auth0Domain} \
                           ParameterKey=Auth0ManagementClientID,ParameterValue=${Auth0ManagementClientID} \
                           ParameterKey=Auth0ManagementClientSecret,ParameterValue=$auth0_secret \
@@ -381,7 +381,7 @@ Resources:
                     } &&
 
                     create_change_set backend-beta "${BetaVPCRange}" "beta.${Domain}" "${BetaWebBucket}" \
-                      "${Auth0ManagementClientSecret}" "${WebSigningKeyPutRole}" &&
+                      "${Auth0ManagementClientSecret}" "${WebSigningKeyPutRole.Arn}" &&
 
                     create_change_set backend-release "${ProductionVPCRange}" "${Domain}" "${ReleaseWebBucket}" &&
 

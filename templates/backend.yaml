@@ -34,9 +34,9 @@ Parameters:
     Type: CommaDelimitedList
   WebFirewallRanges:
     Type: CommaDelimitedList
-  WebSigningKeyPutRole:
+  WebSigningKeyPutRoleArn:
     Type: String
-  WebSigningKeyGetRole:
+  WebSigningKeyGetRoleArn:
     Type: String
   Auth0Domain:
     Type: String
@@ -56,7 +56,7 @@ Parameters:
     Type: String
 
 Conditions:
-  SetupWebSigningKeyPair: !Not [!Equals [!Ref WebSigningKeyPutRole, '']]
+  SetupWebSigningKeyPair: !Not [!Equals [!Ref WebSigningKeyPutRoleArn, '']]
 
 Resources:
   BackendVPC:
@@ -1832,7 +1832,7 @@ Resources:
       Timeout: 30
       Role: !If
         - SetupWebSigningKeyPair
-        - !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyPutRole}
+        - !Ref WebSigningKeyPutRoleArn
         - !GetAtt BasicLambdaRole.Arn
 
   GenerateSignedCookies:
@@ -1843,7 +1843,7 @@ Resources:
       Handler: web.generateSignedCookies
       Runtime: nodejs6.10
       Timeout: 10
-      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyGetRole}
+      Role: !Ref WebSigningKeyGetRoleArn
       Environment:
         Variables:
           WEB_DOMAIN: !Ref WebDomain
