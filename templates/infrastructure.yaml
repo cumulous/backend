@@ -564,8 +564,6 @@ Resources:
               - !GetAtt WebSigningKeyPutRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
                       ${WebSigningKeyPutRole}/backend-beta-CreateAndExportWebSigningKeyPair"
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${WebSigningKeyPutRole}/backend-release-CreateAndExportWebSigningKeyPair"
 
               - !GetAtt WebSigningKeyGetRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\

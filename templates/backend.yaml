@@ -1811,14 +1811,16 @@ Resources:
 
   CreateAndExportWebSigningKeyPair:
     Type: AWS::Serverless::Function
-    Condition: SetupWebSigningKeyPair
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CreateAndExportWebSigningKeyPair
       CodeUri: ../app
       Handler: web.createAndExportSigningKey
       Runtime: nodejs6.10
       Timeout: 30
-      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyPutRole}
+      Role: !If
+        - SetupWebSigningKeyPair
+        - !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyPutRole}
+        - !Ref AWS::NoValue
 
   GenerateSignedCookies:
     Type: AWS::Serverless::Function
