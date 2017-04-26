@@ -55,6 +55,9 @@ Parameters:
   Auth0CreateClientRoleArn:
     Type: String
 
+Conditions:
+  SetupWebSigningKeyPair: !Not [!Equals [!Ref WebSigningKeyPutRole, '']]
+
 Resources:
   BackendVPC:
     Type: AWS::EC2::VPC
@@ -1797,16 +1800,18 @@ Resources:
 
   WebSigningKey:
     Type: AWS::CloudFormation::CustomResource
+    Condition: SetupWebSigningKeyPair
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupWebSigningKeyPairStateMachine
       Bucket: !Ref SecretsBucket
-      Path: !Sub web/${AWS::StackName}.signing.pem
+      Path: !Sub web/signing.pem
       EncryptionKeyId: !Ref EncryptionKeyId
       Size: 4096
 
   CreateAndExportWebSigningKeyPair:
     Type: AWS::Serverless::Function
+    Condition: SetupWebSigningKeyPair
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CreateAndExportWebSigningKeyPair
       CodeUri: ../app
@@ -1829,7 +1834,7 @@ Resources:
           WEB_DOMAIN: !Ref WebDomain
           WEB_DISTRIBUTION_ID: !Ref WebDistribution
           WEB_SIGNING_KEY_BUCKET: !Ref SecretsBucket
-          WEB_SIGNING_KEY_PATH: !Sub web/${AWS::StackName}.signing.pem
+          WEB_SIGNING_KEY_PATH: !Sub web/signing.pem
       Events:
         Api:
           Type: Api
@@ -1840,6 +1845,7 @@ Resources:
 
   SetupWebSigningKeyPairStateMachine:
     Type: AWS::StepFunctions::StateMachine
+    Condition: SetupWebSigningKeyPair
     Properties:
       RoleArn: !GetAtt StatesExecutionRole.Arn
       DefinitionString: !Sub |-

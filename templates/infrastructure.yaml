@@ -341,6 +341,7 @@ Resources:
                       local web_domain="$3"
                       local web_bucket="$4"
                       local auth0_secret="$5"
+                      local signing_put_role="$6"
                       local change_set="--stack-name $stack_name --change-set-name Deploy"
 
                       local args=" \
@@ -365,7 +366,7 @@ Resources:
                           ParameterKey=WebPriceClass,ParameterValue=${WebPriceClass} \
                           ParameterKey=WebLocations,ParameterValue=${WebLocations} \
                           ParameterKey=WebFirewallRanges,ParameterValue=${WebFirewallRanges} \
-                          ParameterKey=WebSigningKeyPutRole,ParameterValue=${WebSigningKeyPutRole} \
+                          ParameterKey=WebSigningKeyPutRole,ParameterValue=$signing_put_role \
                           ParameterKey=WebSigningKeyGetRole,ParameterValue=${WebSigningKeyGetRole} \
                           ParameterKey=Auth0Domain,ParameterValue=${Auth0Domain} \
                           ParameterKey=Auth0ManagementClientID,ParameterValue=${Auth0ManagementClientID} \
@@ -380,7 +381,7 @@ Resources:
                     } &&
 
                     create_change_set backend-beta "${BetaVPCRange}" "beta.${Domain}" "${BetaWebBucket}" \
-                      "${Auth0ManagementClientSecret}" &&
+                      "${Auth0ManagementClientSecret}" "${WebSigningKeyPutRole}" &&
 
                     create_change_set backend-release "${ProductionVPCRange}" "${Domain}" "${ReleaseWebBucket}" &&
 
@@ -502,7 +503,7 @@ Resources:
               StringEquals:
                 'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
               StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/web/*.signing.pem
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/web/signing.pem
             Resource: '*'
           - Effect: Allow
             Principal:
@@ -513,7 +514,7 @@ Resources:
               StringEquals:
                 'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
               StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/web/*.signing.pem
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/web/signing.pem
             Resource: '*'
           - Effect: Deny
             NotPrincipal:
@@ -1062,7 +1063,7 @@ Resources:
               - Effect: Allow
                 Action: s3:PutObject
                 Resource:
-                  - !Sub arn:aws:s3:::${SecretsBucket}/web/*.signing.pem
+                  - !Sub arn:aws:s3:::${SecretsBucket}/web/signing.pem
 
   WebSigningKeyGetRole:
     Type: AWS::IAM::Role
@@ -1084,7 +1085,7 @@ Resources:
               - Effect: Allow
                 Action: s3:GetObject
                 Resource:
-                  - !Sub arn:aws:s3:::${SecretsBucket}/web/*.signing.pem
+                  - !Sub arn:aws:s3:::${SecretsBucket}/web/signing.pem
               - Effect: Allow
                 Action: cloudfront:GetDistribution
                 Resource: '*'
