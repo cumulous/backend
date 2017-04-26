@@ -1822,6 +1822,7 @@ Resources:
       CodeUri: ../app
       Handler: web.generateSignedCookies
       Runtime: nodejs6.10
+      Timeout: 10
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${WebSigningKeyGetRole}
       Environment:
         Variables:
