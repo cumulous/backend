@@ -3,6 +3,7 @@ bin/
 node_modules/
 reports/
 tmp/
+.c9/
 
 *.bak
 *.log
