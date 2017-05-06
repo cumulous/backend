@@ -115,6 +115,97 @@ paths:
         httpMethod: POST
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetProjects.Arn}/invocations
+  /datasets:
+    options:
+      tags:
+        - Datasets
+      responses:
+        200:
+          description: CORS headers
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin:
+                Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
+  /datasets/{datasetId}:
+    options:
+      tags:
+        - Datasets
+      parameters:
+        - $ref: '#/parameters/DatasetId'
+      responses:
+        200:
+          description: CORS headers
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PATCH,DELETE'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin:
+                Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
+  /datasets/{datasetId}/credentials:
+    options:
+      tags:
+        - Datasets
+      parameters:
+        - $ref: '#/parameters/DatasetId'
+      responses:
+        200:
+          description: CORS headers
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin:
+                Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
 
 definitions:
   Spec:
@@ -211,6 +302,13 @@ parameters:
       **
     type: string
     pattern: ^[\w-.]{1,100}$
+  DatasetId:
+    in: path
+    name: datasetId
+    description: Unique identifier for a dataset
+    required: true
+    type: string
+    format: uuid
   QueryPaginationFrom:
     in: query
     name: from
