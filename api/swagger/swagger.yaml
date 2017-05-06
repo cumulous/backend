@@ -144,6 +144,55 @@ paths:
               method.response.header.Access-Control-Allow-Origin:
                 Fn::Sub: "'https://${WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
+    post:
+      summary: Create a dataset
+      description: |
+        Defines a new dataset.
+      security:
+        - member_token: []
+      tags:
+        - Datasets
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/DatasetCreationRequest'
+      responses:
+        200:
+          description: Properties of the created dataset
+          schema:
+            $ref: '#/definitions/Dataset'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostDatasets.Arn}/invocations
+    get:
+      summary: Get a list of datasets
+      description: |
+        Returns a list of datasets for the current member,
+        filtered by optional parameters.
+      security:
+        - member_token: []
+      tags:
+        - Datasets
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/DatasetsQueryProjectId'
+        - $ref: '#/parameters/DatasetsQueryDescriptionContains'
+        - $ref: '#/parameters/DatasetsQueryStatus'
+        - $ref: '#/parameters/QueryPaginationFrom'
+        - $ref: '#/parameters/QueryPaginationMax'
+      responses:
+        200:
+          description: List of datasets
+          schema:
+            $ref: '#/definitions/ListOfDatasets'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetDatasets.Arn}/invocations
   /datasets/{datasetId}:
     options:
       tags:
@@ -175,6 +224,75 @@ paths:
               method.response.header.Access-Control-Allow-Origin:
                 Fn::Sub: "'https://${WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
+    get:
+      summary: Get properties of a dataset
+      description: |
+        Returns dataset object for a specified ID
+      security:
+        - member_token: []
+      tags:
+        - Datasets
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/DatasetId'
+      responses:
+        200:
+          description: Dataset
+          schema:
+            $ref: '#/definitions/Dataset'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetDataset.Arn}/invocations
+    patch:
+      summary: Modify properties of a dataset
+      description: |
+        Modifies select properties of a dataset
+      security:
+        - member_token: []
+      tags:
+        - Datasets
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/DatasetId'
+        - $ref: '#/parameters/DatasetModificationRequest'
+      responses:
+        200:
+          description: Modified dataset
+          schema:
+            $ref: '#/definitions/Dataset'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PatchDataset.Arn}/invocations
+    delete:
+      summary: Delete a dataset
+      description: |
+        Schedules complete deletion of a dataset.
+
+        Marks dataset status as _Deleting_ until completed.
+      security:
+        - member_token: []
+      tags:
+        - Datasets
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/DatasetId'
+      responses:
+        200:
+          description: Status of the dataset scheduled for deletion
+          schema:
+            $ref: '#/definitions/DatasetDeleting'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteDataset.Arn}/invocations
   /datasets/{datasetId}/credentials:
     options:
       tags:
@@ -206,6 +324,29 @@ paths:
               method.response.header.Access-Control-Allow-Origin:
                 Fn::Sub: "'https://${WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
+    post:
+      summary: Request credentials for data access
+      description: |
+        Returns temporary credentials to access the data stored on S3
+      security:
+        - member_token: []
+      tags:
+        - Datasets
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/DatasetId'
+        - $ref: '#/parameters/DatasetCredentialsRequest'
+      responses:
+        200:
+          description: Temporary credentials for data access
+          schema:
+            $ref: '#/definitions/DatasetCredentialsResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostDatasetCredentials.Arn}/invocations
 
 definitions:
   Spec:
@@ -257,9 +398,122 @@ definitions:
           $ref: '#/definitions/Project'
       next:
         $ref: '#/definitions/PaginationNext'
+  MemberId:
+    description: Unique identifier for a project member
+    type: string
+    format: uuid
+  Dataset:
+    required:
+      - id
+      - projectId
+      - dateCreated
+      - creatorId
+      - status
+    properties:
+      id:
+        $ref: '#/definitions/DatasetId'
+      projectId:
+        $ref: '#/definitions/ProjectId'
+      dateCreated:
+        $ref: '#/definitions/Date'
+      creatorId:
+        $ref: '#/definitions/MemberId'
+      description:
+        $ref: '#/definitions/DatasetDescription'
+      status:
+        $ref: '#/definitions/DatasetStatus'
+      bucket:
+        $ref: '#/definitions/Bucket'
+      metadata:
+        $ref: '#/definitions/DatasetMetadata'
+  DatasetId:
+    description: Unique identifier for a dataset
+    type: string
+    format: uuid
+  DatasetDescription:
+    description: Dataset description
+    type: string
+    pattern: ^[\w-., ]{1,1000}$
+  DatasetStatus:
+    description: Project status
+    type: string
+    enum:
+      - Created
+      - Uploading
+      - Available
+      - Archived
+      - Removed
+  DatasetMetadata:
+    description: Additional information on the dataset
+    type: object
+    additionalProperties:
+      type: string
+      maxLength: 100
+  Bucket:
+    description: Name of S3 storage bucket
+    type: string
+    pattern: ^[a-z0-9]+(\.[a-z0-9]([a-z0-9-]*[a-z0-9]))*$
+  ListOfDatasets:
+    type: object
+    properties:
+      datasets:
+        type: array
+        items:
+          $ref: '#/definitions/Dataset'
+      next:
+        $ref: '#/definitions/PaginationNext'
+  DatasetDeleting:
+    required:
+      - id
+      - status
+    properties:
+      id:
+        $ref: '#/definitions/DatasetId'
+      status:
+        enum:
+          - Deleting
+  DatasetCredentialsAction:
+    description: Action for the dataset credentials
+    type: string
+    enum:
+      - Upload
+      - Download
+  DatasetCredentialsResponse:
+    required:
+      - id
+      - action
+      - credentials
+      - expirationDate
+      - bucket
+    properties:
+      id:
+        $ref: '#/definitions/DatasetId'
+      action:
+        $ref: '#/definitions/DatasetCredentialsAction'
+      credentials:
+        $ref: '#/definitions/AwsCredentials'
+      expirationDate:
+        $ref: '#/definitions/Date'
+      bucket:
+        $ref: '#/definitions/Bucket'
+  AwsCredentials:
+    required:
+      - accessKeyId
+      - secretAccessKey
+      - sessionToken
+    properties:
+      accessKeyId:
+        type: string
+      secretAccessKey:
+        type: string
+      sessionToken:
+        type: string
   PaginationNext:
     type: integer
     minimum: 1
+  Date:
+    type: string
+    format: date-time
 
 parameters:
   ProjectsQueryNameContains:
@@ -302,6 +556,44 @@ parameters:
       **
     type: string
     pattern: ^[\w-.]{1,100}$
+  DatasetCreationRequest:
+    in: body
+    name: body
+    description: Properties of the dataset to be created
+    required: true
+    schema:
+      required:
+      - project_id
+      properties:
+        project_id:
+          $ref: '#/definitions/ProjectId'
+        description:
+          $ref: '#/definitions/DatasetDescription'
+        metadata:
+          $ref: '#/definitions/DatasetMetadata'
+  DatasetsQueryProjectId:
+    in: query
+    name: project_id
+    description: Filter by project ID
+    type: string
+    format: uuid
+  DatasetsQueryDescriptionContains:
+    in: query
+    name: description_contains
+    description: Part of the dataset description (case-insensitive)
+    type: string
+    pattern: ^[\w-., ]{1,200}$
+  DatasetsQueryStatus:
+    in: query
+    name: status
+    description: Filter by dataset status
+    type: string
+    enum:
+      - Created
+      - Uploading
+      - Available
+      - Archived
+      - Removed
   DatasetId:
     in: path
     name: datasetId
@@ -309,17 +601,39 @@ parameters:
     required: true
     type: string
     format: uuid
+  DatasetModificationRequest:
+    in: body
+    name: body
+    description: Dataset properties to be modified
+    required: true
+    schema:
+      properties:
+        description:
+          $ref: '#/definitions/DatasetDescription'
+        metadata:
+          $ref: '#/definitions/DatasetMetadata'
+  DatasetCredentialsRequest:
+    in: body
+    name: body
+    description: Request for the data access
+    required: true
+    schema:
+      required:
+        - action
+      properties:
+        action:
+          $ref: '#/definitions/DatasetCredentialsAction'
   QueryPaginationFrom:
     in: query
     name: from
-    description: starting index for pagination
+    description: Starting index for pagination
     type: integer
     minimum: 0
     default: 0
   QueryPaginationMax:
     in: query
     name: max
-    description: maximum count of paginated results
+    description: Maximum count of paginated results
     type: integer
     minimum: 1
     default: 10

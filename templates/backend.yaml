@@ -2164,6 +2164,96 @@ Resources:
           Parameters:
             Location: !Sub s3://${ArtifactsBucket}/swagger.yaml
 
+  PostDatasets:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-PostDatasets
+      CodeUri: ../app
+      Handler: apig.proxy
+      Runtime: nodejs6.10
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /datasets
+            Method: POST
+            RestApiId: !Ref Api
+
+  GetDatasets:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-GetDatasets
+      CodeUri: ../app
+      Handler: apig.proxy
+      Runtime: nodejs6.10
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /datasets
+            Method: GET
+            RestApiId: !Ref Api
+
+  GetDataset:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-GetDataset
+      CodeUri: ../app
+      Handler: apig.proxy
+      Runtime: nodejs6.10
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /datasets/{datasetId}
+            Method: GET
+            RestApiId: !Ref Api
+
+  PatchDataset:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-PatchDataset
+      CodeUri: ../app
+      Handler: apig.proxy
+      Runtime: nodejs6.10
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /datasets/{datasetId}
+            Method: PATCH
+            RestApiId: !Ref Api
+
+  DeleteDataset:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DeleteDataset
+      CodeUri: ../app
+      Handler: apig.proxy
+      Runtime: nodejs6.10
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /datasets/{datasetId}
+            Method: DELETE
+            RestApiId: !Ref Api
+
+  PostDatasetCredentials:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-PostDatasetCredentials
+      CodeUri: ../app
+      Handler: apig.proxy
+      Runtime: nodejs6.10
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /datasets/{datasetId}/credentials
+            Method: POST
+            RestApiId: !Ref Api
+
 Outputs:
   WebSigningKey:
     Condition: SetupWebSigningKeyPair
