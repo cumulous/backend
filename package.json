@@ -12,7 +12,7 @@
     "rm": "rimraf",
     "server": "lite-server",
     "start": "run-p server",
-    "swagger": "swagger project edit -sp 8081 --host 0.0.0.0",
+    "swagger": "swagger project edit -sp ${SWAGGER_PORT:-8081} --host 0.0.0.0",
     "test": "run-s test:e2e test:unit:once",
     "test:e2e": "cucumberjs --compiler ts:ts-node/register",
     "test:unit": "gulp",
