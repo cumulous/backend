@@ -4,7 +4,7 @@ const awsExpress = require('aws-serverless-express');
 const swagger = require('swagger-tools');
 
 import * as apig from './apig';
-import { createApp, createServer, getSpec, makeResponse, Response } from './apig';
+import { createApp, createServer, getSpec, makeResponse, proxy, Response } from './apig';
 import { apiGateway } from './aws';
 import { fakeResolve, fakeReject, testError } from './fixtures/support';
 import { Callback } from './types';
@@ -94,6 +94,48 @@ describe('createServer', () => {
   it('calls callback with correct response', (done: Callback) => {
     createServer((server: any) => {
       expect(server).toEqual(spyServer);
+      done();
+    });
+  });
+});
+
+describe('proxy', () => {
+  let fakeEvent: () => any;
+  let fakeContext: () => any;
+  let spyServer: jasmine.Spy;
+  let spyOnCreateServer: jasmine.Spy;
+  let spyOnAwsExpressProxy: jasmine.Spy;
+
+  beforeEach(() => {
+    fakeEvent = () => ({
+      fake: 'event',
+    });
+    fakeContext = () => ({
+      fake: 'context',
+    });
+
+    spyServer = jasmine.createSpy('server');
+    spyOnCreateServer = spyOn(apig, 'createServer')
+      .and.callFake((callback: (server: any) => void) => callback(spyServer));
+    spyOnAwsExpressProxy = spyOn(awsExpress, 'proxy');
+  });
+
+  const testMethod = (callback: Callback) => {
+    proxy(fakeEvent(), fakeContext(), callback);
+  };
+
+  it('calls createServer() once', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnCreateServer).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls awsExpress.proxy() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnAwsExpressProxy).toHaveBeenCalledWith(
+        spyServer, fakeEvent(), fakeContext());
+      expect(spyOnAwsExpressProxy).toHaveBeenCalledTimes(1);
       done();
     });
   });

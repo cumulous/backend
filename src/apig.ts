@@ -28,6 +28,13 @@ export const createServer = (callback: (server: any) => void) => {
   });
 };
 
+export const proxy = (event: any, context: any, callback: Callback) => {
+  createServer((server: any) => {
+    awsExpress.proxy(server, event, context);
+    callback();
+  });
+};
+
 export const createDomainName = (event: { Name: string, Certificate: string },
                                context: any, callback: Callback) => {
   if (event == null) {
