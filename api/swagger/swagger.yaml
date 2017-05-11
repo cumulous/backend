@@ -638,6 +638,9 @@ parameters:
     minimum: 1
     default: 10
 
+x-amazon-apigateway-binary-media-types:
+  - 'application/json'
+
 securityDefinitions:
   member_token:
     type: apiKey

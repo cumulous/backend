@@ -1,3 +1,4 @@
+import * as compression from 'compression';
 import * as express from 'express';
 import { Request, Response } from 'express';
 import * as stringify from 'json-stable-stringify';
@@ -12,6 +13,11 @@ import { Callback, Dict } from './types';
 const spec = require('./swagger');
 
 export const app = express;
+export const compress = compression;
+
+export const binaryMimeTypes = [
+  'application/json',
+];
 
 export const createApp = (swaggerMiddleware: any) => {
   const app = this.app();
@@ -19,6 +25,7 @@ export const createApp = (swaggerMiddleware: any) => {
   app.use(swaggerMiddleware.swaggerMetadata());
   app.use(swaggerMiddleware.swaggerValidator());
   app.use(awsExpressMiddleware.eventContext());
+  app.use(compress());
 
   app.get('/', getSpec);
 
@@ -28,7 +35,7 @@ export const createApp = (swaggerMiddleware: any) => {
 export const createServer = (callback: (server: any) => void) => {
   swagger.initializeMiddleware(spec, (middleware: any) => {
     const app = createApp(middleware);
-    const server = awsExpress.createServer(app);
+    const server = awsExpress.createServer(app, null, binaryMimeTypes);
     callback(server);
   });
 };

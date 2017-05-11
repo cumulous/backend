@@ -5,7 +5,8 @@ const awsExpressMiddleware = require('aws-serverless-express/middleware');
 const swagger = require('swagger-tools');
 
 import * as apig from './apig';
-import { createApp, createServer, getSpec, makeResponse, proxy, Response } from './apig';
+import { binaryMimeTypes, createApp, createServer, getSpec,
+         makeResponse, proxy, Response } from './apig';
 import { apiGateway } from './aws';
 import { fakeResolve, fakeReject, testError } from './fixtures/support';
 import { Callback } from './types';
@@ -17,31 +18,34 @@ const fakeApiCertificate = 'arn:aws:acm:us-east-1:012345678910:certificate/abcd-
 const fakeCloudFrontDistribution = 'fake-1234.cloudfront.net';
 
 describe('createApp()', () => {
-  let swaggerMiddleware: any;
+  let spySwaggerMiddleware: any;
+  let spyCompress: any;
   let app: any;
 
   beforeEach(() => {
-    const fakeApp = jasmine.createSpyObj('app', ['use', 'get']);
-    const spyOnApp = spyOn(apig, 'app').and.returnValue(fakeApp);
+    const spyApp = jasmine.createSpyObj('app', ['use', 'get']);
+    const spyOnApp = spyOn(apig, 'app').and.returnValue(spyApp);
 
-    swaggerMiddleware = jasmine.createSpyObj('swaggerMiddleware',
+    spySwaggerMiddleware = jasmine.createSpyObj('swaggerMiddleware',
       ['swaggerMetadata', 'swaggerValidator']);
+
+    spyCompress = jasmine.createSpy('compress');
   });
 
   const testMethod = () => {
-    app = createApp(swaggerMiddleware);
+    app = createApp(spySwaggerMiddleware);
   };
 
   it('calls app.use for swaggerMetadata middleware', () => {
     const spyOnSwaggerMetadata = jasmine.createSpy('swaggerMetadata');
-    swaggerMiddleware.swaggerMetadata = () => spyOnSwaggerMetadata;
+    spySwaggerMiddleware.swaggerMetadata = () => spyOnSwaggerMetadata;
     testMethod();
     expect(app.use).toHaveBeenCalledWith(spyOnSwaggerMetadata);
   });
 
   it('calls app.use for swaggerValidator middleware', () => {
     const spyOnSwaggerValidator = jasmine.createSpy('swaggerValidator');
-    swaggerMiddleware.swaggerValidator = () => spyOnSwaggerValidator;
+    spySwaggerMiddleware.swaggerValidator = () => spyOnSwaggerValidator;
     testMethod();
     expect(app.use).toHaveBeenCalledWith(spyOnSwaggerValidator);
   });
@@ -52,6 +56,12 @@ describe('createApp()', () => {
       .and.returnValue(spyEventContext);
     testMethod();
     expect(app.use).toHaveBeenCalledWith(spyEventContext);
+  });
+
+  it('calls app.use for compression', () => {
+    const spyOnCompression = spyOn(apig, 'compress').and.returnValue(spyCompress);
+    testMethod();
+    expect(app.use).toHaveBeenCalledWith(spyCompress);
   });
 
   it('calls app.get for getSpec()', () => {
@@ -99,7 +109,7 @@ describe('createServer', () => {
 
   it('calls awsExpress.createServer() once with correct parameters', (done: Callback) => {
     createServer(() => {
-      expect(spyOnAwsExpressServer).toHaveBeenCalledWith(spyApp);
+      expect(spyOnAwsExpressServer).toHaveBeenCalledWith(spyApp, null, binaryMimeTypes);
       expect(spyOnAwsExpressServer).toHaveBeenCalledTimes(1);
       done();
     });
