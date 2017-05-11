@@ -1,4 +1,5 @@
 import * as express from 'express';
+import { Request, Response } from 'express';
 import * as stringify from 'json-stable-stringify';
 
 const awsExpress = require('aws-serverless-express');
@@ -18,6 +19,8 @@ export const createApp = (swaggerMiddleware: any) => {
   app.use(swaggerMiddleware.swaggerMetadata());
   app.use(swaggerMiddleware.swaggerValidator());
   app.use(awsExpressMiddleware.eventContext());
+
+  app.get('/', getSpec);
 
   return app;
 };
@@ -91,6 +94,6 @@ export const makeResponse = (body?: any, statusCode: number = 200, headers?: Dic
   };
 };
 
-export const getSpec = (event: any, context: any, callback: Callback) => {
-  callback(null, makeResponse(spec));
+export const getSpec = (request: Request, response: Response) => {
+  response.json(spec);
 };

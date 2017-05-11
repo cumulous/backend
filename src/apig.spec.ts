@@ -21,7 +21,7 @@ describe('createApp()', () => {
   let app: any;
 
   beforeEach(() => {
-    const fakeApp = jasmine.createSpyObj('app', ['use']);
+    const fakeApp = jasmine.createSpyObj('app', ['use', 'get']);
     const spyOnApp = spyOn(apig, 'app').and.returnValue(fakeApp);
 
     swaggerMiddleware = jasmine.createSpyObj('swaggerMiddleware',
@@ -52,6 +52,11 @@ describe('createApp()', () => {
       .and.returnValue(spyEventContext);
     testMethod();
     expect(app.use).toHaveBeenCalledWith(spyEventContext);
+  });
+
+  it('calls app.get for getSpec()', () => {
+    testMethod();
+    expect(app.get).toHaveBeenCalledWith('/', getSpec);
   });
 });
 
@@ -279,11 +284,9 @@ describe('makeResponse()', () => {
 });
 
 describe('getSpec()', () => {
-  it('calls callback with correct output', (done: Callback) => {
-    getSpec(null, null, (err: Error, response: Response) => {
-      expect(err).toBeFalsy();
-      expect(response).toEqual(makeResponse(spec));
-      done();
-    });
+  it('returns correct response', () => {
+    const spyOnResponseJson = jasmine.createSpyObj('response', ['json']);
+    getSpec(null, spyOnResponseJson);
+    expect(spyOnResponseJson.json).toHaveBeenCalledWith(spec);
   });
 });
