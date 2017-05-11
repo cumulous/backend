@@ -1,6 +1,7 @@
 import * as stringify from 'json-stable-stringify';
 
 const awsExpress = require('aws-serverless-express');
+const awsExpressMiddleware = require('aws-serverless-express/middleware');
 const swagger = require('swagger-tools');
 
 import * as apig from './apig';
@@ -16,33 +17,41 @@ const fakeApiCertificate = 'arn:aws:acm:us-east-1:012345678910:certificate/abcd-
 const fakeCloudFrontDistribution = 'fake-1234.cloudfront.net';
 
 describe('createApp()', () => {
-  let middleware: any;
+  let swaggerMiddleware: any;
   let app: any;
 
   beforeEach(() => {
     const fakeApp = jasmine.createSpyObj('app', ['use']);
     const spyOnApp = spyOn(apig, 'app').and.returnValue(fakeApp);
 
-    middleware = jasmine.createSpyObj('middleware',
+    swaggerMiddleware = jasmine.createSpyObj('swaggerMiddleware',
       ['swaggerMetadata', 'swaggerValidator']);
   });
 
   const testMethod = () => {
-    app = createApp(middleware);
+    app = createApp(swaggerMiddleware);
   };
 
   it('calls app.use for swaggerMetadata middleware', () => {
     const spyOnSwaggerMetadata = jasmine.createSpy('swaggerMetadata');
-    middleware.swaggerMetadata = () => spyOnSwaggerMetadata;
+    swaggerMiddleware.swaggerMetadata = () => spyOnSwaggerMetadata;
     testMethod();
     expect(app.use).toHaveBeenCalledWith(spyOnSwaggerMetadata);
   });
 
   it('calls app.use for swaggerValidator middleware', () => {
     const spyOnSwaggerValidator = jasmine.createSpy('swaggerValidator');
-    middleware.swaggerValidator = () => spyOnSwaggerValidator;
+    swaggerMiddleware.swaggerValidator = () => spyOnSwaggerValidator;
     testMethod();
     expect(app.use).toHaveBeenCalledWith(spyOnSwaggerValidator);
+  });
+
+  it('calls app.use for awsExpressMiddleware.eventContext()', () => {
+    const spyEventContext = jasmine.createSpy('eventContext');
+    const spyOnEventContext = spyOn(awsExpressMiddleware, 'eventContext')
+      .and.returnValue(spyEventContext);
+    testMethod();
+    expect(app.use).toHaveBeenCalledWith(spyEventContext);
   });
 });
 

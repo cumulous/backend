@@ -2,6 +2,7 @@ import * as express from 'express';
 import * as stringify from 'json-stable-stringify';
 
 const awsExpress = require('aws-serverless-express');
+const awsExpressMiddleware = require('aws-serverless-express/middleware');
 const swagger = require('swagger-tools');
 
 import { apiGateway } from './aws';
@@ -11,11 +12,12 @@ const spec = require('./swagger');
 
 export const app = express;
 
-export const createApp = (middleware: any) => {
+export const createApp = (swaggerMiddleware: any) => {
   const app = this.app();
 
-  app.use(middleware.swaggerMetadata());
-  app.use(middleware.swaggerValidator());
+  app.use(swaggerMiddleware.swaggerMetadata());
+  app.use(swaggerMiddleware.swaggerValidator());
+  app.use(awsExpressMiddleware.eventContext());
 
   return app;
 };
