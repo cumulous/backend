@@ -33,10 +33,9 @@ export const createServer = (callback: (server: any) => void) => {
   });
 };
 
-export const proxy = (event: any, context: any, callback: Callback) => {
+export const proxy = (event: any, context: any) => {
   createServer((server: any) => {
     awsExpress.proxy(server, event, context);
-    callback();
   });
 };
 

@@ -2146,6 +2146,7 @@ Resources:
       CodeUri: ../app
       Handler: apig.proxy
       Runtime: nodejs6.10
+      Timeout: 10
       Events:
         Api:
           Type: Api

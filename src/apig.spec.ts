@@ -115,7 +115,7 @@ describe('createServer', () => {
 
 describe('proxy', () => {
   let fakeEvent: () => any;
-  let fakeContext: () => any;
+  let fakeContext: (callback: Callback) => any;
   let spyServer: jasmine.Spy;
   let spyOnCreateServer: jasmine.Spy;
   let spyOnAwsExpressProxy: jasmine.Spy;
@@ -124,18 +124,22 @@ describe('proxy', () => {
     fakeEvent = () => ({
       fake: 'event',
     });
-    fakeContext = () => ({
+    fakeContext = (callback: Callback) => ({
       fake: 'context',
+      succeed: callback,
     });
 
     spyServer = jasmine.createSpy('server');
     spyOnCreateServer = spyOn(apig, 'createServer')
       .and.callFake((callback: (server: any) => void) => callback(spyServer));
-    spyOnAwsExpressProxy = spyOn(awsExpress, 'proxy');
+    spyOnAwsExpressProxy = spyOn(awsExpress, 'proxy')
+      .and.callFake((server: any, event: any, context: any) => {
+        context.succeed();
+      });
   });
 
   const testMethod = (callback: Callback) => {
-    proxy(fakeEvent(), fakeContext(), callback);
+    proxy(fakeEvent(), fakeContext(callback));
   };
 
   it('calls createServer() once', (done: Callback) => {
@@ -146,12 +150,13 @@ describe('proxy', () => {
   });
 
   it('calls awsExpress.proxy() once with correct parameters', (done: Callback) => {
-    testMethod(() => {
+    const callback = () => {
       expect(spyOnAwsExpressProxy).toHaveBeenCalledWith(
-        spyServer, fakeEvent(), fakeContext());
+        spyServer, fakeEvent(), fakeContext(callback));
       expect(spyOnAwsExpressProxy).toHaveBeenCalledTimes(1);
       done();
-    });
+    };
+    testMethod(callback);
   });
 });
 
