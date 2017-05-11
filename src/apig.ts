@@ -1,6 +1,9 @@
 import * as express from 'express';
 import * as stringify from 'json-stable-stringify';
 
+const awsExpress = require('aws-serverless-express');
+const swagger = require('swagger-tools');
+
 import { apiGateway } from './aws';
 import { Callback, Dict } from './types';
 
@@ -15,6 +18,14 @@ export const createApp = (middleware: any) => {
   app.use(middleware.swaggerValidator());
 
   return app;
+};
+
+export const createServer = (callback: (server: any) => void) => {
+  swagger.initializeMiddleware(spec, (middleware: any) => {
+    const app = createApp(middleware);
+    const server = awsExpress.createServer(app);
+    callback(server);
+  });
 };
 
 export const createDomainName = (event: { Name: string, Certificate: string },

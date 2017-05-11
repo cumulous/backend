@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.41.0",
+    "aws-serverless-express": "^3.0.0",
     "express": "^4.15.2",
     "json-stable-stringify": "^1.0.1",
     "jsonpath": "^0.2.11",
@@ -30,6 +31,7 @@
     "request": "^2.81.0",
     "request-promise-native": "^1.0.3",
     "ssh2": "^0.5.4",
+    "swagger-tools": "^0.10.1",
     "winston": "^2.3.0"
   },
   "devDependencies": {

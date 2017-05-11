@@ -1,7 +1,10 @@
 import * as stringify from 'json-stable-stringify';
 
+const awsExpress = require('aws-serverless-express');
+const swagger = require('swagger-tools');
+
 import * as apig from './apig';
-import { createApp, getSpec, makeResponse, Response } from './apig';
+import { createApp, createServer, getSpec, makeResponse, Response } from './apig';
 import { apiGateway } from './aws';
 import { fakeResolve, fakeReject, testError } from './fixtures/support';
 import { Callback } from './types';
@@ -40,6 +43,59 @@ describe('createApp()', () => {
     middleware.swaggerValidator = () => spyOnSwaggerValidator;
     testMethod();
     expect(app.use).toHaveBeenCalledWith(spyOnSwaggerValidator);
+  });
+});
+
+describe('createServer', () => {
+  let spyOnMiddleware: jasmine.Spy;
+  let spyOnInitializeMiddleware: jasmine.Spy;
+  let spyApp: jasmine.Spy;
+  let spyOnApp: jasmine.Spy;
+  let spyServer: jasmine.Spy;
+  let spyOnAwsExpressServer: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnMiddleware = jasmine.createSpy('middleware');
+
+    spyOnInitializeMiddleware = spyOn(swagger, 'initializeMiddleware')
+      .and.callFake((swaggerObject: any, callback: (middleware: any) => void) => {
+        callback(spyOnMiddleware);
+      });
+    spyApp = jasmine.createSpy('app');
+    spyOnApp = spyOn(apig, 'createApp').and.returnValue(spyApp);
+    spyServer = jasmine.createSpy('server');
+    spyOnAwsExpressServer = spyOn(awsExpress, 'createServer').and.returnValue(spyServer);
+  });
+
+  it('calls swagger.initializeMiddleware() once with correct parameters', (done: Callback) => {
+    createServer(() => {
+      expect(spyOnInitializeMiddleware).toHaveBeenCalledWith(spec, jasmine.any(Function));
+      expect(spyOnInitializeMiddleware).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls createApp() once with correct parameters', (done: Callback) => {
+    createServer(() => {
+      expect(spyOnApp).toHaveBeenCalledWith(spyOnMiddleware);
+      expect(spyOnApp).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls awsExpress.createServer() once with correct parameters', (done: Callback) => {
+    createServer(() => {
+      expect(spyOnAwsExpressServer).toHaveBeenCalledWith(spyApp);
+      expect(spyOnAwsExpressServer).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback with correct response', (done: Callback) => {
+    createServer((server: any) => {
+      expect(server).toEqual(spyServer);
+      done();
+    });
   });
 });
 
