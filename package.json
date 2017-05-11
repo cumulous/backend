@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "aws-sdk": "^2.41.0",
+    "express": "^4.15.2",
     "json-stable-stringify": "^1.0.1",
     "jsonpath": "^0.2.11",
     "jsonwebtoken": "^7.3.0",
@@ -33,6 +34,7 @@
   },
   "devDependencies": {
     "@types/cucumber": "^0.0.33",
+    "@types/express": "^4.0.35",
     "@types/jasmine": "^2.5.47",
     "@types/json-stable-stringify": "^1.0.31",
     "@types/jsonpath": "^0.1.29",

@@ -1,9 +1,21 @@
+import * as express from 'express';
 import * as stringify from 'json-stable-stringify';
 
 import { apiGateway } from './aws';
 import { Callback, Dict } from './types';
 
 const spec = require('./swagger');
+
+export const app = express;
+
+export const createApp = (middleware: any) => {
+  const app = this.app();
+
+  app.use(middleware.swaggerMetadata());
+  app.use(middleware.swaggerValidator());
+
+  return app;
+};
 
 export const createDomainName = (event: { Name: string, Certificate: string },
                                context: any, callback: Callback) => {
