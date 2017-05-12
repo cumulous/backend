@@ -415,7 +415,7 @@ definitions:
       projectId:
         $ref: '#/definitions/ProjectId'
       dateCreated:
-        $ref: '#/definitions/Date'
+        $ref: '#/definitions/DateTime'
       creatorId:
         $ref: '#/definitions/MemberId'
       description:
@@ -493,7 +493,7 @@ definitions:
       credentials:
         $ref: '#/definitions/AwsCredentials'
       expirationDate:
-        $ref: '#/definitions/Date'
+        $ref: '#/definitions/DateTime'
       bucket:
         $ref: '#/definitions/Bucket'
   AwsCredentials:
@@ -511,7 +511,7 @@ definitions:
   PaginationNext:
     type: integer
     minimum: 1
-  Date:
+  DateTime:
     type: string
     format: date-time
 
