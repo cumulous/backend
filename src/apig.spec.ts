@@ -36,37 +36,44 @@ describe('createApp()', () => {
     app = createApp(spySwaggerMiddleware);
   };
 
-  it('calls app.use for swaggerMetadata middleware', () => {
-    const spyOnSwaggerMetadata = jasmine.createSpy('swaggerMetadata');
-    spySwaggerMiddleware.swaggerMetadata = () => spyOnSwaggerMetadata;
-    testMethod();
-    expect(app.use).toHaveBeenCalledWith(spyOnSwaggerMetadata);
+  describe('sets up middleware for', () => {
+    it('swaggerMetadata', () => {
+      const spyOnSwaggerMetadata = jasmine.createSpy('swaggerMetadata');
+      spySwaggerMiddleware.swaggerMetadata = () => spyOnSwaggerMetadata;
+      testMethod();
+      expect(app.use).toHaveBeenCalledWith(spyOnSwaggerMetadata);
+    });
+
+    it('swaggerValidator', () => {
+      const spyOnSwaggerValidator = jasmine.createSpy('swaggerValidator');
+      spySwaggerMiddleware.swaggerValidator = () => spyOnSwaggerValidator;
+      testMethod();
+      expect(app.use).toHaveBeenCalledWith(spyOnSwaggerValidator);
+    });
+
+    it('awsExpressMiddleware.eventContext()', () => {
+      const spyEventContext = jasmine.createSpy('eventContext');
+      const spyOnEventContext = spyOn(awsExpressMiddleware, 'eventContext')
+        .and.returnValue(spyEventContext);
+      testMethod();
+      expect(app.use).toHaveBeenCalledWith(spyEventContext);
+    });
+
+    it('compression', () => {
+      const spyOnCompression = spyOn(apig, 'compress').and.returnValue(spyCompress);
+      testMethod();
+      expect(app.use).toHaveBeenCalledWith(spyCompress);
+    });
   });
 
-  it('calls app.use for swaggerValidator middleware', () => {
-    const spyOnSwaggerValidator = jasmine.createSpy('swaggerValidator');
-    spySwaggerMiddleware.swaggerValidator = () => spyOnSwaggerValidator;
-    testMethod();
-    expect(app.use).toHaveBeenCalledWith(spyOnSwaggerValidator);
-  });
-
-  it('calls app.use for awsExpressMiddleware.eventContext()', () => {
-    const spyEventContext = jasmine.createSpy('eventContext');
-    const spyOnEventContext = spyOn(awsExpressMiddleware, 'eventContext')
-      .and.returnValue(spyEventContext);
-    testMethod();
-    expect(app.use).toHaveBeenCalledWith(spyEventContext);
-  });
-
-  it('calls app.use for compression', () => {
-    const spyOnCompression = spyOn(apig, 'compress').and.returnValue(spyCompress);
-    testMethod();
-    expect(app.use).toHaveBeenCalledWith(spyCompress);
-  });
-
-  it('calls app.get for getSpec()', () => {
-    testMethod();
-    expect(app.get).toHaveBeenCalledWith('/', getSpec);
+  describe('sets up route for', () => {
+    const testRoute = (method: string, route: string, controller: Function) => {
+      expect(app[method]).toHaveBeenCalledWith(route, controller);
+    };
+    beforeEach(() => {
+      testMethod();
+    });
+    it('GET /', () => testRoute('get', '/', getSpec));
   });
 });
 
