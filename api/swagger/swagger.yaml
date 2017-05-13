@@ -10,6 +10,7 @@ paths:
     get:
       summary: Retrieve the API spec
       description: Returns the current specification of this API.
+      operationId: getSpec
       security:
         - member_token: []
       tags:
@@ -58,6 +59,7 @@ paths:
     get:
       summary: Set website cookies
       description: Sets browser cookies for accessing protected content on the website.
+      operationId: weblogin
       security:
         - member_token: []
       tags:
@@ -91,6 +93,7 @@ paths:
         *projects:describe*,
         *projects:describe_details (conditional)*
         **
+      operationId: listProjects
       security:
         - member_token: []
       tags:
@@ -148,6 +151,7 @@ paths:
       summary: Create a dataset
       description: |
         Defines a new dataset.
+      operationId: createDataset
       security:
         - member_token: []
       tags:
@@ -171,6 +175,7 @@ paths:
       description: |
         Returns a list of datasets for the current member,
         filtered by optional parameters.
+      operationId: listDatasets
       security:
         - member_token: []
       tags:
@@ -228,6 +233,7 @@ paths:
       summary: Get properties of a dataset
       description: |
         Returns dataset object for a specified ID
+      operationId: getDataset
       security:
         - member_token: []
       tags:
@@ -250,6 +256,7 @@ paths:
       summary: Modify properties of a dataset
       description: |
         Modifies select properties of a dataset
+      operationId: modifyDataset
       security:
         - member_token: []
       tags:
@@ -275,6 +282,7 @@ paths:
         Schedules complete deletion of a dataset.
 
         Marks dataset status as _Deleting_ until completed.
+      operationId: deleteDataset
       security:
         - member_token: []
       tags:
@@ -328,6 +336,7 @@ paths:
       summary: Request credentials for data access
       description: |
         Returns temporary credentials to access the data stored on S3
+      operationId: requestDataCredentials
       security:
         - member_token: []
       tags:
