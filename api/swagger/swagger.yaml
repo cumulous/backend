@@ -31,9 +31,15 @@ paths:
     options:
       tags:
         - Web
+      consumes:
+        - application/json
+      produces:
+        - application/json
       responses:
         200:
           description: CORS headers
+          schema:
+            $ref: '#/definitions/Empty'
           headers:
             Access-Control-Allow-Methods:
               type: string
@@ -523,6 +529,8 @@ definitions:
   DateTime:
     type: string
     format: date-time
+  Empty:
+    type: object
 
 parameters:
   ProjectsQueryNameContains:
