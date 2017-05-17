@@ -8,6 +8,7 @@ import * as apig from './apig';
 import { binaryMimeTypes, createApp, createServer, getSpec,
          makeResponse, proxy, Response } from './apig';
 import { apiGateway } from './aws';
+import { envNames } from './env';
 import { fakeResolve, fakeReject, testError } from './fixtures/support';
 import { Callback } from './types';
 
@@ -16,6 +17,7 @@ const spec = require('./swagger');
 const fakeDomainName = 'api.example.org';
 const fakeApiCertificate = 'arn:aws:acm:us-east-1:012345678910:certificate/abcd-1234';
 const fakeCloudFrontDistribution = 'fake-1234.cloudfront.net';
+const fakeWebDomain = 'example.org';
 
 describe('createApp()', () => {
   let spySwaggerMiddleware: any;
@@ -62,6 +64,18 @@ describe('createApp()', () => {
       const spyOnCompression = spyOn(apig, 'compression').and.returnValue(spyCompress);
       testMethod();
       expect(app.use).toHaveBeenCalledWith(spyCompress);
+    });
+
+    it('cors', () => {
+      const spyCors = jasmine.createSpy('cors');
+      const spyOnCors = spyOn(apig, 'cors').and.returnValue(spyCors);
+      process.env[envNames.webDomain] = fakeWebDomain;
+      testMethod();
+      expect(spyOnCors).toHaveBeenCalledWith({
+        origin: `https://${fakeWebDomain}`,
+        credentials: true,
+      });
+      expect(app.use).toHaveBeenCalledWith(spyCors);
     });
   });
 

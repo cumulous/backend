@@ -1,4 +1,5 @@
 import * as compression from 'compression';
+import * as cors from 'cors';
 import * as express from 'express';
 import { Request, Response } from 'express';
 import * as stringify from 'json-stable-stringify';
@@ -8,11 +9,12 @@ const awsExpressMiddleware = require('aws-serverless-express/middleware');
 const swagger = require('swagger-tools');
 
 import { apiGateway } from './aws';
+import { envNames } from './env';
 import { Callback, Dict } from './types';
 
 const spec = require('./swagger');
 
-export { compression, express };
+export { compression, cors, express };
 
 export const binaryMimeTypes = [
   'application/json',
@@ -25,6 +27,10 @@ export const createApp = (swaggerMiddleware: any) => {
   app.use(swaggerMiddleware.swaggerValidator());
   app.use(awsExpressMiddleware.eventContext());
   app.use(this.compression());
+  app.use(this.cors({
+    origin: `https://${process.env[envNames.webDomain]}`,
+    credentials: true,
+  }));
 
   app.get('/', getSpec);
 
