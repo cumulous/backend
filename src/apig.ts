@@ -12,20 +12,19 @@ import { Callback, Dict } from './types';
 
 const spec = require('./swagger');
 
-export const app = express;
-export const compress = compression;
+export { compression, express };
 
 export const binaryMimeTypes = [
   'application/json',
 ];
 
 export const createApp = (swaggerMiddleware: any) => {
-  const app = this.app();
+  const app = this.express();
 
   app.use(swaggerMiddleware.swaggerMetadata());
   app.use(swaggerMiddleware.swaggerValidator());
   app.use(awsExpressMiddleware.eventContext());
-  app.use(compress());
+  app.use(this.compression());
 
   app.get('/', getSpec);
 

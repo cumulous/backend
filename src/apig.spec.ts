@@ -24,12 +24,10 @@ describe('createApp()', () => {
 
   beforeEach(() => {
     const spyApp = jasmine.createSpyObj('app', ['use', 'get']);
-    const spyOnApp = spyOn(apig, 'app').and.returnValue(spyApp);
+    spyOn(apig, 'express').and.returnValue(spyApp);
 
     spySwaggerMiddleware = jasmine.createSpyObj('swaggerMiddleware',
       ['swaggerMetadata', 'swaggerValidator']);
-
-    spyCompress = jasmine.createSpy('compress');
   });
 
   const testMethod = () => {
@@ -60,7 +58,8 @@ describe('createApp()', () => {
     });
 
     it('compression', () => {
-      const spyOnCompression = spyOn(apig, 'compress').and.returnValue(spyCompress);
+      const spyCompress = jasmine.createSpy('compression');
+      const spyOnCompression = spyOn(apig, 'compression').and.returnValue(spyCompress);
       testMethod();
       expect(app.use).toHaveBeenCalledWith(spyCompress);
     });
