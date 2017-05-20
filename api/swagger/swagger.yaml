@@ -7,6 +7,34 @@ schemes:
 
 paths:
   /:
+    options:
+      tags:
+        - Spec
+      responses:
+        200:
+          description: CORS headers
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin:
+                Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
     get:
       summary: Retrieve the API spec
       description: Returns the current specification of this API.
@@ -31,15 +59,9 @@ paths:
     options:
       tags:
         - Web
-      consumes:
-        - application/json
-      produces:
-        - application/json
       responses:
         200:
           description: CORS headers
-          schema:
-            $ref: '#/definitions/Empty'
           headers:
             Access-Control-Allow-Methods:
               type: string
@@ -529,8 +551,6 @@ definitions:
   DateTime:
     type: string
     format: date-time
-  Empty:
-    type: object
 
 parameters:
   ProjectsQueryNameContains:
