@@ -281,13 +281,21 @@ describe('makeResponse()', () => {
   describe('returns correct output if', () => {
     const statusCode = 400;
     const headers = () => ({'x-header': 'fake'});
+    const corsHeaders = () => ({
+      'Access-Control-Allow-Origin': `https://${fakeWebDomain}`,
+      'Access-Control-Allow-Credentials': 'true',
+    });
     const body = () => ({ fake: 'value' });
+
+    beforeEach(() => {
+      process.env[envNames.webDomain] = fakeWebDomain;
+    });
 
     it('all inputs are specified', () => {
       const response = makeResponse(body(), statusCode, headers());
       expect(response).toEqual({
         body: stringify(body(), {space: 2}),
-        headers: headers(),
+        headers: Object.assign(corsHeaders(), headers()),
         statusCode: statusCode,
       });
     });
@@ -295,7 +303,7 @@ describe('makeResponse()', () => {
       const response = makeResponse(body(), statusCode);
       expect(response).toEqual({
         body: stringify(body(), {space: 2}),
-        headers: undefined,
+        headers: corsHeaders(),
         statusCode: statusCode,
       });
     });
@@ -303,7 +311,7 @@ describe('makeResponse()', () => {
       const response = makeResponse(body());
       expect(response).toEqual({
         body: stringify(body(), {space: 2}),
-        headers: undefined,
+        headers: corsHeaders(),
         statusCode: 200,
       });
     });
@@ -311,7 +319,7 @@ describe('makeResponse()', () => {
       const response = makeResponse();
       expect(response).toEqual({
         body: undefined,
-        headers: undefined,
+        headers: corsHeaders(),
         statusCode: 200,
       });
     });

@@ -183,7 +183,5 @@ const getCookieHeaders = (cookieParams: Signer.CustomPolicy, domain: string) => 
   headers['Set-Cookie'] = `CloudFront-Policy=${cookieParams['CloudFront-Policy']}; ${suffix}`;
   headers['Set-cookie'] = `CloudFront-Key-Pair-Id=${cookieParams['CloudFront-Key-Pair-Id']}; ${suffix}`;
   headers['set-cookie'] = `CloudFront-Signature=${cookieParams['CloudFront-Signature']}; ${suffix}`;
-  headers['Access-Control-Allow-Origin'] = `https://${domain}`;
-  headers['Access-Control-Allow-Credentials'] = 'true';
   return headers;
 };

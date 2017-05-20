@@ -100,7 +100,10 @@ export interface Response {
 export const makeResponse = (body?: any, statusCode: number = 200, headers?: Dict<string>) => {
   return {
     statusCode: statusCode,
-    headers: headers,
+    headers: Object.assign({
+      'Access-Control-Allow-Origin': `https://${process.env[envNames.webDomain]}`,
+      'Access-Control-Allow-Credentials': 'true',
+    }, headers),
     body: stringify(body, {space: 2}),
   };
 };
