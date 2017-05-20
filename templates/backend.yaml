@@ -2144,7 +2144,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${AWS::StackName}-GetApi
       CodeUri: ../app
-      Handler: apig.proxy
+      Handler: apig.getSpec
       Runtime: nodejs6.10
       Timeout: 10
       Events:

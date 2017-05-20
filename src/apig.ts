@@ -108,6 +108,6 @@ export const makeResponse = (body?: any, statusCode: number = 200, headers?: Dic
   };
 };
 
-export const getSpec = (request: Request, response: Response) => {
-  response.json(spec);
+export const getSpec = (event: any, context: any, callback: Callback) => {
+  callback(null, makeResponse(spec));
 };

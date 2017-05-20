@@ -328,8 +328,9 @@ describe('makeResponse()', () => {
 
 describe('getSpec()', () => {
   it('returns correct response', () => {
-    const spyOnResponseJson = jasmine.createSpyObj('response', ['json']);
-    getSpec(null, spyOnResponseJson);
-    expect(spyOnResponseJson.json).toHaveBeenCalledWith(spec);
+    getSpec(null, null, (err: Error, data: Response) => {
+      expect(err).toBeFalsy();
+      expect(data).toEqual(makeResponse(spec));
+    });
   });
 });
