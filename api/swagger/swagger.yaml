@@ -12,7 +12,7 @@ paths:
         - Spec
       responses:
         200:
-          description: CORS headers
+          description: HTTP options
           headers:
             Access-Control-Allow-Methods:
               type: string
@@ -21,6 +21,8 @@ paths:
             Access-Control-Allow-Origin:
               type: string
             Access-Control-Allow-Credentials:
+              type: string
+            Vary:
               type: string
       x-amazon-apigateway-integration:
         type: mock
@@ -36,6 +38,7 @@ paths:
               method.response.header.Access-Control-Allow-Origin:
                 Fn::Sub: "'https://${WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
+              method.response.header.Vary: "'Accept-Encoding'"
     get:
       summary: Retrieve the API spec
       description: Returns the current specification of this API.
@@ -64,7 +67,7 @@ paths:
         - Web
       responses:
         200:
-          description: CORS headers
+          description: HTTP options
           headers:
             Access-Control-Allow-Methods:
               type: string
@@ -157,7 +160,7 @@ paths:
         - Datasets
       responses:
         200:
-          description: CORS headers
+          description: HTTP options
           headers:
             Access-Control-Allow-Methods:
               type: string
@@ -166,6 +169,8 @@ paths:
             Access-Control-Allow-Origin:
               type: string
             Access-Control-Allow-Credentials:
+              type: string
+            Vary:
               type: string
       x-amazon-apigateway-integration:
         type: mock
@@ -181,6 +186,7 @@ paths:
               method.response.header.Access-Control-Allow-Origin:
                 Fn::Sub: "'https://${WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
+              method.response.header.Vary: "'Accept-Encoding'"
     post:
       summary: Create a dataset
       description: |
@@ -242,7 +248,7 @@ paths:
         - $ref: '#/parameters/DatasetId'
       responses:
         200:
-          description: CORS headers
+          description: HTTP options
           headers:
             Access-Control-Allow-Methods:
               type: string
@@ -251,6 +257,8 @@ paths:
             Access-Control-Allow-Origin:
               type: string
             Access-Control-Allow-Credentials:
+              type: string
+            Vary:
               type: string
       x-amazon-apigateway-integration:
         type: mock
@@ -266,6 +274,7 @@ paths:
               method.response.header.Access-Control-Allow-Origin:
                 Fn::Sub: "'https://${WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
+              method.response.header.Vary: "'Accept-Encoding'"
     get:
       summary: Get properties of a dataset
       description: |
@@ -349,7 +358,7 @@ paths:
         - $ref: '#/parameters/DatasetId'
       responses:
         200:
-          description: CORS headers
+          description: HTTP options
           headers:
             Access-Control-Allow-Methods:
               type: string
@@ -358,6 +367,8 @@ paths:
             Access-Control-Allow-Origin:
               type: string
             Access-Control-Allow-Credentials:
+              type: string
+            Vary:
               type: string
       x-amazon-apigateway-integration:
         type: mock
@@ -373,6 +384,7 @@ paths:
               method.response.header.Access-Control-Allow-Origin:
                 Fn::Sub: "'https://${WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
+              method.response.header.Vary: "'Accept-Encoding'"
     post:
       summary: Request credentials for data access
       description: |
