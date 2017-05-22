@@ -26,6 +26,7 @@ paths:
         type: mock
         requestTemplates:
           application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
         responses:
           default:
             statusCode: 200
@@ -75,6 +76,7 @@ paths:
         type: mock
         requestTemplates:
           application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
         responses:
           default:
             statusCode: 200
@@ -166,6 +168,7 @@ paths:
         type: mock
         requestTemplates:
           application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
         responses:
           default:
             statusCode: 200
@@ -248,6 +251,7 @@ paths:
         type: mock
         requestTemplates:
           application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
         responses:
           default:
             statusCode: 200
@@ -351,6 +355,7 @@ paths:
         type: mock
         requestTemplates:
           application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
         responses:
           default:
             statusCode: 200
@@ -675,8 +680,8 @@ parameters:
     minimum: 1
     default: 10
 
-# x-amazon-apigateway-binary-media-types:
-#   - 'application/json'
+x-amazon-apigateway-binary-media-types:
+  - 'application/json'
 
 securityDefinitions:
   member_token:
