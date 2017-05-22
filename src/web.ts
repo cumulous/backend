@@ -3,7 +3,7 @@ import { Signer } from 'aws-sdk/clients/cloudfront';
 import { execSync } from 'child_process';
 import * as stringify from 'json-stable-stringify';
 
-import { makeResponse } from './apig';
+import { respond } from './apig';
 import { cloudFront, s3,
          CloudFormationRequest, CloudFormationResponse, sendCloudFormationResponse } from './aws';
 import { envNames } from './env';
@@ -152,7 +152,7 @@ export const generateSignedCookies = (
     .then(signer =>
       getCookieParams(signer, process.env[envNames.webDomain], event.requestContext.authorizer.expiresAt))
     .then(cookie => getCookieHeaders(cookie, process.env[envNames.webDomain]))
-    .then(headers => callback(null, makeResponse(undefined, 200, headers)))
+    .then(headers => respond(callback, undefined, 200, headers))
     .catch(callback);
 };
 

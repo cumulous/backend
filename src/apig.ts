@@ -97,17 +97,19 @@ export interface Response {
   body?: string;
 };
 
-export const makeResponse = (body?: any, statusCode: number = 200, headers?: Dict<string>) => {
-  return {
+export const respond = (callback: Callback,
+    body?: any, statusCode: number = 200, headers?: Dict<string>) => {
+
+  callback(null, {
     statusCode: statusCode,
     headers: Object.assign({
       'Access-Control-Allow-Origin': `https://${process.env[envNames.webDomain]}`,
       'Access-Control-Allow-Credentials': 'true',
     }, headers),
     body: stringify(body, {space: 2}),
-  };
+  });
 };
 
 export const getSpec = (event: any, context: any, callback: Callback) => {
-  callback(null, makeResponse(spec));
+  respond(callback, spec);
 };

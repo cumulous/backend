@@ -6,7 +6,7 @@ const swagger = require('swagger-tools');
 
 import * as apig from './apig';
 import { binaryMimeTypes, createApp, createServer, getSpec,
-         makeResponse, proxy, Response } from './apig';
+         respond, proxy, Response } from './apig';
 import { apiGateway } from './aws';
 import { envNames } from './env';
 import { fakeResolve, fakeReject, testError } from './fixtures/support';
@@ -277,8 +277,8 @@ testMethod('deleteDomainName', () =>
   domainName: fakeDomainName,
 }));
 
-describe('makeResponse()', () => {
-  describe('returns correct output if', () => {
+describe('respond()', () => {
+  describe('calls callback with correct output if', () => {
     const statusCode = 400;
     const headers = () => ({'x-header': 'fake'});
     const corsHeaders = () => ({
@@ -291,46 +291,61 @@ describe('makeResponse()', () => {
       process.env[envNames.webDomain] = fakeWebDomain;
     });
 
-    it('all inputs are specified', () => {
-      const response = makeResponse(body(), statusCode, headers());
-      expect(response).toEqual({
-        body: stringify(body(), {space: 2}),
-        headers: Object.assign(corsHeaders(), headers()),
-        statusCode: statusCode,
-      });
+    it('all inputs are specified', (done: Callback) => {
+      respond((err: Error, response: Response) => {
+        expect(err).toBeFalsy();
+        expect(response).toEqual({
+          body: stringify(body(), {space: 2}),
+          headers: Object.assign(corsHeaders(), headers()),
+          statusCode: statusCode,
+        });
+        done();
+      }, body(), statusCode, headers());
     });
-    it('only body and statusCode are specified', () => {
-      const response = makeResponse(body(), statusCode);
-      expect(response).toEqual({
-        body: stringify(body(), {space: 2}),
-        headers: corsHeaders(),
-        statusCode: statusCode,
-      });
+    it('only body and statusCode are specified', (done: Callback) => {
+      respond((err: Error, response: Response) => {
+        expect(err).toBeFalsy();
+        expect(response).toEqual({
+          body: stringify(body(), {space: 2}),
+          headers: corsHeaders(),
+          statusCode: statusCode,
+        });
+        done();
+      }, body(), statusCode);
     });
-    it('only body is specified', () => {
-      const response = makeResponse(body());
-      expect(response).toEqual({
-        body: stringify(body(), {space: 2}),
-        headers: corsHeaders(),
-        statusCode: 200,
-      });
+    it('only body is specified', (done: Callback) => {
+      respond((err: Error, response: Response) => {
+        expect(err).toBeFalsy();
+        expect(response).toEqual({
+          body: stringify(body(), {space: 2}),
+          headers: corsHeaders(),
+          statusCode: 200,
+        });
+        done();
+      }, body());
     });
-    it('no arguments are specified', () => {
-      const response = makeResponse();
-      expect(response).toEqual({
-        body: undefined,
-        headers: corsHeaders(),
-        statusCode: 200,
+    it('no arguments are specified', (done: Callback) => {
+      respond((err: Error, response: Response) => {
+        expect(err).toBeFalsy();
+        expect(response).toEqual({
+          body: undefined,
+          headers: corsHeaders(),
+          statusCode: 200,
+        });
+        done();
       });
     });
   });
 });
 
 describe('getSpec()', () => {
-  it('returns correct response', () => {
+  it('returns correct response', (done: Callback) => {
     getSpec(null, null, (err: Error, data: Response) => {
       expect(err).toBeFalsy();
-      expect(data).toEqual(makeResponse(spec));
+      respond((err: Error, response: Response) => {
+        expect(data).toEqual(response);
+        done();
+      }, spec);
     });
   });
 });

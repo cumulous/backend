@@ -2,7 +2,7 @@ import * as child_process from 'child_process';
 import * as cloudFrontTypes from 'aws-sdk/clients/cloudfront';
 import * as stringify from 'json-stable-stringify';
 
-import { makeResponse, Response } from './apig';
+import { respond, Response } from './apig';
 import * as aws from './aws';
 import { cloudFront, s3 } from './aws';
 import { envNames } from './env';
@@ -495,9 +495,11 @@ describe('generateSignedCookies()', () => {
 
     testMethod((err: Error, data: Response) => {
       expect(err).toBeFalsy();
-      expect(data).toEqual(makeResponse(undefined, 200, headers));
-      done();
-    })
+      respond((err: Error, response: Response) => {
+        expect(data).toEqual(response);
+        done();
+      }, undefined, 200, headers);
+    });
   });
 
   describe('calls callback immediately with an error if', () => {
