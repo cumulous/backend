@@ -1,55 +1,11 @@
-import * as compression from 'compression';
-import * as cors from 'cors';
-import * as express from 'express';
 import * as stringify from 'json-stable-stringify';
 import * as zlib from 'zlib';
-
-const awsExpress = require('aws-serverless-express');
-const awsExpressMiddleware = require('aws-serverless-express/middleware');
-const swagger = require('swagger-tools');
 
 import { apiGateway } from './aws';
 import { envNames } from './env';
 import { Callback, Dict } from './types';
 
 const spec = require('./swagger');
-
-export { compression, cors, express };
-
-export const binaryMimeTypes = [
-  'application/json',
-];
-
-export const createApp = (swaggerMiddleware: any) => {
-  const app = this.express();
-
-  app.use(swaggerMiddleware.swaggerMetadata());
-  app.use(swaggerMiddleware.swaggerValidator());
-  app.use(awsExpressMiddleware.eventContext());
-  app.use(this.compression());
-  app.use(this.cors({
-    origin: `https://${process.env[envNames.webDomain]}`,
-    credentials: true,
-  }));
-
-  app.get('/', getSpec);
-
-  return app;
-};
-
-export const createServer = (callback: (server: any) => void) => {
-  swagger.initializeMiddleware(spec, (middleware: any) => {
-    const app = createApp(middleware);
-    const server = awsExpress.createServer(app, null, binaryMimeTypes);
-    callback(server);
-  });
-};
-
-export const proxy = (event: any, context: any) => {
-  createServer((server: any) => {
-    awsExpress.proxy(server, event, context);
-  });
-};
 
 export const createDomainName = (event: { Name: string, Certificate: string },
                                context: any, callback: Callback) => {

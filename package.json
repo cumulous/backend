@@ -20,11 +20,6 @@
     "tsc": "tsc"
   },
   "dependencies": {
-    "aws-sdk": "^2.41.0",
-    "aws-serverless-express": "^3.0.0",
-    "compression": "^1.6.2",
-    "cors": "^2.8.3",
-    "express": "^4.15.2",
     "json-stable-stringify": "^1.0.1",
     "jsonpath": "^0.2.11",
     "jsonwebtoken": "^7.3.0",
@@ -33,14 +28,11 @@
     "request": "^2.81.0",
     "request-promise-native": "^1.0.3",
     "ssh2": "^0.5.4",
-    "swagger-tools": "^0.10.1",
     "winston": "^2.3.0"
   },
   "devDependencies": {
-    "@types/compression": "0.0.33",
-    "@types/cors": "^2.8.1",
+    "@types/aws-sdk": "^2.7.0",
     "@types/cucumber": "^0.0.33",
-    "@types/express": "^4.0.35",
     "@types/jasmine": "^2.5.47",
     "@types/json-stable-stringify": "^1.0.31",
     "@types/jsonpath": "^0.1.29",
