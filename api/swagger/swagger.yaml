@@ -46,6 +46,8 @@ paths:
         - Spec
       produces:
         - application/json
+      parameters:
+        - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
           description: OpenAPI/Swagger 2.0 definition of this API.
@@ -138,6 +140,7 @@ paths:
         - $ref: '#/parameters/ProjectsQueryIRB'
         - $ref: '#/parameters/QueryPaginationFrom'
         - $ref: '#/parameters/QueryPaginationMax'
+        - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
           description: List of projects
@@ -191,6 +194,7 @@ paths:
         - application/json
       parameters:
         - $ref: '#/parameters/DatasetCreationRequest'
+        - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
           description: Properties of the created dataset
@@ -219,6 +223,7 @@ paths:
         - $ref: '#/parameters/DatasetsQueryStatus'
         - $ref: '#/parameters/QueryPaginationFrom'
         - $ref: '#/parameters/QueryPaginationMax'
+        - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
           description: List of datasets
@@ -274,6 +279,7 @@ paths:
         - application/json
       parameters:
         - $ref: '#/parameters/DatasetId'
+        - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
           description: Dataset
@@ -298,6 +304,7 @@ paths:
       parameters:
         - $ref: '#/parameters/DatasetId'
         - $ref: '#/parameters/DatasetModificationRequest'
+        - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
           description: Modified dataset
@@ -323,6 +330,7 @@ paths:
         - application/json
       parameters:
         - $ref: '#/parameters/DatasetId'
+        - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
           description: Status of the dataset scheduled for deletion
@@ -379,6 +387,7 @@ paths:
       parameters:
         - $ref: '#/parameters/DatasetId'
         - $ref: '#/parameters/DatasetCredentialsRequest'
+        - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
           description: Temporary credentials for data access
@@ -679,6 +688,15 @@ parameters:
     type: integer
     minimum: 1
     default: 10
+  CompressionRequest:
+    in: header
+    name: Accept-Encoding
+    type: array
+    items:
+      type: string
+      enum:
+        - deflate
+        - gzip
 
 x-amazon-apigateway-binary-media-types:
   - 'application/json'
