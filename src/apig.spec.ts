@@ -103,9 +103,10 @@ testMethod('deleteDomainName', () =>
 }));
 
 describe('respond()', () => {
-  const corsHeaders = () => ({
+  const commonHeaders = () => ({
     'Access-Control-Allow-Origin': `https://${fakeWebDomain}`,
     'Access-Control-Allow-Credentials': 'true',
+    'Vary': 'Accept-Encoding',
   });
   const fakeBody = () => ({ fake: 'value' });
 
@@ -123,7 +124,7 @@ describe('respond()', () => {
         expect(err).toBeFalsy();
         expect(response).toEqual({
           body,
-          headers: Object.assign(corsHeaders(), headers()),
+          headers: Object.assign(commonHeaders(), headers()),
           statusCode,
         });
         done();
@@ -134,7 +135,7 @@ describe('respond()', () => {
         expect(err).toBeFalsy();
         expect(response).toEqual({
           body,
-          headers: corsHeaders(),
+          headers: commonHeaders(),
           statusCode,
         });
         done();
@@ -145,7 +146,7 @@ describe('respond()', () => {
         expect(err).toBeFalsy();
         expect(response).toEqual({
           body,
-          headers: corsHeaders(),
+          headers: commonHeaders(),
           statusCode: 200,
         });
         done();
@@ -156,7 +157,7 @@ describe('respond()', () => {
         expect(err).toBeFalsy();
         expect(response).toEqual({
           body: undefined,
-          headers: corsHeaders(),
+          headers: commonHeaders(),
           statusCode: 200,
         });
         done();
@@ -174,7 +175,7 @@ describe('respond()', () => {
             expect(response).toEqual({
               body: data.toString('base64'),
               isBase64Encoded: true,
-              headers: Object.assign(corsHeaders(), {
+              headers: Object.assign(commonHeaders(), {
                 'Content-Encoding': encodingMethod,
               }),
               statusCode: 200,
@@ -199,7 +200,7 @@ describe('respond()', () => {
           expect(err).toBeFalsy();
           expect(response).toEqual({
             body,
-            headers: corsHeaders(),
+            headers: commonHeaders(),
             statusCode: 200,
           });
           done();
@@ -217,7 +218,7 @@ describe('respond()', () => {
           expect(err).toBeFalsy();
           expect(response).toEqual({
             body,
-            headers: corsHeaders(),
+            headers: commonHeaders(),
             statusCode: 200,
           });
           done();
