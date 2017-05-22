@@ -1,4 +1,5 @@
 import * as stringify from 'json-stable-stringify';
+import * as zlib from 'zlib';
 
 const awsExpress = require('aws-serverless-express');
 const awsExpressMiddleware = require('aws-serverless-express/middleware');
@@ -278,51 +279,53 @@ testMethod('deleteDomainName', () =>
 }));
 
 describe('respond()', () => {
+  const corsHeaders = () => ({
+    'Access-Control-Allow-Origin': `https://${fakeWebDomain}`,
+    'Access-Control-Allow-Credentials': 'true',
+  });
+  const fakeBody = () => ({ fake: 'value' });
+
+  beforeEach(() => {
+    process.env[envNames.webDomain] = fakeWebDomain;
+  });
+
   describe('calls callback with correct output if', () => {
     const statusCode = 400;
-    const headers = () => ({'x-header': 'fake'});
-    const corsHeaders = () => ({
-      'Access-Control-Allow-Origin': `https://${fakeWebDomain}`,
-      'Access-Control-Allow-Credentials': 'true',
-    });
-    const body = () => ({ fake: 'value' });
+    const body = stringify(fakeBody(), {space: 2});
 
-    beforeEach(() => {
-      process.env[envNames.webDomain] = fakeWebDomain;
-    });
-
-    it('all inputs are specified', (done: Callback) => {
+    it('only body, statusCode and response headers are specified', (done: Callback) => {
+      const headers = () => ({'x-header': 'fake'});
       respond((err: Error, response: Response) => {
         expect(err).toBeFalsy();
         expect(response).toEqual({
-          body: stringify(body(), {space: 2}),
+          body,
           headers: Object.assign(corsHeaders(), headers()),
-          statusCode: statusCode,
+          statusCode,
         });
         done();
-      }, body(), statusCode, headers());
+      }, fakeBody(), statusCode, headers());
     });
     it('only body and statusCode are specified', (done: Callback) => {
       respond((err: Error, response: Response) => {
         expect(err).toBeFalsy();
         expect(response).toEqual({
-          body: stringify(body(), {space: 2}),
+          body,
           headers: corsHeaders(),
-          statusCode: statusCode,
+          statusCode,
         });
         done();
-      }, body(), statusCode);
+      }, fakeBody(), statusCode);
     });
     it('only body is specified', (done: Callback) => {
       respond((err: Error, response: Response) => {
         expect(err).toBeFalsy();
         expect(response).toEqual({
-          body: stringify(body(), {space: 2}),
+          body,
           headers: corsHeaders(),
           statusCode: 200,
         });
         done();
-      }, body());
+      }, fakeBody());
     });
     it('no arguments are specified', (done: Callback) => {
       respond((err: Error, response: Response) => {
@@ -335,6 +338,70 @@ describe('respond()', () => {
         done();
       });
     });
+  });
+
+  describe('returns correctly compressed response if Accept-Encoding is', () => {
+    const body = Buffer.from(stringify(fakeBody(), {space: 2}));
+    const testMethod = (encodingHeader: string, encodingMethod: string) => {
+      it(`"${encodingHeader}"`, (done: Callback) => {
+        respond((err: Error, response: Response) => {
+          expect(err).toBeFalsy();
+          (zlib as any)[encodingMethod](body, (err: Error, data: Buffer) => {
+            expect(response).toEqual({
+              body: data.toString('base64'),
+              isBase64Encoded: true,
+              headers: Object.assign(corsHeaders(), {
+                'Content-Encoding': encodingMethod,
+              }),
+              statusCode: 200,
+            });
+            done();
+          });
+        }, fakeBody(), 200, null, {'Accept-Encoding': encodingHeader});
+      });
+    };
+    testMethod('deflate', 'deflate');
+    testMethod('gzip', 'gzip');
+    testMethod('deflate,gzip', 'deflate');
+    testMethod('gzip,deflate', 'deflate');
+    testMethod('*', 'deflate');
+  });
+
+  describe('returns uncompressed response if Accept-Encoding is', () => {
+    const body = stringify(fakeBody(), {space: 2});
+    const testMethod = (encodingHeader?: string) => {
+      it(`"${encodingHeader}"`, (done: Callback) => {
+        respond((err: Error, response: Response) => {
+          expect(err).toBeFalsy();
+          expect(response).toEqual({
+            body,
+            headers: corsHeaders(),
+            statusCode: 200,
+          });
+          done();
+        }, fakeBody(), 200, null, {'Accept-Encoding': encodingHeader});
+      });
+    };
+    testMethod('');
+    testMethod();
+  });
+
+  describe('ignores Accept-Encoding if body is', () => {
+    const testMethod = (body?: undefined) => {
+      it(`"${body}"`, (done: Callback) => {
+        respond((err: Error, response: Response) => {
+          expect(err).toBeFalsy();
+          expect(response).toEqual({
+            body,
+            headers: corsHeaders(),
+            statusCode: 200,
+          });
+          done();
+        }, body, 200, null, {'Accept-Encoding': 'deflate'});
+      });
+    };
+    testMethod(null);
+    testMethod();
   });
 });
 

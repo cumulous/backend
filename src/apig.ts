@@ -1,8 +1,8 @@
 import * as compression from 'compression';
 import * as cors from 'cors';
 import * as express from 'express';
-import { Request, Response } from 'express';
 import * as stringify from 'json-stable-stringify';
+import * as zlib from 'zlib';
 
 const awsExpress = require('aws-serverless-express');
 const awsExpressMiddleware = require('aws-serverless-express/middleware');
@@ -95,19 +95,52 @@ export interface Response {
   statusCode?: number;
   headers?: Dict<string>;
   body?: string;
+  isBase64Encoded?: boolean;
 };
 
 export const respond = (callback: Callback,
-    body?: any, statusCode: number = 200, headers?: Dict<string>) => {
+    body?: any, statusCode: number = 200, headers?: Dict<string>, requestHeaders?: Dict<string>) => {
 
-  callback(null, {
-    statusCode: statusCode,
-    headers: Object.assign({
-      'Access-Control-Allow-Origin': `https://${process.env[envNames.webDomain]}`,
-      'Access-Control-Allow-Credentials': 'true',
-    }, headers),
-    body: stringify(body, {space: 2}),
-  });
+  const responseBody = body ? stringify(body, {space: 2}) : body;
+  const respondWith = (body?: string, encodingMethod?: string) => {
+    const response: Response = {
+      statusCode,
+      headers: Object.assign({
+        'Access-Control-Allow-Origin': `https://${process.env[envNames.webDomain]}`,
+        'Access-Control-Allow-Credentials': 'true',
+      }, headers),
+      body,
+    };
+    if (encodingMethod) {
+      response.headers['Content-Encoding'] = encodingMethod;
+      response.isBase64Encoded = true;
+    }
+    callback(null, response);
+  };
+
+  if (requestHeaders) {
+    compress(responseBody, requestHeaders['Accept-Encoding'], respondWith);
+  } else {
+    respondWith(responseBody);
+  }
+};
+
+const compress = (body: string, encodings: string,
+    callback: (bodyCompressed?: string, encodingMethod?: string) => void) => {
+
+  if (body == null) {
+    callback(body);
+  } else if (/(deflate|\*)/.test(encodings)) {
+    zlib.deflate(body, (err: Error, bodyCompressed: Buffer) => {
+      callback(bodyCompressed.toString('base64'), 'deflate');
+    });
+  } else if (/gzip/.test(encodings)) {
+    zlib.gzip(Buffer.from(body), (err: Error, bodyCompressed: Buffer) => {
+      callback(bodyCompressed.toString('base64'), 'gzip');
+    });
+  } else {
+    callback(body);
+  }
 };
 
 export const getSpec = (event: any, context: any, callback: Callback) => {
