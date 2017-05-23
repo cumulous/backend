@@ -62,7 +62,7 @@ export interface Response {
 export const respond = (callback: Callback, request: Request,
     body?: any, statusCode: number = 200, headers?: Dict<string>) => {
 
-  const responseBody = body ? stringify(body, {space: 2}) : body;
+  const responseBody = body == null ? body : stringify(body, {space: 2});
   const respondWith = (err?: Error, body?: string, encodingMethod?: string) => {
     if (err) return callback(err);
 
