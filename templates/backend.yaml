@@ -2147,6 +2147,9 @@ Resources:
       Handler: apig.getSpec
       Runtime: nodejs6.10
       Timeout: 10
+      Environment:
+        Variables:
+          WEB_DOMAIN: !Ref WebDomain
       Events:
         Api:
           Type: Api
