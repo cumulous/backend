@@ -152,7 +152,7 @@ export const generateSignedCookies = (
     .then(signer =>
       getCookieParams(signer, process.env[envNames.webDomain], event.requestContext.authorizer.expiresAt))
     .then(cookie => getCookieHeaders(cookie, process.env[envNames.webDomain]))
-    .then(headers => respond(callback, undefined, 200, headers))
+    .then(headers => respond(callback, event, undefined, 200, headers))
     .catch(callback);
 };
 

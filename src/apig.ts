@@ -47,6 +47,11 @@ export const deleteDomainName = (name: string,
     .catch(callback);
 };
 
+export interface Request {
+  headers?: Dict<string>;
+  requestContext?: any;
+};
+
 export interface Response {
   statusCode?: number;
   headers?: Dict<string>;
@@ -54,8 +59,8 @@ export interface Response {
   isBase64Encoded?: boolean;
 };
 
-export const respond = (callback: Callback,
-    body?: any, statusCode: number = 200, headers?: Dict<string>, requestHeaders?: Dict<string>) => {
+export const respond = (callback: Callback, request: Request,
+    body?: any, statusCode: number = 200, headers?: Dict<string>) => {
 
   const responseBody = body ? stringify(body, {space: 2}) : body;
   const respondWith = (body?: string, encodingMethod?: string) => {
@@ -75,15 +80,15 @@ export const respond = (callback: Callback,
     callback(null, response);
   };
 
-  if (requestHeaders) {
-    compress(responseBody, requestHeaders['Accept-Encoding'], respondWith);
+  if (request.headers) {
+    compress(respondWith, responseBody, request.headers['Accept-Encoding']);
   } else {
     respondWith(responseBody);
   }
 };
 
-const compress = (body: string, encodings: string,
-    callback: (bodyCompressed?: string, encodingMethod?: string) => void) => {
+const compress = (callback: (bodyCompressed?: string, encodingMethod?: string) => void,
+    body: string, encodings: string) => {
 
   if (body == null) {
     callback(body);
@@ -100,6 +105,6 @@ const compress = (body: string, encodings: string,
   }
 };
 
-export const getSpec = (event: any, context: any, callback: Callback) => {
-  respond(callback, spec);
+export const getSpec = (event: Request, context: any, callback: Callback) => {
+  respond(callback, event, spec);
 };

@@ -103,6 +103,11 @@ testMethod('deleteDomainName', () =>
 }));
 
 describe('respond()', () => {
+  const fakeRequest = () => ({
+    headers: {
+      'X-Fake-Request': 'header',
+    },
+  });
   const commonHeaders = () => ({
     'Access-Control-Allow-Origin': `https://${fakeWebDomain}`,
     'Access-Control-Allow-Credentials': 'true',
@@ -118,7 +123,7 @@ describe('respond()', () => {
     const statusCode = 400;
     const body = stringify(fakeBody(), {space: 2});
 
-    it('only body, statusCode and response headers are specified', (done: Callback) => {
+    it('all optional parameters are specified', (done: Callback) => {
       const headers = () => ({'x-header': 'fake'});
       respond((err: Error, response: Response) => {
         expect(err).toBeFalsy();
@@ -128,7 +133,7 @@ describe('respond()', () => {
           statusCode,
         });
         done();
-      }, fakeBody(), statusCode, headers());
+      }, fakeRequest(), fakeBody(), statusCode, headers());
     });
     it('only body and statusCode are specified', (done: Callback) => {
       respond((err: Error, response: Response) => {
@@ -139,7 +144,7 @@ describe('respond()', () => {
           statusCode,
         });
         done();
-      }, fakeBody(), statusCode);
+      }, fakeRequest(), fakeBody(), statusCode);
     });
     it('only body is specified', (done: Callback) => {
       respond((err: Error, response: Response) => {
@@ -150,9 +155,9 @@ describe('respond()', () => {
           statusCode: 200,
         });
         done();
-      }, fakeBody());
+      }, fakeRequest(), fakeBody());
     });
-    it('no arguments are specified', (done: Callback) => {
+    it('no optional parameters are specified', (done: Callback) => {
       respond((err: Error, response: Response) => {
         expect(err).toBeFalsy();
         expect(response).toEqual({
@@ -161,7 +166,7 @@ describe('respond()', () => {
           statusCode: 200,
         });
         done();
-      });
+      }, fakeRequest());
     });
   });
 
@@ -182,7 +187,9 @@ describe('respond()', () => {
             });
             done();
           });
-        }, fakeBody(), 200, null, {'Accept-Encoding': encodingHeader});
+        }, {
+          headers: {'Accept-Encoding': encodingHeader},
+        }, fakeBody());
       });
     };
     testMethod('deflate', 'deflate');
@@ -204,7 +211,9 @@ describe('respond()', () => {
             statusCode: 200,
           });
           done();
-        }, fakeBody(), 200, null, {'Accept-Encoding': encodingHeader});
+        }, {
+          headers: {'Accept-Encoding': encodingHeader},
+        }, fakeBody());
       });
     };
     testMethod('');
@@ -222,7 +231,9 @@ describe('respond()', () => {
             statusCode: 200,
           });
           done();
-        }, body, 200, null, {'Accept-Encoding': 'deflate'});
+        }, {
+          headers: {'Accept-Encoding': 'deflate'},
+        }, body);
       });
     };
     testMethod(null);
@@ -232,12 +243,12 @@ describe('respond()', () => {
 
 describe('getSpec()', () => {
   it('returns correct response', (done: Callback) => {
-    getSpec(null, null, (err: Error, data: Response) => {
+    getSpec({}, null, (err: Error, data: Response) => {
       expect(err).toBeFalsy();
       respond((err: Error, response: Response) => {
         expect(data).toEqual(response);
         done();
-      }, spec);
+      }, {}, spec);
     });
   });
 });

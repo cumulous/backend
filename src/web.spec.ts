@@ -498,7 +498,7 @@ describe('generateSignedCookies()', () => {
       respond((err: Error, response: Response) => {
         expect(data).toEqual(response);
         done();
-      }, undefined, 200, headers);
+      }, fakeEvent(), undefined, 200, headers);
     });
   });
 
