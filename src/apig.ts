@@ -63,7 +63,9 @@ export const respond = (callback: Callback, request: Request,
     body?: any, statusCode: number = 200, headers?: Dict<string>) => {
 
   const responseBody = body ? stringify(body, {space: 2}) : body;
-  const respondWith = (body?: string, encodingMethod?: string) => {
+  const respondWith = (err?: Error, body?: string, encodingMethod?: string) => {
+    if (err) return callback(err);
+
     const response: Response = {
       statusCode,
       headers: Object.assign({
@@ -83,25 +85,25 @@ export const respond = (callback: Callback, request: Request,
   if (request.headers) {
     compress(respondWith, responseBody, request.headers['Accept-Encoding']);
   } else {
-    respondWith(responseBody);
+    respondWith(null, responseBody);
   }
 };
 
-const compress = (callback: (bodyCompressed?: string, encodingMethod?: string) => void,
+const compress = (callback: (err?: Error, bodyCompressed?: string, encodingMethod?: string) => void,
     body: string, encodings: string) => {
 
   if (body == null) {
-    callback(body);
+    callback(null, body);
   } else if (/(deflate|\*)/.test(encodings)) {
     zlib.deflate(body, (err: Error, bodyCompressed: Buffer) => {
-      callback(bodyCompressed.toString('base64'), 'deflate');
+      callback(err, err ? null : bodyCompressed.toString('base64'), 'deflate');
     });
   } else if (/gzip/.test(encodings)) {
     zlib.gzip(Buffer.from(body), (err: Error, bodyCompressed: Buffer) => {
-      callback(bodyCompressed.toString('base64'), 'gzip');
+      callback(err, err ? null : bodyCompressed.toString('base64'), 'gzip');
     });
   } else {
-    callback(body);
+    callback(null, body);
   }
 };
 

@@ -239,6 +239,29 @@ describe('respond()', () => {
     testMethod(null);
     testMethod();
   });
+
+  describe('calls callback with an error if', () => {
+    it('zlib.deflate produces an error', (done: Callback) => {
+      spyOn(zlib, 'deflate').and.callFake(
+        (buf: string, callback: Callback) => callback(Error('zlib.deflate')));
+      respond((err: Error, response: Response) => {
+        expect(err).toBeTruthy();
+        done();
+      }, {
+        headers: {'Accept-Encoding': 'deflate'},
+      }, {});
+    });
+    it('zlib.gzib produces an error', (done: Callback) => {
+      spyOn(zlib, 'gzip').and.callFake(
+        (buf: Buffer, callback: Callback) => callback(Error('zlib.gzip')));
+      respond((err: Error, response: Response) => {
+        expect(err).toBeTruthy();
+        done();
+      }, {
+        headers: {'Accept-Encoding': 'gzip'},
+      }, {});
+    });
+  });
 });
 
 describe('getSpec()', () => {
