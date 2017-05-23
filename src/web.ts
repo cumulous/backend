@@ -178,10 +178,11 @@ const getCookieParams = (signer: Signer, domain: string, expiresAt: number | str
 };
 
 const getCookieHeaders = (cookieParams: Signer.CustomPolicy, domain: string) => {
-  const suffix = `Domain=${domain}; Path=/; Secure; HttpOnly`;
   const headers: Dict<string> = {};
-  headers['Set-Cookie'] = `CloudFront-Policy=${cookieParams['CloudFront-Policy']}; ${suffix}`;
-  headers['Set-cookie'] = `CloudFront-Key-Pair-Id=${cookieParams['CloudFront-Key-Pair-Id']}; ${suffix}`;
-  headers['set-cookie'] = `CloudFront-Signature=${cookieParams['CloudFront-Signature']}; ${suffix}`;
+  const getCookie = (name: string) =>
+    `${name}=${(cookieParams as any)[name]}; Domain=${domain}; Path=/; Secure; HttpOnly`;
+  headers['Set-Cookie'] = getCookie('CloudFront-Policy');
+  headers['Set-cookie'] = getCookie('CloudFront-Key-Pair-Id');
+  headers['set-cookie'] = getCookie('CloudFront-Signature');
   return headers;
 };
