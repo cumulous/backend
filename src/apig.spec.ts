@@ -2,18 +2,22 @@ import * as stringify from 'json-stable-stringify';
 import * as zlib from 'zlib';
 
 import * as apig from './apig';
-import { getSpec, respond, Response } from './apig';
+import { getSpec, respond, Response, spec } from './apig';
 import { apiGateway } from './aws';
 import { envNames } from './env';
 import { fakeResolve, fakeReject, testError } from './fixtures/support';
 import { Callback } from './types';
 
-const spec = require('./swagger');
-
 const fakeDomainName = 'api.example.org';
 const fakeApiCertificate = 'arn:aws:acm:us-east-1:012345678910:certificate/abcd-1234';
 const fakeCloudFrontDistribution = 'fake-1234.cloudfront.net';
 const fakeWebDomain = 'example.org';
+
+describe('spec()', () => {
+  it('returns correct Swagger spec', () => {
+    expect(spec()).toEqual(require('./swagger'));
+  });
+});
 
 describe('respond()', () => {
   const fakeRequest = () => ({
@@ -184,7 +188,7 @@ describe('getSpec()', () => {
       respond((err: Error, response: Response) => {
         expect(data).toEqual(response);
         done();
-      }, {}, spec);
+      }, {}, spec());
     });
   });
 });

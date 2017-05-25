@@ -5,8 +5,6 @@ import { apiGateway } from './aws';
 import { envNames } from './env';
 import { Callback, Dict } from './types';
 
-const spec = require('./swagger');
-
 export interface Request {
   headers?: Dict<string>;
   requestContext?: any;
@@ -18,6 +16,8 @@ export interface Response {
   body?: string;
   isBase64Encoded?: boolean;
 };
+
+export const spec = () => require('./swagger');
 
 export const respond = (callback: Callback, request: Request,
     body?: any, statusCode: number = 200, headers?: Dict<string>) => {
@@ -68,7 +68,7 @@ const compress = (callback: (err?: Error, bodyCompressed?: string, encodingMetho
 };
 
 export const getSpec = (event: Request, context: any, callback: Callback) => {
-  respond(callback, event, spec);
+  respond(callback, event, spec());
 };
 
 export const createDomainName = (event: { Name: string, Certificate: string },
