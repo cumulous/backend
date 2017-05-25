@@ -4,7 +4,7 @@ import { post } from 'request-promise-native';
 
 import { s3 } from './aws';
 import { envNames } from './env';
-import { Callback } from './types';
+import { Callback, HttpMethod } from './types';
 import { promise2 } from './util';
 
 export interface Auth0ClientConfig {
@@ -12,8 +12,6 @@ export interface Auth0ClientConfig {
   ID: string;
   Secret: string;
 };
-
-export type HttpMethod = 'POST' | 'GET' | 'PATCH' | 'DELETE';
 
 export const authenticate = (client: Auth0ClientConfig, audience: string) => {
   return Promise.resolve(client)

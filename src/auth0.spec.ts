@@ -3,12 +3,12 @@ import * as stringify from 'json-stable-stringify';
 
 import * as auth0 from './auth0';
 import { Auth0ClientConfig, Auth0Request,
-         authenticate, createClient, HttpMethod,
+         authenticate, createClient,
          manage, manageClient, rotateAndStoreClientSecret } from './auth0';
 import { s3 } from './aws';
 import { envNames } from './env';
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
-import { Callback, Dict } from './types';
+import { Callback, Dict, HttpMethod } from './types';
 
 const fakeDomain = 'account.auth0.com';
 const fakeClientId = '012345abcdEFGH';
