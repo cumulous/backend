@@ -11,7 +11,7 @@ export interface Request {
   pathParameters?: Dict<string>;
   queryStringParameters?: Dict<string>;
   headers?: Dict<string>;
-  body?: string;
+  body?: any;
   requestContext?: any;
 };
 
@@ -33,7 +33,11 @@ export class ApiError implements Error {
 
 export const spec = () => require('./swagger');
 
-export const ajv = Ajv({allErrors: true, coerceTypes: true});
+export const ajv = Ajv({
+  allErrors: true,
+  coerceTypes: true,
+  removeAdditional: true,
+});
 
 export const validate = (request: Request, method: HttpMethod, resource: string) => {
   return Promise.resolve(spec())
@@ -69,11 +73,17 @@ const validateParameter = (request: Request, modelRef: string) => {
       return null;
     }
   }
-  return ajv.validate(schemaRef, value) ?
-    null : ajv.errors.map(error => {
+  if (ajv.validate(schemaRef, value)) {
+    if (model.in === 'body') {
+      request.body = value;
+    }
+    return null;
+  } else {
+    return ajv.errors.map(error => {
       const dataPath = model.in === 'body' ? error.dataPath : `.${model.name}`;
       return `${model.in}${dataPath} ${error.message}`;
     });
+  }
 };
 
 const getRequestValue = (request: Request, model: {in: string, name: string}) => {

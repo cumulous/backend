@@ -114,6 +114,7 @@
         "required": [
           "description"
         ],
+        "additionalProperties": false,
         "properties": {
           "description": {
             "$ref": "#/definitions/ItemDescription"

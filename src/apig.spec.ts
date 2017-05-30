@@ -83,6 +83,20 @@ describe('validate()', () => {
     });
   });
 
+  it('sets request body to its parsed value (without additional properties if none are allowed)',
+      (done: Callback) => {
+    const request = fakeRequest();
+    request.body = stringify({
+      description: fakeItemDescription,
+      status: fakeItemStatus,
+      additional: 'property',
+    }),
+    validate(request, fakeMethod, fakePath).then(() => {
+      expect(request.body).toEqual(JSON.parse(fakeRequest().body));
+      done();
+    });
+  });
+
   describe('fails with a list of errors if', () => {
     let request: Request;
 

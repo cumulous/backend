@@ -627,6 +627,7 @@ parameters:
     schema:
       required:
       - project_id
+      additionalProperties: false
       properties:
         project_id:
           $ref: '#/definitions/ProjectId'
@@ -670,6 +671,7 @@ parameters:
     description: Dataset properties to be modified
     required: true
     schema:
+      additionalProperties: false
       properties:
         description:
           $ref: '#/definitions/DatasetDescription'
@@ -683,6 +685,7 @@ parameters:
     schema:
       required:
         - action
+      additionalProperties: false
       properties:
         action:
           $ref: '#/definitions/DatasetCredentialsAction'
