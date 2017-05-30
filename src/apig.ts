@@ -1,12 +1,17 @@
+import * as Ajv from 'ajv';
 import * as stringify from 'json-stable-stringify';
+import * as jsonpath from 'jsonpath';
 import * as zlib from 'zlib';
 
 import { apiGateway } from './aws';
 import { envNames } from './env';
-import { Callback, Dict } from './types';
+import { Callback, Dict, HttpMethod } from './types';
 
 export interface Request {
+  pathParameters?: Dict<string>;
+  queryStringParameters?: Dict<string>;
   headers?: Dict<string>;
+  body?: string;
   requestContext?: any;
 };
 
@@ -17,7 +22,86 @@ export interface Response {
   isBase64Encoded?: boolean;
 };
 
+export class ApiError implements Error {
+  name: string;
+
+  constructor(
+      public message: string,
+      public errors?: string[],
+      public code = 500) {}
+};
+
 export const spec = () => require('./swagger');
+
+export const ajv = Ajv({allErrors: true, coerceTypes: true});
+
+export const validate = (request: Request, method: HttpMethod, resource: string) => {
+  return Promise.resolve(spec())
+    .then(spec => {
+      ajv.compile(Object.assign({$id: 'spec'}, spec));
+      const specResource = spec.paths[resource];
+      if (specResource == null) {
+        throw new ApiError(`Resource ${resource} doesn't exist`);
+      }
+      const specMethod = method ? specResource[method.toLowerCase()] : null;
+      if (specMethod == null) {
+        throw new ApiError(`Method ${method} doesn't exist for resource ${resource}`);
+      }
+      return specMethod.parameters;
+    })
+    .then(parameters => parameters.map((parameter: { $ref: string }) =>
+      validateParameter(request, parameter.$ref)))
+    .then(collectErrors);
+};
+
+const validateParameter = (request: Request, modelRef: string) => {
+  const modelPath = modelRef.replace(/\//g, '.').substring(2);
+  const model = jsonpath.value(spec(), modelPath);
+  const schemaRef = `spec${modelRef}${model.in === 'body' ? '/schema' : ''}`;
+  let value = getRequestValue(request, model);
+
+  if (value == null) {
+    if (model.required) {
+      if (model.in === 'body') {
+        value = {};
+      }
+    } else {
+      return null;
+    }
+  }
+  return ajv.validate(schemaRef, value) ?
+    null : ajv.errors.map(error => {
+      const dataPath = model.in === 'body' ? error.dataPath : `.${model.name}`;
+      return `${model.in}${dataPath} ${error.message}`;
+    });
+};
+
+const getRequestValue = (request: Request, model: {in: string, name: string}) => {
+  if (model.in === 'path') {
+    return jsonpath.value(request, `pathParameters.${model.name}`);
+  } else if (model.in === 'query') {
+    return jsonpath.value(request, `queryStringParameters.${model.name}`);
+  } else if (model.in === 'header') {
+    const headerName = RegExp(model.name, 'i');
+    const header = jsonpath.nodes(request, 'headers.*')
+      .find(node => headerName.test(String(node.path[2])));
+    return header == null ? header : header.value;
+  } else if (model.in === 'body') {
+    const body = jsonpath.value(request, 'body');
+    return typeof body === 'string' ? JSON.parse(body) : null;
+  } else {
+    throw new ApiError(`${model.in} not supported`);
+  }
+};
+
+const collectErrors = (errs: string[][]) => {
+  const errors = [].concat.apply([], errs)
+    .filter((error: string) => !!error);
+
+  if (errors.length) {
+    throw new ApiError('Invalid request', errors, 400);
+  }
+};
 
 export const respond = (callback: Callback, request: Request,
     body?: any, statusCode: number = 200, headers?: Dict<string>) => {

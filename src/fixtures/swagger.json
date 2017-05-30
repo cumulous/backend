@@ -1,0 +1,128 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Backend API",
+    "version": "1"
+  },
+  "schemes": [
+    "https"
+  ],
+  "paths": {
+    "/items/{itemId}": {
+      "post": {
+        "description": "Returns an item",
+        "parameters": [
+          {
+            "$ref": "#/parameters/Path"
+          },
+          {
+            "$ref": "#/parameters/Query"
+          },
+          {
+            "$ref": "#/parameters/Header"
+          },
+          {
+            "$ref": "#/parameters/Body"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item",
+            "schema": {
+              "$ref": "#/definitions/Item"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Item": {
+      "required": [
+        "id",
+        "dateCreated",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/ItemId"
+        },
+        "dateCreated": {
+          "$ref": "#/definitions/DateTime"
+        },
+        "description": {
+          "$ref": "#/definitions/ItemDescription"
+        },
+        "status": {
+          "$ref": "#/definitions/ItemStatus"
+        }
+      }
+    },
+    "ItemId": {
+      "description": "Unique identifier for an item",
+      "type": "string",
+      "format": "uuid"
+    },
+    "ItemDescription": {
+      "description": "Item description",
+      "type": "string",
+      "pattern": "^[\\w\\s]{1,1024}$"
+    },
+    "ItemStatus": {
+      "description": "Item status",
+      "type": "string",
+      "enum": [
+        "Present",
+        "Absent"
+      ]
+    },
+    "DateTime": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "parameters": {
+    "Path": {
+      "in": "path",
+      "name": "itemId",
+      "description": "Unique identifier for an item",
+      "type": "string",
+      "format": "uuid",
+      "required": true
+    },
+    "Query": {
+      "in": "query",
+      "name": "desc_contains",
+      "description": "part of item description",
+      "type": "string",
+      "pattern": "^[\\w\\s]{1,100}$",
+      "required": true
+    },
+    "Header": {
+      "in": "header",
+      "name": "X-Header",
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 10,
+      "required": true
+    },
+    "Body": {
+      "in": "body",
+      "name": "body",
+      "required": true,
+      "schema": {
+        "required": [
+          "description"
+        ],
+        "properties": {
+          "description": {
+            "$ref": "#/definitions/ItemDescription"
+          },
+          "status": {
+            "$ref": "#/definitions/ItemStatus"
+          }
+        }
+      }
+    }
+  }
+}

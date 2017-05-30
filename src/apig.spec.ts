@@ -1,12 +1,13 @@
 import * as stringify from 'json-stable-stringify';
+import * as uuid from 'uuid';
 import * as zlib from 'zlib';
 
 import * as apig from './apig';
-import { getSpec, respond, Response, spec } from './apig';
+import { ajv, ApiError, getSpec, Request, respond, Response, spec, validate } from './apig';
 import { apiGateway } from './aws';
 import { envNames } from './env';
 import { fakeResolve, fakeReject, testError } from './fixtures/support';
-import { Callback } from './types';
+import { Callback, HttpMethod } from './types';
 
 const fakeDomainName = 'api.example.org';
 const fakeApiCertificate = 'arn:aws:acm:us-east-1:012345678910:certificate/abcd-1234';
@@ -16,6 +17,336 @@ const fakeWebDomain = 'example.org';
 describe('spec()', () => {
   it('returns correct Swagger spec', () => {
     expect(spec()).toEqual(require('./swagger'));
+  });
+});
+
+describe('validate()', () => {
+  const fakeMethod = 'POST';
+  const fakePath = '/items/{itemId}';
+  const fakeItemId = uuid();
+  const fakeItemDescription = 'This is a fake item';
+  const fakeItemDescriptionContains = 'fake item';
+  const fakeItemHeader = '10';
+  const fakeItemStatus = 'Present';
+
+  const fakeSpec = () =>
+    JSON.parse(JSON.stringify(require('./fixtures/swagger')));
+
+  const fakeRequest = () => ({
+    pathParameters: {
+      itemId: fakeItemId,
+    },
+    queryStringParameters: {
+      desc_contains: fakeItemDescriptionContains,
+    },
+    headers: {
+      'X-Header': fakeItemHeader,
+    },
+    body: stringify({
+      description: fakeItemDescription,
+      status: fakeItemStatus,
+    }),
+  });
+  const testMethod = () => validate(fakeRequest(), fakeMethod, fakePath);
+
+  let spyOnSpec: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnSpec = spyOn(apig, 'spec').and.callFake(fakeSpec);
+  });
+
+  it('compiles correct schema once', (done: Callback) => {
+    const spyOnAjvCompile = spyOn(ajv, 'compile').and.callThrough();
+    testMethod().then(() => {
+      expect(spyOnAjvCompile).toHaveBeenCalledWith(
+        Object.assign({$id: 'spec'}, fakeSpec()));
+      expect(spyOnAjvCompile).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('validates request parameters against correct models', (done: Callback) => {
+    const spyOnAjvValidate = spyOn(ajv, 'validate').and.callThrough();
+    testMethod().then(() => {
+      expect(spyOnAjvValidate).toHaveBeenCalledWith(
+        'spec#/parameters/Path', fakeItemId);
+      expect(spyOnAjvValidate).toHaveBeenCalledWith(
+        'spec#/parameters/Query', fakeItemDescriptionContains);
+      expect(spyOnAjvValidate).toHaveBeenCalledWith(
+        'spec#/parameters/Header', fakeItemHeader);
+      expect(spyOnAjvValidate).toHaveBeenCalledWith(
+        'spec#/parameters/Body/schema', {
+          description: fakeItemDescription,
+          status: fakeItemStatus,
+        });
+      done();
+    });
+  });
+
+  describe('fails with a list of errors if', () => {
+    let request: Request;
+
+    beforeEach(() => {
+      request = fakeRequest();
+    });
+
+    afterEach((done: Callback) => {
+      validate(request, fakeMethod, fakePath).catch((err?: ApiError) => {
+        expect(err).toBeTruthy();
+        expect(err.message).toBeTruthy();
+        expect(err.errors.length).toBeGreaterThan(0);
+        expect(err.code).toBe(400);
+        done();
+      });
+    });
+
+    describe('path', () => {
+      describe('is', () => {
+        it('undefined', () => {
+          delete request.pathParameters;
+        });
+        it('null', () => {
+          request.pathParameters = null;
+        });
+      });
+      describe('parameter is', () => {
+        it('invalid', () => {
+          request.pathParameters.itemId = '1234_A';
+        });
+        it('undefined', () => {
+          delete request.pathParameters.itemId;
+        });
+        it('null', () => {
+          request.pathParameters.itemId = null;
+        });
+      });
+    });
+
+    describe('query parameter is required, but', () => {
+      describe('query is', () => {
+        it('undefined', () => {
+          delete request.queryStringParameters;
+        });
+        it('null', () => {
+          request.queryStringParameters = null;
+        });
+      });
+      describe('its value is', () => {
+        it('invalid', () => {
+          request.queryStringParameters.desc_contains = '!#?%';
+        });
+        it('undefined', () => {
+          delete request.queryStringParameters.desc_contains;
+        });
+        it('null', () => {
+          request.queryStringParameters.desc_contains = null;
+        });
+      });
+    });
+
+    describe('header is required, but', () => {
+      describe('array of headers is', () => {
+        it('undefined', () => {
+          delete request.headers;
+        });
+        it('null', () => {
+          request.headers = null;
+        });
+      });
+      describe('its value is', () => {
+        it('invalid', () => {
+          request.headers['X-Header'] = '11';
+        });
+        it('undefined', () => {
+          delete request.headers['X-Header'];
+        });
+        it('null', () => {
+          request.headers['X-Header'] = null;
+        });
+      });
+    });
+
+    describe('body is required, but', () => {
+      describe('its value is', () => {
+        it('invalid', () => {
+          request.body = '{}';
+        });
+        it('undefined', () => {
+          delete request.body;
+        });
+        it('null', () => {
+          request.body = null;
+        });
+        it('not a string', () => {
+          (request as any).body = { fake: 'body' };
+        });
+      });
+    });
+  });
+
+  describe('fails with a server error if', () => {
+    let method: HttpMethod;
+    let path: string;
+
+    beforeEach(() => {
+      method = fakeMethod;
+      path = fakePath;
+    });
+
+    afterEach((done: Callback) => {
+      validate(fakeRequest(), method, path).catch((err?: ApiError) => {
+        expect(err).toBeTruthy();
+        expect(err.message).toBeTruthy();
+        expect(err.code).toBe(500);
+        done();
+      });
+    });
+
+    it('parameter type is unsupported', () => {
+      ajv.removeSchema('spec');
+      spyOnSpec.and.callFake(() => {
+        const spec = fakeSpec();
+        if (!spec.parameters.FormData) {
+          spec.paths['/items/{itemId}'].post.parameters.push({
+            "$ref": "#/parameters/FormData"
+          });
+          spec.parameters.FormData = {
+            in: 'formData',
+            name: 'data',
+            type: 'string',
+            required: true,
+          };
+        }
+        return spec;
+      });
+    });
+
+    describe('API path is', () => {
+      beforeAll(() => {
+        ajv.removeSchema('spec');
+      });
+      it('not found', () => {
+        path = '/items';
+      });
+      it('undefined', () => {
+        path = undefined;
+      });
+      it('null', () => {
+        path = null;
+      });
+    });
+
+    describe('API method is', () => {
+      beforeAll(() => {
+        ajv.removeSchema('spec');
+      });
+      it('not found', () => {
+        method = 'GET';
+      });
+      it('undefined', () => {
+        method = undefined;
+      });
+      it('null', () => {
+        method = null;
+      });
+    });
+  });
+
+  describe('does not produce an error if', () => {
+    let request: Request;
+
+    beforeEach(() => {
+      request = fakeRequest();
+    });
+
+    afterEach((done: Callback) => {
+      validate(request, fakeMethod, fakePath).then(() => done());
+    });
+
+    describe('query parameter is not required, and', () => {
+      beforeAll(() => {
+        ajv.removeSchema('spec');
+      });
+
+      beforeEach(() => {
+        spyOnSpec.and.callFake(() => {
+          const spec = fakeSpec();
+          delete spec.parameters.Query.required;
+          return spec;
+        });
+      });
+
+      describe('query is', () => {
+        it('undefined', () => {
+          delete request.queryStringParameters;
+        });
+        it('null', () => {
+          request.queryStringParameters = null;
+        });
+      });
+      describe('its value is', () => {
+        it('undefined', () => {
+          delete request.queryStringParameters.desc_contains;
+        });
+        it('null', () => {
+          request.queryStringParameters.desc_contains = null;
+        });
+      });
+    });
+
+    describe('header is not required, and', () => {
+      beforeAll(() => {
+        ajv.removeSchema('spec');
+      });
+
+      beforeEach(() => {
+        spyOnSpec.and.callFake(() => {
+          const spec = fakeSpec();
+          delete spec.parameters.Header.required;
+          return spec;
+        });
+      });
+
+      describe('array of headers is', () => {
+        it('undefined', () => {
+          delete request.headers;
+        });
+        it('null', () => {
+          request.headers = null;
+        });
+      });
+      describe('its value is', () => {
+        it('undefined', () => {
+          delete request.headers['X-Header'];
+        });
+        it('null', () => {
+          request.headers['X-Header'] = null;
+        });
+      });
+    });
+
+    describe('body is not required, and', () => {
+      beforeAll(() => {
+        ajv.removeSchema('spec');
+      });
+
+      beforeEach(() => {
+        spyOnSpec.and.callFake(() => {
+          const spec = fakeSpec();
+          delete spec.parameters.Body.required;
+          return spec;
+        });
+      });
+
+      describe('its value is', () => {
+        it('undefined', () => {
+          delete request.body;
+        });
+        it('null', () => {
+          request.body = null;
+        });
+      });
+    });
   });
 });
 
