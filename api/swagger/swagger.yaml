@@ -706,12 +706,9 @@ parameters:
   CompressionRequest:
     in: header
     name: Accept-Encoding
-    type: array
-    items:
-      type: string
-      enum:
-        - deflate
-        - gzip
+    type: string
+    pattern: (deflate|gzip|\*)?
+    maxLength: 64
 
 x-amazon-apigateway-binary-media-types:
   - 'application/json'
