@@ -143,6 +143,13 @@ export const respond = (callback: Callback, request: Request,
   }
 };
 
+export const respondWithError = (callback: Callback, request: Request, err: ApiError) => {
+  respond(callback, request, {
+    message: err.message,
+    errors: err.errors,
+  }, err.code);
+};
+
 const compress = (callback: (err?: Error, bodyCompressed?: string, encodingMethod?: string) => void,
     body: string, encodings: string) => {
 

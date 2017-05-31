@@ -3,7 +3,9 @@ import * as uuid from 'uuid';
 import * as zlib from 'zlib';
 
 import * as apig from './apig';
-import { ajv, ApiError, getSpec, Request, respond, Response, spec, validate } from './apig';
+import { ajv, ApiError, validate,
+         Request, respond, respondWithError, Response,
+         getSpec, spec } from './apig';
 import { apiGateway } from './aws';
 import { envNames } from './env';
 import { fakeResolve, fakeReject, testError } from './fixtures/support';
@@ -523,6 +525,31 @@ describe('respond()', () => {
         headers: {'Accept-Encoding': 'gzip'},
       }, {});
     });
+  });
+});
+
+describe('respondWithError()', () => {
+  const fakeErrorMessage = 'Fake Error';
+  const fakeErrorsArray = () => ['validation error'];
+  const fakeErrorCode = 400;
+
+  const fakeRequest = () => ({
+    headers: { 'X-Header': 'test' },
+  });
+
+  it('calls respond() with correct parameters', (done: Callback) => {
+    const fakeError = new ApiError(fakeErrorMessage, fakeErrorsArray(), fakeErrorCode);
+    const spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    const callback = () => {
+      expect(spyOnRespond).toHaveBeenCalledWith(
+        callback, fakeRequest(), {
+          message: fakeErrorMessage,
+          errors: fakeErrorsArray(),
+        }, fakeErrorCode);
+      done();
+    };
+    respondWithError(callback, fakeRequest(), fakeError);
   });
 });
 
