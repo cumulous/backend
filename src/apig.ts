@@ -168,8 +168,10 @@ const compress = (callback: (err?: Error, bodyCompressed?: string, encodingMetho
   }
 };
 
-export const getSpec = (event: Request, context: any, callback: Callback) => {
-  respond(callback, event, spec());
+export const getSpec = (request: Request, context: any, callback: Callback) => {
+  validate(request, 'GET', '/')
+    .then(() => respond(callback, request, spec()))
+    .catch(err => respondWithError(callback, request, err));
 };
 
 export const createDomainName = (event: { Name: string, Certificate: string },

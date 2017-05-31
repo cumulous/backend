@@ -554,14 +554,56 @@ describe('respondWithError()', () => {
 });
 
 describe('getSpec()', () => {
-  it('returns correct response', (done: Callback) => {
-    getSpec({}, null, (err: Error, data: Response) => {
-      expect(err).toBeFalsy();
-      respond((err: Error, response: Response) => {
-        expect(data).toEqual(response);
-        done();
-      }, {}, spec());
+  let fakeRequest = () => ({
+    headers: {
+      'Accept-Encoding': 'deflate, gzip;q=1.0, *;q=0.5',
+    },
+  });
+
+  let spyOnValidate: jasmine.Spy;
+  let spyOnRespond: jasmine.Spy;
+  let spyOnRespondWithError: jasmine.Spy;
+
+  beforeAll(() => {
+    ajv.removeSchema('spec');
+  });
+
+  beforeEach(() => {
+    spyOnValidate = spyOn(apig, 'validate').and.callThrough();
+    spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    spyOnRespondWithError = spyOn(apig, 'respondWithError')
+      .and.callFake((callback: Callback) => callback());
+  });
+
+  const testMethod = (callback: Callback) =>
+    getSpec(fakeRequest(), null, callback);
+
+  it('calls validate() with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnValidate).toHaveBeenCalledWith(
+        fakeRequest(), 'GET', '/');
+      done();
     });
+  });
+
+  it('calls respond() with correct parameters', (done: Callback) => {
+    const callback = () => {
+      expect(spyOnRespond).toHaveBeenCalledWith(
+        callback, fakeRequest(), spec());
+      done();
+    };
+    testMethod(callback);
+  });
+
+  it('calls respondWithError() if validate() produces an error', (done: Callback) => {
+    const fakeError = new ApiError('validate()');
+    spyOnValidate.and.returnValue(Promise.reject(fakeError));
+    const callback = () => {
+      expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, fakeRequest(), fakeError);
+      done();
+    };
+    testMethod(callback);
   });
 });
 
