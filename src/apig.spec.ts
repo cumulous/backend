@@ -8,6 +8,7 @@ import { ajv, ApiError, validate,
          getSpec, spec } from './apig';
 import { apiGateway } from './aws';
 import { envNames } from './env';
+import { log } from './log';
 import { fakeResolve, fakeReject, testError } from './fixtures/support';
 import { Callback, HttpMethod } from './types';
 
@@ -537,10 +538,21 @@ describe('respondWithError()', () => {
     headers: { 'X-Header': 'test' },
   });
 
-  it('calls respond() with correct parameters', (done: Callback) => {
-    const fakeError = new ApiError(fakeErrorMessage, fakeErrorsArray(), fakeErrorCode);
-    const spyOnRespond = spyOn(apig, 'respond')
+  let fakeError: ApiError;
+
+  let spyOnRespond: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnRespond = spyOn(apig, 'respond')
       .and.callFake((callback: Callback) => callback());
+  });
+
+  const testMethod = (callback: Callback) => {
+    respondWithError(callback, fakeRequest(), fakeError);
+  };
+
+  it('calls respond() with correct parameters', (done: Callback) => {
+    fakeError = new ApiError(fakeErrorMessage, fakeErrorsArray(), fakeErrorCode);
     const callback = () => {
       expect(spyOnRespond).toHaveBeenCalledWith(
         callback, fakeRequest(), {
@@ -549,7 +561,51 @@ describe('respondWithError()', () => {
         }, fakeErrorCode);
       done();
     };
-    respondWithError(callback, fakeRequest(), fakeError);
+    testMethod(callback);
+  });
+
+  it('does not output undefined errors[]', (done: Callback) => {
+    fakeError = new ApiError(fakeErrorMessage, undefined, fakeErrorCode);
+    const callback = () => {
+      expect(spyOnRespond).toHaveBeenCalledWith(
+        callback, fakeRequest(), {
+          message: fakeErrorMessage,
+        }, fakeErrorCode);
+      done();
+    };
+    testMethod(callback);
+  });
+
+
+  describe('calls respond() with a server error and logs it if error', () => {
+    let spyOnLog: jasmine.Spy;
+
+    beforeEach(() => {
+      spyOnLog = spyOn(log, 'error');
+    });
+
+    afterEach((done: Callback) => {
+      const callback = () => {
+        expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(), {
+          message: 'Internal server error',
+        }, 500);
+        expect(spyOnLog).toHaveBeenCalledWith(stringify(fakeError));
+        done();
+      };
+      testMethod(callback);
+    });
+
+    it('code is 500', () => {
+      fakeError = new ApiError(fakeErrorMessage, fakeErrorsArray(), 500);
+    });
+
+    it('code is undefined', () => {
+      fakeError = new ApiError(fakeErrorMessage, fakeErrorsArray());
+    });
+
+    it('is generic', () => {
+      fakeError = Error(fakeErrorMessage);
+    });
   });
 });
 

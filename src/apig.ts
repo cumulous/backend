@@ -5,6 +5,7 @@ import * as zlib from 'zlib';
 
 import { apiGateway } from './aws';
 import { envNames } from './env';
+import { log } from './log';
 import { Callback, Dict, HttpMethod } from './types';
 
 export interface Request {
@@ -24,11 +25,15 @@ export interface Response {
 
 export class ApiError implements Error {
   name: string;
+  message: string;
+  errors?: string[];
+  code?: number;
 
-  constructor(
-      public message: string,
-      public errors?: string[],
-      public code = 500) {}
+  constructor(message: string, errors?: string[], code = 500) {
+    this.message = message;
+    this.errors = errors;
+    this.code = code;
+  }
 };
 
 export const spec = () => require('./swagger');
@@ -144,10 +149,13 @@ export const respond = (callback: Callback, request: Request,
 };
 
 export const respondWithError = (callback: Callback, request: Request, err: ApiError) => {
-  respond(callback, request, {
-    message: err.message,
-    errors: err.errors,
-  }, err.code);
+  if (err.code == null || err.code == 500) {
+    log.error(stringify(err));
+    err = new ApiError('Internal server error', undefined, 500);
+  }
+  const body = { message: err.message, errors: err.errors };
+  !body.errors && delete body.errors;
+  respond(callback, request, body, err.code);
 };
 
 const compress = (callback: (err?: Error, bodyCompressed?: string, encodingMethod?: string) => void,
