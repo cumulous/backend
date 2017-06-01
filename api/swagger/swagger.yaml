@@ -99,6 +99,8 @@ paths:
         - member_token: []
       tags:
         - Web
+      parameters:
+        - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
           description: Set-Cookie headers for accessing the website

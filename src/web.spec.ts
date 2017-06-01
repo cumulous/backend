@@ -398,6 +398,7 @@ describe('generateSignedCookies()', () => {
     'CloudFront-Signature': 'abcd1234',
   });
 
+  let spyOnValidate: jasmine.Spy;
   let spyOnGetDistribution: jasmine.Spy;
   let spyOnS3GetObject: jasmine.Spy;
   let spyOnSignerConstructor: jasmine.Spy;
@@ -411,6 +412,8 @@ describe('generateSignedCookies()', () => {
     process.env[envNames.webSigningKeyBucket] = fakeSigningKeyBucket;
     process.env[envNames.webSigningKeyPath] = fakeSigningKeyPath;
 
+    spyOnValidate = spyOn(apig, 'validate')
+      .and.returnValue(Promise.resolve());
     spyOnGetDistribution = spyOn(cloudFront, 'getDistribution')
       .and.returnValue(fakeResolve({
         Distribution: {
@@ -440,6 +443,14 @@ describe('generateSignedCookies()', () => {
     generateSignedCookies(fakeRequest(), null, callback);
   };
 
+  it('calls apig.validate() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnValidate).toHaveBeenCalledWith(fakeRequest(), 'GET', '/weblogin');
+      expect(spyOnValidate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
   it('calls cloudFront.getDistribution() once with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnGetDistribution).toHaveBeenCalledWith({
@@ -447,7 +458,7 @@ describe('generateSignedCookies()', () => {
       });
       expect(spyOnGetDistribution).toHaveBeenCalledTimes(1);
       done();
-    })
+    });
   });
 
   it('calls s3.getObject() once with correct parameters', (done: Callback) => {
@@ -458,7 +469,7 @@ describe('generateSignedCookies()', () => {
       });
       expect(spyOnS3GetObject).toHaveBeenCalledTimes(1);
       done();
-    })
+    });
   });
 
   it('constructs cloudFront.Signer() once with correct parameters', (done: Callback) => {
@@ -467,7 +478,7 @@ describe('generateSignedCookies()', () => {
         fakeKeyPairId, fakeSigningKey().toString());
       expect(spyOnSignerConstructor).toHaveBeenCalledTimes(1);
       done();
-    })
+    });
   });
 
   it('calls Signer.getSignedCookie() once with correct parameters', (done: Callback) => {
@@ -484,7 +495,7 @@ describe('generateSignedCookies()', () => {
       });
       expect((spyOnSigner as any).getSignedCookie).toHaveBeenCalledTimes(1);
       done();
-    })
+    });
   });
 
   it('calls respond() with correct parameters', (done: Callback) => {
@@ -529,6 +540,8 @@ describe('generateSignedCookies()', () => {
       it('authorizer is null', () => event.requestContext.authorizer = null);
       it('expiresAt is undefined', () => event.requestContext.authorizer.expiresAt = undefined);
       it('expiresAt is null', () => event.requestContext.authorizer.expiresAt = null);
+      it('expiresAt is not a stringified number', () => event.requestContext.authorizer.expiresAt = '1M');
+      it('does not pass validation', () => spyOnValidate.and.returnValue(Promise.reject(Error('validate()'))));
     });
     const testError = (last: Callback, done: Callback) => {
       const callback = () => {
