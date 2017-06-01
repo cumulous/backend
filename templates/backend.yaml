@@ -38,6 +38,8 @@ Parameters:
     Type: String
   WebSigningKeyGetRoleArn:
     Type: String
+  DatasetsTableName:
+    Type: String
   Auth0Domain:
     Type: String
   Auth0ManagementClientID:
@@ -57,8 +59,24 @@ Parameters:
 
 Conditions:
   SetupWebSigningKeyPair: !Not [!Equals [!Ref WebSigningKeyPutRoleArn, '']]
+  CreateDatasetsTable: !Equals [!Ref DatasetsTableName, '']
 
 Resources:
+  DatasetsTable:
+    Type: AWS::DynamoDB::Table
+    Condition: CreateDatasetsTable
+    DeletionPolicy: Retain
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: DatasetID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: DatasetID
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+
   BackendVPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -2262,3 +2280,6 @@ Outputs:
   WebSigningKey:
     Condition: SetupWebSigningKeyPair
     Value: !GetAtt WebSigningKey.PublicKey
+  DatasetsTable:
+    Condition: CreateDatasetsTable
+    Value: !Ref DatasetsTable
