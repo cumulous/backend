@@ -48,15 +48,7 @@ export const validate = (request: Request, method: HttpMethod, resource: string)
   return Promise.resolve(spec())
     .then(spec => {
       ajv.compile(Object.assign({$id: 'spec'}, spec));
-      const specResource = spec.paths[resource];
-      if (specResource == null) {
-        throw new ApiError(`Resource ${resource} doesn't exist`);
-      }
-      const specMethod = method ? specResource[method.toLowerCase()] : null;
-      if (specMethod == null) {
-        throw new ApiError(`Method ${method} doesn't exist for resource ${resource}`);
-      }
-      return specMethod.parameters;
+      return spec.paths[resource][method.toLowerCase()].parameters;
     })
     .then(parameters => parameters.map((parameter: { $ref: string }) =>
       validateParameter(request, parameter.$ref)))
