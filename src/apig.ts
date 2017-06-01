@@ -133,7 +133,7 @@ export const respond = (callback: Callback, request: Request,
     callback(null, response);
   };
 
-  if (request.headers) {
+  if (request && request.headers) {
     compress(respondWith, responseBody, request.headers['Accept-Encoding']);
   } else {
     respondWith(null, responseBody);

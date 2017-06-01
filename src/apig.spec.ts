@@ -433,6 +433,33 @@ describe('respond()', () => {
         done();
       }, fakeRequest());
     });
+    it('no request headers are specified', (done: Callback) => {
+      respond((err: Error, response: Response) => {
+        expect(err).toBeFalsy();
+        expect(response).toEqual({
+          body: undefined,
+          headers: commonHeaders(),
+          statusCode: 200,
+        });
+        done();
+      }, {});
+    });
+    describe('request is ', () => {
+      let request: any;
+      afterEach((done: Callback) => {
+        respond((err: Error, response: Response) => {
+          expect(err).toBeFalsy();
+          expect(response).toEqual({
+            body: undefined,
+            headers: commonHeaders(),
+            statusCode: 200,
+          });
+          done();
+        }, request);
+      });
+      it('undefined', () => request = undefined);
+      it('null', () => request = null);
+    });
   });
 
   describe('returns correctly compressed response if Accept-Encoding is', () => {
