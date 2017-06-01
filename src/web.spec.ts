@@ -2,7 +2,7 @@ import * as child_process from 'child_process';
 import * as cloudFrontTypes from 'aws-sdk/clients/cloudfront';
 import * as stringify from 'json-stable-stringify';
 
-import { respond, Response } from './apig';
+import * as apig from './apig';
 import * as aws from './aws';
 import { cloudFront, s3 } from './aws';
 import { envNames } from './env';
@@ -382,7 +382,7 @@ describe('generateSignedCookies()', () => {
   const fakeWebDomain = 'example.org';
   const fakeExpiresAt = 1483228800;
 
-  const fakeEvent = () => ({
+  const fakeRequest = () => ({
     requestContext: {
       authorizer: {
         expiresAt: String(fakeExpiresAt),
@@ -402,6 +402,8 @@ describe('generateSignedCookies()', () => {
   let spyOnS3GetObject: jasmine.Spy;
   let spyOnSignerConstructor: jasmine.Spy;
   let spyOnSigner: jasmine.Spy;
+  let spyOnRespond: jasmine.Spy;
+  let spyOnRespondWithError: jasmine.Spy;
 
   beforeEach(() => {
     process.env[envNames.webDomain] = fakeWebDomain;
@@ -428,10 +430,14 @@ describe('generateSignedCookies()', () => {
       .and.returnValue(spyOnSigner);
     (spyOnSigner as any).getSignedCookie
       .and.returnValue(fakeCookieParams());
+    spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    spyOnRespondWithError = spyOn(apig, 'respondWithError')
+      .and.callFake((callback: Callback) => callback());
   });
 
   const testMethod = (callback: Callback) => {
-    generateSignedCookies(fakeEvent(), null, callback);
+    generateSignedCookies(fakeRequest(), null, callback);
   };
 
   it('calls cloudFront.getDistribution() once with correct parameters', (done: Callback) => {
@@ -481,7 +487,7 @@ describe('generateSignedCookies()', () => {
     })
   });
 
-  it('calls callback with correct parameters', (done: Callback) => {
+  it('calls respond() with correct parameters', (done: Callback) => {
     const cookieSuffix = `Domain=${fakeWebDomain}; Path=/; Secure; HttpOnly`;
     const cookieParams = fakeCookieParams();
     const cookieContent: string[] = [];
@@ -493,27 +499,27 @@ describe('generateSignedCookies()', () => {
     headers['Set-cookie'] = cookieContent[1];
     headers['set-cookie'] = cookieContent[2];
 
-    testMethod((err: Error, data: Response) => {
-      expect(err).toBeFalsy();
-      respond((err: Error, response: Response) => {
-        expect(data).toEqual(response);
-        done();
-      }, fakeEvent(), undefined, 200, headers);
-    });
+    const callback = () => {
+      expect(spyOnRespond).toHaveBeenCalledWith(
+        callback, fakeRequest(), undefined, 200, headers);
+      done();
+    };
+    testMethod(callback);
   });
 
-  describe('calls callback immediately with an error if', () => {
+  describe('calls respondWithError() immediately with an error if', () => {
     describe('event', () => {
       let event: any;
       beforeEach(() => {
-        event = fakeEvent();
+        event = fakeRequest();
       });
       afterEach((done: Callback) => {
-        generateSignedCookies(event, null, (err: Error) => {
-          expect(err).toEqual(jasmine.any(Error));
+        const callback = () => {
+          expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, event, jasmine.any(Error));
           expect(spyOnGetDistribution).not.toHaveBeenCalled();
           done();
-        });
+        };
+        generateSignedCookies(event, null, callback);
       });
       it('is undefined', () => event = undefined);
       it('is null', () => event = null);
@@ -525,11 +531,12 @@ describe('generateSignedCookies()', () => {
       it('expiresAt is null', () => event.requestContext.authorizer.expiresAt = null);
     });
     const testError = (last: Callback, done: Callback) => {
-      testMethod((err: Error) => {
-        expect(err).toEqual(jasmine.any(Error));
+      const callback = () => {
+        expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, fakeRequest(), jasmine.any(Error));
         last();
         done();
-      });
+      };
+      testMethod(callback);
     };
     describe('cloudFront.getDistribution()', () => {
       let data: any;

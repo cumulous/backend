@@ -3,7 +3,7 @@ import { Signer } from 'aws-sdk/clients/cloudfront';
 import { execSync } from 'child_process';
 import * as stringify from 'json-stable-stringify';
 
-import { respond } from './apig';
+import { respond, respondWithError } from './apig';
 import { cloudFront, s3,
          CloudFormationRequest, CloudFormationResponse, sendCloudFormationResponse } from './aws';
 import { envNames } from './env';
@@ -141,7 +141,8 @@ export const generateSignedCookies = (
 
   if (event == null || event.requestContext == null ||
       event.requestContext.authorizer == null || event.requestContext.authorizer.expiresAt == null) {
-    return callback(Error('Expected non-empty event.requestContext.authorizer.expiresAt'));
+    return respondWithError(callback, event,
+      Error('Expected non-empty event.requestContext.authorizer.expiresAt'));
   }
   Promise.resolve()
     .then(() => cloudFront.getDistribution({Id: process.env[envNames.webDistributionId]}).promise())
@@ -153,7 +154,7 @@ export const generateSignedCookies = (
       getCookieParams(signer, process.env[envNames.webDomain], event.requestContext.authorizer.expiresAt))
     .then(cookie => getCookieHeaders(cookie, process.env[envNames.webDomain]))
     .then(headers => respond(callback, event, undefined, 200, headers))
-    .catch(callback);
+    .catch(err => respondWithError(callback, event, err));
 };
 
 const getSigningKey = (bucket: string, path: string) => {
