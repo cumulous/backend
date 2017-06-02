@@ -127,6 +127,7 @@ describe('getPolicy()', () => {
             Resource: [
               `${fakeBaseArn}/GET/`,
               `${fakeBaseArn}/GET/weblogin`,
+              `${fakeBaseArn}/POST/datasets`,
             ],
           }],
         },

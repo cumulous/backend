@@ -68,10 +68,10 @@ Resources:
     DeletionPolicy: Retain
     Properties:
       AttributeDefinitions:
-        - AttributeName: DatasetID
+        - AttributeName: Id
           AttributeType: S
       KeySchema:
-        - AttributeName: DatasetID
+        - AttributeName: Id
           KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 5
@@ -2186,13 +2186,19 @@ Resources:
           Parameters:
             Location: !Sub s3://${ArtifactsBucket}/swagger.yaml
 
-  PostDatasets:
+  CreateDataset:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-PostDatasets
+      FunctionName: !Sub ${AWS::StackName}-CreateDataset
       CodeUri: ../app
-      Handler: apig.proxy
+      Handler: datasets.create
       Runtime: nodejs6.10
+      Environment:
+        Variables:
+          DATASETS_TABLE: !If
+            - CreateDatasetsTable
+            - !Ref DatasetsTable
+            - !Ref DatasetsTableName
       Events:
         Api:
           Type: Api
@@ -2200,6 +2206,14 @@ Resources:
             Path: /datasets
             Method: POST
             RestApiId: !Ref Api
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: dynamodb:PutItem
+            Resource: !If
+              - CreateDatasetsTable
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTableName}
 
   GetDatasets:
     Type: AWS::Serverless::Function

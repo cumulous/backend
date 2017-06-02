@@ -48,6 +48,7 @@ export const getPolicy = (principalId: string, expiresAt: number, methodArn: str
             Resource: [
               `${baseArn}/GET/`,
               `${baseArn}/GET/weblogin`,
+              `${baseArn}/POST/datasets`,
             ],
           }],
         },

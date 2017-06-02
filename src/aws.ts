@@ -1,4 +1,4 @@
-import { APIGateway, CloudFront, EC2, S3, StepFunctions } from 'aws-sdk';
+import { APIGateway, CloudFront, DynamoDB, EC2, S3, StepFunctions } from 'aws-sdk';
 import * as stringify from 'json-stable-stringify';
 import { put } from 'request-promise-native';
 
@@ -8,6 +8,7 @@ import { Callback, Dict } from './types';
 
 export const apiGateway = new APIGateway();
 export const cloudFront = new CloudFront();
+export const dynamodb = new DynamoDB.DocumentClient();
 export const ec2 = new EC2();
 export const s3 = new S3({ signatureVersion: 'v4' });
 export const stepFunctions = new StepFunctions();

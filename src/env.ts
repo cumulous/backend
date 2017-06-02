@@ -12,6 +12,7 @@ export const envNames = {
   webDistributionId: 'WEB_DISTRIBUTION_ID',
   webSigningKeyBucket: 'WEB_SIGNING_KEY_BUCKET',
   webSigningKeyPath: 'WEB_SIGNING_KEY_PATH',
+  datasetsTable: 'DATASETS_TABLE',
   auth0Domain: 'AUTH0_DOMAIN',
   auth0ClientId: 'AUTH0_CLIENT_ID',
   auth0SecretBucket: 'AUTH0_SECRET_BUCKET',
