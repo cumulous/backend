@@ -464,24 +464,28 @@ describe('respond()', () => {
 
   describe('returns correctly compressed response if Accept-Encoding is', () => {
     const body = Buffer.from(stringify(fakeBody(), {space: 2}));
-    const testMethod = (encodingHeader: string, encodingMethod: string) => {
-      it(`"${encodingHeader}"`, (done: Callback) => {
-        respond((err: Error, response: Response) => {
-          expect(err).toBeFalsy();
-          (zlib as any)[encodingMethod](body, (err: Error, data: Buffer) => {
-            expect(response).toEqual({
-              body: data.toString('base64'),
-              isBase64Encoded: true,
-              headers: Object.assign(commonHeaders(), {
-                'Content-Encoding': encodingMethod,
-              }),
-              statusCode: 200,
-            });
-            done();
+    const testRespond = (encodingHeaderName: string, encodingHeaderValue: string,
+        encodingMethod: string, done: Callback) => {
+      const headers: any = {};
+      headers[encodingHeaderName] = encodingHeaderValue;
+      respond((err: Error, response: Response) => {
+        expect(err).toBeFalsy();
+        (zlib as any)[encodingMethod](body, (err: Error, data: Buffer) => {
+          expect(response).toEqual({
+            body: data.toString('base64'),
+            isBase64Encoded: true,
+            headers: Object.assign(commonHeaders(), {
+              'Content-Encoding': encodingMethod,
+            }),
+            statusCode: 200,
           });
-        }, {
-          headers: {'Accept-Encoding': encodingHeader},
-        }, fakeBody());
+          done();
+        });
+      }, { headers }, fakeBody());
+    };
+    const testMethod = (encodingHeaderValue: string, encodingMethod: string) => {
+      it(`"${encodingHeaderValue}"`, (done: Callback) => {
+        testRespond('Accept-Encoding', encodingHeaderValue, encodingMethod, done);
       });
     };
     testMethod('deflate', 'deflate');
@@ -489,6 +493,10 @@ describe('respond()', () => {
     testMethod('deflate,gzip', 'deflate');
     testMethod('gzip,deflate', 'deflate');
     testMethod('*', 'deflate');
+
+    it('in lowercase', (done: Callback) => {
+      testRespond('accept-encoding', 'deflate', 'deflate', done);
+    });
   });
 
   describe('returns uncompressed response if Accept-Encoding is', () => {

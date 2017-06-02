@@ -83,16 +83,20 @@ const validateParameter = (request: Request, modelRef: string) => {
   }
 };
 
+const getHeaderValue = (request: Request, headerName: string) => {
+  const name = RegExp(headerName, 'i');
+  const header = jsonpath.nodes(request, 'headers.*')
+    .find(node => name.test(String(node.path[2])));
+  return header == null ? header : header.value;
+};
+
 const getRequestValue = (request: Request, model: {in: string, name: string}) => {
   if (model.in === 'path') {
     return jsonpath.value(request, `pathParameters.${model.name}`);
   } else if (model.in === 'query') {
     return jsonpath.value(request, `queryStringParameters.${model.name}`);
   } else if (model.in === 'header') {
-    const headerName = RegExp(model.name, 'i');
-    const header = jsonpath.nodes(request, 'headers.*')
-      .find(node => headerName.test(String(node.path[2])));
-    return header == null ? header : header.value;
+    return getHeaderValue(request, model.name);
   } else if (model.in === 'body') {
     const body = jsonpath.value(request, 'body');
     return typeof body === 'string' ? JSON.parse(body) : null;
@@ -134,7 +138,7 @@ export const respond = (callback: Callback, request: Request,
   };
 
   if (request && request.headers) {
-    compress(respondWith, responseBody, request.headers['Accept-Encoding']);
+    compress(respondWith, responseBody, getHeaderValue(request, 'Accept-Encoding'));
   } else {
     respondWith(null, responseBody);
   }
