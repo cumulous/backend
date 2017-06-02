@@ -3,7 +3,7 @@ import { Signer } from 'aws-sdk/clients/cloudfront';
 import { execSync } from 'child_process';
 import * as stringify from 'json-stable-stringify';
 
-import { respond, respondWithError, validate } from './apig';
+import { Request, respond, respondWithError, validate } from './apig';
 import { cloudFront, s3,
          CloudFormationRequest, CloudFormationResponse, sendCloudFormationResponse } from './aws';
 import { envNames } from './env';
@@ -135,10 +135,7 @@ const storeSigningKey = (bucket: string, path: string, value: Buffer, encryption
       .then(() => value);
 };
 
-export const generateSignedCookies = (
-    event: { requestContext: { authorizer: { expiresAt: number | string } } },
-    context: any, callback: Callback) => {
-
+export const generateSignedCookies = (event: Request, context: any, callback: Callback) => {
   validate(event, 'GET', '/weblogin')
     .then(() => {
       if (!Number(event.requestContext.authorizer.expiresAt)) {
