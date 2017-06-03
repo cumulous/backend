@@ -31,6 +31,14 @@ describe('create()', () => {
     body: stringify(fakeBody()),
     requestContext: fakeContext(),
   });
+  const fakeItem = () => ({
+    id: fakeDatasetId,
+    projectId: fakeProjectId,
+    creatorId: fakeMemberId,
+    dateCreated: fakeDate,
+    description: fakeDescription,
+    status: 'Created',
+  });
 
   const testMethod = (callback: Callback) =>
     create(fakeRequest(), null, callback);
@@ -44,11 +52,7 @@ describe('create()', () => {
     spyOnValidate = spyOn(apig, 'validate')
       .and.callThrough();
     spyOnDynamoDbPut = spyOn(dynamodb, 'put')
-      .and.callFake((params: any) => ({
-        promise: () => Promise.resolve({
-          Attributes: params.Item,
-        }),
-      }));
+      .and.returnValue(fakeResolve());
     spyOn(uuid, 'v4').and.returnValue(fakeDatasetId);
     spyOn(Date.prototype, 'toISOString').and.returnValue(fakeDate);
     spyOnRespond = spyOn(apig, 'respond')
@@ -72,14 +76,7 @@ describe('create()', () => {
     testMethod(() => {
       expect(spyOnDynamoDbPut).toHaveBeenCalledWith({
         TableName: fakeDatasetsTable,
-        Item: {
-          Id: fakeDatasetId,
-          ProjectId: fakeProjectId,
-          CreatorId: fakeMemberId,
-          DateCreated: fakeDate,
-          Description: fakeDescription,
-          Status: 'Created',
-        },
+        Item: fakeItem(),
         ConditionExpression: 'attribute_not_exists(Id)',
       });
       expect(spyOnDynamoDbPut).toHaveBeenCalledTimes(1);
@@ -88,20 +85,12 @@ describe('create()', () => {
   });
 
   it('calls apig.respond() once with correct parameters', (done: Callback) => {
-    const responseBody = {
-      id: fakeDatasetId,
-      projectId: fakeProjectId,
-      creatorId: fakeMemberId,
-      dateCreated: fakeDate,
-      description: fakeDescription,
-      status: 'Created',
-    };
     const callback = () => {
       expect(spyOnRespond).toHaveBeenCalledWith(callback, {
         body: fakeBody(),
         requestContext: fakeContext(),
-      }, responseBody);
-      expect(ajv.validate('spec#/definitions/Dataset', responseBody)).toBe(true);
+      }, fakeItem());
+      expect(ajv.validate('spec#/definitions/Dataset', fakeItem())).toBe(true);
       expect(spyOnRespond).toHaveBeenCalledTimes(1);
       done();
     };
@@ -138,19 +127,6 @@ describe('create()', () => {
       testError(() => {
         expect(spyOnRespond).not.toHaveBeenCalled();
       }, done);
-    });
-
-    describe('dynamodb.put()-returned data', () => {
-      let data: any;
-      afterEach((done: Callback) => {
-        err = jasmine.any(Error);
-        spyOnDynamoDbPut.and.returnValue(fakeResolve(data));
-        testError(() => {}, done);
-      });
-      it('is undefined', () => data = undefined);
-      it('is null', () => data = null);
-      it('Attributes is undefined', () => data = {});
-      it('Attributes is null', () => data = { Attributes: null });
     });
 
     it('apig.respond() produces an error', (done: Callback) => {

@@ -6,27 +6,23 @@ import { envNames } from './env';
 import { Callback } from './types';
 
 export const create = (request: Request, context: any, callback: Callback) => {
+  const date = new Date().toISOString();
+  const id = uuid();
+  const item = () => ({
+    id: id,
+    projectId: request.body.projectId,
+    creatorId: request.requestContext.authorizer.principalId,
+    dateCreated: date,
+    description: request.body.description,
+    status: 'Created',
+  });
+
   validate(request, 'POST', '/datasets')
     .then(() => dynamodb.put({
       TableName: process.env[envNames.datasetsTable],
-      Item: {
-        Id: uuid(),
-        ProjectId: request.body.projectId,
-        CreatorId: request.requestContext.authorizer.principalId,
-        DateCreated: new Date().toISOString(),
-        Description: request.body.description,
-        Status: 'Created',
-      },
+      Item: item(),
       ConditionExpression: 'attribute_not_exists(Id)',
     }).promise())
-    .then(data => data.Attributes)
-    .then(item => respond(callback, request, {
-      id: item.Id,
-      projectId: item.ProjectId,
-      creatorId: item.CreatorId,
-      dateCreated: item.DateCreated,
-      description: item.Description,
-      status: item.Status,
-    }))
+    .then(() => respond(callback, request, item()))
     .catch(err => respondWithError(callback, request, err));
 };
