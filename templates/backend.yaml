@@ -2199,6 +2199,7 @@ Resources:
             - CreateDatasetsTable
             - !Ref DatasetsTable
             - !Ref DatasetsTableName
+          WEB_DOMAIN: !Ref WebDomain
       Events:
         Api:
           Type: Api
