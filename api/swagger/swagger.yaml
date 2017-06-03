@@ -498,7 +498,7 @@ definitions:
   DatasetDescription:
     description: Dataset description
     type: string
-    pattern: ^[\w-., ]{1,1000}$
+    maxLength: 1000
   DatasetStatus:
     description: Project status
     type: string
