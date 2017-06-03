@@ -91,17 +91,18 @@ const getHeaderValue = (request: Request, headerName: string) => {
 };
 
 const getRequestValue = (request: Request, model: {in: string, name: string}) => {
-  if (model.in === 'path') {
-    return jsonpath.value(request, `pathParameters.${model.name}`);
-  } else if (model.in === 'query') {
-    return jsonpath.value(request, `queryStringParameters.${model.name}`);
-  } else if (model.in === 'header') {
-    return getHeaderValue(request, model.name);
-  } else if (model.in === 'body') {
-    const body = jsonpath.value(request, 'body');
-    return typeof body === 'string' ? JSON.parse(body) : null;
-  } else {
-    throw new ApiError(`${model.in} not supported`);
+  switch (model.in) {
+    case 'path':
+      return jsonpath.value(request, `pathParameters.${model.name}`);
+    case 'query':
+      return jsonpath.value(request, `queryStringParameters.${model.name}`);
+    case 'header':
+      return getHeaderValue(request, model.name);
+    case 'body':
+      const body = jsonpath.value(request, 'body');
+      return typeof body === 'string' ? JSON.parse(body) : null;
+    default:
+      throw new ApiError(`${model.in} not supported`);
   }
 };
 
