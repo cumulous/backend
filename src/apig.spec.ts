@@ -624,7 +624,7 @@ describe('respondWithError()', () => {
         expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(), {
           message: 'Internal server error',
         }, 500);
-        expect(spyOnLog).toHaveBeenCalledWith(stringify(fakeError));
+        expect(spyOnLog).toHaveBeenCalledWith(ApiError.toString(fakeError));
         done();
       };
       testMethod(callback);

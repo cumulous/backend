@@ -28,11 +28,21 @@ export class ApiError implements Error {
   message: string;
   errors?: string[];
   code?: number;
+  stack?: string;
 
   constructor(message: string, errors?: string[], code = 500) {
     this.message = message;
     this.errors = errors;
     this.code = code;
+  }
+
+  static toString(err: ApiError) {
+    return stringify({
+      message: err.message,
+      code: err.code,
+      errors: err.errors,
+      stack: err.stack,
+    });
   }
 };
 
@@ -147,7 +157,7 @@ export const respond = (callback: Callback, request: Request,
 
 export const respondWithError = (callback: Callback, request: Request, err: ApiError) => {
   if (err.code == null || err.code == 500) {
-    log.error(stringify(err));
+    log.error(ApiError.toString(err));
     err = new ApiError('Internal server error', undefined, 500);
   }
   const body = { message: err.message, errors: err.errors };
