@@ -1,4 +1,3 @@
-export { IPSetDescriptor } from 'aws-sdk/clients/waf';
 import { Signer } from 'aws-sdk/clients/cloudfront';
 import { execSync } from 'child_process';
 import * as stringify from 'json-stable-stringify';
@@ -9,29 +8,6 @@ import { cloudFront, s3,
 import { envNames } from './env';
 import { Callback, Dict } from './types';
 import { assertNonEmptyArray } from './util';
-
-export const getIPSetDescriptors = (event: CloudFormationRequest,
-                                  context: any, callback: Callback) => {
-  Promise.resolve(event)
-    .then(event => event.ResourceProperties['CIDRs'])
-    .then((CIDRs: string[]) => {
-      assertNonEmptyArray(CIDRs, 'CIDRs');
-      return CIDRs.map(CIDR => ({
-        Type: 'IPV4',
-        Value: CIDR,
-      }));
-    })
-    .then(descriptors => sendCloudFormationResponse(Object.assign(event, {
-      Status: 'SUCCESS',
-      Data: {
-        Descriptors: descriptors,
-      },
-    } as CloudFormationResponse), null, callback))
-    .catch(err => sendCloudFormationResponse(Object.assign(event, {
-      Status: 'FAILED',
-      Reason: err.message,
-    } as CloudFormationResponse), null, callback));
-};
 
 export const createOriginAccessIdentity = (event: CloudFormationRequest,
                                         context: any, callback: Callback) => {
