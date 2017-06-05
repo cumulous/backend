@@ -27,7 +27,8 @@ export const authenticate = (domain: string, token: string) => {
 
   return Promise.resolve(token)
     .then(token => decode(token, {complete: true}))
-    .then(decoded => getCertificate(domain, decoded.header.kid))
+    .then((decoded: { header: { kid: string } }) =>
+      getCertificate(domain, decoded.header.kid))
     .then(cert => verify(token, cert, {
       algorithms: ['RS256'],
       audience: `https://${process.env[envNames.apiDomain]}`,
