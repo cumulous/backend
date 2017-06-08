@@ -71,6 +71,11 @@ Parameters:
     Type: String
     AllowedPattern: ^[\w-.]{0,255}$
     Default: ''
+  SearchDomainName:
+    Description: "The name of the Cloudsearch domain to reuse when re-creating this template"
+    Type: String
+    AllowedPattern: ^([a-z][a-z\d-]{2,27})?$
+    Default: ''
   Auth0Domain:
     Description: "Your Auth0 domain name (*)"
     Type: String
@@ -133,6 +138,7 @@ Metadata:
           default: "Databases"
         Parameters:
           - DatasetsTableName
+          - SearchDomainName
       -
         Label:
           default: "Auth0"
@@ -147,6 +153,7 @@ Conditions:
   EnableStackAdmin: !Not [!Equals [!Ref StackAdmin, '']]
   CreateNotification: !Not [!Equals [!Ref NotificationEmail, '']]
   CreateHostedZone: !Equals [!Ref HostedZone, '']
+  CreateSearchDomain: !Equals [!Ref SearchDomainName, '']
 
 Resources:
   BackendArtifactsBucket:
@@ -229,6 +236,42 @@ Resources:
               })))
               .then(descriptors => response.send(event, context, response.SUCCESS, {
                 Descriptors: descriptors,
+              }))
+              .catch(err => {
+                console.log(err);
+                response.send(event, context, response.FAILED);
+              });
+          };
+
+  SearchDomain:
+    Type: AWS::CloudFormation::CustomResource
+    Condition: CreateSearchDomain
+    DeletionPolicy: Retain
+    Properties:
+      ServiceToken: !GetAtt SetupSearchDomain.Arn
+
+  SetupSearchDomain:
+    Type: AWS::Lambda::Function
+    Condition: CreateSearchDomain
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-SetupSearchDomain
+      Handler: index.handler
+      Runtime: nodejs6.10
+      Role: !GetAtt SetupSearchDomainRole.Arn
+      Code:
+        ZipFile: |
+          const AWS = require('aws-sdk');
+          const crypto = require("crypto");
+          const response = require('cfn-response');
+          const cloudsearch = new AWS.CloudSearch();
+          exports.handler = (event, context) => {
+            const domainName = 'search-' + crypto.randomBytes(10).toString('hex');
+            Promise.resolve()
+              .then(() => cloudsearch.createDomain({
+                DomainName: domainName,
+              }).promise())
+              .then(() => response.send(event, context, response.SUCCESS, {
+                Name: domainName,
               }))
               .catch(err => {
                 console.log(err);
@@ -664,6 +707,33 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  SetupSearchDomainRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SetupSearchDomainPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudsearch:CreateDomain
+                  - cloudsearch:DescribeDomains
+                Resource:
+                  - !If
+                    - CreateSearchDomain
+                    - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/search-*
+                    - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomainName}
 
   BackendPipelineRole:
     Type: AWS::IAM::Role
@@ -1551,3 +1621,8 @@ Outputs:
     Value: !Sub 'https://console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/${BackendPipeline}'
   FrontendPipelineUrl:
     Value: !Sub 'https://console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/${FrontendPipeline}'
+  SearchDomain:
+    Value: !If
+      - CreateSearchDomain
+      - !GetAtt SearchDomain.Name
+      - !Ref SearchDomainName
