@@ -40,6 +40,8 @@ Parameters:
     Type: String
   DatasetsTableName:
     Type: String
+  SearchDomain:
+    Type: String
   Auth0Domain:
     Type: String
   Auth0ManagementClientID:
@@ -1872,6 +1874,161 @@ Resources:
                     "ResultPath": null,
                     "Resource": "${DeleteS3Secret.Arn}",
                     "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
+
+  CloudSearchDefineIndexFields:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CloudSearchDefineIndexFields
+      CodeUri: ../app
+      Handler: search.defineIndexFields
+      Runtime: nodejs6.10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: cloudsearch:DefineIndexFields
+            Resource:
+              - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+
+  CloudSearchIndexDocuments:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CloudSearchIndexDocuments
+      CodeUri: ../app
+      Handler: search.indexDocuments
+      Runtime: nodejs6.10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: cloudsearch:IndexDocuments
+            Resource:
+              - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+
+  CloudSearchDescribeDomainState:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CloudSearchDescribeDomainState
+      CodeUri: ../app
+      Handler: search.describeDomainState
+      Runtime: nodejs6.10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: cloudsearch:DescribeDomains
+            Resource:
+              - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+
+  SetupSearchDomainStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupSearchDomain",
+          "States": {
+            "SetupSearchDomain": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "ChooseEventType",
+                "States": {
+                  "ChooseEventType": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "Success"
+                      }
+                    ],
+                    "Default": "DefineIndexFields"
+                  },
+                  "DefineIndexFields": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.State",
+                    "Resource": "${CloudSearchDefineIndexFields.Arn}",
+                    "Next": "CheckReindexDocuments"
+                  },
+                  "CheckReindexDocuments": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.State",
+                        "StringEquals": "RequiresIndexDocuments",
+                        "Next": "IndexDocuments"
+                      }
+                    ],
+                    "Default": "CheckActiveState"
+                  },
+                  "IndexDocuments": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.SearchDomain",
+                    "ResultPath": null,
+                    "Resource": "${CloudSearchIndexDocuments.Arn}",
+                    "Next": "CheckActiveState"
+                  },
+                  "CheckActiveState": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.State",
+                        "StringEquals": "Active",
+                        "Next": "Success"
+                      }
+                    ],
+                    "Default": "Wait"
+                  },
+                  "Wait" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "DescribeState"
+                  },
+                  "DescribeState": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.SearchDomain",
+                    "ResultPath": "$.State",
+                    "Resource": "${CloudSearchDescribeDomainState.Arn}",
+                    "Next": "CheckActiveState"
                   },
                   "Success": {
                     "Type": "Pass",

@@ -419,6 +419,12 @@ Resources:
         Type: LINUX_CONTAINER
         Image: aws/codebuild/ubuntu-base:14.04
         ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: SEARCH_DOMAIN
+            Value: !If
+              - CreateSearchDomain
+              - !GetAtt SearchDomain.Name
+              - !Ref SearchDomainName
       Artifacts:
         Type: CODEPIPELINE
       Source:
@@ -483,6 +489,7 @@ Resources:
                           ParameterKey=WebSigningKeyPutRoleArn,ParameterValue=$signing_put_role \
                           ParameterKey=WebSigningKeyGetRoleArn,ParameterValue=${WebSigningKeyGetRole.Arn} \
                           ParameterKey=DatasetsTableName,ParameterValue=$datasets_table \
+                          ParameterKey=SearchDomain,ParameterValue=$SEARCH_DOMAIN \
                           ParameterKey=Auth0Domain,ParameterValue=${Auth0Domain} \
                           ParameterKey=Auth0ManagementClientID,ParameterValue=${Auth0ManagementClientID} \
                           ParameterKey=Auth0ManagementClientSecret,ParameterValue=$auth0_secret \
