@@ -214,26 +214,26 @@ Resources:
   GetIPSetDescriptors:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub GetIPSetDescriptors
+      FunctionName: GetIPSetDescriptors
       Handler: index.handler
       Runtime: nodejs6.10
       Role: !GetAtt LambdaBasicExecutionRole.Arn
       Code:
-        ZipFile: !Sub |-
+        ZipFile: !Sub |
           const response = require('cfn-response');
           exports.handler = (event, context) => {
-          return Promise.resolve(event.ResourceProperties.CIDRs)
-            .then(CIDRs => CIDRs.split(',').map(CIDR => ({
-              Type: 'IPV4',
-              Value: CIDR,
-            })))
-            .then(descriptors => response.send(event, context, response.SUCCESS, {
-              Descriptors: descriptors,
-            }))
-            .catch(err => {
-              console.log(err);
-              response.send(event, context, response.FAILED);
-            });
+            Promise.resolve(event.ResourceProperties.CIDRs)
+              .then(CIDRs => CIDRs.split(',').map(CIDR => ({
+                Type: 'IPV4',
+                Value: CIDR,
+              })))
+              .then(descriptors => response.send(event, context, response.SUCCESS, {
+                Descriptors: descriptors,
+              }))
+              .catch(err => {
+                console.log(err);
+                response.send(event, context, response.FAILED);
+              });
           };
 
   PipelineNotification:
