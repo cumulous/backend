@@ -54,7 +54,7 @@ describe('search.defineIndexFields()', () => {
       expect(spyOnDefineIndexField).toHaveBeenCalledWith({
         DomainName: fakeSearchDomain,
         IndexField: {
-          IndexFieldName: fakeTextField + '-' + fakeFieldSuffix,
+          IndexFieldName: fakeTextField + '_' + fakeFieldSuffix,
           IndexFieldType: 'text',
           TextOptions: fakeTextOptions(),
         },
@@ -62,7 +62,7 @@ describe('search.defineIndexFields()', () => {
       expect(spyOnDefineIndexField).toHaveBeenCalledWith({
         DomainName: fakeSearchDomain,
         IndexField: {
-          IndexFieldName: fakeLiteralField + '-' + fakeFieldSuffix,
+          IndexFieldName: fakeLiteralField + '_' + fakeFieldSuffix,
           IndexFieldType: 'literal',
           TextOptions: fakeLiteralOptions(),
         },

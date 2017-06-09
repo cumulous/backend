@@ -23,7 +23,7 @@ const defineIndexField = (searchDomain: string, field: IndexField, suffix: strin
   return cloudSearch.defineIndexField({
       DomainName: searchDomain,
       IndexField: Object.assign(field, {
-        IndexFieldName: `${field.IndexFieldName}-${suffix}`,
+        IndexFieldName: `${field.IndexFieldName}_${suffix}`,
       }),
     }).promise()
       .then(data => data.IndexField.Status.State);
