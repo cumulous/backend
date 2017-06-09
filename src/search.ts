@@ -6,12 +6,12 @@ import { Callback } from './types';
 export const defineIndexFields = (event: {
       SearchDomain: string;
       FieldSuffix: string;
-      Fields: string[];
+      Fields: IndexField[];
     }, context: any, callback: Callback) => {
 
   Promise.resolve(event)
     .then(event => Promise.all(event.Fields.map(field =>
-      defineIndexField(event.SearchDomain, JSON.parse(field), event.FieldSuffix))))
+      defineIndexField(event.SearchDomain, field, event.FieldSuffix))))
     .then(states => callback(null,
       states.some(state => state == 'RequiresIndexDocuments') ?
         'RequiresIndexDocuments' : 'Processing'))

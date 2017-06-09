@@ -24,15 +24,15 @@ describe('search.defineIndexFields()', () => {
   const fakeEvent = () => ({
     SearchDomain: fakeSearchDomain,
     FieldSuffix: fakeFieldSuffix,
-    Fields: [stringify({
+    Fields: [{
       IndexFieldName: fakeTextField,
       IndexFieldType: 'text',
       TextOptions: fakeTextOptions(),
-    }), stringify({
+    }, {
       IndexFieldName: fakeLiteralField,
       IndexFieldType: 'literal',
       TextOptions: fakeLiteralOptions(),
-    })],
+    }],
   });
 
   let event: any;
@@ -84,7 +84,6 @@ describe('search.defineIndexFields()', () => {
     it('event.Fields is undefined', () => event.Fields = undefined);
     it('event.Fields is null', () => event.Fields = null);
     it('event.Fields is not an array', () => event.Fields = {});
-    it('event.Fields could not be parsed', () => event.Fields = ['{']);
     it('cloudSearch.defineIndexField() produces an error', () => {
       spyOnDefineIndexField.and.returnValue(fakeReject('defineIndexField()'));
     });

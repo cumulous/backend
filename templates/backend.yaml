@@ -1939,16 +1939,11 @@ Resources:
       StateMachine: !Ref SetupSearchDomainStateMachine
       SearchDomain: !Ref SearchDomain
       FieldSuffix: !FindInMap [StackMap, !Ref 'AWS::StackName', SearchFieldSuffix]
-      Fields: !Sub |-
-        [
-          {
-            "IndexFieldName": "description",
-            "IndexFieldType": "text",
-            "TextOptions": {
-              "SortEnabled": false
-            }
-          }
-        ]
+      Fields:
+        - IndexFieldName: description
+          IndexFieldType: text
+          TextOptions:
+            SortEnabled: !!bool false
 
   CloudSearchDefineIndexFields:
     Type: AWS::Serverless::Function
