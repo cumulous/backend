@@ -10,18 +10,18 @@ export const create = (request: Request, context: any, callback: Callback) => {
   const id = uuid();
   const item = () => ({
     id: id,
-    projectId: request.body.projectId,
-    creatorId: request.requestContext.authorizer.principalId,
-    dateCreated: date,
+    project_id: request.body.project_id,
+    creator_id: request.requestContext.authorizer.principalId,
+    created_at: date,
     description: request.body.description,
-    status: 'Created',
+    status: 'created',
   });
 
   validate(request, 'POST', '/datasets')
     .then(() => dynamodb.put({
       TableName: process.env[envNames.datasetsTable],
       Item: item(),
-      ConditionExpression: 'attribute_not_exists(Id)',
+      ConditionExpression: 'attribute_not_exists(id)',
     }).promise())
     .then(() => respond(callback, request, item()))
     .catch(err => respondWithError(callback, request, err));

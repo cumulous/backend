@@ -242,7 +242,7 @@ paths:
         httpMethod: POST
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetDatasets.Arn}/invocations
-  /datasets/{datasetId}:
+  /datasets/{dataset_id}:
     options:
       tags:
         - Datasets
@@ -352,7 +352,7 @@ paths:
         httpMethod: POST
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteDataset.Arn}/invocations
-  /datasets/{datasetId}/credentials:
+  /datasets/{dataset_id}/credentials:
     options:
       tags:
         - Datasets
@@ -470,18 +470,18 @@ definitions:
   Dataset:
     required:
       - id
-      - projectId
-      - dateCreated
-      - creatorId
+      - project_id
+      - created_at
+      - creator_id
       - status
     properties:
       id:
         $ref: '#/definitions/DatasetId'
-      projectId:
+      project_id:
         $ref: '#/definitions/ProjectId'
-      dateCreated:
+      created_at:
         $ref: '#/definitions/DateTime'
-      creatorId:
+      creator_id:
         $ref: '#/definitions/MemberId'
       description:
         $ref: '#/definitions/DatasetDescription'
@@ -503,11 +503,14 @@ definitions:
     description: Project status
     type: string
     enum:
-      - Created
-      - Uploading
-      - Available
-      - Archived
-      - Removed
+      - created
+      - uploading
+      - available
+      - archived
+      - removing
+      - removed
+      - deleting
+      - deleted
   DatasetMetadata:
     description: Additional information on the dataset
     type: object
@@ -535,20 +538,19 @@ definitions:
       id:
         $ref: '#/definitions/DatasetId'
       status:
-        enum:
-          - Deleting
+        $ref: '#/definitions/DatasetStatus'
   DatasetCredentialsAction:
     description: Action for the dataset credentials
     type: string
     enum:
-      - Upload
-      - Download
+      - upload
+      - download
   DatasetCredentialsResponse:
     required:
       - id
       - action
       - credentials
-      - expirationDate
+      - expires_at
       - bucket
     properties:
       id:
@@ -557,21 +559,21 @@ definitions:
         $ref: '#/definitions/DatasetCredentialsAction'
       credentials:
         $ref: '#/definitions/AwsCredentials'
-      expirationDate:
+      expires_at:
         $ref: '#/definitions/DateTime'
       bucket:
         $ref: '#/definitions/Bucket'
   AwsCredentials:
     required:
-      - accessKeyId
-      - secretAccessKey
-      - sessionToken
+      - access_key_id
+      - secret_access_key
+      - session_token
     properties:
-      accessKeyId:
+      access_key_id:
         type: string
-      secretAccessKey:
+      secret_access_key:
         type: string
-      sessionToken:
+      session_token:
         type: string
   PaginationNext:
     type: integer
@@ -608,8 +610,8 @@ parameters:
     description: filter by project status
     type: string
     enum:
-      - Available
-      - Removed
+      - available
+      - removed
   ProjectsQueryIRB:
     in: query
     name: irb
@@ -628,10 +630,10 @@ parameters:
     required: true
     schema:
       required:
-        - projectId
+        - project_id
       additionalProperties: false
       properties:
-        projectId:
+        project_id:
           $ref: '#/definitions/ProjectId'
         description:
           $ref: '#/definitions/DatasetDescription'
@@ -655,14 +657,17 @@ parameters:
     description: Filter by dataset status
     type: string
     enum:
-      - Created
-      - Uploading
-      - Available
-      - Archived
-      - Removed
+      - created
+      - uploading
+      - available
+      - archived
+      - removing
+      - removed
+      - deleting
+      - deleted
   DatasetId:
     in: path
-    name: datasetId
+    name: dataset_id
     description: Unique identifier for a dataset
     required: true
     type: string

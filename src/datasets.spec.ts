@@ -17,9 +17,9 @@ const fakeDescription = 'Fake dataset';
 const fakeDate = new Date().toISOString();
 const fakeExpiresAt = String(new Date().getTime());
 
-describe('create()', () => {
+describe('datasets.create()', () => {
   const fakeBody = () => ({
-    projectId: fakeProjectId,
+    project_id: fakeProjectId,
     description: fakeDescription,
   });
   const fakeContext = () => ({
@@ -33,11 +33,11 @@ describe('create()', () => {
   });
   const fakeItem = () => ({
     id: fakeDatasetId,
-    projectId: fakeProjectId,
-    creatorId: fakeMemberId,
-    dateCreated: fakeDate,
+    project_id: fakeProjectId,
+    creator_id: fakeMemberId,
+    created_at: fakeDate,
     description: fakeDescription,
-    status: 'Created',
+    status: 'created',
   });
 
   const testMethod = (callback: Callback) =>
@@ -77,7 +77,7 @@ describe('create()', () => {
       expect(spyOnDynamoDbPut).toHaveBeenCalledWith({
         TableName: fakeDatasetsTable,
         Item: fakeItem(),
-        ConditionExpression: 'attribute_not_exists(Id)',
+        ConditionExpression: 'attribute_not_exists(id)',
       });
       expect(spyOnDynamoDbPut).toHaveBeenCalledTimes(1);
       done();
