@@ -1960,7 +1960,7 @@ Resources:
       Policies:
         Statement:
           - Effect: Allow
-            Action: cloudsearch:DefineIndexFields
+            Action: cloudsearch:DefineIndexField
             Resource:
               - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
 
