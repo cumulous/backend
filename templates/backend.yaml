@@ -1915,6 +1915,25 @@ Resources:
           }
         }
 
+  Mappings:
+    StackMap:
+      SearchFieldSuffix:
+        backend-beta: b
+        backend-release: r
+
+  SetupSearchDomain:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupSearchDomainStateMachine
+      SearchDomain: !Ref SearchDomain
+      FieldSuffix: !FindInMap [StackMap, SearchFieldSuffix, !Ref AWS::StackName]
+      Fields:
+        - IndexFieldName: description
+          IndexFieldType: text
+          TextOptions:
+            SortEnabled: false
+
   CloudSearchDefineIndexFields:
     Type: AWS::Serverless::Function
     Properties:
