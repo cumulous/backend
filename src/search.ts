@@ -27,3 +27,11 @@ const defineIndexField = (searchDomain: string, field: IndexField, suffix: strin
     }).promise()
       .then(data => data.IndexField.Status.State);
 };
+
+export const indexDocuments = (domain: string, context: any, callback: Callback) => {
+  cloudSearch.indexDocuments({
+    DomainName: domain,
+  }).promise()
+    .then(() => callback())
+    .catch(callback);
+};

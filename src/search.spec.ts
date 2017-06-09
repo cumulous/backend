@@ -1,7 +1,7 @@
 import { cloudSearch } from './aws';
 import { fakeReject, fakeResolve } from './fixtures/support';
 import * as search from './search';
-import { defineIndexFields } from './search';
+import { defineIndexFields, indexDocuments } from './search';
 import { Callback } from './types';
 
 const fakeSearchDomain = 'search-1234';
@@ -125,6 +125,47 @@ describe('defineIndexFields()', () => {
           },
         }),
       );
+    });
+  });
+});
+
+describe('indexDocuments()', () => {
+
+  let spyOnIndexDocuments: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnIndexDocuments = spyOn(cloudSearch, 'indexDocuments')
+      .and.returnValue(fakeResolve());
+  });
+
+  const testMethod = (callback: Callback) =>
+    indexDocuments(fakeSearchDomain, null, callback);
+
+  it('calls cloudSearch.indexDocuments() once with correct parameters',
+      (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnIndexDocuments).toHaveBeenCalledWith({
+        DomainName: fakeSearchDomain,
+      });
+      expect(spyOnIndexDocuments).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback with an error if cloudSearch.indexDocuments() produces an error',
+      (done: Callback) => {
+    spyOnIndexDocuments.and.returnValue(fakeReject('indexDocuments()'));
+    testMethod((err?: Error) => {
+      expect(err).toEqual(jasmine.any(Error));
+      done();
+    });
+  });
+
+  it('calls callback without an error for correct parameters',
+      (done: Callback) => {
+    testMethod((err?: Error) => {
+      expect(err).toBeFalsy();
+      done();
     });
   });
 });
