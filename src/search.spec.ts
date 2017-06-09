@@ -6,7 +6,7 @@ import { Callback } from './types';
 
 const fakeSearchDomain = 'search-1234';
 
-describe('defineIndexFields()', () => {
+describe('search.defineIndexFields()', () => {
   const fakeFieldSuffix = 'f';
   const fakeTextField = 'fake-text';
   const fakeTextOptions = () => ({
@@ -129,7 +129,7 @@ describe('defineIndexFields()', () => {
   });
 });
 
-describe('indexDocuments()', () => {
+describe('search.indexDocuments()', () => {
 
   let spyOnIndexDocuments: jasmine.Spy;
 
@@ -161,8 +161,7 @@ describe('indexDocuments()', () => {
     });
   });
 
-  it('calls callback without an error for correct parameters',
-      (done: Callback) => {
+  it('calls callback without an error for correct parameters', (done: Callback) => {
     testMethod((err?: Error) => {
       expect(err).toBeFalsy();
       done();
