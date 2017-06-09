@@ -277,81 +277,81 @@ paths:
                 Fn::Sub: "'https://${WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
               method.response.header.Vary: "'Accept-Encoding'"
-    # get:
-    #   summary: Get properties of a dataset
-    #   description: |
-    #     Returns dataset object for a specified ID
-    #   operationId: getDataset
-    #   security:
-    #     - member_token: []
-    #   tags:
-    #     - Datasets
-    #   produces:
-    #     - application/json
-    #   parameters:
-    #     - $ref: '#/parameters/DatasetId'
-    #     - $ref: '#/parameters/CompressionRequest'
-    #   responses:
-    #     200:
-    #       description: Dataset
-    #       schema:
-    #         $ref: '#/definitions/Dataset'
-    #   x-amazon-apigateway-integration:
-    #     type: aws_proxy
-    #     httpMethod: POST
-    #     uri:
-    #       Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetDataset.Arn}/invocations
-    # patch:
-    #   summary: Modify properties of a dataset
-    #   description: |
-    #     Modifies select properties of a dataset
-    #   operationId: modifyDataset
-    #   security:
-    #     - member_token: []
-    #   tags:
-    #     - Datasets
-    #   produces:
-    #     - application/json
-    #   parameters:
-    #     - $ref: '#/parameters/DatasetId'
-    #     - $ref: '#/parameters/DatasetModificationRequest'
-    #     - $ref: '#/parameters/CompressionRequest'
-    #   responses:
-    #     200:
-    #       description: Modified dataset
-    #       schema:
-    #         $ref: '#/definitions/Dataset'
-    #   x-amazon-apigateway-integration:
-    #     type: aws_proxy
-    #     httpMethod: POST
-    #     uri:
-    #       Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PatchDataset.Arn}/invocations
-    # delete:
-    #   summary: Delete a dataset
-    #   description: |
-    #     Schedules complete deletion of a dataset.
+    get:
+      summary: Get properties of a dataset
+      description: |
+        Returns dataset object for a specified ID
+      operationId: getDataset
+      security:
+        - member_token: []
+      tags:
+        - Datasets
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/DatasetId'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Dataset
+          schema:
+            $ref: '#/definitions/Dataset'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetDataset.Arn}/invocations
+    patch:
+      summary: Modify properties of a dataset
+      description: |
+        Modifies select properties of a dataset
+      operationId: modifyDataset
+      security:
+        - member_token: []
+      tags:
+        - Datasets
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/DatasetId'
+        - $ref: '#/parameters/DatasetModificationRequest'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Modified dataset
+          schema:
+            $ref: '#/definitions/Dataset'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PatchDataset.Arn}/invocations
+    delete:
+      summary: Delete a dataset
+      description: |
+        Schedules complete deletion of a dataset.
 
-    #     Marks dataset status as _Deleting_ until completed.
-    #   operationId: deleteDataset
-    #   security:
-    #     - member_token: []
-    #   tags:
-    #     - Datasets
-    #   produces:
-    #     - application/json
-    #   parameters:
-    #     - $ref: '#/parameters/DatasetId'
-    #     - $ref: '#/parameters/CompressionRequest'
-    #   responses:
-    #     200:
-    #       description: Status of the dataset scheduled for deletion
-    #       schema:
-    #         $ref: '#/definitions/DatasetDeleting'
-    #   x-amazon-apigateway-integration:
-    #     type: aws_proxy
-    #     httpMethod: POST
-    #     uri:
-    #       Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteDataset.Arn}/invocations
+        Marks dataset status as _Deleting_ until completed.
+      operationId: deleteDataset
+      security:
+        - member_token: []
+      tags:
+        - Datasets
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/DatasetId'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Status of the dataset scheduled for deletion
+          schema:
+            $ref: '#/definitions/DatasetDeleting'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteDataset.Arn}/invocations
   /datasets/{dataset_id}/credentials:
     options:
       tags:
@@ -387,31 +387,31 @@ paths:
                 Fn::Sub: "'https://${WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
               method.response.header.Vary: "'Accept-Encoding'"
-    # post:
-    #   summary: Request credentials for data access
-    #   description: |
-    #     Returns temporary credentials to access the data stored on S3
-    #   operationId: requestDataCredentials
-    #   security:
-    #     - member_token: []
-    #   tags:
-    #     - Datasets
-    #   produces:
-    #     - application/json
-    #   parameters:
-    #     - $ref: '#/parameters/DatasetId'
-    #     - $ref: '#/parameters/DatasetCredentialsRequest'
-    #     - $ref: '#/parameters/CompressionRequest'
-    #   responses:
-    #     200:
-    #       description: Temporary credentials for data access
-    #       schema:
-    #         $ref: '#/definitions/DatasetCredentialsResponse'
-    #   x-amazon-apigateway-integration:
-    #     type: aws_proxy
-    #     httpMethod: POST
-    #     uri:
-    #       Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostDatasetCredentials.Arn}/invocations
+    post:
+      summary: Request credentials for data access
+      description: |
+        Returns temporary credentials to access the data stored on S3
+      operationId: requestDataCredentials
+      security:
+        - member_token: []
+      tags:
+        - Datasets
+      produces:
+        - application/json
+      parameters:
+        - $ref: '#/parameters/DatasetId'
+        - $ref: '#/parameters/DatasetCredentialsRequest'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Temporary credentials for data access
+          schema:
+            $ref: '#/definitions/DatasetCredentialsResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostDatasetCredentials.Arn}/invocations
 
 definitions:
   Spec:

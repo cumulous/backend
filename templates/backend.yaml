@@ -2380,65 +2380,65 @@ Resources:
             Method: GET
             RestApiId: !Ref Api
 
-  # GetDataset:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     FunctionName: !Sub ${AWS::StackName}-GetDataset
-  #     CodeUri: ../app
-  #     Handler: apig.proxy
-  #     Runtime: nodejs6.10
-  #     Events:
-  #       Api:
-  #         Type: Api
-  #         Properties:
-  #           Path: /datasets/{datasetId}
-  #           Method: GET
-  #           RestApiId: !Ref Api
+  GetDataset:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-GetDataset
+      CodeUri: ../app
+      Handler: apig.proxy
+      Runtime: nodejs6.10
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /datasets/{dataset_id}
+            Method: GET
+            RestApiId: !Ref Api
 
-  # PatchDataset:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     FunctionName: !Sub ${AWS::StackName}-PatchDataset
-  #     CodeUri: ../app
-  #     Handler: apig.proxy
-  #     Runtime: nodejs6.10
-  #     Events:
-  #       Api:
-  #         Type: Api
-  #         Properties:
-  #           Path: /datasets/{datasetId}
-  #           Method: PATCH
-  #           RestApiId: !Ref Api
+  PatchDataset:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-PatchDataset
+      CodeUri: ../app
+      Handler: apig.proxy
+      Runtime: nodejs6.10
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /datasets/{dataset_id}
+            Method: PATCH
+            RestApiId: !Ref Api
 
-  # DeleteDataset:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     FunctionName: !Sub ${AWS::StackName}-DeleteDataset
-  #     CodeUri: ../app
-  #     Handler: apig.proxy
-  #     Runtime: nodejs6.10
-  #     Events:
-  #       Api:
-  #         Type: Api
-  #         Properties:
-  #           Path: /datasets/{datasetId}
-  #           Method: DELETE
-  #           RestApiId: !Ref Api
+  DeleteDataset:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DeleteDataset
+      CodeUri: ../app
+      Handler: apig.proxy
+      Runtime: nodejs6.10
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /datasets/{dataset_id}
+            Method: DELETE
+            RestApiId: !Ref Api
 
-  # PostDatasetCredentials:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     FunctionName: !Sub ${AWS::StackName}-PostDatasetCredentials
-  #     CodeUri: ../app
-  #     Handler: apig.proxy
-  #     Runtime: nodejs6.10
-  #     Events:
-  #       Api:
-  #         Type: Api
-  #         Properties:
-  #           Path: /datasets/{datasetId}/credentials
-  #           Method: POST
-  #           RestApiId: !Ref Api
+  PostDatasetCredentials:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-PostDatasetCredentials
+      CodeUri: ../app
+      Handler: apig.proxy
+      Runtime: nodejs6.10
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /datasets/{dataset_id}/credentials
+            Method: POST
+            RestApiId: !Ref Api
 
 Outputs:
   WebSigningKey:
