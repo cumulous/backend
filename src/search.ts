@@ -35,3 +35,21 @@ export const indexDocuments = (domain: string, context: any, callback: Callback)
     .then(() => callback())
     .catch(callback);
 };
+
+export const describeDomainState = (domain: string, context: any, callback: Callback) => {
+  cloudSearch.describeDomains({
+    DomainNames: [domain],
+  }).promise()
+    .then(data => {
+      const status = data.DomainStatusList[0];
+      if (status.RequiresIndexDocuments) {
+        return 'RequiresIndexDocuments';
+      } else if (status.Processing) {
+        return 'Processing';
+      } else {
+        return 'Active';
+      }
+    })
+    .then(state => callback(null, state))
+    .catch(callback);
+};

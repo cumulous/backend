@@ -1,7 +1,7 @@
 import { cloudSearch } from './aws';
 import { fakeReject, fakeResolve } from './fixtures/support';
 import * as search from './search';
-import { defineIndexFields, indexDocuments } from './search';
+import { defineIndexFields, indexDocuments, describeDomainState } from './search';
 import { Callback } from './types';
 
 const fakeSearchDomain = 'search-1234';
@@ -166,6 +166,85 @@ describe('indexDocuments()', () => {
     testMethod((err?: Error) => {
       expect(err).toBeFalsy();
       done();
+    });
+  });
+});
+
+describe('search.describeDomainState()', () => {
+  let requiresIndexDocuments: boolean;
+  let processing: boolean;
+
+  const fakeStatus = (requiresIndexDocuments: boolean, processing: boolean) => {
+    return fakeResolve({
+      DomainStatusList: [{
+        RequiresIndexDocuments: requiresIndexDocuments,
+        Processing: processing,
+      }],
+    });
+  };
+
+  let spyOnDescribeDomains: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnDescribeDomains = spyOn(cloudSearch, 'describeDomains')
+      .and.returnValue(fakeStatus(false, false));
+  });
+
+  const testMethod = (callback: Callback) =>
+    describeDomainState(fakeSearchDomain, null, callback);
+
+  it('calls cloudSearch.describeDomains() once with correct parameters',
+      (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnDescribeDomains).toHaveBeenCalledWith({
+        DomainNames: [fakeSearchDomain],
+      });
+      expect(spyOnDescribeDomains).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  describe('calls callback with an error if', () => {
+    afterEach((done: Callback) => {
+      testMethod((err?: Error) => {
+        expect(err).toEqual(jasmine.any(Error));
+        done();
+      });
+    });
+    it('cloudSearch.describeDomains() produces an error', () => {
+      spyOnDescribeDomains.and.returnValue(fakeReject('describeDomains()'));
+    });
+    it('domain status list is empty', () => {
+      spyOnDescribeDomains.and.returnValue(fakeResolve({
+        DomainStatusList: [],
+      }));
+    });
+  });
+
+  describe('calls callback with correct parameters if', () => {
+    let state: string;
+    afterEach((done: Callback) => {
+      testMethod((err?: Error, data?: any) => {
+        expect(err).toBeFalsy();
+        expect(data).toEqual(state);
+        done();
+      });
+    });
+    it('RequiresIndexDocuments is "false", Processing is "false"', () => {
+      spyOnDescribeDomains.and.returnValue(fakeStatus(false, false));
+      state = 'Active';
+    });
+    it('RequiresIndexDocuments is "false", Processing is "true"', () => {
+      spyOnDescribeDomains.and.returnValue(fakeStatus(false, true));
+      state = 'Processing';
+    });
+    it('RequiresIndexDocuments is "true", Processing is "false"', () => {
+      spyOnDescribeDomains.and.returnValue(fakeStatus(true, false));
+      state = 'RequiresIndexDocuments';
+    });
+    it('RequiresIndexDocuments is "true", Processing is "true"', () => {
+      spyOnDescribeDomains.and.returnValue(fakeStatus(true, true));
+      state = 'RequiresIndexDocuments';
     });
   });
 });
