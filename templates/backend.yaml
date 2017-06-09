@@ -1942,10 +1942,47 @@ Resources:
       Fields: !Sub |-
         [
           {
+            "IndexFieldName": "project_id",
+            "IndexFieldType": "literal",
+            "LiteralOptions": {
+              "FacetEnabled": false,
+              "SortEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "created_at",
+            "IndexFieldType": "date",
+            "DateOptions": {
+              "FacetEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "creator_id",
+            "IndexFieldType": "literal",
+            "TextOptions": {
+              "FacetEnabled": false,
+              "SortEnabled": false
+            }
+          },
+          {
             "IndexFieldName": "description",
             "IndexFieldType": "text",
             "TextOptions": {
               "SortEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "status",
+            "IndexFieldType": "literal",
+            "TextOptions": {
+              "FacetEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "bucket",
+            "IndexFieldType": "literal",
+            "TextOptions": {
+              "FacetEnabled": false
             }
           }
         ]
