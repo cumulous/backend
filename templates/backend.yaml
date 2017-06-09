@@ -93,7 +93,7 @@ Resources:
           - DatasetsReadCapacity
         WriteCapacityUnits: !FindInMap
           - StackMap
-          - Ref AWS::StackName
+          - !Ref AWS::StackName
           - DatasetsWriteCapacity
 
   BackendVPC:
