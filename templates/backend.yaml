@@ -67,8 +67,12 @@ Mappings:
   StackMap:
     backend-beta:
       SearchFieldSuffix: b
+      DatasetsReadCapacity: 1
+      DatasetsWriteCapacity: 1
     backend-release:
       SearchFieldSuffix: r
+      DatasetsReadCapacity: 5
+      DatasetsWriteCapacity: 5
 
 Resources:
   DatasetsTable:
@@ -83,8 +87,14 @@ Resources:
         - AttributeName: id
           KeyType: HASH
       ProvisionedThroughput:
-        ReadCapacityUnits: 5
-        WriteCapacityUnits: 5
+        ReadCapacityUnits: !FindInMap
+          - StackMap
+          - !Ref AWS::StackName
+          - DatasetsReadCapacity
+        WriteCapacityUnits: !FindInMap
+          - StackMap
+          - Ref AWS::StackName
+          - DatasetsWriteCapacity
 
   BackendVPC:
     Type: AWS::EC2::VPC
