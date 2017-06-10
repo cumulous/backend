@@ -1959,7 +1959,7 @@ Resources:
           {
             "IndexFieldName": "creator_id",
             "IndexFieldType": "literal",
-            "TextOptions": {
+            "LiteralOptions": {
               "FacetEnabled": false,
               "SortEnabled": false
             }
@@ -1974,14 +1974,14 @@ Resources:
           {
             "IndexFieldName": "status",
             "IndexFieldType": "literal",
-            "TextOptions": {
+            "LiteralOptions": {
               "FacetEnabled": false
             }
           },
           {
             "IndexFieldName": "bucket",
             "IndexFieldType": "literal",
-            "TextOptions": {
+            "LiteralOptions": {
               "FacetEnabled": false
             }
           }
