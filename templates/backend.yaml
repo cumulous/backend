@@ -95,6 +95,10 @@ Resources:
           - StackMap
           - !Ref AWS::StackName
           - DatasetsWriteCapacity
+      StreamSpecification:
+        StreamViewType:
+          StreamEnabled: true
+          StreamViewType: NEW_IMAGE
 
   BackendVPC:
     Type: AWS::EC2::VPC
@@ -2485,3 +2489,6 @@ Outputs:
   DatasetsTable:
     Condition: CreateDatasetsTable
     Value: !Ref DatasetsTable
+  DatasetsTableStreamArn:
+    Condition: CreateDatasetsTable
+    Value: !GetAtt DatasetsTable.StreamArn
