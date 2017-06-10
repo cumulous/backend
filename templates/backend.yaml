@@ -96,9 +96,7 @@ Resources:
           - !Ref AWS::StackName
           - DatasetsWriteCapacity
       StreamSpecification:
-        StreamViewType:
-          StreamEnabled: true
-          StreamViewType: NEW_IMAGE
+        StreamViewType: NEW_IMAGE
 
   BackendVPC:
     Type: AWS::EC2::VPC
