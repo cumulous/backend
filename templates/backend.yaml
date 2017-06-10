@@ -2020,12 +2020,12 @@ Resources:
             Resource:
               - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
 
-  CloudSearchDescribeDomainState:
+  CloudSearchDescribeDomain:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-CloudSearchDescribeDomainState
+      FunctionName: !Sub ${AWS::StackName}-CloudSearchDescribeDomain
       CodeUri: ../app
-      Handler: search.describeDomainState
+      Handler: search.describeDomain
       Runtime: nodejs6.10
       Policies:
         Statement:
@@ -2062,7 +2062,7 @@ Resources:
                   "DefineIndexFields": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties",
-                    "ResultPath": "$.State",
+                    "ResultPath": "$.Data.State",
                     "Resource": "${CloudSearchDefineIndexFields.Arn}",
                     "Next": "CheckReindexDocuments"
                   },
@@ -2070,7 +2070,7 @@ Resources:
                     "Type": "Choice",
                     "Choices": [
                       {
-                        "Variable": "$.State",
+                        "Variable": "$.Data.State",
                         "StringEquals": "RequiresIndexDocuments",
                         "Next": "IndexDocuments"
                       }
@@ -2088,7 +2088,7 @@ Resources:
                     "Type": "Choice",
                     "Choices": [
                       {
-                        "Variable": "$.State",
+                        "Variable": "$.Data.State",
                         "StringEquals": "Active",
                         "Next": "Success"
                       }
@@ -2098,13 +2098,13 @@ Resources:
                   "Wait" : {
                     "Type": "Wait",
                     "Seconds": 15,
-                    "Next": "DescribeState"
+                    "Next": "DescribeDomain"
                   },
-                  "DescribeState": {
+                  "DescribeDomain": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.SearchDomain",
-                    "ResultPath": "$.State",
-                    "Resource": "${CloudSearchDescribeDomainState.Arn}",
+                    "ResultPath": "$.Data",
+                    "Resource": "${CloudSearchDescribeDomain.Arn}",
                     "Next": "CheckActiveState"
                   },
                   "Success": {

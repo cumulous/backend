@@ -3,7 +3,7 @@ import * as stringify from 'json-stable-stringify';
 import { cloudSearch } from './aws';
 import { fakeReject, fakeResolve } from './fixtures/support';
 import * as search from './search';
-import { defineIndexFields, indexDocuments, describeDomainState } from './search';
+import { defineIndexFields, indexDocuments, describeDomain } from './search';
 import { Callback } from './types';
 
 const fakeSearchDomain = 'search-1234';
@@ -173,13 +173,22 @@ describe('search.indexDocuments()', () => {
   });
 });
 
-describe('search.describeDomainState()', () => {
+describe('search.describeDomain()', () => {
+  const fakeDocEndpoint = 'doc-1234.us-east-1.cloudsearch.amazonaws.com';
+  const fakeSearchEndpoint = 'search-1234.us-east-1.cloudsearch.amazonaws.com';
+
   let requiresIndexDocuments: boolean;
   let processing: boolean;
 
   const fakeStatus = (requiresIndexDocuments: boolean, processing: boolean) => {
     return fakeResolve({
       DomainStatusList: [{
+        DocService: {
+          Endpoint: fakeDocEndpoint,
+        },
+        SearchService: {
+          Endpoint: fakeSearchEndpoint,
+        },
         RequiresIndexDocuments: requiresIndexDocuments,
         Processing: processing,
       }],
@@ -194,7 +203,7 @@ describe('search.describeDomainState()', () => {
   });
 
   const testMethod = (callback: Callback) =>
-    describeDomainState(fakeSearchDomain, null, callback);
+    describeDomain(fakeSearchDomain, null, callback);
 
   it('calls cloudSearch.describeDomains() once with correct parameters',
       (done: Callback) => {
@@ -229,7 +238,11 @@ describe('search.describeDomainState()', () => {
     afterEach((done: Callback) => {
       testMethod((err?: Error, data?: any) => {
         expect(err).toBeFalsy();
-        expect(data).toEqual(state);
+        expect(data).toEqual({
+          DocEndpoint: fakeDocEndpoint,
+          SearchEndpoint: fakeSearchEndpoint,
+          State: state,
+        });
         done();
       });
     });
