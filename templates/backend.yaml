@@ -1994,6 +1994,7 @@ Resources:
       CodeUri: ../app
       Handler: search.defineIndexFields
       Runtime: nodejs6.10
+      Timeout: 10
       Policies:
         Statement:
           - Effect: Allow
