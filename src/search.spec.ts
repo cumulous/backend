@@ -9,7 +9,7 @@ import { Callback } from './types';
 const fakeSearchDomain = 'search-1234';
 
 describe('search.defineIndexFields()', () => {
-  const fakeFieldSuffix = 'f';
+  const stackName = 'backend-beta';
   const fakeTextField = 'fake-text';
   const fakeTextOptions = () => ({
     SortEnabled: false,
@@ -23,7 +23,7 @@ describe('search.defineIndexFields()', () => {
 
   const fakeEvent = () => ({
     SearchDomain: fakeSearchDomain,
-    FieldSuffix: fakeFieldSuffix,
+    StackName: stackName,
     Fields: stringify([{
       IndexFieldName: fakeTextField,
       IndexFieldType: 'text',
@@ -42,7 +42,22 @@ describe('search.defineIndexFields()', () => {
   beforeEach(() => {
     event = fakeEvent();
     spyOnDefineIndexField = spyOn(cloudSearch, 'defineIndexField')
-      .and.returnValue(fakeResolve());
+      .and.returnValues(
+        fakeResolve({
+          IndexField: {
+            Status: {
+              State: 'RequiresIndexDocuments',
+            },
+          },
+        }),
+        fakeResolve({
+          IndexField: {
+            Status: {
+              State: 'Processing',
+            },
+          },
+        }),
+      );
   });
 
   const testMethod = (callback: Callback) =>
@@ -54,7 +69,7 @@ describe('search.defineIndexFields()', () => {
       expect(spyOnDefineIndexField).toHaveBeenCalledWith({
         DomainName: fakeSearchDomain,
         IndexField: {
-          IndexFieldName: fakeTextField + '_' + fakeFieldSuffix,
+          IndexFieldName: fakeTextField + '_b',
           IndexFieldType: 'text',
           TextOptions: fakeTextOptions(),
         },
@@ -62,13 +77,43 @@ describe('search.defineIndexFields()', () => {
       expect(spyOnDefineIndexField).toHaveBeenCalledWith({
         DomainName: fakeSearchDomain,
         IndexField: {
-          IndexFieldName: fakeLiteralField + '_' + fakeFieldSuffix,
+          IndexFieldName: fakeLiteralField + '_b',
           IndexFieldType: 'literal',
           TextOptions: fakeLiteralOptions(),
         },
       });
       expect(spyOnDefineIndexField).toHaveBeenCalledTimes(2);
       done();
+    });
+  });
+
+  describe('appends correct field suffix when calling cloudSearch.defineIndexField()', () => {
+    let event: any;
+    let fieldSuffix: string;
+
+    beforeEach(() => event = fakeEvent());
+
+    afterEach((done: Callback) => {
+      defineIndexFields(event, null, () => {
+        expect(spyOnDefineIndexField).toHaveBeenCalledWith({
+          DomainName: fakeSearchDomain,
+          IndexField: {
+            IndexFieldName: fakeTextField + '_' + fieldSuffix,
+            IndexFieldType: 'text',
+            TextOptions: fakeTextOptions(),
+          },
+        });
+        done();
+      });
+    });
+
+    it('for the "backend-beta" stack', () => {
+      event.StackName = 'backend-beta';
+      fieldSuffix = 'b';
+    });
+    it('for the "backend-release" stack', () => {
+      event.StackName = 'backend-release';
+      fieldSuffix = 'r';
     });
   });
 
@@ -81,6 +126,9 @@ describe('search.defineIndexFields()', () => {
     });
     it('event is undefined', () => event = undefined);
     it('event is null', () => event = null);
+    it('event.StackName is undefined', () => event.StackName = undefined);
+    it('event.StackName is null', () => event.StackName = null);
+    it('event.StackName is unrecognized', () => event.StackName = 'backend');
     it('event.Fields is undefined', () => event.Fields = undefined);
     it('event.Fields is null', () => event.Fields = null);
     it('event.Fields is not an array', () => event.Fields = {});
@@ -101,22 +149,6 @@ describe('search.defineIndexFields()', () => {
     });
     it('at least one field returns state "RequiresIndexDocuments"', () => {
       state = 'RequiresIndexDocuments';
-      spyOnDefineIndexField.and.returnValues(
-        fakeResolve({
-          IndexField: {
-            Status: {
-              State: 'RequiresIndexDocuments',
-            },
-          },
-        }),
-        fakeResolve({
-          IndexField: {
-            Status: {
-              State: 'Processing',
-            },
-          },
-        }),
-      );
     });
     it('none of the fields returns state "RequiresIndexDocuments"', () => {
       state = 'Processing';

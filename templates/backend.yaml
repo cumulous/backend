@@ -66,11 +66,9 @@ Conditions:
 Mappings:
   StackMap:
     backend-beta:
-      SearchFieldSuffix: b
       DatasetsReadCapacity: 1
       DatasetsWriteCapacity: 1
     backend-release:
-      SearchFieldSuffix: r
       DatasetsReadCapacity: 5
       DatasetsWriteCapacity: 5
 
@@ -1939,8 +1937,8 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupSearchDomainStateMachine
+      StackName: !Ref AWS::StackName
       SearchDomain: !Ref SearchDomain
-      FieldSuffix: !FindInMap [StackMap, !Ref 'AWS::StackName', SearchFieldSuffix]
       Fields: !Sub |-
         [
           {

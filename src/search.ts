@@ -1,29 +1,37 @@
 import { IndexField } from 'aws-sdk/clients/cloudsearch';
 
 import { cloudSearch } from './aws';
-import { Callback } from './types';
+import { Callback, Dict } from './types';
+
+const getIndexSuffix = (stackName: string) => {
+  switch (stackName) {
+    case 'backend-beta': return 'b';
+    case 'backend-release': return 'r';
+    default: throw Error(`Invalid stack name: "${stackName}"`);
+  }
+};
 
 export const defineIndexFields = (event: {
       SearchDomain: string;
-      FieldSuffix: string;
+      StackName: string;
       Fields: string;
     }, context: any, callback: Callback) => {
 
   Promise.resolve(event)
     .then(event => JSON.parse(event.Fields))
     .then(fields => Promise.all(fields.map((field: IndexField) =>
-      defineIndexField(event.SearchDomain, field, event.FieldSuffix))))
+      defineIndexField(event.SearchDomain, field, event.StackName))))
     .then(states => callback(null,
       states.some(state => state == 'RequiresIndexDocuments') ?
         'RequiresIndexDocuments' : 'Processing'))
     .catch(callback);
 };
 
-const defineIndexField = (searchDomain: string, field: IndexField, suffix: string) => {
+const defineIndexField = (searchDomain: string, field: IndexField, stackName: string) => {
   return cloudSearch.defineIndexField({
       DomainName: searchDomain,
       IndexField: Object.assign(field, {
-        IndexFieldName: `${field.IndexFieldName}_${suffix}`,
+        IndexFieldName: `${field.IndexFieldName}_${getIndexSuffix(stackName)}`,
       }),
     }).promise()
       .then(data => data.IndexField.Status.State);
