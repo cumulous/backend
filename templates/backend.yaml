@@ -2431,7 +2431,7 @@ Resources:
               - dynamodb:GetShardIterator
               - dynamodb:GetRecords
             Resource:
-              - !GetAtt DatasetsTable.StreamArn
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AWS::StackName}-*/stream/*
           - Effect: Allow
             Action:
               - cloudsearch:UploadDocuments
