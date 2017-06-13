@@ -1,12 +1,17 @@
 import * as stringify from 'json-stable-stringify';
+import * as uuid from 'uuid';
 
 import { cloudSearch } from './aws';
+import { envNames } from './env';
 import { fakeReject, fakeResolve } from './fixtures/support';
 import * as search from './search';
-import { defineIndexFields, indexDocuments, describeDomain } from './search';
+import { cloudSearchDomain, defineIndexFields, describeDomain,
+         indexDocuments, uploadDocuments } from './search';
 import { Callback } from './types';
 
 const fakeSearchDomain = 'search-1234';
+const fakeDocEndpoint = 'doc-1234.us-east-1.cloudsearch.amazonaws.com';
+const fakeSearchEndpoint = 'search-1234.us-east-1.cloudsearch.amazonaws.com';
 
 describe('search.defineIndexFields()', () => {
   const stackName = 'backend-beta';
@@ -205,10 +210,262 @@ describe('search.indexDocuments()', () => {
   });
 });
 
-describe('search.describeDomain()', () => {
-  const fakeDocEndpoint = 'doc-1234.us-east-1.cloudsearch.amazonaws.com';
-  const fakeSearchEndpoint = 'search-1234.us-east-1.cloudsearch.amazonaws.com';
+describe('search.cloudSearchDomain()', () => {
+  it('correctly constructs CloudSearchDomain', () => {
+    const instance = cloudSearchDomain(fakeDocEndpoint);
+    expect(instance.endpoint.hostname).toEqual(fakeDocEndpoint);
+  });
+  it('throws an Error if endpoint is undefined', (done: Callback) => {
+    try {
+      cloudSearchDomain(undefined);
+    } catch (err) {
+      done();
+    }
+  });
+});
 
+describe('search.uploadDocuments()', () => {
+  const fakeCreateDocumentId = uuid();
+  const fakeUpdateDocumentId = uuid();
+  const fakeDeleteDocumentId = uuid();
+  const fakeDocumentValue = 'Value-1';
+  const fakeDocument = () => ({
+    fake_key: {
+      S: fakeDocumentValue,
+    },
+  });
+  const fakeTableName = 'Items';
+  const fakeStreamArn = (stackName = 'backend-beta') =>
+    'arn:aws:dynamodb:us-east-1:123456789012:table/' +
+    stackName + '-' + fakeTableName + 'Table-ABCD/stream/2016-11-16T20:42:48.104';
+  const fakeDeletionEvent = () => ({
+    Records: [{
+      eventSourceARN: fakeStreamArn(),
+      eventName: 'REMOVE' as any,
+      dynamodb: {
+        Keys: {
+          id: {
+            S: fakeCreateDocumentId,
+          },
+        },
+      },
+    }],
+  });
+
+  let spyOnCloudSearchDomain: jasmine.Spy;
+  let spyOnUploadDocuments: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.searchDocEndpoint] = fakeDocEndpoint;
+
+    spyOnUploadDocuments = jasmine.createSpy('uploadDocuments')
+      .and.returnValue(fakeResolve());
+
+    spyOnCloudSearchDomain = spyOn(search, 'cloudSearchDomain')
+      .and.returnValue({
+        uploadDocuments: spyOnUploadDocuments,
+      });
+  });
+
+  it('calls cloudSearchDomain() once with correct parameters', (done: Callback) => {
+    uploadDocuments(fakeDeletionEvent(), null, () => {
+      expect(spyOnCloudSearchDomain).toHaveBeenCalledWith(fakeDocEndpoint);
+      expect(spyOnCloudSearchDomain).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  describe('calls cloudSearchDomain().uploadDocuments() with correct parameters if ' +
+           'eventSourceARN table name starts with', () => {
+
+    let stackName: string;
+    let stackSuffix: string;
+
+    afterEach((done: Callback) => {
+      const eventSourceARN = fakeStreamArn(stackName);
+      uploadDocuments({
+        Records: [{
+          eventSourceARN,
+          eventName: 'INSERT',
+          dynamodb: {
+            NewImage: Object.assign({
+              id: {
+                S: fakeCreateDocumentId,
+              },
+            }, fakeDocument()),
+          },
+        }, {
+          eventSourceARN,
+          eventName: 'MODIFY',
+          dynamodb: {
+            NewImage: Object.assign({
+              id: {
+                S: fakeUpdateDocumentId,
+              },
+            }, fakeDocument()),
+          },
+        }, {
+          eventSourceARN,
+          eventName: 'REMOVE',
+          dynamodb: {
+            Keys: {
+              id: {
+                S: fakeDeleteDocumentId,
+              },
+            },
+          },
+        }],
+      }, null, () => {
+        const fakeFields: any = {
+          table: fakeTableName.toLowerCase(),
+        };
+        fakeFields[`fake_key_${stackSuffix}`] = fakeDocumentValue;
+        const idSuffix = fakeFields.table + '_' + stackSuffix;
+        expect(spyOnUploadDocuments).toHaveBeenCalledWith({
+          contentType: 'application/json',
+          documents: stringify([{
+            type: 'add',
+            id: fakeCreateDocumentId + '_' + idSuffix,
+            fields: fakeFields,
+          }, {
+            type: 'add',
+            id: fakeUpdateDocumentId + '_' + idSuffix,
+            fields: fakeFields,
+          }, {
+            type: 'delete',
+            id: fakeDeleteDocumentId + '_' + idSuffix,
+          }]),
+        });
+        expect(spyOnUploadDocuments).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+    it('"backend-beta"', () => {
+      stackName = 'backend-beta';
+      stackSuffix = 'b';
+    });
+    it('"backend-release"', () => {
+      stackName = 'backend-release';
+      stackSuffix = 'r';
+    });
+  });
+
+  describe('calls callback with an error if', () => {
+    let event: any;
+    afterEach((done: Callback) => {
+      uploadDocuments(event, null, (err?: Error) => {
+        expect(err).toEqual(jasmine.any(Error));
+        done();
+      });
+    });
+    it('event is undefined', () => event = undefined);
+    it('event is null', () => event = null);
+    it('event.Records is undefined', () => event = {});
+    it('event.Records is null', () => event = { Records: null });
+    describe('record', () => {
+      let record: any;
+      let eventSourceARN: string;
+      beforeEach(() => eventSourceARN = undefined);
+      afterEach(() => {
+        event = {
+          Records: [
+            Object.assign({
+              eventSourceARN: eventSourceARN || fakeStreamArn(),
+            }, record),
+          ],
+        };
+      });
+      it('eventName is undefined', () => record = {});
+      it('eventName is not recognized', () => record = {
+        eventName: 'EVENT',
+      });
+      describe('eventName is', () => {
+        const testEventType = (action: 'INSERT' | 'MODIFY') => {
+          describe(`${action}, but`, () => {
+            let dynamodb: any;
+            beforeEach(() => {
+              dynamodb = {
+                NewImage: {
+                  fake_key: {
+                    S: fakeDocumentValue,
+                  },
+                },
+              };
+            });
+            afterEach(() => {
+              record = {
+                eventName: action,
+                dynamodb,
+              };
+            });
+            it('eventSourceARN is not recognized', () => {
+              eventSourceARN = fakeStreamArn('backend-test');
+            });
+            it('dynamodb is undefined', () => dynamodb = undefined);
+            it('dynamodb is null', () => dynamodb = null);
+            it('dynamodb.NewImage is undefined', () => delete dynamodb.NewImage);
+            it('dynamodb.NewImage is null', () => dynamodb.NewImage = null);
+            it('dynamodb.NewImage[key] is undefined', () => {
+              delete dynamodb.NewImage.fake_key;
+            });
+            it('dynamodb.NewImage[key] is null', () => dynamodb = {
+              NewImage: {
+                fake_key: null,
+              },
+            });
+          });
+        };
+        testEventType('INSERT');
+        testEventType('MODIFY');
+
+        describe('REMOVE, but', () => {
+          let dynamodb: any;
+          beforeEach(() => {
+            dynamodb = {
+              Keys: {
+                id: {
+                  S: fakeDeleteDocumentId,
+                },
+              },
+            };
+          });
+          afterEach(() => {
+            record = {
+              eventName: 'REMOVE',
+              dynamodb,
+            };
+          });
+          it('eventSourceARN is not recognized', () => {
+            eventSourceARN = fakeStreamArn('backend-test');
+          });
+          it('dynamodb is undefined', () => dynamodb = undefined);
+          it('dynamodb is null', () => dynamodb = null);
+          it('dynamodb.Keys is undefined', () => delete dynamodb.Keys);
+          it('dynamodb.Keys is null', () => dynamodb.Keys = null);
+          it('dynamodb.Keys.id is undefined', () => delete dynamodb.Keys.id);
+          it('dynamodb.Keys.id is null', () => dynamodb.Keys.id = null);
+        });
+      });
+    });
+    it('cloudSearchDomain() produces an error', () => {
+      event = fakeDeletionEvent();
+      spyOnCloudSearchDomain.and.throwError('cloudSearchDomain()');
+    });
+    it('cloudSearchDomain().uploadDocuments() produces an error', () => {
+      event = fakeDeletionEvent();
+      spyOnUploadDocuments.and.returnValue(fakeReject('uploadDocuments()'));
+    });
+  });
+
+  it('calls callback without an error for correct parameters', (done: Callback) => {
+    uploadDocuments(fakeDeletionEvent(), null, (err?: Error) => {
+      expect(err).toBeFalsy();
+      done();
+    });
+  });
+});
+
+describe('search.describeDomain()', () => {
   let requiresIndexDocuments: boolean;
   let processing: boolean;
 
