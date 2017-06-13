@@ -2422,13 +2422,6 @@ Resources:
       Environment:
         Variables:
           SEARCH_DOC_ENDPOINT: !GetAtt SetupSearchDomain.DocEndpoint
-      Events:
-        DatasetsTable:
-          Type: DynamoDB
-          Properties:
-            Stream: !GetAtt DatasetsTable.StreamArn
-            StartingPosition: TRIM_HORIZON
-            BatchSize: 100
       Policies:
         Statement:
           - Effect: Allow
@@ -2444,6 +2437,14 @@ Resources:
               - cloudsearch:UploadDocuments
             Resource:
               - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+
+  DatasetsTableStreamMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt DatasetsTable.StreamArn
+      FunctionName: !Ref CloudSearchUploadDocuments
+      StartingPosition: TRIM_HORIZON
+      BatchSize: 100
 
   GetDatasets:
     Type: AWS::Serverless::Function
