@@ -94,8 +94,8 @@ const recordToDoc = (record: StreamRecord) => {
     Object.keys(item).forEach(key => {
       if (key === 'id') return;
       const keyName = `${key}_${stackSuffix}`;
-      const field = item[key];
-      fields[keyName] = Object.keys(field).map((type: 'S') => field[type])[0];
+      const field: Dict<any> = item[key];
+      fields[keyName] = field[Object.keys(field)[0]];
     });
     return {
       type: 'add',
