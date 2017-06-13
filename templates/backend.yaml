@@ -2422,13 +2422,13 @@ Resources:
       Environment:
         Variables:
           SEARCH_DOC_ENDPOINT: !GetAtt SetupSearchDomain.DocEndpoint
-      # Events:
-      #   DatasetsTable:
-      #     Type: DynamoDB
-      #     Properties:
-      #       Stream: !GetAtt DatasetsTable.StreamArn
-      #       StartingPosition: TRIM_HORIZON
-      #       BatchSize: 100
+      Events:
+        DatasetsTable:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt DatasetsTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 100
       Policies:
         Statement:
           - Effect: Allow
