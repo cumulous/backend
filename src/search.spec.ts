@@ -316,11 +316,11 @@ describe('search.uploadDocuments()', () => {
           },
         }],
       }, null, () => {
-        const fakeFields: any = {
-          table: fakeTableName.toLowerCase(),
-        };
+        const idSuffix = fakeTableName.toLowerCase() + '_' + stackSuffix;
+        const fakeFields: any = {};
         fakeFields[`fake_key_${stackSuffix}`] = fakeDocumentValue;
-        const idSuffix = fakeFields.table + '_' + stackSuffix;
+        fakeFields[`table_${stackSuffix}`] = fakeTableName.toLowerCase();
+
         expect(spyOnUploadDocuments).toHaveBeenCalledWith({
           contentType: 'application/json',
           documents: stringify([{

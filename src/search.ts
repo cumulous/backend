@@ -89,9 +89,8 @@ const recordToDoc = (record: StreamRecord) => {
 
   if (record.eventName === 'INSERT' || record.eventName === 'MODIFY') {
     const item = record.dynamodb.NewImage;
-    const fields: Dict<string> = {
-      table: tableSuffix,
-    };
+    const fields: Dict<string> = {};
+    fields[`table_${stackSuffix}`] = tableSuffix;
     Object.keys(item).forEach(key => {
       if (key === 'id') return;
       const keyName = `${key}_${stackSuffix}`;
