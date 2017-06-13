@@ -2422,27 +2422,27 @@ Resources:
       Environment:
         Variables:
           SEARCH_DOC_ENDPOINT: !GetAtt SetupSearchDomain.DocEndpoint
-      Events:
-        DatasetsTable:
-          Properties:
-            Stream: !GetAtt DatasetsTable.StreamArn
-            StartingPosition: TRIM_HORIZON
-            BatchSize: 100
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action:
-              - dynamodb:ListStreams
-              - dynamodb:DescribeStream
-              - dynamodb:GetShardIterator
-              - dynamodb:GetRecords
-            Resource:
-              - !GetAtt DatasetsTable.StreamArn
-          - Effect: Allow
-            Action:
-              - cloudsearch:UploadDocuments
-            Resource:
-              - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+      # Events:
+      #   DatasetsTable:
+      #     Properties:
+      #       Stream: !GetAtt DatasetsTable.StreamArn
+      #       StartingPosition: TRIM_HORIZON
+      #       BatchSize: 100
+      # Policies:
+      #   Statement:
+      #     - Effect: Allow
+      #       Action:
+      #         - dynamodb:ListStreams
+      #         - dynamodb:DescribeStream
+      #         - dynamodb:GetShardIterator
+      #         - dynamodb:GetRecords
+      #       Resource:
+      #         - !GetAtt DatasetsTable.StreamArn
+      #     - Effect: Allow
+      #       Action:
+      #         - cloudsearch:UploadDocuments
+      #       Resource:
+      #         - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
 
   GetDatasets:
     Type: AWS::Serverless::Function
