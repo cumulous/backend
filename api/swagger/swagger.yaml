@@ -229,6 +229,7 @@ paths:
         - $ref: '#/parameters/DatasetsQueryProjectId'
         - $ref: '#/parameters/DatasetsQueryDescriptionContains'
         - $ref: '#/parameters/DatasetsQueryStatus'
+        - $ref: '#/parameters/DatasetsQuerySort'
         - $ref: '#/parameters/QueryPaginationOffset'
         - $ref: '#/parameters/QueryPaginationLimit'
         - $ref: '#/parameters/CompressionRequest'
@@ -673,6 +674,13 @@ parameters:
       - removed
       - deleting
       - deleted
+  DatasetsQuerySort:
+    in: query
+    name: sort
+    description: Sort by select attributes in specific order
+    type: string
+    pattern: ^created_at:(asc|desc)$
+    default: 'created_at:desc'
   DatasetId:
     in: path
     name: dataset_id
