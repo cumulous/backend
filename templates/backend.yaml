@@ -1992,7 +1992,8 @@ Resources:
             "IndexFieldName": "bucket",
             "IndexFieldType": "literal",
             "LiteralOptions": {
-              "FacetEnabled": false
+              "FacetEnabled": false,
+              "SortEnabled": false
             }
           }
         ]
