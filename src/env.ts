@@ -15,6 +15,7 @@ export const envNames = {
   datasetsTable: 'DATASETS_TABLE',
   searchStackSuffix: 'SEARCH_STACK_SUFFIX',
   searchDocEndpoint: 'SEARCH_DOC_ENDPOINT',
+  searchQueryEndpoint: 'SEARCH_QUERY_ENDPOINT',
   auth0Domain: 'AUTH0_DOMAIN',
   auth0ClientId: 'AUTH0_CLIENT_ID',
   auth0SecretBucket: 'AUTH0_SECRET_BUCKET',

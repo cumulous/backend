@@ -2,6 +2,7 @@ import { CloudSearchDomain, DynamoDB, DynamoDBStreams } from 'aws-sdk';
 import { IndexField } from 'aws-sdk/clients/cloudsearch';
 import * as stringify from 'json-stable-stringify';
 
+import { Request, respond, respondWithError, validate } from './apig';
 import { cloudSearch } from './aws';
 import { envNames } from './env'
 import { Callback, Dict } from './types';
@@ -96,6 +97,57 @@ const recordToDoc = (record: StreamRecord) => {
   } else {
     throw Error(`record.eventName "${record.eventName}" is unrecognized`);
   }
+};
+
+export const query = (request: Request, resource: string,
+                      terms: string[] = [], callback: Callback) => {
+
+  validate(request, 'GET', resource)
+    .then(() => request.queryStringParameters)
+    .then(query => cloudSearchDomain(process.env[envNames.searchQueryEndpoint])
+      .search({
+        queryParser: 'structured',
+        query: buildQuery(query, terms, resource),
+        sort: buildSort(query.sort),
+        start: Number(query.offset),
+        size: Number(query.limit),
+      }).promise()
+      .then(data => respond(callback, request, buildQueryResponse(
+        data.hits.hit, Number(query.offset), Number(query.limit)))))
+    .catch(err => respondWithError(callback, request, err));
+};
+
+const buildQuery = (query: Dict<string>, terms: string[], resource: string) => {
+  return '' +
+    '(and ' +
+      `table_${stackSuffix()}:'${resource.substring(1)}'` +
+      terms.map(term =>
+        query[term] ? ` ${term}_${stackSuffix()}:'${query[term]}'` : ''
+      ).join('') +
+    ')';
+};
+
+const buildSort = (sort: string) => {
+  return sort.replace(/:/g, `_${stackSuffix()} `);
+};
+
+const buildQueryResponse = (hits: any[], offset: number, limit: number) => {
+  const response: Dict<any> = {
+    offset,
+    items: hits.map(hit => {
+      const result: Dict<any> = {
+        id: hit.id,
+      };
+      Object.keys(hit.fields).forEach(key => {
+        result[key.replace(/_[^_]+$/, '')] = hit.fields[key];
+      });
+      return result;
+    }),
+  };
+  if (hits.length === limit) {
+    response.next = offset + limit;
+  };
+  return response;
 };
 
 export const describeDomain = (domain: string, context: any, callback: Callback) => {

@@ -1,17 +1,19 @@
 import * as stringify from 'json-stable-stringify';
 import * as uuid from 'uuid';
 
+import * as apig from './apig';
+import { ApiError } from './apig';
 import { cloudSearch } from './aws';
 import { envNames } from './env';
 import { fakeReject, fakeResolve } from './fixtures/support';
 import * as search from './search';
 import { cloudSearchDomain, defineIndexFields, describeDomain,
-         indexDocuments, uploadDocuments } from './search';
-import { Callback } from './types';
+         indexDocuments, query, uploadDocuments } from './search';
+import { Callback, Dict } from './types';
 
 const fakeSearchDomain = 'search-1234';
 const fakeDocEndpoint = 'doc-1234.us-east-1.cloudsearch.amazonaws.com';
-const fakeSearchEndpoint = 'search-1234.us-east-1.cloudsearch.amazonaws.com';
+const fakeQueryEndpoint = 'search-1234.us-east-1.cloudsearch.amazonaws.com';
 
 describe('search.defineIndexFields()', () => {
   const fakeStackSuffix = 'd';
@@ -439,6 +441,194 @@ describe('search.uploadDocuments()', () => {
   });
 });
 
+describe('search.query()', () => {
+  const fakeStackSuffix = 'q';
+  const fakeResource = '/items';
+  const fakeOffset = 10;
+  const fakeLimit = 5;
+  const fakeRequest = () => ({
+    queryStringParameters: {
+      key1: 'value1',
+      key2: 'value2',
+      sort: 'key4:asc,key5:desc',
+      offset: String(fakeOffset),
+      limit: String(fakeLimit),
+    },
+  });
+  const fakeHits = (count = fakeLimit) => {
+    const N = count;
+    const hits: Dict<any>[] = [];
+    while (count--) {
+      const fields: Dict<any> = {};
+      fields[`key1_${fakeStackSuffix}`] = 'value1';
+      fields[`key2_${fakeStackSuffix}`] = 'value2';
+      fields[`key3_${fakeStackSuffix}`] = 'value3';
+      fields[`key4_${fakeStackSuffix}`] = 'value4_' + (N - count);
+      fields[`key5_${fakeStackSuffix}`] = 'value5_' + count;
+      hits.push({
+        id: 'abcd-' + (N - count),
+        fields,
+      });
+    }
+    return {
+      hits: {
+        hit: hits,
+      },
+    };
+  };
+  const fakeResponse = (count = fakeLimit) => {
+    const N = count;
+    const items: Dict<any>[] = [];
+    while (count--) {
+      items.push({
+        id: 'abcd-' + (N - count),
+        key1: 'value1',
+        key2: 'value2',
+        key3: 'value3',
+        key4: 'value4_' + (N - count),
+        key5: 'value5_' + count,
+      });
+    }
+    const response: Dict<any> = {
+      offset: fakeOffset,
+      items,
+    };
+    if (N === fakeLimit) {
+      response.next = fakeOffset + fakeLimit;
+    }
+    return response;
+  };
+
+  const testMethod = (callback: Callback) =>
+    query(fakeRequest(), fakeResource, ['key1', 'key2', 'key3'], callback);
+
+  let spyOnValidate: jasmine.Spy;
+  let spyOnCloudSearchDomain: jasmine.Spy;
+  let spyOnSearch: jasmine.Spy;
+  let spyOnRespond: jasmine.Spy;
+  let spyOnRespondWithError: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.searchStackSuffix] = fakeStackSuffix;
+    process.env[envNames.searchQueryEndpoint] = fakeQueryEndpoint;
+
+    spyOnValidate = spyOn(apig, 'validate')
+      .and.returnValue(Promise.resolve());
+    spyOnSearch = jasmine.createSpy('search')
+      .and.returnValue(fakeResolve(fakeHits()));
+    spyOnCloudSearchDomain = spyOn(search, 'cloudSearchDomain')
+      .and.returnValue({
+        search: spyOnSearch,
+      });
+    spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    spyOnRespondWithError = spyOn(apig, 'respondWithError')
+      .and.callFake((callback: Callback) => callback())
+  });
+
+  it('calls apig.validate() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnValidate).toHaveBeenCalledWith(fakeRequest(), 'GET', fakeResource);
+      expect(spyOnValidate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls cloudSearchDomain() once with correct parameters', (done: Callback) => {
+     testMethod(() => {
+      expect(spyOnCloudSearchDomain).toHaveBeenCalledWith(fakeQueryEndpoint);
+      expect(spyOnCloudSearchDomain).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  describe('calls cloudSearchDomain.search() once with correct parameters when', () => {
+    let terms: string[];
+    let q: string;
+    afterEach((done: Callback) => {
+      const callback = () => {
+        expect(spyOnSearch).toHaveBeenCalledWith({
+          queryParser: 'structured',
+          query: q,
+          sort: `key4_${fakeStackSuffix} asc,key5_${fakeStackSuffix} desc`,
+          start: fakeOffset,
+          size: fakeLimit,
+        });
+        expect(spyOnSearch).toHaveBeenCalledTimes(1);
+        done();
+      };
+      query(fakeRequest(), fakeResource, terms, callback);
+    });
+    it('terms.length > 0', () => {
+      terms = ['key1', 'key2', 'key3'];
+      q = `(and table_${fakeStackSuffix}:'items' ` +
+                `key1_${fakeStackSuffix}:'value1' ` +
+                `key2_${fakeStackSuffix}:'value2')`;
+    });
+    it('terms.length = 0', () => {
+      terms = [];
+      q = `(and table_${fakeStackSuffix}:'items')`;
+    });
+    it('terms is undefined', () => {
+      terms = undefined;
+      q = `(and table_${fakeStackSuffix}:'items')`;
+    });
+  });
+
+  describe('calls apig.respond() once with correct parameters when hit count is', () => {
+    let count: number;
+    afterEach((done: Callback) => {
+      spyOnSearch.and.returnValue(fakeResolve(fakeHits(count)));
+      const callback = () => {
+        expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(), fakeResponse(count));
+        expect(spyOnRespond).toHaveBeenCalledTimes(1);
+        done();
+      };
+      testMethod(callback);
+    });
+    it('equal to query limit', () => count = fakeLimit);
+    it('less than query limit', () => count = fakeLimit - 1);
+  });
+
+  describe('calls apig.respondWithError() immediately with the error if', () => {
+    let err: Error | ApiError;
+
+    const testError = (after: Callback, done: Callback) => {
+      const callback = () => {
+        expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, fakeRequest(), err);
+        expect(spyOnRespondWithError).toHaveBeenCalledTimes(1);
+        after();
+        done();
+      };
+      testMethod(callback);
+    };
+
+    it('apig.validate() responds with an error', (done: Callback) => {
+      err = new ApiError('validate()');
+      spyOnValidate.and.returnValue(Promise.reject(err));
+      testError(() => {
+        expect(spyOnCloudSearchDomain).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('cloudSearchDomain() throws an error', (done: Callback) => {
+      err = Error('cloudSearchDomain()');
+      spyOnCloudSearchDomain.and.throwError(err.message);
+      testError(() => {
+        expect(spyOnSearch).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('cloudSearchDomain.search() produces an error', (done: Callback) => {
+      err = Error('cloudSearchDomain.search()');
+      spyOnSearch.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+  });
+});
+
 describe('search.describeDomain()', () => {
   let requiresIndexDocuments: boolean;
   let processing: boolean;
@@ -450,7 +640,7 @@ describe('search.describeDomain()', () => {
           Endpoint: fakeDocEndpoint,
         },
         SearchService: {
-          Endpoint: fakeSearchEndpoint,
+          Endpoint: fakeQueryEndpoint,
         },
         RequiresIndexDocuments: requiresIndexDocuments,
         Processing: processing,
@@ -503,7 +693,7 @@ describe('search.describeDomain()', () => {
         expect(err).toBeFalsy();
         expect(data).toEqual({
           DocEndpoint: fakeDocEndpoint,
-          SearchEndpoint: fakeSearchEndpoint,
+          SearchEndpoint: fakeQueryEndpoint,
           State: state,
         });
         done();
