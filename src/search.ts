@@ -1,4 +1,4 @@
-import { CloudSearchDomain } from 'aws-sdk';
+import { CloudSearchDomain, DynamoDB, DynamoDBStreams } from 'aws-sdk';
 import { IndexField } from 'aws-sdk/clients/cloudsearch';
 import * as stringify from 'json-stable-stringify';
 
@@ -51,19 +51,8 @@ export const indexDocuments = (domain: string, context: any, callback: Callback)
     .catch(callback);
 };
 
-interface StreamRecord {
+interface StreamRecord extends DynamoDBStreams.Record {
   eventSourceARN: string;
-  eventName: 'INSERT' | 'MODIFY' | 'REMOVE';
-  dynamodb?: {
-    Keys?: {
-      id: {
-        S: string;
-      };
-    };
-    NewImage?: Dict<{
-      S: string;
-    }>;
-  };
 };
 
 export const uploadDocuments = (event: { Records: StreamRecord[] },
@@ -93,9 +82,7 @@ const recordToDoc = (record: StreamRecord) => {
     fields[`table_${stackSuffix}`] = tableSuffix;
     Object.keys(item).forEach(key => {
       if (key === 'id') return;
-      const keyName = `${key}_${stackSuffix}`;
-      const field: Dict<any> = item[key];
-      fields[keyName] = field[Object.keys(field)[0]];
+      fields[`${key}_${stackSuffix}`] = DynamoDB.Converter.output(item[key]);
     });
     return {
       type: 'add',
