@@ -143,8 +143,8 @@ paths:
         - $ref: '#/parameters/ProjectsQueryIsHidden'
         - $ref: '#/parameters/ProjectsQueryStatus'
         - $ref: '#/parameters/ProjectsQueryIRB'
-        - $ref: '#/parameters/QueryPaginationFrom'
-        - $ref: '#/parameters/QueryPaginationMax'
+        - $ref: '#/parameters/QueryPaginationOffset'
+        - $ref: '#/parameters/QueryPaginationLimit'
         - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
@@ -229,8 +229,8 @@ paths:
         - $ref: '#/parameters/DatasetsQueryProjectId'
         - $ref: '#/parameters/DatasetsQueryDescriptionContains'
         - $ref: '#/parameters/DatasetsQueryStatus'
-        - $ref: '#/parameters/QueryPaginationFrom'
-        - $ref: '#/parameters/QueryPaginationMax'
+        - $ref: '#/parameters/QueryPaginationOffset'
+        - $ref: '#/parameters/QueryPaginationLimit'
         - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
@@ -523,8 +523,13 @@ definitions:
     pattern: ^[a-z0-9]+(\.[a-z0-9]([a-z0-9-]*[a-z0-9]))*$
   ListOfDatasets:
     type: object
+    required:
+      - offset
+      - items
     properties:
-      datasets:
+      offset:
+        $ref: '#/definitions/PaginationOffset'
+      items:
         type: array
         items:
           $ref: '#/definitions/Dataset'
@@ -575,6 +580,9 @@ definitions:
         type: string
       session_token:
         type: string
+  PaginationOffset:
+    type: integer
+    minimum: 0
   PaginationNext:
     type: integer
     minimum: 1
@@ -696,17 +704,17 @@ parameters:
       properties:
         action:
           $ref: '#/definitions/DatasetCredentialsAction'
-  QueryPaginationFrom:
+  QueryPaginationOffset:
     in: query
-    name: from
+    name: offset
     description: Starting index for pagination
     type: integer
     minimum: 0
     default: 0
-  QueryPaginationMax:
+  QueryPaginationLimit:
     in: query
-    name: max
-    description: Maximum count of paginated results
+    name: limit
+    description: Maximum number of paginated results
     type: integer
     minimum: 1
     default: 10
