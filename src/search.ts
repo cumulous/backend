@@ -70,30 +70,28 @@ export const uploadDocuments = (event: { Records: StreamRecord[] },
 };
 
 const sourceTableMatcher =
-  /^arn:aws:dynamodb:[\w-]+:\d+:table\/((backend-(beta|release))-([^-]+)Table)/;
+  /^arn:aws:dynamodb:[\w-]+:\d+:table\/[^/]+-([^-]+)Table-[^/]+/;
 
 const recordToDoc = (record: StreamRecord) => {
-  const tableName = sourceTableMatcher.exec(record.eventSourceARN);
-  const stackSuffix = getFieldSuffix(tableName[2]);
-  const tableSuffix = tableName[4].toLowerCase();
+  const table = sourceTableMatcher.exec(record.eventSourceARN)[1].toLowerCase();
 
   if (record.eventName === 'INSERT' || record.eventName === 'MODIFY') {
     const item = record.dynamodb.NewImage;
     const fields: Dict<string> = {};
-    fields[`table_${stackSuffix}`] = tableSuffix;
+    fields[`table_${stackSuffix()}`] = table;
     Object.keys(item).forEach(key => {
       if (key === 'id') return;
-      fields[`${key}_${stackSuffix}`] = DynamoDB.Converter.output(item[key]);
+      fields[`${key}_${stackSuffix()}`] = DynamoDB.Converter.output(item[key]);
     });
     return {
       type: 'add',
-      id: `${item.id.S}_${tableSuffix}_${stackSuffix}`,
+      id: `${item.id.S}_${table}_${stackSuffix()}`,
       fields,
     };
   } else if (record.eventName === 'REMOVE') {
     return {
       type: 'delete',
-      id: `${record.dynamodb.Keys.id.S}_${tableSuffix}_${stackSuffix}`,
+      id: `${record.dynamodb.Keys.id.S}_${table}_${stackSuffix()}`,
     };
   } else {
     throw Error(`record.eventName "${record.eventName}" is unrecognized`);
