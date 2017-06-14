@@ -976,6 +976,19 @@ Resources:
                   - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:backend-*
               - Effect: Allow
                 Action:
+                  - lambda:GetEventSourceMapping
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - lambda:CreateEventSourceMapping
+                  - lambda:UpdateEventSourceMapping
+                  - lambda:DeleteEventSourceMapping
+                Condition:
+                  StringLike:
+                    'lambda:FunctionArn': !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:backend-*
+                Resource: '*'
+              - Effect: Allow
+                Action:
                   - events:DescribeRule
                   - events:PutRule
                   - events:DeleteRule
