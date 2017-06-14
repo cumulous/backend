@@ -1985,7 +1985,8 @@ Resources:
             "IndexFieldName": "status",
             "IndexFieldType": "literal",
             "LiteralOptions": {
-              "FacetEnabled": false
+              "FacetEnabled": false,
+              "SortEnabled": false
             }
           },
           {
