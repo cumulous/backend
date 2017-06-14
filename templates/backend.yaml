@@ -2027,6 +2027,7 @@ Resources:
       CodeUri: ../app
       Handler: search.indexDocuments
       Runtime: nodejs6.10
+      Timeout: 20
       Policies:
         Statement:
           - Effect: Allow
@@ -2041,6 +2042,7 @@ Resources:
       CodeUri: ../app
       Handler: search.describeDomain
       Runtime: nodejs6.10
+      Timeout: 20
       Policies:
         Statement:
           - Effect: Allow
