@@ -9,35 +9,36 @@ import { Callback, Dict } from './types';
 export const cloudSearchDomain = (endpoint: string) =>
   new CloudSearchDomain({ endpoint });
 
-const getFieldSuffix = (stackName: string) => {
-  switch (stackName) {
-    case 'backend-beta': return 'b';
-    case 'backend-release': return 'r';
-    default: throw Error(`Invalid stack name: "${stackName}"`);
+const stackSuffix = () => {
+  const key = envNames.searchStackSuffix;
+  const value = process.env[key];
+  if (value) {
+    return value;
+  } else {
+    throw Error(`${key} is not set`);
   }
 };
 
 export const defineIndexFields = (event: {
       SearchDomain: string;
-      StackName: string;
       Fields: string;
     }, context: any, callback: Callback) => {
 
   Promise.resolve(event)
     .then(event => JSON.parse(event.Fields))
     .then(fields => Promise.all(fields.map((field: IndexField) =>
-      defineIndexField(event.SearchDomain, field, event.StackName))))
+      defineIndexField(event.SearchDomain, field))))
     .then(states => callback(null,
       states.some(state => state == 'RequiresIndexDocuments') ?
         'RequiresIndexDocuments' : 'Processing'))
     .catch(callback);
 };
 
-const defineIndexField = (searchDomain: string, field: IndexField, stackName: string) => {
+const defineIndexField = (searchDomain: string, field: IndexField) => {
   return cloudSearch.defineIndexField({
       DomainName: searchDomain,
       IndexField: Object.assign(field, {
-        IndexFieldName: `${field.IndexFieldName}_${getFieldSuffix(stackName)}`,
+        IndexFieldName: `${field.IndexFieldName}_${stackSuffix()}`,
       }),
     }).promise()
       .then(data => data.IndexField.Status.State);

@@ -68,9 +68,11 @@ Mappings:
     backend-beta:
       DatasetsReadCapacity: 1
       DatasetsWriteCapacity: 1
+      SearchStackSuffix: 'b'
     backend-release:
       DatasetsReadCapacity: 5
       DatasetsWriteCapacity: 5
+      SearchStackSuffix: 'r'
 
 Resources:
   DatasetsTable:
@@ -1937,7 +1939,6 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupSearchDomainStateMachine
-      StackName: !Ref AWS::StackName
       SearchDomain: !Ref SearchDomain
       Fields: !Sub |-
         [
@@ -2004,6 +2005,12 @@ Resources:
       Handler: search.defineIndexFields
       Runtime: nodejs6.10
       Timeout: 20
+      Environment:
+        Variables:
+          SEARCH_STACK_SUFFIX: !FindInMap
+            - StackMap
+            - !Ref AWS::StackName
+            - SearchStackSuffix
       Policies:
         Statement:
           - Effect: Allow
@@ -2422,6 +2429,10 @@ Resources:
       Environment:
         Variables:
           SEARCH_DOC_ENDPOINT: !GetAtt SetupSearchDomain.DocEndpoint
+          SEARCH_STACK_SUFFIX: !FindInMap
+            - StackMap
+            - !Ref AWS::StackName
+            - SearchStackSuffix
       Policies:
         Statement:
           - Effect: Allow

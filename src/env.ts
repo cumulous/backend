@@ -13,6 +13,7 @@ export const envNames = {
   webSigningKeyBucket: 'WEB_SIGNING_KEY_BUCKET',
   webSigningKeyPath: 'WEB_SIGNING_KEY_PATH',
   datasetsTable: 'DATASETS_TABLE',
+  searchStackSuffix: 'SEARCH_STACK_SUFFIX',
   searchDocEndpoint: 'SEARCH_DOC_ENDPOINT',
   auth0Domain: 'AUTH0_DOMAIN',
   auth0ClientId: 'AUTH0_CLIENT_ID',

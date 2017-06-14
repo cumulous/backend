@@ -14,7 +14,7 @@ const fakeDocEndpoint = 'doc-1234.us-east-1.cloudsearch.amazonaws.com';
 const fakeSearchEndpoint = 'search-1234.us-east-1.cloudsearch.amazonaws.com';
 
 describe('search.defineIndexFields()', () => {
-  const stackName = 'backend-beta';
+  const fakeStackSuffix = 'd';
   const fakeTextField = 'fake-text';
   const fakeTextOptions = () => ({
     SortEnabled: false,
@@ -28,7 +28,6 @@ describe('search.defineIndexFields()', () => {
 
   const fakeEvent = () => ({
     SearchDomain: fakeSearchDomain,
-    StackName: stackName,
     Fields: stringify([{
       IndexFieldName: fakeTextField,
       IndexFieldType: 'text',
@@ -46,6 +45,9 @@ describe('search.defineIndexFields()', () => {
 
   beforeEach(() => {
     event = fakeEvent();
+
+    process.env[envNames.searchStackSuffix] = fakeStackSuffix;
+
     spyOnDefineIndexField = spyOn(cloudSearch, 'defineIndexField')
       .and.returnValues(
         fakeResolve({
@@ -74,7 +76,7 @@ describe('search.defineIndexFields()', () => {
       expect(spyOnDefineIndexField).toHaveBeenCalledWith({
         DomainName: fakeSearchDomain,
         IndexField: {
-          IndexFieldName: fakeTextField + '_b',
+          IndexFieldName: fakeTextField + '_' + fakeStackSuffix,
           IndexFieldType: 'text',
           TextOptions: fakeTextOptions(),
         },
@@ -82,43 +84,13 @@ describe('search.defineIndexFields()', () => {
       expect(spyOnDefineIndexField).toHaveBeenCalledWith({
         DomainName: fakeSearchDomain,
         IndexField: {
-          IndexFieldName: fakeLiteralField + '_b',
+          IndexFieldName: fakeLiteralField + '_' + fakeStackSuffix,
           IndexFieldType: 'literal',
           TextOptions: fakeLiteralOptions(),
         },
       });
       expect(spyOnDefineIndexField).toHaveBeenCalledTimes(2);
       done();
-    });
-  });
-
-  describe('appends correct field suffix when calling cloudSearch.defineIndexField()', () => {
-    let event: any;
-    let fieldSuffix: string;
-
-    beforeEach(() => event = fakeEvent());
-
-    afterEach((done: Callback) => {
-      defineIndexFields(event, null, () => {
-        expect(spyOnDefineIndexField).toHaveBeenCalledWith({
-          DomainName: fakeSearchDomain,
-          IndexField: {
-            IndexFieldName: fakeTextField + '_' + fieldSuffix,
-            IndexFieldType: 'text',
-            TextOptions: fakeTextOptions(),
-          },
-        });
-        done();
-      });
-    });
-
-    it('for the "backend-beta" stack', () => {
-      event.StackName = 'backend-beta';
-      fieldSuffix = 'b';
-    });
-    it('for the "backend-release" stack', () => {
-      event.StackName = 'backend-release';
-      fieldSuffix = 'r';
     });
   });
 
@@ -131,9 +103,12 @@ describe('search.defineIndexFields()', () => {
     });
     it('event is undefined', () => event = undefined);
     it('event is null', () => event = null);
-    it('event.StackName is undefined', () => event.StackName = undefined);
-    it('event.StackName is null', () => event.StackName = null);
-    it('event.StackName is unrecognized', () => event.StackName = 'backend');
+    it(`${envNames.searchStackSuffix} is undefined`, () => {
+      delete process.env[envNames.searchStackSuffix];
+    });
+    it(`${envNames.searchStackSuffix} is empty`, () => {
+      process.env[envNames.searchStackSuffix] = '';
+    });
     it('event.Fields is undefined', () => event.Fields = undefined);
     it('event.Fields is null', () => event.Fields = null);
     it('event.Fields is not an array', () => event.Fields = {});
@@ -225,6 +200,7 @@ describe('search.cloudSearchDomain()', () => {
 });
 
 describe('search.uploadDocuments()', () => {
+  const fakeStackSuffix = 'u';
   const fakeCreateDocumentId = uuid();
   const fakeUpdateDocumentId = uuid();
   const fakeDeleteDocumentId = uuid();
@@ -235,9 +211,9 @@ describe('search.uploadDocuments()', () => {
     },
   });
   const fakeTableName = 'Items';
-  const fakeStreamArn = (stackName = 'backend-beta') =>
+  const fakeStreamArn = (tableName = fakeTableName + 'Table-ABCD') =>
     'arn:aws:dynamodb:us-east-1:123456789012:table/' +
-    stackName + '-' + fakeTableName + 'Table-ABCD/stream/2016-11-16T20:42:48.104';
+    'fake-stack-' + tableName + '/stream/2016-11-16T20:42:48.104';
   const fakeDeletionEvent = () => ({
     Records: [{
       eventSourceARN: fakeStreamArn(),
@@ -256,6 +232,7 @@ describe('search.uploadDocuments()', () => {
   let spyOnUploadDocuments: jasmine.Spy;
 
   beforeEach(() => {
+    process.env[envNames.searchStackSuffix] = fakeStackSuffix;
     process.env[envNames.searchDocEndpoint] = fakeDocEndpoint;
 
     spyOnUploadDocuments = jasmine.createSpy('uploadDocuments')
@@ -275,78 +252,63 @@ describe('search.uploadDocuments()', () => {
     });
   });
 
-  describe('calls cloudSearchDomain().uploadDocuments() with correct parameters if ' +
-           'eventSourceARN table name starts with', () => {
-
-    let stackName: string;
-    let stackSuffix: string;
-
-    afterEach((done: Callback) => {
-      const eventSourceARN = fakeStreamArn(stackName);
-      uploadDocuments({
-        Records: [{
-          eventSourceARN,
-          eventName: 'INSERT',
-          dynamodb: {
-            NewImage: Object.assign({
-              id: {
-                S: fakeCreateDocumentId,
-              },
-            }, fakeDocument()),
-          },
-        }, {
-          eventSourceARN,
-          eventName: 'MODIFY',
-          dynamodb: {
-            NewImage: Object.assign({
-              id: {
-                S: fakeUpdateDocumentId,
-              },
-            }, fakeDocument()),
-          },
-        }, {
-          eventSourceARN,
-          eventName: 'REMOVE',
-          dynamodb: {
-            Keys: {
-              id: {
-                S: fakeDeleteDocumentId,
-              },
+  it('calls cloudSearchDomain().uploadDocuments() with correct parameters',
+      (done: Callback) => {
+    uploadDocuments({
+      Records: [{
+        eventSourceARN: fakeStreamArn(),
+        eventName: 'INSERT',
+        dynamodb: {
+          NewImage: Object.assign({
+            id: {
+              S: fakeCreateDocumentId,
+            },
+          }, fakeDocument()),
+        },
+      }, {
+        eventSourceARN: fakeStreamArn(),
+        eventName: 'MODIFY',
+        dynamodb: {
+          NewImage: Object.assign({
+            id: {
+              S: fakeUpdateDocumentId,
+            },
+          }, fakeDocument()),
+        },
+      }, {
+        eventSourceARN: fakeStreamArn(),
+        eventName: 'REMOVE',
+        dynamodb: {
+          Keys: {
+            id: {
+              S: fakeDeleteDocumentId,
             },
           },
-        }],
-      }, null, () => {
-        const idSuffix = fakeTableName.toLowerCase() + '_' + stackSuffix;
-        const fakeFields: any = {};
-        fakeFields[`fake_key_${stackSuffix}`] = fakeDocumentValue;
-        fakeFields[`table_${stackSuffix}`] = fakeTableName.toLowerCase();
+        },
+      }],
+    }, null, () => {
+      const idSuffix = fakeTableName.toLowerCase() + '_' + fakeStackSuffix;
+      const fakeFields: any = {};
+      fakeFields[`fake_key_${fakeStackSuffix}`] = fakeDocumentValue;
+      fakeFields[`table_${fakeStackSuffix}`] = fakeTableName.toLowerCase();
 
-        expect(spyOnUploadDocuments).toHaveBeenCalledWith({
-          contentType: 'application/json',
-          documents: stringify([{
-            type: 'add',
-            id: fakeCreateDocumentId + '_' + idSuffix,
-            fields: fakeFields,
-          }, {
-            type: 'add',
-            id: fakeUpdateDocumentId + '_' + idSuffix,
-            fields: fakeFields,
-          }, {
-            type: 'delete',
-            id: fakeDeleteDocumentId + '_' + idSuffix,
-          }]),
-        });
-        expect(spyOnUploadDocuments).toHaveBeenCalledTimes(1);
-        done();
+      expect(spyOnUploadDocuments).toHaveBeenCalledWith({
+        contentType: 'application/json',
+        documents: stringify([{
+          type: 'add',
+          id: fakeCreateDocumentId + '_' + idSuffix,
+          fields: fakeFields,
+        }, {
+          type: 'add',
+          id: fakeUpdateDocumentId + '_' + idSuffix,
+          fields: fakeFields,
+        }, {
+          type: 'delete',
+          id: fakeDeleteDocumentId + '_' + idSuffix,
+        }]),
       });
-    });
-    it('"backend-beta"', () => {
-      stackName = 'backend-beta';
-      stackSuffix = 'b';
-    });
-    it('"backend-release"', () => {
-      stackName = 'backend-release';
-      stackSuffix = 'r';
+      expect(spyOnUploadDocuments).toHaveBeenCalledTimes(1);
+      done();
     });
   });
 
@@ -398,8 +360,14 @@ describe('search.uploadDocuments()', () => {
                 dynamodb,
               };
             });
-            it('eventSourceARN is not recognized', () => {
-              eventSourceARN = fakeStreamArn('backend-test');
+            it('table cannot be parsed from eventSourceARN', () => {
+              eventSourceARN = fakeStreamArn('incorrect-table');
+            });
+            it(`${envNames.searchStackSuffix} is undefined`, () => {
+              delete process.env[envNames.searchStackSuffix];
+            });
+            it(`${envNames.searchStackSuffix} is empty`, () => {
+              process.env[envNames.searchStackSuffix] = '';
             });
             it('dynamodb is undefined', () => dynamodb = undefined);
             it('dynamodb is null', () => dynamodb = null);
@@ -435,8 +403,14 @@ describe('search.uploadDocuments()', () => {
               dynamodb,
             };
           });
-          it('eventSourceARN is not recognized', () => {
-            eventSourceARN = fakeStreamArn('backend-test');
+          it('table cannot be parsed from eventSourceARN', () => {
+            eventSourceARN = fakeStreamArn('fake-table');
+          });
+          it(`${envNames.searchStackSuffix} is undefined`, () => {
+            delete process.env[envNames.searchStackSuffix];
+          });
+          it(`${envNames.searchStackSuffix} is empty`, () => {
+            process.env[envNames.searchStackSuffix] = '';
           });
           it('dynamodb is undefined', () => dynamodb = undefined);
           it('dynamodb is null', () => dynamodb = null);
