@@ -466,7 +466,7 @@ describe('search.query()', () => {
       fields[`key4_${fakeStackSuffix}`] = 'value4_' + (N - count);
       fields[`key5_${fakeStackSuffix}`] = 'value5_' + count;
       hits.push({
-        id: 'abcd-' + (N - count),
+        id: `abcd-${N - count}_${fakeResource.substring(1)}_${fakeStackSuffix}`,
         fields,
       });
     }

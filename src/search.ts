@@ -138,7 +138,7 @@ const buildQueryResponse = (hits: any[], offset: number, limit: number) => {
     offset,
     items: hits.map(hit => {
       const result: Dict<any> = {
-        id: hit.id,
+        id: hit.id.replace(/_.+$/,''),
       };
       Object.keys(hit.fields).forEach(key => {
         result[key.replace(/_[^_]+$/, '')] = hit.fields[key];
