@@ -2486,7 +2486,7 @@ Resources:
           - Effect: Allow
             Action:
               - cloudsearch:search
-            Resource: !If
+            Resource:
               - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
 
   GetDataset:
