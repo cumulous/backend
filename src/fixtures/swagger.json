@@ -135,8 +135,10 @@
     "HeaderDefault": {
       "in": "header",
       "name": "X-Header-Default",
-      "type": "string",
-      "default": "default"
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 5,
+      "default": 0
     },
     "HeaderOptional": {
       "in": "header",

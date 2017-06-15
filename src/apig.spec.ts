@@ -114,7 +114,7 @@ describe('validate()', () => {
       (done: Callback) => {
     const request = fakeRequest();
     validate(request, fakeMethod, fakePath).then(() => {
-      expect(request.headers['X-Header-Default']).toEqual('default');
+      expect(Number(request.headers['X-Header-Default'])).toEqual(0);
       expect(Object.keys(request.headers)).not.toContain('X-Header-Optional');
       done();
     });

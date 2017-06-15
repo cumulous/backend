@@ -83,7 +83,7 @@ const validateParameter = (request: Request, modelRef: string) => {
       if (model.in === 'body') {
         value = {};
       }
-    } else if (model.default) {
+    } else if (model.default !== undefined) {
       return setDefaultValue(request, model);
     } else {
       return null;
