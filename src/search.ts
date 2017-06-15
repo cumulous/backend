@@ -140,6 +140,7 @@ interface QueryResponse {
 };
 
 const buildQueryResponse = (hits: any[], offset: number, limit: number) => {
+  const keySuffix = new RegExp(`_${stackSuffix()}$`);
   const response: QueryResponse = {
     offset,
     items: hits.map(hit => {
@@ -148,7 +149,7 @@ const buildQueryResponse = (hits: any[], offset: number, limit: number) => {
       };
       Object.keys(hit.fields).forEach(key => {
         const fields = hit.fields[key];
-        const keyName = key.replace(/_[^_]+$/, '');
+        const keyName = key.replace(keySuffix, '');
         result[keyName] = fields.length > 1 ? fields : fields[0];
       });
       return result;
