@@ -462,7 +462,7 @@ describe('search.query()', () => {
       const fields: Dict<string[]> = {};
       fields[`key1_${fakeStackSuffix}`] = ['value1'];
       fields[`key2_${fakeStackSuffix}`] = ['value2'];
-      fields[`key3_${fakeStackSuffix}`] = ['value3', 'value3_0'];
+      fields[`key_3_${fakeStackSuffix}`] = ['value3', 'value3_0'];
       fields[`key4_${fakeStackSuffix}`] = ['value4_' + (N - count)];
       fields[`key5_${fakeStackSuffix}`] = ['value5_' + count];
       hits.push({
@@ -484,7 +484,7 @@ describe('search.query()', () => {
         id: 'abcd-' + (N - count),
         key1: 'value1',
         key2: 'value2',
-        key3: ['value3', 'value3_0'],
+        key_3: ['value3', 'value3_0'],
         key4: 'value4_' + (N - count),
         key5: 'value5_' + count,
       });
