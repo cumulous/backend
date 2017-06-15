@@ -1978,7 +1978,8 @@ Resources:
             "IndexFieldName": "description",
             "IndexFieldType": "text",
             "TextOptions": {
-              "SortEnabled": false
+              "SortEnabled": false,
+              "HighlightEnabled": false
             }
           },
           {
