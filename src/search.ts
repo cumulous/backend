@@ -5,6 +5,7 @@ import * as stringify from 'json-stable-stringify';
 import { Request, respond, respondWithError, validate } from './apig';
 import { cloudSearch } from './aws';
 import { envNames } from './env'
+import { log } from './log';
 import { Callback, Dict } from './types';
 
 export const cloudSearchDomain = (endpoint: string) =>
@@ -60,7 +61,8 @@ interface StreamRecord extends DynamoDBStreams.Record {
 export const uploadDocuments = (event: { Records: StreamRecord[] },
                                 context: any, callback: Callback) => {
   Promise.resolve()
-    .then(suffix => event.Records.map(recordToDoc))
+    .then(() => log.debug(`Batch upload: ${event.Records.length} items`))
+    .then(() => event.Records.map(recordToDoc))
     .then(docs => cloudSearchDomain(process.env[envNames.searchDocEndpoint])
       .uploadDocuments({
         contentType: 'application/json',
