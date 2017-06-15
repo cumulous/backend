@@ -459,12 +459,12 @@ describe('search.query()', () => {
     const N = count;
     const hits: Dict<any>[] = [];
     while (count--) {
-      const fields: Dict<any> = {};
-      fields[`key1_${fakeStackSuffix}`] = 'value1';
-      fields[`key2_${fakeStackSuffix}`] = 'value2';
-      fields[`key3_${fakeStackSuffix}`] = 'value3';
-      fields[`key4_${fakeStackSuffix}`] = 'value4_' + (N - count);
-      fields[`key5_${fakeStackSuffix}`] = 'value5_' + count;
+      const fields: Dict<string[]> = {};
+      fields[`key1_${fakeStackSuffix}`] = ['value1'];
+      fields[`key2_${fakeStackSuffix}`] = ['value2'];
+      fields[`key3_${fakeStackSuffix}`] = ['value3', 'value3_0'];
+      fields[`key4_${fakeStackSuffix}`] = ['value4_' + (N - count)];
+      fields[`key5_${fakeStackSuffix}`] = ['value5_' + count];
       hits.push({
         id: `abcd-${N - count}_${fakeResource.substring(1)}_${fakeStackSuffix}`,
         fields,
@@ -484,7 +484,7 @@ describe('search.query()', () => {
         id: 'abcd-' + (N - count),
         key1: 'value1',
         key2: 'value2',
-        key3: 'value3',
+        key3: ['value3', 'value3_0'],
         key4: 'value4_' + (N - count),
         key5: 'value5_' + count,
       });

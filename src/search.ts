@@ -133,15 +133,23 @@ const buildSort = (sort: string) => {
   return sort.replace(/:/g, `_${stackSuffix()} `);
 };
 
+interface QueryResponse {
+  offset: number;
+  items: Dict<string|string[]>[];
+  next?: number;
+};
+
 const buildQueryResponse = (hits: any[], offset: number, limit: number) => {
-  const response: Dict<any> = {
+  const response: QueryResponse = {
     offset,
     items: hits.map(hit => {
-      const result: Dict<any> = {
+      const result: Dict<string|string[]> = {
         id: hit.id.replace(/_.+$/,''),
       };
       Object.keys(hit.fields).forEach(key => {
-        result[key.replace(/_[^_]+$/, '')] = hit.fields[key];
+        const fields = hit.fields[key];
+        const keyName = key.replace(/_[^_]+$/, '');
+        result[keyName] = fields.length > 1 ? fields : fields[0];
       });
       return result;
     }),
