@@ -2475,6 +2475,7 @@ Resources:
             - StackMap
             - !Ref AWS::StackName
             - SearchStackSuffix
+          WEB_DOMAIN: !Ref WebDomain
       Events:
         Api:
           Type: Api
