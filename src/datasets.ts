@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { Request, respond, respondWithError, validate } from './apig';
 import { dynamodb } from './aws';
 import { envNames } from './env';
+import { query } from './search';
 import { Callback } from './types';
 
 export const create = (request: Request, context: any, callback: Callback) => {
@@ -25,4 +26,8 @@ export const create = (request: Request, context: any, callback: Callback) => {
     }).promise())
     .then(() => respond(callback, request, item()))
     .catch(err => respondWithError(callback, request, err));
+};
+
+export const list = (request: Request, context: any, callback: Callback) => {
+  query(request, '/datasets', ['project_id', 'status'], callback);
 };

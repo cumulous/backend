@@ -4,9 +4,10 @@ import * as uuid from 'uuid';
 import * as apig from './apig';
 import { ajv, ApiError, Request } from './apig';
 import { dynamodb } from './aws';
-import { create } from './datasets';
+import { create, list } from './datasets';
 import { envNames } from './env';
 import { fakeReject, fakeResolve } from './fixtures/support';
+import * as search from './search';
 import { Callback } from './types';
 
 const fakeMemberId = uuid();
@@ -98,7 +99,7 @@ describe('datasets.create()', () => {
   });
 
   describe('calls apig.respondWithError() immediately with the error if', () => {
-    let err: Error | ApiError | jasmine.Any;
+    let err: Error | ApiError;
 
     const testError = (after: Callback, done: Callback, validated = true) => {
       const callback = () => {
@@ -134,5 +135,32 @@ describe('datasets.create()', () => {
       spyOnRespond.and.throwError(err.message);
       testError(() => {}, done);
     });
+  });
+});
+
+describe('datasets.list()', () => {
+  const fakeStatus = 'available';
+  const fakeRequest = () => ({
+    queryStringParameters: {
+      project_id: fakeProjectId,
+    },
+  });
+
+  let spyOnSearchQuery: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnSearchQuery = spyOn(search, 'query')
+      .and.callFake((request: Request, resource: string,
+                    terms: string[] = [], callback: Callback) => callback());
+  });
+
+  it('calls search.query() once with correct parameters', (done: Callback) => {
+    const callback = () => {
+      expect(spyOnSearchQuery).toHaveBeenCalledWith(
+        fakeRequest(), '/datasets', ['project_id', 'status'], callback);
+      expect(spyOnSearchQuery).toHaveBeenCalledTimes(1);
+      done();
+    };
+    list(fakeRequest(), null, callback);
   });
 });

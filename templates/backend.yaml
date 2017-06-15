@@ -2461,13 +2461,19 @@ Resources:
       StartingPosition: TRIM_HORIZON
       BatchSize: 100
 
-  GetDatasets:
+  ListDatasets:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-GetDatasets
+      FunctionName: !Sub ${AWS::StackName}-ListDatasets
       CodeUri: ../app
-      Handler: apig.proxy
+      Handler: datasets.list
       Runtime: nodejs6.10
+      Environment:
+        SEARCH_QUERY_ENDPOINT: !GetAtt SetupSearchDomain.QueryEndpoint
+        SEARCH_STACK_SUFFIX: !FindInMap
+          - StackMap
+          - !Ref AWS::StackName
+          - SearchStackSuffix
       Events:
         Api:
           Type: Api

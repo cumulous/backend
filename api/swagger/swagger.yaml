@@ -242,7 +242,7 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetDatasets.Arn}/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListDatasets.Arn}/invocations
   /datasets/{dataset_id}:
     options:
       tags:
