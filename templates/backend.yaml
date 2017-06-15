@@ -2469,11 +2469,12 @@ Resources:
       Handler: datasets.list
       Runtime: nodejs6.10
       Environment:
-        SEARCH_QUERY_ENDPOINT: !GetAtt SetupSearchDomain.QueryEndpoint
-        SEARCH_STACK_SUFFIX: !FindInMap
-          - StackMap
-          - !Ref AWS::StackName
-          - SearchStackSuffix
+        Variables:
+          SEARCH_QUERY_ENDPOINT: !GetAtt SetupSearchDomain.QueryEndpoint
+          SEARCH_STACK_SUFFIX: !FindInMap
+            - StackMap
+            - !Ref AWS::StackName
+            - SearchStackSuffix
       Events:
         Api:
           Type: Api
