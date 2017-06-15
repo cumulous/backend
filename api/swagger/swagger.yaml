@@ -734,7 +734,7 @@ parameters:
     maxLength: 64
 
 x-amazon-apigateway-binary-media-types:
-  - 'application/json'
+  - '*/*'
 
 securityDefinitions:
   member_token:
