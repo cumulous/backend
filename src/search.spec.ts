@@ -693,7 +693,7 @@ describe('search.describeDomain()', () => {
         expect(err).toBeFalsy();
         expect(data).toEqual({
           DocEndpoint: fakeDocEndpoint,
-          SearchEndpoint: fakeQueryEndpoint,
+          QueryEndpoint: fakeQueryEndpoint,
           State: state,
         });
         done();

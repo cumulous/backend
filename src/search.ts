@@ -166,7 +166,7 @@ export const describeDomain = (domain: string, context: any, callback: Callback)
       }
       return {
         DocEndpoint: status.DocService.Endpoint,
-        SearchEndpoint: status.SearchService.Endpoint,
+        QueryEndpoint: status.SearchService.Endpoint,
         State: state,
       };
     })
