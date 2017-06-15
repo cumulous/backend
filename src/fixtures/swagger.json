@@ -19,7 +19,19 @@
             "$ref": "#/parameters/Query"
           },
           {
+            "$ref": "#/parameters/QueryDefault"
+          },
+          {
+            "$ref": "#/parameters/QueryOptional"
+          },
+          {
             "$ref": "#/parameters/Header"
+          },
+          {
+            "$ref": "#/parameters/HeaderDefault"
+          },
+          {
+            "$ref": "#/parameters/HeaderOptional"
           },
           {
             "$ref": "#/parameters/Body"
@@ -98,6 +110,20 @@
       "pattern": "^[\\w\\s]{1,100}$",
       "required": true
     },
+    "QueryDefault": {
+      "in": "query",
+      "name": "sort",
+      "description": "Sort by date",
+      "type": "string",
+      "pattern": "^dateCreated:(asc|desc)$",
+      "default": "dateCreated:desc"
+    },
+    "QueryOptional": {
+      "in": "query",
+      "name": "optional",
+      "description": "Optional query",
+      "type": "string"
+    },
     "Header": {
       "in": "header",
       "name": "X-Header",
@@ -105,6 +131,17 @@
       "minimum": 1,
       "maximum": 10,
       "required": true
+    },
+    "HeaderDefault": {
+      "in": "header",
+      "name": "X-Header-Default",
+      "type": "string",
+      "default": "default"
+    },
+    "HeaderOptional": {
+      "in": "header",
+      "name": "X-Header-Optional",
+      "type": "string"
     },
     "Body": {
       "in": "body",

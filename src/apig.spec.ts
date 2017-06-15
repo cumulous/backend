@@ -10,7 +10,7 @@ import { apiGateway } from './aws';
 import { envNames } from './env';
 import { log } from './log';
 import { fakeResolve, fakeReject, testError } from './fixtures/support';
-import { Callback, HttpMethod } from './types';
+import { Callback, Dict, HttpMethod } from './types';
 
 const fakeDomainName = 'api.example.org';
 const fakeApiCertificate = 'arn:aws:acm:us-east-1:012345678910:certificate/abcd-1234';
@@ -41,10 +41,10 @@ describe('validate()', () => {
     },
     queryStringParameters: {
       desc_contains: fakeItemDescriptionContains,
-    },
+    } as Dict<string>,
     headers: {
       'X-Header': fakeItemHeader,
-    },
+    } as Dict<string>,
     body: stringify({
       description: fakeItemDescription,
       status: fakeItemStatus,
@@ -96,6 +96,26 @@ describe('validate()', () => {
     }),
     validate(request, fakeMethod, fakePath).then(() => {
       expect(request.body).toEqual(JSON.parse(fakeRequest().body));
+      done();
+    });
+  });
+
+  it('sets unspecified optional query parameters to their default values (if defined)',
+      (done: Callback) => {
+    const request = fakeRequest();
+    validate(request, fakeMethod, fakePath).then(() => {
+      expect(request.queryStringParameters.sort).toEqual('dateCreated:desc');
+      expect(Object.keys(request.queryStringParameters)).not.toContain('optional');
+      done();
+    });
+  });
+
+  it('sets unspecified optional headers to their default values (if defined)',
+      (done: Callback) => {
+    const request = fakeRequest();
+    validate(request, fakeMethod, fakePath).then(() => {
+      expect(request.headers['X-Header-Default']).toEqual('default');
+      expect(Object.keys(request.headers)).not.toContain('X-Header-Optional');
       done();
     });
   });

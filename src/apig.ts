@@ -65,9 +65,16 @@ export const validate = (request: Request, method: HttpMethod, resource: string)
     .then(collectErrors);
 };
 
+interface Model {
+  in: string;
+  name: string;
+  default?: string;
+  required?: boolean;
+}
+
 const validateParameter = (request: Request, modelRef: string) => {
   const modelPath = modelRef.replace(/\//g, '.').substring(2);
-  const model = jsonpath.value(spec(), modelPath);
+  const model: Model = jsonpath.value(spec(), modelPath);
   const schemaRef = `spec${modelRef}${model.in === 'body' ? '/schema' : ''}`;
   let value = getRequestValue(request, model);
 
@@ -76,6 +83,8 @@ const validateParameter = (request: Request, modelRef: string) => {
       if (model.in === 'body') {
         value = {};
       }
+    } else if (model.default) {
+      return setDefaultValue(request, model);
     } else {
       return null;
     }
@@ -100,7 +109,7 @@ const getHeaderValue = (request: Request, headerName: string) => {
   return header == null ? header : header.value;
 };
 
-const getRequestValue = (request: Request, model: {in: string, name: string}) => {
+const getRequestValue = (request: Request, model: Model) => {
   switch (model.in) {
     case 'path':
       return jsonpath.value(request, `pathParameters.${model.name}`);
@@ -112,7 +121,20 @@ const getRequestValue = (request: Request, model: {in: string, name: string}) =>
       const body = jsonpath.value(request, 'body');
       return typeof body === 'string' ? JSON.parse(body) : null;
     default:
-      throw new ApiError(`${model.in} not supported`);
+      throw new ApiError(`${model.in} parameters are not supported`);
+  }
+};
+
+const setDefaultValue = (request: Request, model: Model) => {
+  switch (model.in) {
+    case 'query':
+      request.queryStringParameters = request.queryStringParameters || {};
+      request.queryStringParameters[model.name] = model.default;
+      break;
+    case 'header':
+      request.headers = request.headers || {};
+      request.headers[model.name] = model.default;
+      break;
   }
 };
 
