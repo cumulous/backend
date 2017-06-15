@@ -128,6 +128,7 @@ describe('getPolicy()', () => {
               `${fakeBaseArn}/GET/`,
               `${fakeBaseArn}/GET/weblogin`,
               `${fakeBaseArn}/POST/datasets`,
+              `${fakeBaseArn}/GET/datasets`,
             ],
           }],
         },

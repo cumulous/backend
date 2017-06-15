@@ -49,6 +49,7 @@ export const getPolicy = (principalId: string, expiresAt: number, methodArn: str
               `${baseArn}/GET/`,
               `${baseArn}/GET/weblogin`,
               `${baseArn}/POST/datasets`,
+              `${baseArn}/GET/datasets`,
             ],
           }],
         },
