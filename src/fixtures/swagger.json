@@ -159,7 +159,8 @@
             "$ref": "#/definitions/ItemDescription"
           },
           "status": {
-            "$ref": "#/definitions/ItemStatus"
+            "$ref": "#/definitions/ItemStatus",
+            "default": "Present"
           }
         }
       }

@@ -52,6 +52,7 @@ export const ajv = Ajv({
   allErrors: true,
   coerceTypes: true,
   removeAdditional: true,
+  useDefaults: true,
 });
 
 export const validate = (request: Request, method: HttpMethod, resource: string) => {

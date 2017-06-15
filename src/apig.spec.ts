@@ -48,7 +48,7 @@ describe('validate()', () => {
     body: stringify({
       description: fakeItemDescription,
       status: fakeItemStatus,
-    }),
+    }) as any,
   });
   const testMethod = () => validate(fakeRequest(), fakeMethod, fakePath);
 
@@ -86,16 +86,19 @@ describe('validate()', () => {
     });
   });
 
-  it('sets request body to its parsed value (without additional properties if none are allowed)',
+  it('sets request body to its parsed value and applies defaults, ' +
+     'but without additional properties if none are allowed',
       (done: Callback) => {
     const request = fakeRequest();
     request.body = stringify({
       description: fakeItemDescription,
-      status: fakeItemStatus,
       additional: 'property',
     }),
     validate(request, fakeMethod, fakePath).then(() => {
-      expect(request.body).toEqual(JSON.parse(fakeRequest().body));
+      expect(request.body).toEqual({
+        description: fakeItemDescription,
+        status: 'Present',
+      });
       done();
     });
   });
