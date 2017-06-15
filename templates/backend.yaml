@@ -2481,6 +2481,13 @@ Resources:
             Path: /datasets
             Method: GET
             RestApiId: !Ref Api
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action:
+              - cloudsearch:search
+            Resource: !If
+              - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
 
   GetDataset:
     Type: AWS::Serverless::Function
