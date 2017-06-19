@@ -608,7 +608,9 @@ Resources:
             Resource: '*'
           - Effect: Allow
             Principal:
-              AWS: !GetAtt FrontendAuthBuildRole.Arn
+              AWS:
+                - !GetAtt FrontendAuthBuildRole.Arn
+                - !GetAtt FrontendBuildRole.Arn
             Action:
               - kms:Decrypt
             Condition:
@@ -1322,8 +1324,18 @@ Resources:
         Image: aws/codebuild/nodejs:7.0.0
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
+          - Name: ARTIFACTS_BUCKET
+            Value: !Ref BackendArtifactsBucket
+          - Name: SECRETS_BUCKET
+            Value: !Ref SecretsBucket
           - Name: WEB_BUCKET
             Value: !Ref BetaWebBucket
+          - Name: STACK_NAME
+            Value: backend-beta
+          - Name: API_DOMAIN
+            Value: !Sub api.beta.${Domain}
+          - Name: AUTH0_DOMAIN
+            Value: !Ref Auth0Domain
       ServiceRole: !Ref FrontendBuildRole
 
   FrontendReleaseBuildProject:
@@ -1339,8 +1351,18 @@ Resources:
         Image: aws/codebuild/nodejs:7.0.0
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
+          - Name: ARTIFACTS_BUCKET
+            Value: !Ref BackendArtifactsBucket
+          - Name: SECRETS_BUCKET
+            Value: !Ref SecretsBucket
           - Name: WEB_BUCKET
             Value: !Ref ReleaseWebBucket
+          - Name: STACK_NAME
+            Value: backend-release
+          - Name: API_DOMAIN
+            Value: !Sub api.${Domain}
+          - Name: AUTH0_DOMAIN
+            Value: !Ref Auth0Domain
       ServiceRole: !Ref FrontendBuildRole
 
   FrontendPipelineRole:
@@ -1410,6 +1432,8 @@ Resources:
                 Action:
                   - s3:GetObject
                 Resource:
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/auth0/*-api-test-client.id
+                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-api-test-client.key
                   - !Sub arn:aws:s3:::${FrontendArtifactsBucket}/*
               - Effect: Allow
                 Action:
