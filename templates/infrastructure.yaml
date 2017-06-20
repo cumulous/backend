@@ -15,10 +15,9 @@ Parameters:
     AllowedPattern: ^[\w.-]{1,100}$
     Default: frontend-auth
   StackAdmin:
-    Description: "IAM user whom to allow to administer this stack, including encryption keys"
+    Description: "IAM user whom to allow to administer this stack, including encryption keys (*)"
     Type: String
     AllowedPattern: ^[\w+=.,@-]{0,64}$
-    Default: ''
   NotificationEmail:
     Description: "Email for notifying about pipeline updates"
     Type: String
@@ -150,7 +149,6 @@ Metadata:
           - Auth0UserTokenLifetime
 
 Conditions:
-  EnableStackAdmin: !Not [!Equals [!Ref StackAdmin, '']]
   CreateNotification: !Not [!Equals [!Ref NotificationEmail, '']]
   CreateHostedZone: !Equals [!Ref HostedZone, '']
   CreateSearchDomain: !Equals [!Ref SearchDomainName, '']
@@ -534,7 +532,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              AWS: !Ref AWS::AccountId
+              AWS: !Sub arn:aws:iam::${AWS::AccountId}:user/${StackAdmin}
             Action:
               - kms:Create*
               - kms:Describe*
@@ -644,7 +642,7 @@ Resources:
           - Effect: Deny
             NotPrincipal:
               AWS:
-              - !Ref AWS::AccountId
+              - !Sub arn:aws:iam::${AWS::AccountId}:user/${StackAdmin}
 
               - !GetAtt SSHKeyPutRole.Arn
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
@@ -695,11 +693,6 @@ Resources:
                       ${WebSigningKeyGetRole}/backend-beta-GenerateSignedCookies"
               - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
                       ${WebSigningKeyGetRole}/backend-release-GenerateSignedCookies"
-
-              - !If
-                - EnableStackAdmin
-                - !Sub arn:aws:iam::${AWS::AccountId}:user/${StackAdmin}
-                - !Ref AWS::NoValue
             Action:
               - kms:*
             Resource: '*'
