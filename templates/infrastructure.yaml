@@ -639,63 +639,6 @@ Resources:
               StringLike:
                 'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/web/signing.pem
             Resource: '*'
-          - Effect: Deny
-            NotPrincipal:
-              AWS:
-              - !Sub arn:aws:iam::${AWS::AccountId}:user/${StackAdmin}
-
-              - !GetAtt SSHKeyPutRole.Arn
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyPutRole}/backend-beta-CreateSSHKey"
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyPutRole}/backend-release-CreateSSHKey"
-
-              - !GetAtt SSHKeyGetRole.Arn
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyGetRole}/backend-beta-TransferInitScript"
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyGetRole}/backend-release-TransferInitScript"
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyGetRole}/backend-beta-ExecuteInitScript"
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${SSHKeyGetRole}/backend-release-ExecuteInitScript"
-
-              - !GetAtt Auth0PutSecretRole.Arn
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0PutSecretRole}/backend-beta-RotateAndStoreAuth0ManagementSecret"
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0PutSecretRole}/backend-release-RotateAndStoreAuth0ManagementSecret"
-
-              - !GetAtt Auth0CreateClientRole.Arn
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0CreateClientRole}/backend-beta-CreateAuth0Client"
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0CreateClientRole}/backend-release-CreateAuth0Client"
-
-              - !GetAtt Auth0GetManagementSecretRole.Arn
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0GetManagementSecretRole}/backend-beta-ManageAuth0Resource"
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${Auth0GetManagementSecretRole}/backend-release-ManageAuth0Resource"
-
-              - !GetAtt FrontendAuthBuildRole.Arn
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${FrontendAuthBuildRole}/AWSCodeBuild"
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${FrontendAuthBuildRole}/AWSCodeBuild"
-
-              - !GetAtt WebSigningKeyPutRole.Arn
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${WebSigningKeyPutRole}/backend-beta-CreateAndExportWebSigningKeyPair"
-
-              - !GetAtt WebSigningKeyGetRole.Arn
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${WebSigningKeyGetRole}/backend-beta-GenerateSignedCookies"
-              - !Sub "arn:aws:sts::${AWS::AccountId}:assumed-role/\
-                      ${WebSigningKeyGetRole}/backend-release-GenerateSignedCookies"
-            Action:
-              - kms:*
-            Resource: '*'
 
   LambdaBasicExecutionRole:
     Type: AWS::IAM::Role
