@@ -686,6 +686,7 @@ describe('getSpec()', () => {
   let fakeRequest = () => ({
     headers: {
       'Accept-Encoding': 'deflate, gzip;q=1.0, *;q=0.5',
+      'Accept': 'application/json',
     },
   });
 
