@@ -365,6 +365,21 @@ describe('validate()', () => {
       });
     });
 
+    describe('header name', () => {
+      beforeAll(() => {
+        ajv.removeSchema('spec');
+      });
+      it('starts with the name of a model header', () => {
+        request.headers['X-Header-Default-Suffix'] = 'should not be evaluated';
+      });
+      it('contains the name of a model header', () => {
+        request.headers['Prefix-X-Header-Default-Suffix'] = 'should not be evaluated';
+      });
+      it('ends with the name of a model header', () => {
+        request.headers['Prefix-X-Header-Default'] = 'should not be evaluated';
+      });
+    });
+
     describe('body is not required, and', () => {
       beforeAll(() => {
         ajv.removeSchema('spec');

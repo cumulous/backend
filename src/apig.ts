@@ -104,7 +104,7 @@ const validateParameter = (request: Request, modelRef: string) => {
 };
 
 const getHeaderValue = (request: Request, headerName: string) => {
-  const name = RegExp(headerName, 'i');
+  const name = RegExp(`^${headerName}$`, 'i');
   const header = jsonpath.nodes(request, 'headers.*')
     .find(node => name.test(String(node.path[2])));
   return header == null ? header : header.value;
