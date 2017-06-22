@@ -50,6 +50,7 @@ paths:
       produces:
         - application/json
       parameters:
+        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
@@ -100,6 +101,7 @@ paths:
       tags:
         - Web
       parameters:
+        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
@@ -138,6 +140,7 @@ paths:
       produces:
         - application/json
       parameters:
+        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/ProjectsQueryNameContains'
         - $ref: '#/parameters/ProjectsQueryIsMember'
         - $ref: '#/parameters/ProjectsQueryIsHidden'
@@ -201,6 +204,7 @@ paths:
       produces:
         - application/json
       parameters:
+        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetCreationRequest'
         - $ref: '#/parameters/CompressionRequest'
       responses:
@@ -226,6 +230,7 @@ paths:
       produces:
         - application/json
       parameters:
+        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetsQueryProjectId'
         - $ref: '#/parameters/DatasetsQueryDescriptionContains'
         - $ref: '#/parameters/DatasetsQueryStatus'
@@ -290,6 +295,7 @@ paths:
       produces:
         - application/json
       parameters:
+        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetId'
         - $ref: '#/parameters/CompressionRequest'
       responses:
@@ -314,6 +320,7 @@ paths:
       produces:
         - application/json
       parameters:
+        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetId'
         - $ref: '#/parameters/DatasetModificationRequest'
         - $ref: '#/parameters/CompressionRequest'
@@ -341,6 +348,7 @@ paths:
       produces:
         - application/json
       parameters:
+        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetId'
         - $ref: '#/parameters/CompressionRequest'
       responses:
@@ -400,6 +408,7 @@ paths:
       produces:
         - application/json
       parameters:
+        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetId'
         - $ref: '#/parameters/DatasetCredentialsRequest'
         - $ref: '#/parameters/CompressionRequest'
@@ -726,6 +735,12 @@ parameters:
     type: integer
     minimum: 1
     default: 10
+  Accept:
+    in: header
+    name: Accept
+    type: string
+    required: true
+    pattern: ^application/json$
   CompressionRequest:
     in: header
     name: Accept-Encoding
@@ -734,7 +749,7 @@ parameters:
     maxLength: 64
 
 x-amazon-apigateway-binary-media-types:
-  - '*/*'
+  - 'application/json'
 
 securityDefinitions:
   member_token:
