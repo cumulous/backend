@@ -4,6 +4,8 @@ info:
   version: '1'
 schemes:
   - https
+produces:
+  - application/json
 
 paths:
   /:
@@ -47,8 +49,6 @@ paths:
         - member_token: []
       tags:
         - Spec
-      produces:
-        - application/json
       parameters:
         - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/CompressionRequest'
@@ -137,8 +137,6 @@ paths:
         - member_token: []
       tags:
         - Projects
-      produces:
-        - application/json
       parameters:
         - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/ProjectsQueryNameContains'
@@ -201,8 +199,6 @@ paths:
         - member_token: []
       tags:
         - Datasets
-      produces:
-        - application/json
       parameters:
         - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetCreationRequest'
@@ -227,8 +223,6 @@ paths:
         - member_token: []
       tags:
         - Datasets
-      produces:
-        - application/json
       parameters:
         - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetsQueryProjectId'
@@ -292,8 +286,6 @@ paths:
         - member_token: []
       tags:
         - Datasets
-      produces:
-        - application/json
       parameters:
         - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetId'
@@ -317,8 +309,6 @@ paths:
         - member_token: []
       tags:
         - Datasets
-      produces:
-        - application/json
       parameters:
         - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetId'
@@ -345,8 +335,6 @@ paths:
         - member_token: []
       tags:
         - Datasets
-      produces:
-        - application/json
       parameters:
         - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetId'
@@ -405,8 +393,6 @@ paths:
         - member_token: []
       tags:
         - Datasets
-      produces:
-        - application/json
       parameters:
         - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetId'
