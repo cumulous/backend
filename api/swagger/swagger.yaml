@@ -740,7 +740,7 @@ parameters:
     name: Accept
     type: string
     required: true
-    pattern: ^application/json$
+    pattern: application/json
   CompressionRequest:
     in: header
     name: Accept-Encoding
