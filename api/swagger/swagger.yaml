@@ -741,6 +741,7 @@ parameters:
     type: string
     required: true
     pattern: application/json
+    maxLength: 128
   CompressionRequest:
     in: header
     name: Accept-Encoding
