@@ -31,9 +31,6 @@ describe('datasets.create()', () => {
   const fakeRequest = () => ({
     body: stringify(fakeBody()),
     requestContext: fakeContext(),
-    headers: {
-      accept: 'application/json',
-    },
   });
   const fakeItem = () => ({
     id: fakeDatasetId,
@@ -93,9 +90,6 @@ describe('datasets.create()', () => {
       expect(spyOnRespond).toHaveBeenCalledWith(callback, {
         body: fakeBody(),
         requestContext: fakeContext(),
-        headers: {
-          accept: 'application/json',
-        },
       }, fakeItem());
       expect(ajv.validate('spec#/definitions/Dataset', fakeItem())).toBe(true);
       expect(spyOnRespond).toHaveBeenCalledTimes(1);
@@ -112,9 +106,6 @@ describe('datasets.create()', () => {
         expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, {
           body: validated ? fakeBody() : stringify(fakeBody()),
           requestContext: fakeContext(),
-          headers: {
-            accept: 'application/json',
-          },
         }, err);
         expect(spyOnRespondWithError).toHaveBeenCalledTimes(1);
         after();

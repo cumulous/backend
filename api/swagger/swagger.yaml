@@ -50,7 +50,6 @@ paths:
       tags:
         - Spec
       parameters:
-        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
@@ -101,7 +100,6 @@ paths:
       tags:
         - Web
       parameters:
-        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
@@ -138,7 +136,6 @@ paths:
       tags:
         - Projects
       parameters:
-        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/ProjectsQueryNameContains'
         - $ref: '#/parameters/ProjectsQueryIsMember'
         - $ref: '#/parameters/ProjectsQueryIsHidden'
@@ -200,7 +197,6 @@ paths:
       tags:
         - Datasets
       parameters:
-        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetCreationRequest'
         - $ref: '#/parameters/CompressionRequest'
       responses:
@@ -224,7 +220,6 @@ paths:
       tags:
         - Datasets
       parameters:
-        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetsQueryProjectId'
         - $ref: '#/parameters/DatasetsQueryDescriptionContains'
         - $ref: '#/parameters/DatasetsQueryStatus'
@@ -287,7 +282,6 @@ paths:
       tags:
         - Datasets
       parameters:
-        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetId'
         - $ref: '#/parameters/CompressionRequest'
       responses:
@@ -310,7 +304,6 @@ paths:
       tags:
         - Datasets
       parameters:
-        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetId'
         - $ref: '#/parameters/DatasetModificationRequest'
         - $ref: '#/parameters/CompressionRequest'
@@ -336,7 +329,6 @@ paths:
       tags:
         - Datasets
       parameters:
-        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetId'
         - $ref: '#/parameters/CompressionRequest'
       responses:
@@ -394,7 +386,6 @@ paths:
       tags:
         - Datasets
       parameters:
-        - $ref: '#/parameters/Accept'
         - $ref: '#/parameters/DatasetId'
         - $ref: '#/parameters/DatasetCredentialsRequest'
         - $ref: '#/parameters/CompressionRequest'
@@ -721,13 +712,6 @@ parameters:
     type: integer
     minimum: 1
     default: 10
-  Accept:
-    in: header
-    name: Accept
-    type: string
-    required: true
-    pattern: application/json
-    maxLength: 128
   CompressionRequest:
     in: header
     name: Accept-Encoding
@@ -736,7 +720,7 @@ parameters:
     maxLength: 64
 
 x-amazon-apigateway-binary-media-types:
-  - 'application/json'
+  - '*/*'
 
 securityDefinitions:
   member_token:
