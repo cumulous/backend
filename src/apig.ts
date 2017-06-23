@@ -14,6 +14,7 @@ export interface Request {
   headers?: Dict<string>;
   body?: any;
   requestContext?: any;
+  isBase64Encoded?: boolean;
 };
 
 export interface Response {
@@ -119,8 +120,15 @@ const getRequestValue = (request: Request, model: Model) => {
     case 'header':
       return getHeaderValue(request, model.name);
     case 'body':
-      const body = jsonpath.value(request, 'body');
-      return typeof body === 'string' ? JSON.parse(body) : null;
+      let body = jsonpath.value(request, 'body');
+      if (typeof body === 'string') {
+        if (jsonpath.value(request, 'isBase64Encoded') === true) {
+          body = Buffer.from(body, 'base64');
+        }
+        return JSON.parse(body);
+      } else {
+        return null;
+      }
     default:
       throw new ApiError(`${model.in} parameters are not supported`);
   }

@@ -35,7 +35,7 @@ describe('validate()', () => {
   const fakeSpec = () =>
     JSON.parse(JSON.stringify(require('./fixtures/swagger')));
 
-  const fakeRequest = () => ({
+  const fakeRequest = (): Request => ({
     pathParameters: {
       itemId: fakeItemId,
     },
@@ -98,6 +98,23 @@ describe('validate()', () => {
       expect(request.body).toEqual({
         description: fakeItemDescription,
         status: 'Present',
+      });
+      done();
+    });
+  });
+
+  it('parses request body from base64-encoded string if isBase64Encoded is "true"',
+      (done: Callback) => {
+    const request = fakeRequest();
+    request.body = Buffer.from(stringify({
+      description: fakeItemDescription,
+      status: 'Absent',
+    })).toString('base64');
+    request.isBase64Encoded = true;
+    validate(request, fakeMethod, fakePath).then(() => {
+      expect(request.body).toEqual({
+        description: fakeItemDescription,
+        status: 'Absent',
       });
       done();
     });
