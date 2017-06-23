@@ -207,7 +207,6 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        contentHandling: CONVERT_TO_TEXT
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateDataset.Arn}/invocations
     get:
