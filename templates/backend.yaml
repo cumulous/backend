@@ -61,7 +61,6 @@ Parameters:
 
 Conditions:
   SetupWebSigningKeyPair: !Not [!Equals [!Ref WebSigningKeyPutRoleArn, '']]
-  CreateDatasetsTable: !Equals [!Ref DatasetsTableName, '']
 
 Mappings:
   StackMap:
@@ -77,7 +76,6 @@ Mappings:
 Resources:
   DatasetsTable:
     Type: AWS::DynamoDB::Table
-    Condition: CreateDatasetsTable
     DeletionPolicy: Retain
     Properties:
       AttributeDefinitions:
@@ -2403,10 +2401,7 @@ Resources:
       Runtime: nodejs6.10
       Environment:
         Variables:
-          DATASETS_TABLE: !If
-            - CreateDatasetsTable
-            - !Ref DatasetsTable
-            - !Ref DatasetsTableName
+          DATASETS_TABLE: !Ref DatasetsTable
           WEB_DOMAIN: !Ref WebDomain
       Events:
         Api:
@@ -2419,10 +2414,8 @@ Resources:
         Statement:
           - Effect: Allow
             Action: dynamodb:PutItem
-            Resource: !If
-              - CreateDatasetsTable
+            Resource:
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
-              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTableName}
 
   CloudSearchUploadDocuments:
     Type: AWS::Serverless::Function
@@ -2557,8 +2550,4 @@ Outputs:
     Condition: SetupWebSigningKeyPair
     Value: !GetAtt WebSigningKey.PublicKey
   DatasetsTable:
-    Condition: CreateDatasetsTable
     Value: !Ref DatasetsTable
-  DatasetsTableStreamArn:
-    Condition: CreateDatasetsTable
-    Value: !GetAtt DatasetsTable.StreamArn
