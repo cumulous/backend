@@ -67,10 +67,14 @@ Mappings:
     backend-beta:
       DatasetsReadCapacity: 1
       DatasetsWriteCapacity: 1
+      ProjectsReadCapacity: 1
+      ProjectsWriteCapacity: 1
       SearchStackSuffix: 'b'
     backend-release:
       DatasetsReadCapacity: 5
       DatasetsWriteCapacity: 5
+      ProjectsReadCapacity: 5
+      ProjectsWriteCapacity: 5
       SearchStackSuffix: 'r'
 
 Resources:
@@ -93,6 +97,28 @@ Resources:
           - StackMap
           - !Ref AWS::StackName
           - DatasetsWriteCapacity
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+
+  ProjectsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: !FindInMap
+          - StackMap
+          - !Ref AWS::StackName
+          - ProjectsReadCapacity
+        WriteCapacityUnits: !FindInMap
+          - StackMap
+          - !Ref AWS::StackName
+          - ProjectsWriteCapacity
       StreamSpecification:
         StreamViewType: NEW_IMAGE
 
