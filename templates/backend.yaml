@@ -1999,6 +1999,14 @@ Resources:
             }
           },
           {
+            "IndexFieldName": "name",
+            "IndexFieldType": "text",
+            "LiteralOptions": {
+              "SortEnabled": false,
+              "HighlightEnabled": false
+            }
+          },
+          {
             "IndexFieldName": "description",
             "IndexFieldType": "text",
             "TextOptions": {
@@ -2016,6 +2024,14 @@ Resources:
           },
           {
             "IndexFieldName": "bucket",
+            "IndexFieldType": "literal",
+            "LiteralOptions": {
+              "FacetEnabled": false,
+              "SortEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "irb_id",
             "IndexFieldType": "literal",
             "LiteralOptions": {
               "FacetEnabled": false,
@@ -2477,6 +2493,14 @@ Resources:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       EventSourceArn: !GetAtt DatasetsTable.StreamArn
+      FunctionName: !Ref CloudSearchUploadDocuments
+      StartingPosition: TRIM_HORIZON
+      BatchSize: 100
+
+  ProjectsTableStreamMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt ProjectsTable.StreamArn
       FunctionName: !Ref CloudSearchUploadDocuments
       StartingPosition: TRIM_HORIZON
       BatchSize: 100
