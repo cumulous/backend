@@ -180,7 +180,6 @@ Resources:
 
   BetaWebBucket:
     Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
 
   ReleaseWebBucket:
     Type: AWS::S3::Bucket
@@ -386,7 +385,7 @@ Resources:
               Configuration:
                 ActionMode: CHANGE_SET_EXECUTE
                 ChangeSetName: Deploy
-                StackName: !Sub backend-beta
+                StackName: backend-beta
               RunOrder: 2
         -
           Name: Release
@@ -413,7 +412,7 @@ Resources:
               Configuration:
                 ActionMode: CHANGE_SET_EXECUTE
                 ChangeSetName: Deploy
-                StackName: !Sub backend-release
+                StackName: backend-release
               RunOrder: 2
 
   BackendBuildProject:
@@ -924,8 +923,8 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${BetaWebBucket}
                   - !Sub arn:aws:s3:::${ReleaseWebBucket}
-                  - !Sub arn:aws:s3:::backend-beta*
-                  - !Sub arn:aws:s3:::backend-release*
+                  - !Sub arn:aws:s3:::backend-beta-*
+                  - !Sub arn:aws:s3:::backend-release-*
               - Effect: Allow
                 Action:
                   - dynamodb:CreateTable
