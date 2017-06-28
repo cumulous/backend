@@ -25,25 +25,16 @@ export interface Response {
 };
 
 export class ApiError implements Error {
-  name: string;
-  message: string;
-  errors?: string[];
-  code?: number;
-  stack?: string;
+  readonly name: string;
+  readonly code?: string | number;
+  readonly stack?: string;
 
-  constructor(message: string, errors?: string[], code = 500) {
-    this.message = message;
-    this.errors = errors;
+  constructor(
+    readonly message: string = 'Internal server error',
+    readonly errors?: string[],
+    code: string | number = 500,
+  ) {
     this.code = code;
-  }
-
-  static toString(err: ApiError) {
-    return stringify({
-      message: err.message,
-      code: err.code,
-      errors: err.errors,
-      stack: err.stack,
-    });
   }
 };
 
@@ -187,13 +178,13 @@ export const respond = (callback: Callback, request: Request,
 };
 
 export const respondWithError = (callback: Callback, request: Request, err: ApiError) => {
-  if (err.code == null || err.code == 500) {
-    log.error(ApiError.toString(err));
-    err = new ApiError('Internal server error', undefined, 500);
+  if (err.code == null || err.code === 500 || isNaN(Number(err.code))) {
+    log.error(stringify(err));
+    err = new ApiError();
   }
   const body = { message: err.message, errors: err.errors };
   !body.errors && delete body.errors;
-  respond(callback, request, body, err.code);
+  respond(callback, request, body, Number(err.code));
 };
 
 const compress = (callback: (err?: Error, bodyCompressed?: string, encodingMethod?: string) => void,

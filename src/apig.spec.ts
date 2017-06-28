@@ -679,7 +679,7 @@ describe('respondWithError()', () => {
         expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(), {
           message: 'Internal server error',
         }, 500);
-        expect(spyOnLog).toHaveBeenCalledWith(ApiError.toString(fakeError));
+        expect(spyOnLog).toHaveBeenCalledWith(stringify(fakeError));
         done();
       };
       testMethod(callback);
@@ -687,6 +687,10 @@ describe('respondWithError()', () => {
 
     it('code is 500', () => {
       fakeError = new ApiError(fakeErrorMessage, fakeErrorsArray(), 500);
+    });
+
+    it('code is not a number', () => {
+      fakeError = new ApiError(fakeErrorMessage, fakeErrorsArray(), 'TextCode');
     });
 
     it('code is undefined', () => {
