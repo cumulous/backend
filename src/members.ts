@@ -46,11 +46,14 @@ export const getPolicy = (principalId: string, expiresAt: number, methodArn: str
             Action: 'execute-api:Invoke',
             Effect: 'Allow' as PolicyEffect,
             Resource: [
-              `${baseArn}/GET/`,
-              `${baseArn}/GET/weblogin`,
-              `${baseArn}/POST/datasets`,
-              `${baseArn}/GET/datasets`,
-            ],
+              'GET  /',
+              'GET  /weblogin',
+              'POST /datasets',
+              'GET  /datasets',
+              'POST /projects',
+            ].map(endpoint =>
+              `${baseArn}/${endpoint.replace(/ /g, '')}`
+            ),
           }],
         },
         context: {
