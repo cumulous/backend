@@ -42,6 +42,8 @@ Parameters:
     Type: String
   SearchDomain:
     Type: String
+  DatasetsBucket:
+    Type: String
   Auth0Domain:
     Type: String
   Auth0ManagementClientID:
@@ -121,6 +123,29 @@ Resources:
           - ProjectsWriteCapacity
       StreamSpecification:
         StreamViewType: NEW_IMAGE
+
+  LogsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+
+  LogsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LogsBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: s3:PutObject
+            Principal:
+              Service: s3.amazonaws.com
+            Resource:
+              - !Sub arn:aws:s3:::${LogsBucket}/*
+            Condition:
+              ArnLike:
+                'aws:SourceArn': !Sub arn:aws:s3:::${DatasetsBucket}
+              StringEquals:
+                'aws:SourceAccount': !Ref AWS::AccountId
+                's3:x-amz-acl': bucket-owner-full-control
 
   BackendVPC:
     Type: AWS::EC2::VPC
@@ -2594,6 +2619,39 @@ Resources:
             Path: /datasets/{dataset_id}/credentials
             Method: POST
             RestApiId: !Ref Api
+
+  CreateProject:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CreateProject
+      CodeUri: ../app
+      Handler: projects.create
+      Runtime: nodejs6.10
+      Environment:
+        Variables:
+          PROJECTS_TABLE: !Ref ProjectsTable
+          DATASETS_BUCKET: !Ref DatasetsBucket
+          LOGS_BUCKET: !Ref LogsBucket
+          WEB_DOMAIN: !Ref WebDomain
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /projects
+            Method: POST
+            RestApiId: !Ref Api
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:PutAnalyticsConfiguration
+            Resource:
+              - !Sub arn:aws:s3:::${DatasetsBucket}
+          - Effect: Allow
+            Action:
+              - dynamodb:PutItem
+            Resource:
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}
 
 Outputs:
   WebSigningKey:

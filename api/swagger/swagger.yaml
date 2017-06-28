@@ -120,6 +120,57 @@ paths:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GenerateSignedCookies.Arn}/invocations
   /projects:
+    options:
+      tags:
+        - Projects
+      responses:
+        200:
+          description: HTTP options
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin:
+                Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
+    post:
+      summary: Create a project
+      description: |
+        Defines a new project.
+      operationId: createProject
+      security:
+        - member_token: []
+      tags:
+        - Projects
+      parameters:
+        - $ref: '#/parameters/ProjectCreationRequest'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Properties of the created project
+          schema:
+            $ref: '#/definitions/Project'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateProject.Arn}/invocations
     get:
       summary: Search projects
       description: |
@@ -407,17 +458,23 @@ definitions:
     required:
       - id
       - name
+      - created_at
+      - creator_id
       - status
     properties:
       id:
         $ref: '#/definitions/ProjectId'
       name:
         $ref: '#/definitions/ProjectName'
-      hidden:
-        $ref: '#/definitions/ProjectHidden'
+      description:
+        $ref: '#/definitions/ProjectDescription'
+      created_at:
+        $ref: '#/definitions/Date'
+      creator_id:
+        $ref: '#/definitions/ProjectMemberId'
       status:
         $ref: '#/definitions/ProjectStatus'
-      IRB:
+      irb_id:
         $ref: '#/definitions/ProjectIRB'
   ProjectId:
     description: Unique identifier for a project
@@ -427,16 +484,16 @@ definitions:
     description: Project name
     type: string
     pattern: ^[\w-., ]{1,100}$
-  ProjectHidden:
-    description:
-      Indicates whether project name and status are hidden from public view
-    type: boolean
+  ProjectDescription:
+    description: Project description
+    type: string
+    maxLength: 1000
   ProjectStatus:
     description: Project status
     type: string
     enum:
-      - Available
-      - Removed
+      - active
+      - removed
   ProjectIRB:
     description: project IRB identifier
     type: string
@@ -450,7 +507,7 @@ definitions:
           $ref: '#/definitions/Project'
       next:
         $ref: '#/definitions/PaginationNext'
-  MemberId:
+  ProjectMemberId:
     description: Unique identifier for a project member
     type: string
     format: uuid
@@ -469,7 +526,7 @@ definitions:
       created_at:
         $ref: '#/definitions/Date'
       creator_id:
-        $ref: '#/definitions/MemberId'
+        $ref: '#/definitions/ProjectMemberId'
       description:
         $ref: '#/definitions/DatasetDescription'
       status:
@@ -605,7 +662,7 @@ parameters:
     description: filter by project status
     type: string
     enum:
-      - available
+      - active
       - removed
   ProjectsQueryIRB:
     in: query
@@ -618,6 +675,22 @@ parameters:
       **
     type: string
     pattern: ^[\w-.]{1,100}$
+  ProjectCreationRequest:
+    in: body
+    name: ProjectCreationRequest
+    description: Properties of the project to be created
+    required: true
+    schema:
+      required:
+        - name
+      additionalProperties: false
+      properties:
+        name:
+          $ref: '#/definitions/ProjectName'
+        description:
+          $ref: '#/definitions/ProjectDescription'
+        irb_id:
+          $ref: '#/definitions/ProjectIRB'
   DatasetCreationRequest:
     in: body
     name: DatasetCreationRequest

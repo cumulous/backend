@@ -13,6 +13,7 @@ export const envNames = {
   webSigningKeyBucket: 'WEB_SIGNING_KEY_BUCKET',
   webSigningKeyPath: 'WEB_SIGNING_KEY_PATH',
   datasetsTable: 'DATASETS_TABLE',
+  projectsTable: 'PROJECTS_TABLE',
   searchStackSuffix: 'SEARCH_STACK_SUFFIX',
   searchDocEndpoint: 'SEARCH_DOC_ENDPOINT',
   searchQueryEndpoint: 'SEARCH_QUERY_ENDPOINT',
@@ -20,4 +21,6 @@ export const envNames = {
   auth0ClientId: 'AUTH0_CLIENT_ID',
   auth0SecretBucket: 'AUTH0_SECRET_BUCKET',
   auth0SecretPath: 'AUTH0_SECRET_PATH',
+  datasetsBucket: 'DATASETS_BUCKET',
+  logsBucket: 'LOGS_BUCKET',
 };
