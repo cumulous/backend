@@ -20,7 +20,7 @@ const fakeIRBId = '1234ABCD';
 const fakeDate = new Date().toISOString();
 const fakeProjectsTable = 'projects-table';
 const fakeDatasetsBucket = 'fake-datasets-bucket';
-const fakeLogsBucket = 'fake-logs-bucket';
+const fakeLogsBucketArn = 'arn:aws:s3:::fake-logs-bucket';
 
 describe('projects.create()', () => {
   const fakeBody = () => ({
@@ -65,7 +65,7 @@ describe('projects.create()', () => {
     process.env[envNames.webDomain] = fakeDomain;
     process.env[envNames.projectsTable] = fakeProjectsTable;
     process.env[envNames.datasetsBucket] = fakeDatasetsBucket;
-    process.env[envNames.logsBucket] = fakeLogsBucket;
+    process.env[envNames.logsBucket] = fakeLogsBucketArn;
 
     spyOnValidate = spyOn(apig, 'validate')
       .and.callThrough();
@@ -109,7 +109,7 @@ describe('projects.create()', () => {
               OutputSchemaVersion: 'V_1',
               Destination: {
                 S3BucketDestination: {
-                  Bucket: fakeLogsBucket,
+                  Bucket: fakeLogsBucketArn,
                   BucketAccountId: fakeAccountId,
                   Prefix: fakeDatasetsBucket + '/',
                   Format: 'CSV',

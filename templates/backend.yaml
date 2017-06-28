@@ -2631,7 +2631,7 @@ Resources:
         Variables:
           PROJECTS_TABLE: !Ref ProjectsTable
           DATASETS_BUCKET: !Ref DatasetsBucket
-          LOGS_BUCKET: !Ref LogsBucket
+          LOGS_BUCKET: !Sub arn:aws:s3:::${LogsBucket}
           WEB_DOMAIN: !Ref WebDomain
       Events:
         Api:
