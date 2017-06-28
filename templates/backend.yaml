@@ -2001,7 +2001,7 @@ Resources:
           {
             "IndexFieldName": "name",
             "IndexFieldType": "text",
-            "LiteralOptions": {
+            "TextOptions": {
               "SortEnabled": false,
               "HighlightEnabled": false
             }
