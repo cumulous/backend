@@ -2652,11 +2652,6 @@ Resources:
                   - dynamodb:UpdateItem
                 Resource:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
-              - Effect: Allow
-                Action:
-                  - sts:AssumeRole
-                Resource:
-                  !GetAtt DatasetsAccessRole.Arn
 
   RequestDatasetCredentials:
     Type: AWS::Serverless::Function
