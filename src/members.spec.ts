@@ -129,7 +129,7 @@ describe('getPolicy()', () => {
               fakeBaseArn + '/GET/weblogin',
               fakeBaseArn + '/GET/datasets',
               fakeBaseArn + '/POST/datasets',
-              fakeBaseArn + '/POST/datasets/{dataset_id}/credentials',
+              fakeBaseArn + '/POST/datasets/*/credentials',
               fakeBaseArn + '/POST/projects',
             ],
           }],
