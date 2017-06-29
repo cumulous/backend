@@ -82,8 +82,8 @@ const credentialsPolicy = (id: string, action: CredentialsAction) => stringify({
     Action: 's3:ListBucket',
     Resource: `arn:aws:s3:::${process.env[envNames.datasetsBucket]}`,
     Condition: {
-      StringEquals: {
-        's3:prefix': id,
+      StringLike: {
+        's3:prefix': `${id}/*`,
       },
     },
   }, {

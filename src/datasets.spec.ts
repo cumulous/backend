@@ -193,8 +193,8 @@ describe('datasets.requestCredentials()', () => {
         Action: 's3:ListBucket',
         Resource: 'arn:aws:s3:::' + fakeDatasetsBucket,
         Condition: {
-          StringEquals: {
-            "s3:prefix": fakeDatasetId,
+          StringLike: {
+            's3:prefix': fakeDatasetId + '/*',
           },
         },
       },
@@ -344,6 +344,7 @@ describe('datasets.requestCredentials()', () => {
       testMethod(action, callback);
     });
     it('"upload" request', () => action = 'upload');
+    it('"download" request', () => action = 'download');
   });
 
   describe('calls apig.respondWithError() immediately with the error if', () => {
