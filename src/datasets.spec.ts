@@ -203,6 +203,7 @@ describe('datasets.requestCredentials()', () => {
         Action: action === 'upload' ? [
           's3:GetObject',
           's3:PutObject',
+          's3:DeleteObject',
         ] : [
           's3:GetObject',
         ],
