@@ -2668,7 +2668,7 @@ Resources:
       Environment:
         Variables:
           DATASETS_TABLE: !Ref DatasetsTable
-          DATASETS_BUCKET: !GetAtt DatasetsBucket.Arn
+          DATASETS_BUCKET: !Sub arn:aws:s3:::${DatasetsBucket}
           DATASETS_ROLE: !GetAtt DatasetsAccessRole.Arn
           WEB_DOMAIN: !Ref WebDomain
       Events:
