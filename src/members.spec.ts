@@ -127,8 +127,9 @@ describe('getPolicy()', () => {
             Resource: [
               fakeBaseArn + '/GET/',
               fakeBaseArn + '/GET/weblogin',
-              fakeBaseArn + '/POST/datasets',
               fakeBaseArn + '/GET/datasets',
+              fakeBaseArn + '/POST/datasets',
+              fakeBaseArn + '/POST/datasets/{dataset_id}/credentials',
               fakeBaseArn + '/POST/projects',
             ],
           }],

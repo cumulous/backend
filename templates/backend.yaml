@@ -2605,13 +2605,72 @@ Resources:
             Method: DELETE
             RestApiId: !Ref Api
 
-  PostDatasetCredentials:
+  DatasetsAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt RequestDatasetCredentialsRole.Arn
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: DatasetsAccessRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${DatasetsBucket}
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${DatasetsBucket}/*
+
+  RequestDatasetCredentialsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: RequestDatasetCredentialsRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
+              - Effect: Allow
+                Action:
+                  - sts:AssumeRole
+                Resource:
+                  !GetAtt DatasetsAccessRole.Arn
+
+  RequestDatasetCredentials:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-PostDatasetCredentials
+      FunctionName: !Sub ${AWS::StackName}-RequestDatasetCredentials
       CodeUri: ../app
-      Handler: apig.proxy
+      Handler: datasets.requestCredentials
       Runtime: nodejs6.10
+      Environment:
+        Variables:
+          DATASETS_TABLE: !Ref DatasetsTable
+          DATASETS_BUCKET: !GetAtt DatasetsBucket.Arn
+          DATASETS_ROLE: !GetAtt DatasetsAccessRole.Arn
+          WEB_DOMAIN: !Ref WebDomain
       Events:
         Api:
           Type: Api
@@ -2619,6 +2678,7 @@ Resources:
             Path: /datasets/{dataset_id}/credentials
             Method: POST
             RestApiId: !Ref Api
+      Role: !GetAtt RequestDatasetCredentialsRole.Arn
 
   CreateProject:
     Type: AWS::Serverless::Function

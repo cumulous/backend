@@ -428,10 +428,10 @@ paths:
               method.response.header.Access-Control-Allow-Credentials: "'true'"
               method.response.header.Vary: "'Accept-Encoding'"
     post:
-      summary: Request credentials for data access
+      summary: Request credentials for dataset access
       description: |
-        Returns temporary credentials to access the data stored on S3
-      operationId: requestDataCredentials
+        Returns temporary credentials to access the dataset storage on S3
+      operationId: requestDatasetCredentials
       security:
         - member_token: []
       tags:
@@ -442,14 +442,14 @@ paths:
         - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
-          description: Temporary credentials for data access
+          description: Temporary credentials for dataset access
           schema:
             $ref: '#/definitions/DatasetCredentialsResponse'
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PostDatasetCredentials.Arn}/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequestDatasetCredentials.Arn}/invocations
 
 definitions:
   Spec:
@@ -531,8 +531,6 @@ definitions:
         $ref: '#/definitions/DatasetDescription'
       status:
         $ref: '#/definitions/DatasetStatus'
-      bucket:
-        $ref: '#/definitions/Bucket'
       metadata:
         $ref: '#/definitions/DatasetMetadata'
   DatasetId:
@@ -564,7 +562,9 @@ definitions:
   Bucket:
     description: Name of S3 storage bucket
     type: string
-    pattern: ^[a-z0-9]+(\.[a-z0-9]([a-z0-9-]*[a-z0-9]))*$
+    pattern: ^[a-z0-9][a-z0-9-]*[a-z0-9](\.[a-z0-9][a-z0-9-]*[a-z0-9])*$
+    minLength: 3
+    maxLength: 63
   ListOfDatasets:
     type: object
     required:
@@ -589,7 +589,7 @@ definitions:
       status:
         $ref: '#/definitions/DatasetStatus'
   DatasetCredentialsAction:
-    description: Action for the dataset credentials
+    description: Action for dataset credentials
     type: string
     enum:
       - upload
@@ -620,6 +620,7 @@ definitions:
     properties:
       access_key_id:
         type: string
+        pattern: ^[\w]{16,128}$
       secret_access_key:
         type: string
       session_token:
@@ -762,7 +763,7 @@ parameters:
   DatasetCredentialsRequest:
     in: body
     name: DatasetCredentialsRequest
-    description: Request for the data access
+    description: Request for dataset credentials
     required: true
     schema:
       required:

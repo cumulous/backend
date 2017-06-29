@@ -48,8 +48,9 @@ export const getPolicy = (principalId: string, expiresAt: number, methodArn: str
             Resource: [
               'GET  /',
               'GET  /weblogin',
-              'POST /datasets',
               'GET  /datasets',
+              'POST /datasets',
+              'POST /datasets/{dataset_id}/credentials',
               'POST /projects',
             ].map(endpoint =>
               `${baseArn}/${endpoint.replace(/ /g, '')}`

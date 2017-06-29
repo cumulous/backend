@@ -3,8 +3,8 @@ import * as uuid from 'uuid';
 
 import * as apig from './apig';
 import { ajv, ApiError, Request } from './apig';
-import { dynamodb } from './aws';
-import { create, list } from './datasets';
+import { dynamodb, sts } from './aws';
+import { create, CredentialsAction, list, requestCredentials } from './datasets';
 import { envNames } from './env';
 import { fakeReject, fakeResolve } from './fixtures/support';
 import * as search from './search';
@@ -17,6 +17,7 @@ const fakeProjectId = uuid();
 const fakeDescription = 'Fake dataset';
 const fakeDate = new Date().toISOString();
 const fakeExpiresAt = String(new Date().getTime());
+const fakeDatasetsBucket = 'fake-datasets-bucket';
 
 describe('datasets.create()', () => {
   const fakeBody = () => ({
@@ -138,7 +139,7 @@ describe('datasets.create()', () => {
   });
 });
 
-describe('datasets.list()', () => {
+describe('datasets.credentials()', () => {
   const fakeStatus = 'available';
   const fakeRequest = () => ({
     queryStringParameters: {
@@ -162,5 +163,241 @@ describe('datasets.list()', () => {
       done();
     };
     list(fakeRequest(), null, callback);
+  });
+});
+
+describe('datasets.requestCredentials()', () => {
+  const fakeDatasetsRoleArn = 'arn:aws:iam::123456789012:role/fake-datasets-role';
+  const fakeAccessKeyId = 'AKIAIOSFODNN7EXAMPLE';
+  const fakeSecretAccessKey = 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYzEXAMPLEKEY';
+  const fakeSessionToken = 'AQoDYXdzEPT//////////wEXAMPLE';
+
+  const fakeBody = (action: CredentialsAction) => ({
+    action,
+  });
+
+  const fakePathParameters = () => ({
+    dataset_id: fakeDatasetId,
+  });
+
+  const fakeRequest = (action: CredentialsAction) => ({
+    body: stringify(fakeBody(action)),
+    pathParameters: fakePathParameters(),
+  });
+
+  const fakePolicy = (action: CredentialsAction) => stringify({
+    Version: '2012-10-17',
+    Statement: [
+      {
+        Effect: 'Allow',
+        Action: 's3:ListBucket',
+        Resource: 'arn:aws:s3:::' + fakeDatasetsBucket,
+        Condition: {
+          StringEquals: {
+            "s3:prefix": fakeDatasetId,
+          },
+        },
+      },
+      {
+        Effect: 'Allow',
+        Action: action === 'upload' ? [
+          's3:GetObject',
+          's3:PutObject',
+        ] : [
+          's3:GetObject',
+        ],
+        Resource: 'arn:aws:s3:::' + fakeDatasetsBucket + '/' + fakeDatasetId + '/*',
+      },
+    ],
+  });
+
+  const fakeCredentials = () => ({
+    AccessKeyId: fakeAccessKeyId,
+    Expiration: fakeDate,
+    SecretAccessKey: fakeSecretAccessKey,
+    SessionToken: fakeSessionToken,
+  });
+
+  const fakeResponse = (action: CredentialsAction) => ({
+    id: fakeDatasetId,
+    action,
+    credentials: {
+      access_key_id: fakeAccessKeyId,
+      secret_access_key: fakeSecretAccessKey,
+      session_token: fakeSessionToken,
+    },
+    expires_at: fakeDate,
+    bucket: fakeDatasetsBucket,
+  });
+
+  const testMethod = (action: CredentialsAction, callback: Callback) =>
+    requestCredentials(fakeRequest(action), null, callback);
+
+  let spyOnValidate: jasmine.Spy;
+  let spyOnDynamoDbUpdate: jasmine.Spy;
+  let spyOnAssumeRole: jasmine.Spy;
+  let spyOnRespond: jasmine.Spy;
+  let spyOnRespondWithError: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.datasetsTable] = fakeDatasetsTable;
+    process.env[envNames.datasetsBucket] = fakeDatasetsBucket;
+    process.env[envNames.datasetsRole] = fakeDatasetsRoleArn;
+
+    spyOnValidate = spyOn(apig, 'validate')
+      .and.callThrough();
+    spyOnDynamoDbUpdate = spyOn(dynamodb, 'update')
+      .and.returnValue(fakeResolve());
+    spyOnAssumeRole = spyOn(sts, 'assumeRole')
+      .and.returnValue(fakeResolve({
+        Credentials: fakeCredentials(),
+      }));
+    spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    spyOnRespondWithError = spyOn(apig, 'respondWithError')
+      .and.callFake((callback: Callback) => callback());
+  });
+
+  it('calls apig.validate() once with correct parameters', (done: Callback) => {
+    spyOnValidate.and.returnValue(Promise.resolve());
+    testMethod('upload', () => {
+      expect(spyOnValidate).toHaveBeenCalledWith(
+        fakeRequest('upload'), 'POST', '/datasets/{dataset_id}/credentials');
+      expect(spyOnValidate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  describe('calls dynamodb.update() once with correct parameters for', () => {
+    it('"upload" request', (done: Callback) => {
+      testMethod('upload', () => {
+        expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
+          TableName: fakeDatasetsTable,
+          Key: {
+            id: fakeDatasetId,
+          },
+          UpdateExpression: 'set #s = :u',
+          ConditionExpression: '(#s = :c) or (#s = :u)',
+          ExpressionAttributeNames: {
+            '#s': 'status',
+          },
+          ExpressionAttributeValues: {
+            ':c': 'created',
+            ':u': 'uploading',
+          },
+        });
+        expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+    it('"download" request', (done: Callback) => {
+      testMethod('download', () => {
+        expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
+          TableName: fakeDatasetsTable,
+          Key: {
+            id: fakeDatasetId,
+          },
+          ConditionExpression: '#s = :a',
+          ExpressionAttributeNames: {
+            '#s': 'status',
+          },
+          ExpressionAttributeValues: {
+            ':a': 'available',
+          },
+        });
+        expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+  });
+
+  describe('calls sts.assumeRole() once with correct parameters for', () => {
+    let action: CredentialsAction;
+    afterEach((done: Callback) => {
+      testMethod(action, () => {
+        expect(spyOnAssumeRole).toHaveBeenCalledWith({
+          RoleArn: fakeDatasetsRoleArn,
+          RoleSessionName: fakeDatasetId,
+          Policy: fakePolicy(action),
+        });
+        expect(spyOnAssumeRole).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+    it('"upload" request', () => action = 'upload');
+    it('"download" request', () => action = 'download');
+  });
+
+  describe('calls apig.respond() once with correct parameters for', () => {
+    let action: CredentialsAction;
+    afterEach((done: Callback) => {
+      const callback = () => {
+        expect(spyOnRespond).toHaveBeenCalledWith(callback, {
+          body: fakeBody(action),
+          pathParameters: fakePathParameters(),
+        }, fakeResponse(action));
+        expect(ajv.validate('spec#/definitions/DatasetCredentialsResponse',
+          fakeResponse(action))).toBe(true);
+        expect(spyOnRespond).toHaveBeenCalledTimes(1);
+        done();
+      };
+      testMethod(action, callback);
+    });
+    it('"upload" request', () => action = 'upload');
+  });
+
+  describe('calls apig.respondWithError() immediately with the error if', () => {
+    let err: Error | ApiError | jasmine.Any;
+    const testError = (after: Callback, done: Callback, validated = true) => {
+      const action = 'upload';
+      const callback = () => {
+        expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, {
+          body: validated ? fakeBody(action) : stringify(fakeBody(action)),
+          pathParameters: fakePathParameters(),
+        }, err);
+        expect(spyOnRespondWithError).toHaveBeenCalledTimes(1);
+        after();
+        done();
+      };
+      testMethod(action, callback);
+    };
+
+    it('apig.validate() responds with an error', (done: Callback) => {
+      err = new ApiError('validate()');
+      spyOnValidate.and.returnValue(Promise.reject(err));
+      testError(() => {
+        expect(spyOnDynamoDbUpdate).not.toHaveBeenCalled();
+      }, done, false);
+    });
+
+    it('dynamodb.update() responds with an error', (done: Callback) => {
+      err = Error('dynamodb.update()');
+      spyOnDynamoDbUpdate.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnAssumeRole).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('sts.assumeRole() responds with an error', (done: Callback) => {
+      err = Error('sts.assumeRole()');
+      spyOnAssumeRole.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('sts.assumeRole() does not return credentials', (done: Callback) => {
+      err = jasmine.any(Error);
+      spyOnAssumeRole.and.returnValue(fakeResolve({}));
+      testError(() => {
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('apig.respond() produces an error', (done: Callback) => {
+      err = Error('apig.respond()');
+      spyOnRespond.and.throwError(err.message);
+      testError(() => {}, done);
+    });
   });
 });
