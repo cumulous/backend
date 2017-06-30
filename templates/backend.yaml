@@ -2696,8 +2696,8 @@ Resources:
         Api:
           Type: Api
           Properties:
-            Path: /datasets
-            Method: GET
+            Path: /datasets/{dataset_id}/storage
+            Method: PUT
             RestApiId: !Ref Api
       Policies:
         Statement:
