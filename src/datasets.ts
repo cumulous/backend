@@ -124,13 +124,13 @@ export type StorageType = 'available' | 'archived';
 export const setStorage = (request: Request, context: any, callback: Callback) => {
   validate(request, 'PUT', '/datasets/{dataset_id}/storage')
     .then(() => setStorageType(request.pathParameters.dataset_id, request.body.type))
-    .then(dataset => listObjects(dataset.id)
+    .then(dataset => dataset.status === 'available' ? null : listObjects(dataset.id)
       .then(keys => checkEmptyObjectList(keys, dataset.id))
-      .then(keys => tagObjects(keys, dataset.project_id))
-      .then(() => respond(callback, request, {
-        id: dataset.id,
-        type: request.body.type,
-      })))
+      .then(keys => tagObjects(keys, dataset.project_id)))
+    .then(() => respond(callback, request, {
+      id: request.pathParameters.dataset_id,
+      type: request.body.type,
+    }))
     .catch(err => respondWithError(callback, request, err));
 };
 

@@ -433,9 +433,10 @@ describe('datasets.setStorage()', () => {
     body: validated ? fakeBody(type) : stringify(fakeBody(type)),
     pathParameters: fakePathParameters(),
   });
-  const fakeAttributes = () => ({
+  const fakeAttributes = (status: string) => ({
     id: fakeDatasetId,
     project_id: fakeProjectId,
+    status,
   });
   const fakeObjects = (index: number) => [{
     Key: fakeDatasetId + '/fake-object-A-' + index,
@@ -465,7 +466,7 @@ describe('datasets.setStorage()', () => {
       .and.callThrough();
     spyOnDynamoDbUpdate = spyOn(dynamodb, 'update')
       .and.returnValue(fakeResolve({
-        Attributes: fakeAttributes(),
+        Attributes: fakeAttributes('uploading'),
       }));
     spyOnListObjects = spyOn(s3, 'listObjectsV2')
       .and.returnValues(fakeResolve({
@@ -573,16 +574,41 @@ describe('datasets.setStorage()', () => {
     });
   });
 
-  it('calls apig.respond() once with correct parameters for "available" type', (done: Callback) => {
-    const type = 'available';
-    const callback = () => {
-      expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(type), fakeResponse(type));
-      expect(ajv.validate('spec#/definitions/DatasetStorageResponse',
-        fakeResponse(type))).toBe(true);
-      expect(spyOnRespond).toHaveBeenCalledTimes(1);
-      done();
+  describe('calls apig.respond()', () => {
+    let status: string;
+    let type: StorageType;
+    beforeEach(() => {
+      type = 'available';
+    });
+
+    const test = (after: Callback, done: Callback) => {
+      spyOnDynamoDbUpdate.and.returnValue(fakeResolve({
+        Attributes: fakeAttributes(status),
+      }));
+      const callback = () => {
+        expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(type), fakeResponse(type));
+        expect(ajv.validate('spec#/definitions/DatasetStorageResponse',
+          fakeResponse(type))).toBe(true);
+        expect(spyOnRespond).toHaveBeenCalledTimes(1);
+        after();
+        done();
+      };
+      testMethod(type, callback);
     };
-    testMethod(type, callback);
+
+    it('once with correct parameters for "available" type if dataset status is "uploading"',
+        (done: Callback) => {
+      status = 'uploading';
+      test(() => {}, done);
+    });
+
+    it('immediately with correct parameters for "available" type if dataset status is "available"',
+        (done: Callback) => {
+      status = 'available';
+      test(() => {
+        expect(spyOnListObjects).not.toHaveBeenCalled();
+      }, done);
+    });
   });
 
   describe('calls apig.respondWithError() immediately with an error if', () => {
