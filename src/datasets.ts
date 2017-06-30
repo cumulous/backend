@@ -75,9 +75,9 @@ const setStatusForCredentialsRequest = (id: string, action: CredentialsAction) =
   })).promise()
     .catch(err => {
       if (err.code === 'ConditionalCheckFailedException') {
-        err = new ApiError('Invalid request', ['Dataset status must equal ' +
+        err = new ApiError('Conflict', ['Dataset status must equal ' +
           (action === 'upload' ? '"created" or "uploading"' : '"available"') +
-          ` for "${action}" request`], 400);
+          ` for "${action}" request`], 409);
       }
       throw err;
     });

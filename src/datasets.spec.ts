@@ -376,8 +376,8 @@ describe('datasets.requestCredentials()', () => {
     describe('dynamodb.update() responds with ConditionalCheckFailedException for', () => {
       let statuses: string;
       afterEach((done: Callback) => {
-        err = new ApiError('Invalid request',
-          ['Dataset status must equal ' + statuses + ' for "' + action + '" request'], 400);
+        err = new ApiError('Conflict',
+          ['Dataset status must equal ' + statuses + ' for "' + action + '" request'], 409);
         const errUpdate = new ApiError('dynamodb.update()',
           undefined, 'ConditionalCheckFailedException');
         spyOnDynamoDbUpdate.and.returnValue(fakeReject(errUpdate));
