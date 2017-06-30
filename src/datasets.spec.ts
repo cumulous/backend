@@ -3,8 +3,9 @@ import * as uuid from 'uuid';
 
 import * as apig from './apig';
 import { ajv, ApiError, Request } from './apig';
-import { dynamodb, sts } from './aws';
-import { create, CredentialsAction, list, requestCredentials } from './datasets';
+import { dynamodb, s3, sts } from './aws';
+import { create, CredentialsAction, list,
+         requestCredentials, setStorage, StorageType } from './datasets';
 import { envNames } from './env';
 import { fakeReject, fakeResolve } from './fixtures/support';
 import * as search from './search';
@@ -125,7 +126,7 @@ describe('datasets.create()', () => {
       }, done);
     });
 
-    it('apig.respond() produces an error', (done: Callback) => {
+    it('apig.respond() throws an error', (done: Callback) => {
       err = Error('apig.respond()');
       spyOnRespond.and.throwError(err.message);
       testError(() => {}, done);
@@ -411,7 +412,277 @@ describe('datasets.requestCredentials()', () => {
       }, done);
     });
 
-    it('apig.respond() produces an error', (done: Callback) => {
+    it('apig.respond() throws an error', (done: Callback) => {
+      err = Error('apig.respond()');
+      spyOnRespond.and.throwError(err.message);
+      testError(() => {}, done);
+    });
+  });
+});
+
+describe('datasets.setStorage()', () => {
+  const fakeContinuationToken = 'fake-continuation-token';
+
+  const fakeBody = (type: StorageType) => ({
+    type,
+  });
+  const fakePathParameters = () => ({
+    dataset_id: fakeDatasetId,
+  });
+  const fakeRequest = (type: StorageType, validated = true) => ({
+    body: validated ? fakeBody(type) : stringify(fakeBody(type)),
+    pathParameters: fakePathParameters(),
+  });
+  const fakeAttributes = () => ({
+    id: fakeDatasetId,
+    project_id: fakeProjectId,
+  });
+  const fakeObjects = (index: number) => [{
+    Key: fakeDatasetId + '/fake-object-A-' + index,
+  }, {
+    Key: fakeDatasetId + '/fake-object-B-' + index,
+  }];
+  const fakeResponse = (type: StorageType) => ({
+    id: fakeDatasetId,
+    type,
+  });
+
+  const testMethod = (type: StorageType, callback: Callback) =>
+    setStorage(fakeRequest(type, false), null, callback);
+
+  let spyOnValidate: jasmine.Spy;
+  let spyOnDynamoDbUpdate: jasmine.Spy;
+  let spyOnListObjects: jasmine.Spy;
+  let spyOnPutObjectTagging: jasmine.Spy;
+  let spyOnRespond: jasmine.Spy;
+  let spyOnRespondWithError: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.datasetsTable] = fakeDatasetsTable;
+    process.env[envNames.datasetsBucket] = fakeDatasetsBucket;
+
+    spyOnValidate = spyOn(apig, 'validate')
+      .and.callThrough();
+    spyOnDynamoDbUpdate = spyOn(dynamodb, 'update')
+      .and.returnValue(fakeResolve({
+        Attributes: fakeAttributes(),
+      }));
+    spyOnListObjects = spyOn(s3, 'listObjectsV2')
+      .and.returnValues(fakeResolve({
+        Contents: fakeObjects(1),
+        NextContinuationToken: fakeContinuationToken,
+        IsTruncated: true,
+      }), fakeResolve({
+        Contents: fakeObjects(2),
+      }));
+    spyOnPutObjectTagging = spyOn(s3, 'putObjectTagging')
+      .and.returnValue(fakeResolve());
+    spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    spyOnRespondWithError = spyOn(apig, 'respondWithError')
+      .and.callFake((callback: Callback) => callback());
+  });
+
+  it('calls apig.validate() once with correct parameters', (done: Callback) => {
+    testMethod('available', () => {
+      expect(spyOnValidate).toHaveBeenCalledWith(
+        fakeRequest('available'), 'PUT', '/datasets/{dataset_id}/storage');
+      expect(spyOnValidate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls dynamodb.update() once with correct parameters for "available" type', (done: Callback) => {
+    testMethod('available', () => {
+      expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
+        TableName: fakeDatasetsTable,
+        Key: {
+          id: fakeDatasetId,
+        },
+        UpdateExpression: 'set #s = :a',
+        ConditionExpression: '#s = :u',
+        ExpressionAttributeNames: {
+          '#s': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':a': 'available',
+          ':u': 'uploading',
+        },
+        ReturnValues: 'ALL_OLD',
+      });
+      expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls s3.listObjectsV2() multiple times with correct parameters for "available" type',
+      (done: Callback) => {
+    testMethod('available', () => {
+      expect(spyOnListObjects).toHaveBeenCalledWith({
+        Bucket: fakeDatasetsBucket,
+        Prefix: fakeDatasetId + '/',
+        ContinuationToken: fakeContinuationToken,
+      });
+      expect(spyOnListObjects).toHaveBeenCalledWith({
+        Bucket: fakeDatasetsBucket,
+        Prefix: fakeDatasetId + '/',
+      });
+      expect(spyOnListObjects).toHaveBeenCalledTimes(2);
+      done();
+    });
+  });
+
+  it('calls s3.putObjectTagging() for each object', (done: Callback) => {
+    testMethod('available', () => {
+      fakeObjects(1).concat(fakeObjects(2)).map(obj => {
+        expect(spyOnPutObjectTagging).toHaveBeenCalledWith({
+          Bucket: fakeDatasetsBucket,
+          Key: obj.Key,
+          Tagging: {
+            TagSet: [{
+              Key: 'project_id',
+              Value: fakeProjectId,
+            }],
+          },
+        });
+      });
+      expect(spyOnPutObjectTagging).toHaveBeenCalledTimes(4);
+      done();
+    });
+  });
+
+  it('resets dataset status to "uploading" if no files were found for "available" type',
+      (done: Callback) => {
+    spyOnListObjects.and.returnValue(fakeResolve({ Contents: [] }));
+    testMethod('available', () => {
+      expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
+        TableName: fakeDatasetsTable,
+        Key: {
+          id: fakeDatasetId,
+        },
+        UpdateExpression: 'set #s = :u',
+        ExpressionAttributeNames: {
+          '#s': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':u': 'uploading',
+        },
+      });
+      expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(2);
+      done();
+    });
+  });
+
+  it('calls apig.respond() once with correct parameters for "available" type', (done: Callback) => {
+    const type = 'available';
+    const callback = () => {
+      expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(type), fakeResponse(type));
+      expect(ajv.validate('spec#/definitions/DatasetStorageResponse',
+        fakeResponse(type))).toBe(true);
+      expect(spyOnRespond).toHaveBeenCalledTimes(1);
+      done();
+    };
+    testMethod(type, callback);
+  });
+
+  describe('calls apig.respondWithError() immediately with an error if', () => {
+    let err: Error | ApiError | jasmine.ObjectContaining<any>;
+    let type: StorageType;
+    beforeEach(() => {
+      type = 'available';
+    });
+
+    const testError = (after: Callback, done: Callback, validated = true) => {
+      const callback = () => {
+        expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, fakeRequest(type, validated), err);
+        expect(spyOnRespondWithError).toHaveBeenCalledTimes(1);
+        after();
+        done();
+      };
+      testMethod(type, callback);
+    };
+
+    it('apig.validate() responds with an error', (done: Callback) => {
+      err = new ApiError('validate()');
+      spyOnValidate.and.returnValue(Promise.reject(err));
+      testError(() => {
+        expect(spyOnDynamoDbUpdate).not.toHaveBeenCalled();
+      }, done, false);
+    });
+
+    it('dynamodb.update() responds with a generic error', (done: Callback) => {
+      err = Error('dynamodb.update()');
+      spyOnDynamoDbUpdate.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnListObjects).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('dynamodb.update() responds with ConditionalCheckFailedException for "available" type',
+        (done: Callback) => {
+      const errUpdate = new ApiError('dynamodb.update()', undefined,
+        'ConditionalCheckFailedException');
+      err = jasmine.objectContaining({
+        code: 409,
+      });
+      spyOnDynamoDbUpdate.and.returnValue(fakeReject(errUpdate));
+      testError(() => {
+        expect(spyOnListObjects).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('type is "archived"', (done: Callback) => {
+      err = jasmine.objectContaining({
+        message: 'Not Implemented',
+        code: 501,
+      });
+      type = 'archived';
+      testError(() => {
+        expect(spyOnListObjects).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('first s3.listObjectsV2() responds with an error', (done: Callback) => {
+      err = Error('s3.listObjectsV2() 1');
+      spyOnListObjects.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnPutObjectTagging).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('next s3.listObjectsV2() responds with an error', (done: Callback) => {
+      err = Error('s3.listObjectsV2() 2');
+      spyOnListObjects.and.returnValues(fakeResolve({
+        Contents: fakeObjects(1),
+        NextContinuationToken: fakeContinuationToken,
+        IsTruncated: true,
+      }), fakeReject(err));
+      testError(() => {
+        expect(spyOnPutObjectTagging).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('next s3.listObjectsV2() produces an empty list', (done: Callback) => {
+      err = jasmine.objectContaining({
+        code: 409,
+      });
+      spyOnListObjects.and.returnValue(fakeResolve({ Contents: [] }));
+      testError(() => {
+        expect(spyOnPutObjectTagging).not.toHaveBeenCalled();
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('at least one of s3.putObjectTagging() responds with an error', (done: Callback) => {
+      err = Error('s3.putObjectTagging()');
+      spyOnPutObjectTagging.and.returnValues(
+        fakeResolve(), fakeReject(err), fakeResolve(), fakeResolve());
+      testError(() => {
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('apig.respond() throws an error', (done: Callback) => {
       err = Error('apig.respond()');
       spyOnRespond.and.throwError(err.message);
       testError(() => {}, done);

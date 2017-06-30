@@ -2685,6 +2685,8 @@ Resources:
       CodeUri: ../app
       Handler: datasets.setStorage
       Runtime: nodejs6.10
+      Timeout: 30
+      MemorySize: 1024
       Environment:
         Variables:
           DATASETS_TABLE: !Ref DatasetsTable

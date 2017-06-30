@@ -3,7 +3,7 @@ import * as stringify from 'json-stable-stringify';
 import { v4 as uuid } from 'uuid';
 
 import { ApiError, Request, respond, respondWithError, validate } from './apig';
-import { dynamodb, sts } from './aws';
+import { dynamodb, s3, sts } from './aws';
 import { envNames } from './env';
 import { query } from './search';
 import { Callback } from './types';
@@ -118,3 +118,100 @@ const credentialsResponse = (id: string, action: CredentialsAction, creds: Crede
   expires_at: creds.Expiration,
   bucket: process.env[envNames.datasetsBucket],
 });
+
+export type StorageType = 'available' | 'archived';
+
+export const setStorage = (request: Request, context: any, callback: Callback) => {
+  validate(request, 'PUT', '/datasets/{dataset_id}/storage')
+    .then(() => setStorageType(request.pathParameters.dataset_id, request.body.type))
+    .then(dataset => listObjects(dataset.id)
+      .then(keys => checkEmptyObjectList(keys, dataset.id))
+      .then(keys => tagObjects(keys, dataset.project_id))
+      .then(() => respond(callback, request, {
+        id: dataset.id,
+        type: request.body.type,
+      })))
+    .catch(err => respondWithError(callback, request, err));
+};
+
+const setStorageType = (id: string, type: StorageType) => {
+  if (type === 'available') {
+    return dynamodb.update({
+      TableName: process.env[envNames.datasetsTable],
+      Key: {
+        id,
+      },
+      UpdateExpression: 'set #s = :a',
+      ConditionExpression: '#s = :u',
+      ExpressionAttributeNames: {
+        '#s': 'status',
+      },
+      ExpressionAttributeValues: {
+        ':a': 'available',
+        ':u': 'uploading',
+      },
+      ReturnValues: 'ALL_OLD',
+    }).promise()
+      .then(data => data.Attributes)
+      .catch(err => {
+        if (err.code === 'ConditionalCheckFailedException') {
+          err = new ApiError('Conflict',
+            ['Dataset can only be made "available" from "uploading" state'], 409);
+        }
+        throw err;
+      });
+  } else {
+    throw new ApiError('Not Implemented', ['Archival is not implemented yet'], 501);
+  }
+};
+
+const listObjects = (id: string, token?: string): Promise<string[]> => {
+  return s3.listObjectsV2(Object.assign({
+    Bucket: process.env[envNames.datasetsBucket],
+    Prefix: `${id}/`,
+  }, token == null ? {} : {
+    ContinuationToken: token,
+  })).promise()
+    .then(data => {
+      const keys = data.Contents.map(obj => obj.Key);
+      if (data.IsTruncated) {
+        return listObjects(id, data.NextContinuationToken)
+          .then(nextKeys => keys.concat(nextKeys));
+      } else {
+        return keys;
+      }
+    });
+};
+
+const checkEmptyObjectList = (keys: string[], id: string) => {
+  return keys.length > 0 ? keys :
+    dynamodb.update({
+      TableName: process.env[envNames.datasetsTable],
+      Key: {
+        id,
+      },
+      UpdateExpression: 'set #s = :u',
+      ExpressionAttributeNames: {
+        '#s': 'status',
+      },
+      ExpressionAttributeValues: {
+        ':u': 'uploading',
+      },
+    }).promise()
+      .then(() => {
+        throw new ApiError('Conflict', ['Empty datasets cannot be made "available"'], 409);
+      }) as Promise<string[]>;
+};
+
+const tagObjects = (keys: string[], project_id: string) => {
+  return Promise.all(keys.map(key => s3.putObjectTagging({
+    Bucket: process.env[envNames.datasetsBucket],
+    Key: key,
+    Tagging: {
+      TagSet: [{
+        Key: 'project_id',
+        Value: project_id,
+      }],
+    },
+  }).promise()));
+};
