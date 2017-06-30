@@ -450,6 +450,41 @@ paths:
         httpMethod: POST
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequestDatasetCredentials.Arn}/invocations
+  /datasets/{dataset_id}/storage:
+    options:
+      tags:
+        - Datasets
+      parameters:
+        - $ref: '#/parameters/DatasetId'
+      responses:
+        200:
+          description: HTTP options
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+            Vary:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,PUT'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin:
+                Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
+              method.response.header.Vary: "'Accept-Encoding'"
 
 definitions:
   Spec:
