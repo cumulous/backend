@@ -29,8 +29,8 @@ describe('datasets.create()', () => {
       principalId: fakeMemberId,
     },
   });
-  const fakeRequest = () => ({
-    body: stringify(fakeBody()),
+  const fakeRequest = (validated = true) => ({
+    body: validated ? fakeBody() : stringify(fakeBody()),
     requestContext: fakeContext(),
   });
   const fakeItem = () => ({
@@ -43,7 +43,7 @@ describe('datasets.create()', () => {
   });
 
   const testMethod = (callback: Callback) =>
-    create(fakeRequest(), null, callback);
+    create(fakeRequest(false), null, callback);
 
   let spyOnValidate: jasmine.Spy;
   let spyOnDynamoDbPut: jasmine.Spy;
@@ -66,7 +66,6 @@ describe('datasets.create()', () => {
   });
 
   it('calls apig.validate() once with correct parameters', (done: Callback) => {
-    spyOnValidate.and.returnValue(Promise.resolve());
     testMethod(() => {
       expect(spyOnValidate).toHaveBeenCalledWith(fakeRequest(), 'POST', '/datasets');
       expect(spyOnValidate).toHaveBeenCalledTimes(1);
@@ -88,15 +87,12 @@ describe('datasets.create()', () => {
 
   it('calls apig.respond() once with correct parameters', (done: Callback) => {
     const callback = () => {
-      expect(spyOnRespond).toHaveBeenCalledWith(callback, {
-        body: fakeBody(),
-        requestContext: fakeContext(),
-      }, fakeItem());
+      expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(), fakeItem());
       expect(ajv.validate('spec#/definitions/Dataset', fakeItem())).toBe(true);
       expect(spyOnRespond).toHaveBeenCalledTimes(1);
       done();
     };
-    create(fakeRequest(), null, callback);
+    testMethod(callback);
   });
 
   describe('calls apig.respondWithError() immediately with the error if', () => {
@@ -104,15 +100,13 @@ describe('datasets.create()', () => {
 
     const testError = (after: Callback, done: Callback, validated = true) => {
       const callback = () => {
-        expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, {
-          body: validated ? fakeBody() : stringify(fakeBody()),
-          requestContext: fakeContext(),
-        }, err);
+        expect(spyOnRespondWithError).toHaveBeenCalledWith(
+          callback, fakeRequest(validated), err);
         expect(spyOnRespondWithError).toHaveBeenCalledTimes(1);
         after();
         done();
       };
-      create(fakeRequest(), null, callback);
+      testMethod(callback);
     };
 
     it('apig.validate() responds with an error', (done: Callback) => {
@@ -180,8 +174,8 @@ describe('datasets.requestCredentials()', () => {
     dataset_id: fakeDatasetId,
   });
 
-  const fakeRequest = (action: CredentialsAction) => ({
-    body: stringify(fakeBody(action)),
+  const fakeRequest = (action: CredentialsAction, validated = true) => ({
+    body: validated ? fakeBody(action) : stringify(fakeBody(action)),
     pathParameters: fakePathParameters(),
   });
 
@@ -232,7 +226,7 @@ describe('datasets.requestCredentials()', () => {
   });
 
   const testMethod = (action: CredentialsAction, callback: Callback) =>
-    requestCredentials(fakeRequest(action), null, callback);
+    requestCredentials(fakeRequest(action, false), null, callback);
 
   let spyOnValidate: jasmine.Spy;
   let spyOnDynamoDbUpdate: jasmine.Spy;
@@ -260,7 +254,6 @@ describe('datasets.requestCredentials()', () => {
   });
 
   it('calls apig.validate() once with correct parameters', (done: Callback) => {
-    spyOnValidate.and.returnValue(Promise.resolve());
     testMethod('upload', () => {
       expect(spyOnValidate).toHaveBeenCalledWith(
         fakeRequest('upload'), 'POST', '/datasets/{dataset_id}/credentials');
@@ -333,10 +326,8 @@ describe('datasets.requestCredentials()', () => {
     let action: CredentialsAction;
     afterEach((done: Callback) => {
       const callback = () => {
-        expect(spyOnRespond).toHaveBeenCalledWith(callback, {
-          body: fakeBody(action),
-          pathParameters: fakePathParameters(),
-        }, fakeResponse(action));
+        expect(spyOnRespond).toHaveBeenCalledWith(
+          callback, fakeRequest(action), fakeResponse(action));
         expect(ajv.validate('spec#/definitions/DatasetCredentialsResponse',
           fakeResponse(action))).toBe(true);
         expect(spyOnRespond).toHaveBeenCalledTimes(1);
@@ -357,10 +348,8 @@ describe('datasets.requestCredentials()', () => {
 
     const testError = (after: Callback, done: Callback, validated = true) => {
       const callback = () => {
-        expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, {
-          body: validated ? fakeBody(action) : stringify(fakeBody(action)),
-          pathParameters: fakePathParameters(),
-        }, err);
+        expect(spyOnRespondWithError).toHaveBeenCalledWith(
+          callback, fakeRequest(action, validated), err);
         expect(spyOnRespondWithError).toHaveBeenCalledTimes(1);
         after();
         done();
