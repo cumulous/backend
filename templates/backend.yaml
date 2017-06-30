@@ -2678,6 +2678,43 @@ Resources:
             RestApiId: !Ref Api
       Role: !GetAtt RequestDatasetCredentialsRole.Arn
 
+  SetDatasetStorage:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-SetDatasetStorage
+      CodeUri: ../app
+      Handler: datasets.setStorage
+      Runtime: nodejs6.10
+      Environment:
+        Variables:
+          DATASETS_TABLE: !Ref DatasetsTable
+          DATASETS_BUCKET: !Ref DatasetsBucket
+          WEB_DOMAIN: !Ref WebDomain
+      Events:
+        Api:
+          Type: Api
+          Properties:
+            Path: /datasets
+            Method: GET
+            RestApiId: !Ref Api
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:ListBucket
+            Resource:
+              - !Sub arn:aws:s3:::${DatasetsBucket}
+          - Effect: Allow
+            Action:
+              - s3:PutObjectTagging
+            Resource:
+              - !Sub arn:aws:s3:::${DatasetsBucket}/*
+          - Effect: Allow
+            Action:
+              - dynamodb:UpdateItem
+            Resource:
+              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
+
   CreateProject:
     Type: AWS::Serverless::Function
     Properties:

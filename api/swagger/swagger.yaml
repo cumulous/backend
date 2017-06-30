@@ -485,6 +485,35 @@ paths:
                 Fn::Sub: "'https://${WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
               method.response.header.Vary: "'Accept-Encoding'"
+    put:
+      summary: Set dataset storage options
+      description: |
+        Makes the dataset either _available_ for analysis/download, or _archived_.
+        This method **must** be called to confirm a successful upload, or to
+        restore the dataset from archive before processing it.
+
+        _available_ may only be set when the dataset status is _'uploading'_,
+        _'archived'_, or already _'available'_;
+        _archived_ - when the status is _'available'_ or already _'archived'_.
+      operationId: setDatasetStorage
+      security:
+        - member_token: []
+      tags:
+        - Datasets
+      parameters:
+        - $ref: '#/parameters/DatasetId'
+        - $ref: '#/parameters/DatasetStorageRequest'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Dataset storage options
+          schema:
+            $ref: '#/definitions/DatasetStorageResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SetDatasetStorage.Arn}/invocations
 
 definitions:
   Spec:
@@ -647,6 +676,18 @@ definitions:
         $ref: '#/definitions/Date'
       bucket:
         $ref: '#/definitions/Bucket'
+  DatasetStorageType:
+    description: Dataset storage type
+    type: string
+    enum:
+      - available
+      - archived
+  DatasetStorageResponse:
+    required:
+      - type
+    properties:
+      type:
+        $ref: '#/definitions/DatasetStorageType'
   AwsCredentials:
     required:
       - access_key_id
@@ -807,6 +848,18 @@ parameters:
       properties:
         action:
           $ref: '#/definitions/DatasetCredentialsAction'
+  DatasetStorageRequest:
+    in: body
+    name: DatasetStorageRequest
+    description: Dataset storage options
+    required: true
+    schema:
+      required:
+        - type
+      additionalProperties: false
+      properties:
+        type:
+          $ref: '#/definitions/DatasetStorageType'
   QueryPaginationOffset:
     in: query
     name: offset
