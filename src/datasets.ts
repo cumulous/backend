@@ -2,7 +2,7 @@ import { Credentials } from 'aws-sdk/clients/sts';
 import * as stringify from 'json-stable-stringify';
 import { v4 as uuid } from 'uuid';
 
-import { Request, respond, respondWithError, validate } from './apig';
+import { ApiError, Request, respond, respondWithError, validate } from './apig';
 import { dynamodb, sts } from './aws';
 import { envNames } from './env';
 import { query } from './search';
@@ -38,9 +38,7 @@ export type CredentialsAction = 'upload' | 'download';
 
 export const requestCredentials = (request: Request, context: any, callback: Callback) => {
   validate(request, 'POST', '/datasets/{dataset_id}/credentials')
-    .then(() => dynamodb.update(
-      credentialsUpdateRequest(request.pathParameters.dataset_id, request.body.action)
-    ).promise())
+    .then(() => setStatusForCredentialsRequest(request.pathParameters.dataset_id, request.body.action))
     .then(() => sts.assumeRole({
       RoleArn: process.env[envNames.datasetsRole],
       RoleSessionName: request.pathParameters.dataset_id,
@@ -53,27 +51,37 @@ export const requestCredentials = (request: Request, context: any, callback: Cal
     .catch(err => respondWithError(callback, request, err));
 };
 
-const credentialsUpdateRequest = (id: string, action: CredentialsAction) => Object.assign({
-  TableName: process.env[envNames.datasetsTable],
-  Key: {
-    id,
-  },
-  ExpressionAttributeNames: {
-    '#s': 'status',
-  },
-}, action === 'upload' ? {
-  UpdateExpression: 'set #s = :u',
-  ConditionExpression: '(#s = :c) or (#s = :u)',
-  ExpressionAttributeValues: {
-    ':c': 'created',
-    ':u': 'uploading',
-  },
-} : {
-  ConditionExpression: '#s = :a',
-  ExpressionAttributeValues: {
-    ':a': 'available',
-  },
-});
+const setStatusForCredentialsRequest = (id: string, action: CredentialsAction) => {
+  return dynamodb.update(Object.assign({
+    TableName: process.env[envNames.datasetsTable],
+    Key: {
+      id,
+    },
+    ExpressionAttributeNames: {
+      '#s': 'status',
+    },
+  }, action === 'upload' ? {
+    UpdateExpression: 'set #s = :u',
+    ConditionExpression: '(#s = :c) or (#s = :u)',
+    ExpressionAttributeValues: {
+      ':c': 'created',
+      ':u': 'uploading',
+    },
+  } : {
+    ConditionExpression: '#s = :a',
+    ExpressionAttributeValues: {
+      ':a': 'available',
+    },
+  })).promise()
+    .catch(err => {
+      if (err.code === 'ConditionalCheckFailedException') {
+        err = new ApiError('Invalid request', ['Dataset status must equal ' +
+          (action === 'upload' ? '"created" or "uploading"' : '"available"') +
+          ` for "${action}" request`], 400);
+      }
+      throw err;
+    });
+};
 
 const credentialsPolicy = (id: string, action: CredentialsAction) => stringify({
   Version: '2012-10-17',

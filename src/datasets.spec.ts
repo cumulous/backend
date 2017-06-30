@@ -348,10 +348,14 @@ describe('datasets.requestCredentials()', () => {
     it('"download" request', () => action = 'download');
   });
 
-  describe('calls apig.respondWithError() immediately with the error if', () => {
+  describe('calls apig.respondWithError() immediately with an error if', () => {
     let err: Error | ApiError | jasmine.Any;
+    let action: CredentialsAction;
+    beforeEach(() => {
+      action = 'upload';
+    });
+
     const testError = (after: Callback, done: Callback, validated = true) => {
-      const action = 'upload';
       const callback = () => {
         expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, {
           body: validated ? fakeBody(action) : stringify(fakeBody(action)),
@@ -372,12 +376,34 @@ describe('datasets.requestCredentials()', () => {
       }, done, false);
     });
 
-    it('dynamodb.update() responds with an error', (done: Callback) => {
+    it('dynamodb.update() responds with a generic error', (done: Callback) => {
       err = Error('dynamodb.update()');
       spyOnDynamoDbUpdate.and.returnValue(fakeReject(err));
       testError(() => {
         expect(spyOnAssumeRole).not.toHaveBeenCalled();
       }, done);
+    });
+
+    describe('dynamodb.update() responds with ConditionalCheckFailedException for', () => {
+      let statuses: string;
+      afterEach((done: Callback) => {
+        err = new ApiError('Invalid request',
+          ['Dataset status must equal ' + statuses + ' for "' + action + '" request'], 400);
+        const errUpdate = new ApiError('dynamodb.update()',
+          undefined, 'ConditionalCheckFailedException');
+        spyOnDynamoDbUpdate.and.returnValue(fakeReject(errUpdate));
+        testError(() => {
+          expect(spyOnAssumeRole).not.toHaveBeenCalled();
+        }, done);
+      });
+      it('"upload" action', () => {
+        action = 'upload';
+        statuses = '"created" or "uploading"';
+      });
+      it('"download" action', () => {
+        action = 'download';
+        statuses = '"available"';
+      });
     });
 
     it('sts.assumeRole() responds with an error', (done: Callback) => {
