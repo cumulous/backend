@@ -501,7 +501,7 @@ describe('datasets.setStorage()', () => {
           id: fakeDatasetId,
         },
         UpdateExpression: 'set #s = :a',
-        ConditionExpression: '#s = :u',
+        ConditionExpression: '(#s = :u) or (#s = :a)',
         ExpressionAttributeNames: {
           '#s': 'status',
         },

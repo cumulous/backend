@@ -142,7 +142,7 @@ const setStorageType = (id: string, type: StorageType) => {
         id,
       },
       UpdateExpression: 'set #s = :a',
-      ConditionExpression: '#s = :u',
+      ConditionExpression: '(#s = :u) or (#s = :a)',
       ExpressionAttributeNames: {
         '#s': 'status',
       },
