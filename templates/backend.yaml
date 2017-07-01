@@ -2491,6 +2491,7 @@ Resources:
       CodeUri: ../app
       Handler: search.uploadDocuments
       Runtime: nodejs6.10
+      Timeout: 30
       Environment:
         Variables:
           SEARCH_DOC_ENDPOINT: !GetAtt SetupSearchDomain.DocEndpoint
