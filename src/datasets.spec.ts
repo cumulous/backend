@@ -341,7 +341,7 @@ describe('datasets.requestCredentials()', () => {
   });
 
   describe('calls apig.respondWithError() immediately with an error if', () => {
-    let err: Error | ApiError | jasmine.Any;
+    let err: Error | ApiError | jasmine.ObjectContaining<any>;
     let action: CredentialsAction;
     beforeEach(() => {
       action = 'upload';
@@ -375,10 +375,8 @@ describe('datasets.requestCredentials()', () => {
     });
 
     describe('dynamodb.update() responds with ConditionalCheckFailedException for', () => {
-      let statuses: string;
       afterEach((done: Callback) => {
-        err = new ApiError('Conflict',
-          ['Dataset status must equal ' + statuses + ' for "' + action + '" request'], 409);
+        err = jasmine.objectContaining({ code: 409 });
         const errUpdate = new ApiError('dynamodb.update()',
           undefined, 'ConditionalCheckFailedException');
         spyOnDynamoDbUpdate.and.returnValue(fakeReject(errUpdate));
@@ -386,14 +384,8 @@ describe('datasets.requestCredentials()', () => {
           expect(spyOnAssumeRole).not.toHaveBeenCalled();
         }, done);
       });
-      it('"upload" action', () => {
-        action = 'upload';
-        statuses = '"created" or "uploading"';
-      });
-      it('"download" action', () => {
-        action = 'download';
-        statuses = '"available"';
-      });
+      it('"upload" action', () => action = 'upload');
+      it('"download" action', () => action = 'download');
     });
 
     it('sts.assumeRole() responds with an error', (done: Callback) => {
@@ -648,9 +640,7 @@ describe('datasets.setStorage()', () => {
         (done: Callback) => {
       const errUpdate = new ApiError('dynamodb.update()', undefined,
         'ConditionalCheckFailedException');
-      err = jasmine.objectContaining({
-        code: 409,
-      });
+      err = jasmine.objectContaining({ code: 409 });
       spyOnDynamoDbUpdate.and.returnValue(fakeReject(errUpdate));
       testError(() => {
         expect(spyOnListObjects).not.toHaveBeenCalled();
@@ -689,9 +679,7 @@ describe('datasets.setStorage()', () => {
     });
 
     it('next s3.listObjectsV2() produces an empty list', (done: Callback) => {
-      err = jasmine.objectContaining({
-        code: 409,
-      });
+      err = jasmine.objectContaining({ code: 409 });
       spyOnListObjects.and.returnValue(fakeResolve({ Contents: [] }));
       testError(() => {
         expect(spyOnPutObjectTagging).not.toHaveBeenCalled();

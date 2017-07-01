@@ -76,8 +76,8 @@ const setStatusForCredentialsRequest = (id: string, action: CredentialsAction) =
     .catch(err => {
       if (err.code === 'ConditionalCheckFailedException') {
         err = new ApiError('Conflict', ['Dataset status must equal ' +
-          (action === 'upload' ? '"created" or "uploading"' : '"available"') +
-          ` for "${action}" request`], 409);
+          (action === 'upload' ? "'created' or 'uploading'" : "'available'") +
+          ` for '${action}' request`], 409);
       }
       throw err;
     });
@@ -156,7 +156,7 @@ const setStorageType = (id: string, type: StorageType) => {
       .catch(err => {
         if (err.code === 'ConditionalCheckFailedException') {
           err = new ApiError('Conflict',
-            ['Dataset can only be made "available" from "uploading" state'], 409);
+            ["Dataset can only be made 'available' from 'uploading' state"], 409);
         }
         throw err;
       });
@@ -199,7 +199,7 @@ const checkEmptyObjectList = (keys: string[], id: string) => {
       },
     }).promise()
       .then(() => {
-        throw new ApiError('Conflict', ['Empty datasets cannot be made "available"'], 409);
+        throw new ApiError('Conflict', ["Empty datasets cannot be made 'available'"], 409);
       }) as Promise<string[]>;
 };
 
