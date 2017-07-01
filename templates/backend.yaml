@@ -213,7 +213,7 @@ Resources:
           - Effect: Allow
             Action: states:StartExecution
             Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:*
+              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Setup*
 
   BasicLambdaRole:
     Type: AWS::IAM::Role
