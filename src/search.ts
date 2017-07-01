@@ -62,7 +62,8 @@ export const uploadDocuments = (event: { Records: StreamRecord[] },
                                 context: any, callback: Callback) => {
   Promise.resolve()
     .then(() => log.debug(`Batch upload: ${event.Records.length} items`))
-    .then(() => event.Records.map(recordToDoc))
+    .then(() => getLatestRecords(event.Records))
+    .then(records => records.map(recordToDoc))
     .then(docs => cloudSearchDomain(process.env[envNames.searchDocEndpoint])
       .uploadDocuments({
         contentType: 'application/json',
@@ -72,11 +73,18 @@ export const uploadDocuments = (event: { Records: StreamRecord[] },
     .catch(callback);
 };
 
+const getLatestRecords = (records: StreamRecord[]) => {
+  const recordsMap = new Map<string, StreamRecord>();
+  records.forEach(record => recordsMap.set(record.dynamodb.Keys.id.S, record));
+  return Array.from(recordsMap.values());
+};
+
 const sourceTableMatcher =
   /^arn:aws:dynamodb:[\w-]+:\d+:table\/[^/]+-([^-]+)Table-[^/]+/;
 
 const recordToDoc = (record: StreamRecord) => {
   const table = sourceTableMatcher.exec(record.eventSourceARN)[1].toLowerCase();
+  const id = `${record.dynamodb.Keys.id.S}_${table}_${stackSuffix()}`;
 
   if (record.eventName === 'INSERT' || record.eventName === 'MODIFY') {
     const item = record.dynamodb.NewImage;
@@ -88,13 +96,13 @@ const recordToDoc = (record: StreamRecord) => {
     });
     return {
       type: 'add',
-      id: `${item.id.S}_${table}_${stackSuffix()}`,
+      id,
       fields,
     };
   } else if (record.eventName === 'REMOVE') {
     return {
       type: 'delete',
-      id: `${record.dynamodb.Keys.id.S}_${table}_${stackSuffix()}`,
+      id,
     };
   } else {
     throw Error(`record.eventName "${record.eventName}" is unrecognized`);

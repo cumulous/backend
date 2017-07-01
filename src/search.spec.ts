@@ -207,27 +207,45 @@ describe('search.uploadDocuments()', () => {
   const fakeUpdateDocumentId = uuid();
   const fakeDeleteDocumentId = uuid();
   const fakeDocumentValue = 'Value-1';
+  const fakeTableName = 'Items';
+
+  const fakeStreamArn = (tableName = fakeTableName + 'Table-ABCD') =>
+    'arn:aws:dynamodb:us-east-1:123456789012:table/' +
+    'fake-stack-' + tableName + '/stream/2016-11-16T20:42:48.104';
+
   const fakeDocument = () => ({
     fake_key: {
       S: fakeDocumentValue,
     },
   });
-  const fakeTableName = 'Items';
-  const fakeStreamArn = (tableName = fakeTableName + 'Table-ABCD') =>
-    'arn:aws:dynamodb:us-east-1:123456789012:table/' +
-    'fake-stack-' + tableName + '/stream/2016-11-16T20:42:48.104';
-  const fakeDeletionEvent = () => ({
-    Records: [{
-      eventSourceARN: fakeStreamArn(),
-      eventName: 'REMOVE' as any,
-      dynamodb: {
-        Keys: {
-          id: {
-            S: fakeCreateDocumentId,
-          },
+
+  const fakeRecord = (eventName: string, id: string) => ({
+    eventSourceARN: fakeStreamArn(),
+    eventName,
+    dynamodb: Object.assign({
+      Keys: {
+        id: {
+          S: id,
         },
       },
-    }],
+    }, eventName === 'REMOVE' ? {} : {
+      NewImage: Object.assign({
+        id: {
+          S: id,
+        },
+      }, fakeDocument()),
+    }),
+  });
+
+  const fakeEvent = () => ({
+    Records: [
+      fakeRecord('INSERT', fakeCreateDocumentId),
+      fakeRecord('INSERT', fakeUpdateDocumentId),
+      fakeRecord('MODIFY', fakeUpdateDocumentId),
+      fakeRecord('INSERT', fakeDeleteDocumentId),
+      fakeRecord('MODIFY', fakeDeleteDocumentId),
+      fakeRecord('REMOVE', fakeDeleteDocumentId),
+    ],
   });
 
   let spyOnCloudSearchDomain: jasmine.Spy;
@@ -247,7 +265,7 @@ describe('search.uploadDocuments()', () => {
   });
 
   it('calls cloudSearchDomain() once with correct parameters', (done: Callback) => {
-    uploadDocuments(fakeDeletionEvent(), null, () => {
+    uploadDocuments(fakeEvent(), null, () => {
       expect(spyOnCloudSearchDomain).toHaveBeenCalledWith(fakeDocEndpoint);
       expect(spyOnCloudSearchDomain).toHaveBeenCalledTimes(1);
       done();
@@ -256,41 +274,10 @@ describe('search.uploadDocuments()', () => {
 
   it('calls cloudSearchDomain().uploadDocuments() with correct parameters',
       (done: Callback) => {
-    uploadDocuments({
-      Records: [{
-        eventSourceARN: fakeStreamArn(),
-        eventName: 'INSERT',
-        dynamodb: {
-          NewImage: Object.assign({
-            id: {
-              S: fakeCreateDocumentId,
-            },
-          }, fakeDocument()),
-        },
-      }, {
-        eventSourceARN: fakeStreamArn(),
-        eventName: 'MODIFY',
-        dynamodb: {
-          NewImage: Object.assign({
-            id: {
-              S: fakeUpdateDocumentId,
-            },
-          }, fakeDocument()),
-        },
-      }, {
-        eventSourceARN: fakeStreamArn(),
-        eventName: 'REMOVE',
-        dynamodb: {
-          Keys: {
-            id: {
-              S: fakeDeleteDocumentId,
-            },
-          },
-        },
-      }],
-    }, null, () => {
+    uploadDocuments(fakeEvent(), null, (err: Error) => {
       const idSuffix = fakeTableName.toLowerCase() + '_' + fakeStackSuffix;
       const fakeFields: any = {};
+
       fakeFields[`fake_key_${fakeStackSuffix}`] = fakeDocumentValue;
       fakeFields[`table_${fakeStackSuffix}`] = fakeTableName.toLowerCase();
 
@@ -339,9 +326,11 @@ describe('search.uploadDocuments()', () => {
           ],
         };
       });
-      it('eventName is undefined', () => record = {});
-      it('eventName is not recognized', () => record = {
-        eventName: 'EVENT',
+      it('eventName is undefined', () => {
+        record = fakeRecord(undefined, fakeCreateDocumentId);
+      });
+      it('eventName is not recognized', () => {
+        record = fakeRecord('EVENT', fakeDeleteDocumentId);
       });
       describe('eventName is', () => {
         const testEventType = (action: 'INSERT' | 'MODIFY') => {
@@ -349,6 +338,11 @@ describe('search.uploadDocuments()', () => {
             let dynamodb: any;
             beforeEach(() => {
               dynamodb = {
+                Keys: {
+                  id: {
+                    S: action == 'INSERT' ? fakeCreateDocumentId : fakeUpdateDocumentId,
+                  },
+                },
                 NewImage: {
                   fake_key: {
                     S: fakeDocumentValue,
@@ -373,11 +367,12 @@ describe('search.uploadDocuments()', () => {
             });
             it('dynamodb is undefined', () => dynamodb = undefined);
             it('dynamodb is null', () => dynamodb = null);
+            it('dynamodb.Keys is undefined', () => delete dynamodb.Keys);
+            it('dynamodb.Keys is null', () => delete dynamodb.Keys);
+            it('dynamodb.Keys.id is undefined', () => delete dynamodb.Keys.id);
+            it('dynamodb.Keys.id is null', () => dynamodb.Keys.id = null);
             it('dynamodb.NewImage is undefined', () => delete dynamodb.NewImage);
             it('dynamodb.NewImage is null', () => dynamodb.NewImage = null);
-            it('dynamodb.NewImage[key] is undefined', () => {
-              delete dynamodb.NewImage.fake_key;
-            });
             it('dynamodb.NewImage[key] is null', () => dynamodb = {
               NewImage: {
                 fake_key: null,
@@ -424,17 +419,17 @@ describe('search.uploadDocuments()', () => {
       });
     });
     it('cloudSearchDomain() produces an error', () => {
-      event = fakeDeletionEvent();
+      event = fakeEvent();
       spyOnCloudSearchDomain.and.throwError('cloudSearchDomain()');
     });
     it('cloudSearchDomain().uploadDocuments() produces an error', () => {
-      event = fakeDeletionEvent();
+      event = fakeEvent();
       spyOnUploadDocuments.and.returnValue(fakeReject('uploadDocuments()'));
     });
   });
 
   it('calls callback without an error for correct parameters', (done: Callback) => {
-    uploadDocuments(fakeDeletionEvent(), null, (err?: Error) => {
+    uploadDocuments(fakeEvent(), null, (err?: Error) => {
       expect(err).toBeFalsy();
       done();
     });
