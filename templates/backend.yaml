@@ -880,6 +880,7 @@ Resources:
       RoleArn: !GetAtt StatesExecutionRole.Arn
       DefinitionString: !Sub |-
         {
+          "Comment": "Setup SSH key v1.1",
           "StartAt": "SetupSSHKey",
           "States": {
             "SetupSSHKey": {
