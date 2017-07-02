@@ -494,8 +494,6 @@ Resources:
                           ParameterKey=VpcRange,ParameterValue=$vpc_range \
                           ParameterKey=EncryptionKeyId,ParameterValue=${EncryptionKey} \
                           ParameterKey=SecretsBucket,ParameterValue=${SecretsBucket} \
-                          ParameterKey=SSHKeyName,ParameterValue=$stack_name \
-                          ParameterKey=SSHKeyS3Path,ParameterValue=ssh/$stack_name.pem \
                           ParameterKey=SSHKeyPutRole,ParameterValue=${SSHKeyPutRole} \
                           ParameterKey=SSHKeyGetRole,ParameterValue=${SSHKeyGetRole} \
                           ParameterKey=DomainZone,ParameterValue=${HostedZoneId} \
@@ -580,9 +578,10 @@ Resources:
               - kms:GenerateDataKey
             Condition:
               StringEquals:
-                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
+                'kms:ViaService': !Sub ssm.${AWS::Region}.amazonaws.com
               StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
+                'kms:EncryptionContext:aws:ssm:arn':
+                  !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ssh/*.pem
             Resource: '*'
           - Effect: Allow
             Principal:
@@ -591,9 +590,10 @@ Resources:
               - kms:Decrypt
             Condition:
               StringEquals:
-                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
+                'kms:ViaService': !Sub ssm.${AWS::Region}.amazonaws.com
               StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
+                'kms:EncryptionContext:aws:ssm:arn':
+                  !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ssh/*.pem
             Resource: '*'
           - Effect: Allow
             Principal:
@@ -1065,9 +1065,9 @@ Resources:
                 Action: ec2:CreateKeyPair
                 Resource: '*'
               - Effect: Allow
-                Action: s3:PutObject
+                Action: ssm:PutParameter
                 Resource:
-                  - !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ssh/*.pem
 
   SSHKeyGetRole:
     Type: AWS::IAM::Role
@@ -1080,16 +1080,16 @@ Resources:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
         - PolicyName: SSHKeyGetPolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
               - Effect: Allow
-                Action: s3:GetObject
+                Action: ssm:GetParameters
                 Resource:
-                  - !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ssh/*.pem
 
   Auth0PutSecretRole:
     Type: AWS::IAM::Role
