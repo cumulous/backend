@@ -56,8 +56,8 @@ export function deleteSSHKey(event: any, context: any, callback: Callback) {
   deleteKeyPair()
     .then(deleteSSHKeyParameter)
     .then(() => callback())
-    .catch((err: AWSError) =>
-      callback(err.code === 'InvalidKeyPair.NotFound' ? null : err));
+    .catch((err: AWSError) => callback(
+      err.code === 'InvalidKeyPair.NotFound' || err.code === 'ParameterNotFound' ? null : err));
 }
 
 function deleteKeyPair() {
