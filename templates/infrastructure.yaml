@@ -494,6 +494,8 @@ Resources:
                           ParameterKey=VpcRange,ParameterValue=$vpc_range \
                           ParameterKey=EncryptionKeyId,ParameterValue=${EncryptionKey} \
                           ParameterKey=SecretsBucket,ParameterValue=${SecretsBucket} \
+                          ParameterKey=SSHKeyName,ParameterValue=$stack_name \
+                          ParameterKey=SSHKeyS3Path,ParameterValue=ssh/$stack_name.pem \
                           ParameterKey=SSHKeyPutRole,ParameterValue=${SSHKeyPutRole} \
                           ParameterKey=SSHKeyGetRole,ParameterValue=${SSHKeyGetRole} \
                           ParameterKey=DomainZone,ParameterValue=${HostedZoneId} \
@@ -575,10 +577,12 @@ Resources:
             Principal:
               AWS: !GetAtt SSHKeyPutRole.Arn
             Action:
-              - kms:Encrypt
+              - kms:GenerateDataKey
             Condition:
               StringEquals:
-                'kms:ViaService': !Sub ssm.${AWS::Region}.amazonaws.com
+                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
+              StringLike:
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
             Resource: '*'
           - Effect: Allow
             Principal:
@@ -587,7 +591,9 @@ Resources:
               - kms:Decrypt
             Condition:
               StringEquals:
-                'kms:ViaService': !Sub ssm.${AWS::Region}.amazonaws.com
+                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
+              StringLike:
+                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
             Resource: '*'
           - Effect: Allow
             Principal:
@@ -1059,9 +1065,9 @@ Resources:
                 Action: ec2:CreateKeyPair
                 Resource: '*'
               - Effect: Allow
-                Action: ssm:PutParameter
+                Action: s3:PutObject
                 Resource:
-                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ssh/*.pem
+                  - !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
 
   SSHKeyGetRole:
     Type: AWS::IAM::Role
@@ -1081,9 +1087,9 @@ Resources:
             Version: 2012-10-17
             Statement:
               - Effect: Allow
-                Action: ssm:GetParameters
+                Action: s3:GetObject
                 Resource:
-                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ssh/*.pem
+                  - !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
 
   Auth0PutSecretRole:
     Type: AWS::IAM::Role

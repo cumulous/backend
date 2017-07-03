@@ -10,6 +10,10 @@ Parameters:
     Type: String
   SecretsBucket:
     Type: String
+  SSHKeyName:
+    Type: String
+  SSHKeyS3Path:
+    Type: String
   SSHKeyPutRole:
     Type: String
   SSHKeyGetRole:
@@ -373,8 +377,10 @@ Resources:
       Runtime: nodejs6.10
       Environment:
         Variables:
-          STACK_NAME: !Ref AWS::StackName
           ENCRYPTION_KEY_ID: !Ref EncryptionKeyId
+          SSH_KEY_NAME: !Ref SSHKeyName
+          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
+          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyPutRole}
 
   DeleteSSHKey:
@@ -386,16 +392,18 @@ Resources:
       Runtime: nodejs6.10
       Environment:
         Variables:
-          STACK_NAME: !Ref AWS::StackName
+          SSH_KEY_NAME: !Ref SSHKeyName
+          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
+          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Policies:
         Statement:
           - Effect: Allow
             Action: ec2:DeleteKeyPair
             Resource: '*'
           - Effect: Allow
-            Action: ssm:DeleteParameter
+            Action: s3:DeleteObject
             Resource:
-              - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ssh/${AWS::StackName}.pem
+              - !Sub arn:aws:s3:::${SecretsBucket}/${SSHKeyS3Path}
 
   CheckSSHKeyName:
     Type: AWS::Serverless::Function
@@ -406,7 +414,7 @@ Resources:
       Runtime: nodejs6.10
       Environment:
         Variables:
-          STACK_NAME: !Ref AWS::StackName
+          SSH_KEY_NAME: !Ref SSHKeyName
 
   CalculateVolumeSizes:
     Type: AWS::Serverless::Function
@@ -513,7 +521,8 @@ Resources:
       Timeout: 10
       Environment:
         Variables:
-          STACK_NAME: !Ref AWS::StackName
+          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
+          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
       VpcConfig:
         SecurityGroupIds:
@@ -530,7 +539,8 @@ Resources:
       Timeout: 15
       Environment:
         Variables:
-          STACK_NAME: !Ref AWS::StackName
+          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
+          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
       VpcConfig:
         SecurityGroupIds:
