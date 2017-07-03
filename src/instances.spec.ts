@@ -233,11 +233,6 @@ describe('deleteSSHKey()', () => {
         causeKeyNotFoundError();
         testError(deleteSSHKey, null, done, false);
       });
-      it('ssm.deleteParameter() produces "ParameterNotFound" error', (done: Callback) => {
-        spyOnSSMDeleteParameter.and.returnValue(fakeReject(Object.assign(
-          Error('deleteSSHKey(): parameter not found'), { code: 'ParameterNotFound' })));
-        testError(deleteSSHKey, null, done, false);
-      });
     });
   });
 
