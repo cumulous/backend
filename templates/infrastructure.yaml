@@ -575,13 +575,10 @@ Resources:
             Principal:
               AWS: !GetAtt SSHKeyPutRole.Arn
             Action:
-              - kms:GenerateDataKey
+              - kms:Encrypt
             Condition:
               StringEquals:
                 'kms:ViaService': !Sub ssm.${AWS::Region}.amazonaws.com
-              StringLike:
-                'kms:EncryptionContext:aws:ssm:arn':
-                  !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ssh/*.pem
             Resource: '*'
           - Effect: Allow
             Principal:
@@ -591,9 +588,6 @@ Resources:
             Condition:
               StringEquals:
                 'kms:ViaService': !Sub ssm.${AWS::Region}.amazonaws.com
-              StringLike:
-                'kms:EncryptionContext:aws:ssm:arn':
-                  !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/ssh/*.pem
             Resource: '*'
           - Effect: Allow
             Principal:
