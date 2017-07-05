@@ -4,6 +4,11 @@ Parameters:
     Type: String
     AllowedPattern: ^[\w.-]{1,100}$
     Default: backend
+  BackendAnalysesRepo:
+    Description: "Name of CodeCommit repository for analysis tools (*)"
+    Type: String
+    AllowedPattern: ^[\w.-]{1,100}$
+    Default: backend-analyses
   FrontendRepo:
     Description: "Name of CodeCommit repository for the frontend (*)"
     Type: String
@@ -114,6 +119,7 @@ Metadata:
           default: "Repositories"
         Parameters:
           - BackendRepo
+          - BackendAnalysesRepo
           - FrontendRepo
           - FrontendAuthRepo
       -
@@ -1211,6 +1217,197 @@ Resources:
               - Effect: Allow
                 Action: cloudfront:GetDistribution
                 Resource: '*'
+
+  BackendAnalysesPipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      Name: backend-analyses
+      RoleArn: !GetAtt BackendAnalysesPipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref BackendArtifactsBucket
+      RestartExecutionOnUpdate: true
+      Stages:
+        -
+          Name: Source
+          Actions:
+            - Name: Source
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeCommit
+                Version: 1
+              Configuration:
+                RepositoryName: !Ref BackendAnalysesRepo
+                BranchName: master
+              OutputArtifacts:
+                - Name: Source
+        -
+          Name: Beta
+          Actions:
+            -
+              Name: Beta
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref BackendAnalysesBetaBuildProject
+              InputArtifacts:
+                - Name: Source
+        -
+          Name: Approval
+          Actions:
+            - Name: ApproveRelease
+              ActionTypeId:
+                Category: Approval
+                Owner: AWS
+                Provider: Manual
+                Version: 1
+              Configuration:
+                NotificationArn: !If
+                  - CreateNotification
+                  - !Ref PipelineNotification
+                  - !Ref AWS::NoValue
+              RunOrder: 1
+        -
+          Name: Release
+          Actions:
+            -
+              Name: Release
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref BackendAnalysesReleaseBuildProject
+              InputArtifacts:
+                - Name: Source
+
+  BackendAnalysesBetaBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub backend-analyses-beta
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/docker:1.12.1
+        ComputeType: BUILD_GENERAL1_SMALL
+      ServiceRole: !Ref BackendAnalysesBuildRole
+
+  BackendAnalysesReleaseBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub backend-analyses-release
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/docker:1.12.1
+        ComputeType: BUILD_GENERAL1_SMALL
+      ServiceRole: !Ref BackendAnalysesBuildRole
+
+  BackendAnalysesPipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: BackendAnalysesPipelineRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - codecommit:GetBranch
+                  - codecommit:GetCommit
+                  - codecommit:UploadArchive
+                  - codecommit:GetUploadArchiveStatus
+                  - codecommit:CancelUploadArchive
+                Resource:
+                  - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${BackendAnalysesRepo}
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend-*
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                Resource:
+                  - !GetAtt BackendAnalysesBetaBuildProject.Arn
+                  - !GetAtt BackendAnalysesReleaseBuildProject.Arn
+              - !If
+                - CreateNotification
+                - Effect: Allow
+                  Action:
+                    - sns:Publish
+                  Resource:
+                    - !Ref PipelineNotification
+                - !Ref AWS::NoValue
+
+
+  BackendAnalysesBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: BackendAnalysesBuildRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend-analyses/Source/*
+              - Effect: Allow
+                Action:
+                  - s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend-analyses/Package/*
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:PutImage
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                Resource:
+                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*
 
   FrontendPipeline:
     Type: AWS::CodePipeline::Pipeline
