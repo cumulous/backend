@@ -1298,6 +1298,9 @@ Resources:
         Type: LINUX_CONTAINER
         Image: aws/codebuild/docker:1.12.1
         ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: REPO_BASE
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
       ServiceRole: !Ref BackendAnalysesBuildRole
 
   BackendAnalysesReleaseBuildProject:
@@ -1312,6 +1315,9 @@ Resources:
         Type: LINUX_CONTAINER
         Image: aws/codebuild/docker:1.12.1
         ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: REPO_BASE
+            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
       ServiceRole: !Ref BackendAnalysesBuildRole
 
   BackendAnalysesPipelineRole:
