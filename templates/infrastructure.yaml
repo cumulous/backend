@@ -4,11 +4,6 @@ Parameters:
     Type: String
     AllowedPattern: ^[\w.-]{1,100}$
     Default: backend
-  BackendAnalysesRepo:
-    Description: "Name of CodeCommit repository for analysis tools (*)"
-    Type: String
-    AllowedPattern: ^[\w.-]{1,100}$
-    Default: backend-analyses
   FrontendRepo:
     Description: "Name of CodeCommit repository for the frontend (*)"
     Type: String
@@ -19,6 +14,11 @@ Parameters:
     Type: String
     AllowedPattern: ^[\w.-]{1,100}$
     Default: frontend-auth
+  AppsRepo:
+    Description: "Name of CodeCommit repository for analysis apps (packaged through Docker) (*)"
+    Type: String
+    AllowedPattern: ^[\w.-]{1,100}$
+    Default: apps
   StackAdmin:
     Description: "IAM user whom to allow to administer this stack, including encryption keys (*)"
     Type: String
@@ -119,9 +119,9 @@ Metadata:
           default: "Repositories"
         Parameters:
           - BackendRepo
-          - BackendAnalysesRepo
           - FrontendRepo
           - FrontendAuthRepo
+          - AppsRepo
       -
         Label:
           default: "Administration"
@@ -1218,11 +1218,11 @@ Resources:
                 Action: cloudfront:GetDistribution
                 Resource: '*'
 
-  BackendAnalysesPipeline:
+  AppsPipeline:
     Type: AWS::CodePipeline::Pipeline
     Properties:
-      Name: backend-analyses
-      RoleArn: !GetAtt BackendAnalysesPipelineRole.Arn
+      Name: apps
+      RoleArn: !GetAtt AppsPipelineRole.Arn
       ArtifactStore:
         Type: S3
         Location: !Ref BackendArtifactsBucket
@@ -1238,7 +1238,7 @@ Resources:
                 Provider: CodeCommit
                 Version: 1
               Configuration:
-                RepositoryName: !Ref BackendAnalysesRepo
+                RepositoryName: !Ref AppsRepo
                 BranchName: master
               OutputArtifacts:
                 - Name: Source
@@ -1253,7 +1253,7 @@ Resources:
                 Provider: CodeBuild
                 Version: 1
               Configuration:
-                ProjectName: !Ref BackendAnalysesBetaBuildProject
+                ProjectName: !Ref AppsBetaBuildProject
               InputArtifacts:
                 - Name: Source
         -
@@ -1282,14 +1282,14 @@ Resources:
                 Provider: CodeBuild
                 Version: 1
               Configuration:
-                ProjectName: !Ref BackendAnalysesReleaseBuildProject
+                ProjectName: !Ref AppsReleaseBuildProject
               InputArtifacts:
                 - Name: Source
 
-  BackendAnalysesBetaBuildProject:
+  AppsBetaBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub backend-analyses-beta
+      Name: !Sub apps-beta
       Artifacts:
         Type: CODEPIPELINE
       Source:
@@ -1301,12 +1301,12 @@ Resources:
         EnvironmentVariables:
           - Name: REPO_BASE
             Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
-      ServiceRole: !Ref BackendAnalysesBuildRole
+      ServiceRole: !Ref AppsBuildRole
 
-  BackendAnalysesReleaseBuildProject:
+  AppsReleaseBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: !Sub backend-analyses-release
+      Name: !Sub apps-release
       Artifacts:
         Type: CODEPIPELINE
       Source:
@@ -1318,9 +1318,9 @@ Resources:
         EnvironmentVariables:
           - Name: REPO_BASE
             Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
-      ServiceRole: !Ref BackendAnalysesBuildRole
+      ServiceRole: !Ref AppsBuildRole
 
-  BackendAnalysesPipelineRole:
+  AppsPipelineRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -1331,7 +1331,7 @@ Resources:
               Service: codepipeline.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: BackendAnalysesPipelineRolePolicy
+        - PolicyName: AppsPipelineRolePolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -1343,20 +1343,20 @@ Resources:
                   - codecommit:GetUploadArchiveStatus
                   - codecommit:CancelUploadArchive
                 Resource:
-                  - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${BackendAnalysesRepo}
+                  - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${AppsRepo}
               - Effect: Allow
                 Action:
                   - s3:GetObject
                   - s3:PutObject
                 Resource:
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend-*
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/apps/*
               - Effect: Allow
                 Action:
                   - codebuild:BatchGetBuilds
                   - codebuild:StartBuild
                 Resource:
-                  - !GetAtt BackendAnalysesBetaBuildProject.Arn
-                  - !GetAtt BackendAnalysesReleaseBuildProject.Arn
+                  - !GetAtt AppsBetaBuildProject.Arn
+                  - !GetAtt AppsReleaseBuildProject.Arn
               - !If
                 - CreateNotification
                 - Effect: Allow
@@ -1367,7 +1367,7 @@ Resources:
                 - !Ref AWS::NoValue
 
 
-  BackendAnalysesBuildRole:
+  AppsBuildRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -1380,7 +1380,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: BackendAnalysesBuildRolePolicy
+        - PolicyName: AppsBuildRolePolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -1389,16 +1389,15 @@ Resources:
                   - s3:ListBucket
                 Resource:
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}
+                Condition:
+                  StringLike:
+                    's3:prefix': apps/*
               - Effect: Allow
                 Action:
                   - s3:GetObject
-                Resource:
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend-analyses/Source/*
-              - Effect: Allow
-                Action:
                   - s3:PutObject
                 Resource:
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend-analyses/Package/*
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/apps/*
               - Effect: Allow
                 Action:
                   - ecr:GetAuthorizationToken
@@ -1413,7 +1412,7 @@ Resources:
                   - ecr:UploadLayerPart
                   - ecr:CompleteLayerUpload
                 Resource:
-                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/*
+                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/apps/*
 
   FrontendPipeline:
     Type: AWS::CodePipeline::Pipeline
