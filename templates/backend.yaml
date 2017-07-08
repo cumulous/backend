@@ -2846,7 +2846,7 @@ Resources:
           - Effect: Allow
             Action: batch:UpdateComputeEnvironment
             Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/updatecomputeenvironment
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/updatecomputeenvironment
 
   CheckUpdateComputeEnvironment:
     Type: AWS::Serverless::Function
