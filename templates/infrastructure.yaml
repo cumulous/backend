@@ -901,6 +901,9 @@ Resources:
                     'iam:PolicyArn':
                       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
                       - arn:aws:iam::aws:policy/service-role/AWSLambdaRole
+                      - arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole
+                      - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole
+                      - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
                 Resource:
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/backend-beta-*
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/backend-release-*
