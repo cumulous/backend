@@ -2765,7 +2765,7 @@ Resources:
         bidPercentage: 30
         minvCpus: 0
         maxvCpus: 128
-        instanceTypes: [ c4, r4, m4 ]
+        instanceTypes: [ optimal ]
         instanceRole: !GetAtt InstanceRole.Arn
         spotIamFleetRole: !GetAtt SpotFleetRole.Arn
         subnets: !GetAtt Subnets.SubnetIds
