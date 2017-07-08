@@ -2833,6 +2833,7 @@ Resources:
             Resource:
               - !GetAtt BatchServiceRole.Arn
               - !GetAtt InstanceRole.Arn
+              - !GetAtt SpotFleetRole.Arn
 
   UpdateComputeEnvironment:
     Type: AWS::Serverless::Function
