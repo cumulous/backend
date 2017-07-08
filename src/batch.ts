@@ -13,8 +13,7 @@ export const createComputeEnvironment = (
     .catch(callback);
 };
 
-export const checkUpdateEnvironment = (
-    request: CloudFormationRequest, context: any, callback: Callback) => {
+export const checkUpdateEnvironment = (request: CloudFormationRequest, context: any, callback: Callback) => {
   Promise.resolve()
     .then(() => assertEqualProperties(request, [
       'computeEnvironmentName',

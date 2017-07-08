@@ -2844,6 +2844,14 @@ Resources:
             Resource:
               - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:compute-environment/${AWS::StackName}-*
 
+  CheckUpdateComputeEnvironment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CheckUpdateComputeEnvironment
+      CodeUri: ../app
+      Handler: batch.checkUpdateEnvironment
+      Runtime: nodejs6.10
+
   DeleteComputeEnvironment:
     Type: AWS::Serverless::Function
     Properties:
