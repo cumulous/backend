@@ -2828,6 +2828,10 @@ Resources:
             Action: batch:CreateComputeEnvironment
             Resource:
               - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/createcomputeenvironment
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource:
+              - !GetAtt BatchServiceRole.Arn
 
   UpdateComputeEnvironment:
     Type: AWS::Serverless::Function
