@@ -8,7 +8,30 @@ import { Callback } from './types';
 
 export const createComputeEnvironment = (
     request: ComputeEnvironmentProperties, context: any, callback: Callback) => {
-  batch.createComputeEnvironment(request).promise()
+
+  Promise.resolve()
+    .then(() => request.computeResources)
+    .then(computeResources => batch.createComputeEnvironment({
+      computeEnvironmentName: request.computeEnvironmentName,
+      type: request.type,
+      computeResources: {
+        type: computeResources.type,
+        minvCpus: computeResources.minvCpus,
+        maxvCpus: computeResources.maxvCpus,
+        desiredvCpus: computeResources.desiredvCpus,
+        instanceTypes: computeResources.instanceTypes,
+        imageId: computeResources.imageId,
+        subnets: computeResources.subnets,
+        securityGroupIds: computeResources.securityGroupIds,
+        ec2KeyPair: computeResources.ec2KeyPair,
+        instanceRole: computeResources.instanceRole,
+        tags: computeResources.tags,
+        bidPercentage: computeResources.bidPercentage,
+        spotIamFleetRole: computeResources.spotIamFleetRole,
+      },
+      state: request.state,
+      serviceRole: request.serviceRole,
+    }).promise())
     .then(() => callback())
     .catch(callback);
 };

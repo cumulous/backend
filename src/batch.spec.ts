@@ -51,8 +51,9 @@ const fakeComputeEnvironmentProperties = (): CreateComputeEnvironmentRequest => 
   state: 'ENABLED',
 });
 
-const fakeRequest = (requestType: CloudFormationRequestType,
-                     properties: any, oldProperties: any = {}) => ({
+const fakeCloudFormationRequest = (
+    requestType: CloudFormationRequestType,
+    properties: any, oldProperties: any = {}) => ({
   RequestType: requestType,
   ResponseURL: fakeResponseURL,
   StackId: fakeStackId,
@@ -66,6 +67,13 @@ const fakeRequest = (requestType: CloudFormationRequestType,
 
 describe('batch.createComputeEnvironment()', () => {
 
+  const fakeRequest = (): any => {
+    const properties: any = fakeComputeEnvironmentProperties();
+    properties.extra = 'property';
+    properties.computeResources.extra = 'property';
+    return properties;
+  };
+
   let spyOnCreateComputeEnvironment: jasmine.Spy;
 
   beforeEach(() => {
@@ -74,7 +82,7 @@ describe('batch.createComputeEnvironment()', () => {
   });
 
   it('calls batch.createComputeEnvironment() once with correct parameters', (done: Callback) => {
-    createComputeEnvironment(fakeComputeEnvironmentProperties(), null, () => {
+    createComputeEnvironment(fakeRequest(), null, () => {
       expect(spyOnCreateComputeEnvironment).toHaveBeenCalledWith(fakeComputeEnvironmentProperties());
       expect(spyOnCreateComputeEnvironment).toHaveBeenCalledTimes(1);
       done();
@@ -82,13 +90,13 @@ describe('batch.createComputeEnvironment()', () => {
   });
 
   it('calls callback without an error on successful request', (done: Callback) => {
-    testError(createComputeEnvironment, fakeComputeEnvironmentProperties(), done, false);
+    testError(createComputeEnvironment, fakeRequest(), done, false);
   });
 
   it('calls callback with an error if batch.createComputeEnvironment() produces an error',
       (done: Callback) => {
     spyOnCreateComputeEnvironment.and.returnValue(fakeReject('batch.createComputeEnvironment()'));
-    testError(createComputeEnvironment, fakeComputeEnvironmentProperties(), done);
+    testError(createComputeEnvironment, fakeRequest(), done);
   });
 });
 
@@ -101,7 +109,8 @@ describe('batch.checkUpdateEnvironment()', () => {
 
   describe('calls callback with "RequiresReplacement" error if', () => {
     afterEach((done: Callback) => {
-      const request = fakeRequest('Update', properties, fakeComputeEnvironmentProperties());
+      const request = fakeCloudFormationRequest('Update', properties,
+        fakeComputeEnvironmentProperties());
       checkUpdateEnvironment(request, null, (err: Error) => {
         expect(err).toEqual(Error('RequiresReplacement'));
         done();
@@ -147,7 +156,8 @@ describe('batch.checkUpdateEnvironment()', () => {
 
   describe('calls callback without an error if', () => {
     afterEach((done: Callback) => {
-      const request = fakeRequest('Update', properties, fakeComputeEnvironmentProperties());
+      const request = fakeCloudFormationRequest('Update', properties,
+        fakeComputeEnvironmentProperties());
       checkUpdateEnvironment(request, null, (err: Error) => {
         expect(err).toBeFalsy();
         done();
@@ -173,7 +183,7 @@ describe('batch.checkUpdateEnvironment()', () => {
 
 describe('batch.updateComputeEnvironment()', () => {
 
-  const fakeUpdatedProperties = () => ({
+  const fakeUpdatedProperties = (): any => ({
     state: 'ENABLED',
     computeResources: {
       minvCpus: fakeMinVCpus + 1,
@@ -183,9 +193,13 @@ describe('batch.updateComputeEnvironment()', () => {
     serviceRole: fakeServiceRole,
   });
 
-  const fakeRequest = (): any => Object.assign(fakeUpdatedProperties(), {
-    computeEnvironmentName: fakeComputeEnvironment,
-  });
+  const fakeRequest = (): any => {
+    const properties = fakeUpdatedProperties();
+    properties.computeEnvironmentName = fakeComputeEnvironment,
+    properties.extra = 'property';
+    properties.computeResources.extra = 'property';
+    return properties;
+  };
 
   let spyOnUpdateComputeEnvironment: jasmine.Spy;
 
