@@ -2951,10 +2951,10 @@ Resources:
                   },
                   "CheckReplace": {
                     "Type": "Task",
-                    "ResultPath": null,
                     "Resource": "${CheckUpdateComputeEnvironment.Arn}",
                     "Catch": [{
                       "ErrorEquals": [ "RequiresReplacement" ],
+                      "ResultPath": null,
                       "Next": "PassDisableBeforeDelete"
                     }],
                     "Next": "UpdateComputeEnvironment"
