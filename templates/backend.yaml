@@ -2751,6 +2751,345 @@ Resources:
             Resource:
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}
 
+  SpotComputeEnvironment:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupComputeEnvironmentStateMachine
+      type: MANAGED
+      state: ENABLED
+      serviceRole: !Ref BatchServiceRole
+      computeEnvironmentName: !Sub ${AWS::StackName}-spot-environment
+      computeResources:
+        type: SPOT
+        bidPercentage: 30
+        minvCpus: 0
+        maxvCpus: 128
+        instanceTypes: [ c4, r4, m4 ]
+        instanceRole: !Ref InstanceRole
+        spotIamFleetRole: !Ref SpotFleetRole
+        subnets: !GetAtt Subnets.SubnetIds
+        securityGroupIds:
+          - !GetAtt BackendVPC.DefaultSecurityGroup
+        ec2KeyPair: !Ref SSHKeyName
+        tags:
+          - Name: !Sub batch-${AWS::StackName}
+
+  BatchServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: batch.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole
+
+  SpotFleetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: spotfleet.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+
+  CreateComputeEnvironment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CreateComputeEnvironment
+      CodeUri: ../app
+      Handler: batch.createComputeEnvironment
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:CreateComputeEnvironment
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:compute-environment/${AWS::StackName}-*
+
+  UpdateComputeEnvironment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-UpdateComputeEnvironment
+      CodeUri: ../app
+      Handler: batch.updateComputeEnvironment
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:UpdateComputeEnvironment
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:compute-environment/${AWS::StackName}-*
+
+  DeleteComputeEnvironment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DeleteComputeEnvironment
+      CodeUri: ../app
+      Handler: batch.deleteComputeEnvironment
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:DeleteComputeEnvironment
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:compute-environment/${AWS::StackName}-*
+
+  DescribeComputeEnvironment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DescribeComputeEnvironment
+      CodeUri: ../app
+      Handler: batch.describeComputeEnvironment
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:DescribeComputeEnvironments
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:compute-environment/${AWS::StackName}-*
+
+  SetupComputeEnvironmentStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupComputeEnvironment",
+          "States": {
+            "SetupComputeEnvironment": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "CheckEventType",
+                "States": {
+                  "CheckEventType": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Create",
+                      "Next": "CreateComputeEnvironment"
+                    }, {
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "CheckReplace"
+                    }, {
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Delete",
+                      "Next": "DeleteComputeEnvironment"
+                    }]
+                  },
+                  "CreateComputeEnvironment": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": null,
+                    "Resource": "${CreateComputeEnvironment.Arn}",
+                    "Next": "WaitWhileCreating"
+                  },
+                  "WaitWhileCreating" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenCreating"
+                  },
+                  "GetStatusWhenCreating": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.computeEnvironmentName",
+                    "ResultPath": "$.ResourceProperties",
+                    "Resource": "${DescribeComputeEnvironment.Arn}",
+                    "Next": "CheckIfCreated"
+                  },
+                  "CheckIfCreated": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "And": [{
+                        "Variable": "$.ResourceProperties.state",
+                        "StringEquals": "ENABLED"
+                      }, {
+                        "Variable": "$.ResourceProperties.status",
+                        "StringEquals": "VALID"
+                      }],
+                      "Next": "Success"
+                    }],
+                    "Default": "WaitWhileCreating"
+                  },
+                  "CheckReplace": {
+                    "Type": "Task",
+                    "Resource": "${CheckUpdateComputeEnvironment.Arn}",
+                    "Catch": [{
+                      "ErrorEquals": [ "RequiresReplacement" ],
+                      "Next": "PassDisableBeforeDelete"
+                    }],
+                    "Next": "UpdateComputeEnvironment"
+                  },
+                  "UpdateComputeEnvironment": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": null,
+                    "Resource": "${UpdateComputeEnvironment.Arn}",
+                    "Next": "WaitWhileUpdating"
+                  },
+                  "WaitWhileUpdating" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenUpdating"
+                  },
+                  "GetStatusWhenUpdating": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.computeEnvironmentName",
+                    "ResultPath": "$.ResourceProperties",
+                    "Resource": "${DescribeComputeEnvironment.Arn}",
+                    "Next": "CheckIfUpdated"
+                  },
+                  "CheckIfUpdated": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.ResourceProperties.status",
+                      "StringEquals": "VALID",
+                      "Next": "Success"
+                    }],
+                    "Default": "WaitWhileUpdating"
+                  },
+                  "PassDisableBeforeDelete": {
+                    "Type": "Pass",
+                    "ResultPath": "$.ResourceProperties.state",
+                    "Result": "DISABLED",
+                    "Next": "DisableBeforeDelete"
+                  },
+                  "DisableBeforeDelete": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": null,
+                    "Resource": "${UpdateComputeEnvironment.Arn}",
+                    "Next": "WaitWhileDisabling"
+                  },
+                  "WaitWhileDisabling" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenDisabling"
+                  },
+                  "GetStatusWhenDisabling": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.computeEnvironmentName",
+                    "ResultPath": "$.ResourceProperties",
+                    "Resource": "${DescribeComputeEnvironment.Arn}",
+                    "Next": "CheckIfDisabled"
+                  },
+                  "CheckIfDisabled": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "And": [{
+                        "Variable": "$.ResourceProperties.state",
+                        "StringEquals": "DISABLED"
+                      }, {
+                        "Variable": "$.ResourceProperties.status",
+                        "StringEquals": "VALID"
+                      }],
+                      "Next": "DeleteComputeEnvironment"
+                    }],
+                    "Default": "WaitWhileDisabling"
+                  },
+                  "DeleteComputeEnvironment": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.computeEnvironmentName",
+                    "ResultPath": null,
+                    "Resource": "${DeleteComputeEnvironment.Arn}",
+                    "Next": "WaitWhileDeleting"
+                  },
+                  "WaitWhileDeleting" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenDeleting"
+                  },
+                  "GetStatusWhenDeleting": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.computeEnvironmentName",
+                    "ResultPath": "$.ResourceProperties",
+                    "Resource": "${DescribeComputeEnvironment.Arn}",
+                    "Next": "CheckIfDeleted"
+                  },
+                  "CheckIfDeleted": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.ResourceProperties.status",
+                      "StringEquals": "DELETED",
+                      "Next": "CheckCreateAfterDelete"
+                    }],
+                    "Default": "WaitWhileDeleting"
+                  },
+                  "CheckCreateAfterDelete": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "CreateComputeEnvironment"
+                    }],
+                    "Default": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
+
 Outputs:
   WebSigningKey:
     Condition: SetupWebSigningKeyPair

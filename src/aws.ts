@@ -1,4 +1,5 @@
-import { APIGateway, CloudFront, CloudSearch, DynamoDB, EC2, S3, StepFunctions, STS } from 'aws-sdk';
+import { APIGateway, Batch, CloudFront, CloudSearch,
+         DynamoDB, EC2, S3, StepFunctions, STS } from 'aws-sdk';
 import * as stringify from 'json-stable-stringify';
 import { put } from 'request-promise-native';
 
@@ -7,6 +8,7 @@ import { log } from './log';
 import { Callback, Dict } from './types';
 
 export const apiGateway = new APIGateway();
+export const batch = new Batch();
 export const cloudFront = new CloudFront();
 export const cloudSearch = new CloudSearch();
 export const dynamodb = new DynamoDB.DocumentClient();
@@ -15,16 +17,18 @@ export const s3 = new S3({ signatureVersion: 'v4' });
 export const stepFunctions = new StepFunctions();
 export const sts = new STS();
 
+export type CloudFormationRequestType = 'Create' | 'Update' | 'Delete';
+
 export interface CloudFormationRequest {
-  RequestType: 'Create' | 'Update' | 'Delete';
+  RequestType: CloudFormationRequestType;
   ResponseURL: string;
   StackId: string;
   RequestId: string;
   ResourceType: string;
   LogicalResourceId: string;
+  ResourceProperties: Dict<any>;
+  OldResourceProperties?: Dict<any>;
   PhysicalResourceId?: string;
-  ResourceProperties?: Dict<any>;
-  OldResourceProperties: Dict<any>;
 };
 
 export interface CloudFormationResponse {
