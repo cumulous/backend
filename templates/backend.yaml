@@ -2846,7 +2846,7 @@ Resources:
           - Effect: Allow
             Action: batch:UpdateComputeEnvironment
             Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:compute-environment/${AWS::StackName}-*
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/updatecomputeenvironment
 
   CheckUpdateComputeEnvironment:
     Type: AWS::Serverless::Function
@@ -2869,7 +2869,7 @@ Resources:
           - Effect: Allow
             Action: batch:DeleteComputeEnvironment
             Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:compute-environment/${AWS::StackName}-*
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/deletecomputeenvironment
 
   DescribeComputeEnvironment:
     Type: AWS::Serverless::Function
@@ -2884,7 +2884,7 @@ Resources:
           - Effect: Allow
             Action: batch:DescribeComputeEnvironments
             Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:compute-environment/${AWS::StackName}-*
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describecomputeenvironments
 
   SetupComputeEnvironmentStateMachine:
     Type: AWS::StepFunctions::StateMachine
