@@ -3,6 +3,7 @@ import { CreateComputeEnvironmentRequest as ComputeEnvironmentProperties,
 import * as stringify from 'json-stable-stringify';
 import * as jsonpath from 'jsonpath';
 
+import { ApiError } from './apig';
 import { batch, CloudFormationRequest } from './aws';
 import { Callback } from './types';
 
@@ -58,10 +59,11 @@ export const checkUpdateEnvironment = (request: CloudFormationRequest, context: 
 
 const assertEqualProperties = (request: CloudFormationRequest, propertyPaths: string[]) => {
   propertyPaths.forEach(path => {
-    const oldValue = jsonpath.value(request, `OldResourceProperties.${path}`);
-    const newValue = jsonpath.value(request, `ResourceProperties.${path}`);
-    if (stringify(oldValue) !== stringify(newValue)) {
-      throw Error('RequiresReplacement');
+    const oldValue = stringify(jsonpath.value(request, `OldResourceProperties.${path}`));
+    const newValue = stringify(jsonpath.value(request, `ResourceProperties.${path}`));
+    if (oldValue !== newValue) {
+      throw new ApiError(`Incompatible change for ${path}: ${oldValue} -> ${newValue}`,
+        undefined, 409, 'RequiresReplacement');
     }
   });
 }

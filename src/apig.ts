@@ -25,7 +25,6 @@ export interface Response {
 };
 
 export class ApiError implements Error {
-  readonly name: string;
   readonly code?: string | number;
   readonly stack?: string;
 
@@ -33,6 +32,7 @@ export class ApiError implements Error {
     readonly message: string = 'Internal server error',
     readonly errors?: string[],
     code: string | number = 500,
+    readonly name: string = undefined,
   ) {
     this.code = code;
   }

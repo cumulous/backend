@@ -112,7 +112,8 @@ describe('batch.checkUpdateEnvironment()', () => {
       const request = fakeCloudFormationRequest('Update', properties,
         fakeComputeEnvironmentProperties());
       checkUpdateEnvironment(request, null, (err: Error) => {
-        expect(err).toEqual(Error('RequiresReplacement'));
+        expect(err).toBeTruthy();
+        expect(err.name).toEqual('RequiresReplacement');
         done();
       });
     });
@@ -126,7 +127,7 @@ describe('batch.checkUpdateEnvironment()', () => {
       properties.computeResources.type = 'EC2';
     });
     it('computeResources.instanceTypes is different', () => {
-      properties.computeResources.instanceTypes.push(['r4.large']);
+      properties.computeResources.instanceTypes.push('r4.large');
     });
     it('computeResources.imageId is different', () => {
       properties.computeResources.imageId += '-new';
@@ -135,7 +136,7 @@ describe('batch.checkUpdateEnvironment()', () => {
       properties.computeResources.subnets.push(['subnet-5678']);
     });
     it('computeResources.securityGroupIds is different', () => {
-      properties.computeResources.securityGroupIds.push(['sg-5678']);
+      properties.computeResources.securityGroupIds.push('sg-5678');
     });
     it('computeResources.ec2KeyPair is different', () => {
       properties.computeResources.ec2KeyPair += '-new';
