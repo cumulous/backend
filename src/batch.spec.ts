@@ -112,7 +112,7 @@ describe('batch.checkUpdateEnvironment()', () => {
       const request = fakeCloudFormationRequest('Update', properties,
         fakeComputeEnvironmentProperties());
       checkUpdateEnvironment(request, null, (err: Error) => {
-        expect(err).toBeTruthy();
+        expect(err).toEqual(jasmine.any(Error));
         expect(err.name).toEqual('RequiresReplacement');
         done();
       });
