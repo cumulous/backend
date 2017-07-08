@@ -2766,7 +2766,7 @@ Resources:
         minvCpus: 0
         maxvCpus: 128
         instanceTypes: [ c4, r4, m4 ]
-        instanceRole: !Ref InstanceRole
+        instanceRole: !GetAtt InstanceRole.Arn
         spotIamFleetRole: !GetAtt SpotFleetRole.Arn
         subnets: !GetAtt Subnets.SubnetIds
         securityGroupIds:
@@ -2832,6 +2832,7 @@ Resources:
             Action: iam:PassRole
             Resource:
               - !GetAtt BatchServiceRole.Arn
+              - !GetAtt InstanceRole.Arn
 
   UpdateComputeEnvironment:
     Type: AWS::Serverless::Function
