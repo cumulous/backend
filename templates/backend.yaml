@@ -2951,6 +2951,7 @@ Resources:
                   },
                   "CheckReplace": {
                     "Type": "Task",
+                    "ResultPath": null,
                     "Resource": "${CheckUpdateComputeEnvironment.Arn}",
                     "Catch": [{
                       "ErrorEquals": [ "RequiresReplacement" ],
