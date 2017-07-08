@@ -2772,8 +2772,6 @@ Resources:
         securityGroupIds:
           - !GetAtt BackendVPC.DefaultSecurityGroup
         ec2KeyPair: !Ref SSHKeyName
-        tags:
-          Name: !Sub batch-${AWS::StackName}
 
   BatchServiceRole:
     Type: AWS::IAM::Role
