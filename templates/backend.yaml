@@ -2827,7 +2827,7 @@ Resources:
           - Effect: Allow
             Action: batch:CreateComputeEnvironment
             Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:compute-environment/${AWS::StackName}-*
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/createcomputeenvironment
 
   UpdateComputeEnvironment:
     Type: AWS::Serverless::Function
