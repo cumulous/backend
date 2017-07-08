@@ -2758,7 +2758,7 @@ Resources:
       StateMachine: !Ref SetupComputeEnvironmentStateMachine
       type: MANAGED
       state: ENABLED
-      serviceRole: !Ref BatchServiceRole
+      serviceRole: !GetAtt BatchServiceRole.Arn
       computeEnvironmentName: !Sub ${AWS::StackName}-spot-environment
       computeResources:
         type: SPOT
@@ -2767,7 +2767,7 @@ Resources:
         maxvCpus: 128
         instanceTypes: [ c4, r4, m4 ]
         instanceRole: !Ref InstanceRole
-        spotIamFleetRole: !Ref SpotFleetRole
+        spotIamFleetRole: !GetAtt SpotFleetRole.Arn
         subnets: !GetAtt Subnets.SubnetIds
         securityGroupIds:
           - !GetAtt BackendVPC.DefaultSecurityGroup
