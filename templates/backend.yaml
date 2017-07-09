@@ -2755,27 +2755,27 @@ Resources:
             Resource:
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}
 
-  SpotComputeEnvironment:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupComputeEnvironmentStateMachine
-      type: MANAGED
-      state: ENABLED
-      serviceRole: !GetAtt BatchServiceRole.Arn
-      computeEnvironmentName: !Sub ${AWS::StackName}-spot-environment
-      computeResources:
-        type: SPOT
-        bidPercentage: !Ref SpotBidPercent
-        minvCpus: 0
-        maxvCpus: !Ref ClusterCores
-        instanceTypes: [ optimal ]
-        instanceRole: !GetAtt InstanceRole.Arn
-        spotIamFleetRole: !GetAtt SpotFleetRole.Arn
-        subnets: !GetAtt Subnets.SubnetIds
-        securityGroupIds:
-          - !GetAtt BackendVPC.DefaultSecurityGroup
-        ec2KeyPair: !Ref SSHKeyName
+  # SpotComputeEnvironment:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   Properties:
+  #     ServiceToken: !GetAtt SetupCustomResource.Arn
+  #     StateMachine: !Ref SetupComputeEnvironmentStateMachine
+  #     type: MANAGED
+  #     state: ENABLED
+  #     serviceRole: !GetAtt BatchServiceRole.Arn
+  #     computeEnvironmentName: !Sub ${AWS::StackName}-spot-environment
+  #     computeResources:
+  #       type: SPOT
+  #       bidPercentage: !Ref SpotBidPercent
+  #       minvCpus: 0
+  #       maxvCpus: !Ref ClusterCores
+  #       instanceTypes: [ optimal ]
+  #       instanceRole: !GetAtt InstanceRole.Arn
+  #       spotIamFleetRole: !GetAtt SpotFleetRole.Arn
+  #       subnets: !GetAtt Subnets.SubnetIds
+  #       securityGroupIds:
+  #         - !GetAtt BackendVPC.DefaultSecurityGroup
+  #       ec2KeyPair: !Ref SSHKeyName
 
   BatchServiceRole:
     Type: AWS::IAM::Role
