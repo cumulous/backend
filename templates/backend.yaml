@@ -44,6 +44,10 @@ Parameters:
     Type: String
   DatasetsBucket:
     Type: String
+  ClusterCores:
+    Type: Number
+  SpotBidPercent:
+    Type: Number
   Auth0Domain:
     Type: String
   Auth0ManagementClientID:
@@ -2762,9 +2766,9 @@ Resources:
       computeEnvironmentName: !Sub ${AWS::StackName}-spot-environment
       computeResources:
         type: SPOT
-        bidPercentage: 30
+        bidPercentage: !Ref SpotBidPercent
         minvCpus: 0
-        maxvCpus: 128
+        maxvCpus: !Ref ClusterCores
         instanceTypes: [ optimal ]
         instanceRole: !GetAtt InstanceRole.Arn
         spotIamFleetRole: !GetAtt SpotFleetRole.Arn

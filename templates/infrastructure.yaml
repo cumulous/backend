@@ -86,6 +86,17 @@ Parameters:
     AllowedPattern: ^([a-z0-9][a-z0-9-]*[a-z0-9](\.[a-z0-9][a-z0-9-]*[a-z0-9])*)?$
     MaxLength: 63
     Default: ''
+  ClusterCores:
+    Description: "Maximum combined number of cores for compute clusters"
+    Type: Number
+    MinValue: 2
+    Default: 256
+  SpotBidPercent:
+    Description: "Maximum spot bid percentage for compute clusters"
+    Type: Number
+    MaxValue: 1
+    MaxValue: 100
+    Default: 25
   Auth0Domain:
     Description: "Your Auth0 domain name (*)"
     Type: String
@@ -155,6 +166,12 @@ Metadata:
           default: "Data"
         Parameters:
           - DatasetsBucketName
+      -
+        Label:
+          default: "Compute"
+        Parameters:
+          - ClusterCores
+          - SpotBidPercent
       -
         Label:
           default: "Auth0"
@@ -517,6 +534,8 @@ Resources:
                           ParameterKey=DatasetsTableName,ParameterValue=$datasets_table \
                           ParameterKey=SearchDomain,ParameterValue=$SEARCH_DOMAIN \
                           ParameterKey=DatasetsBucket,ParameterValue=$datasets_bucket \
+                          ParameterKey=ClusterCores,ParameterValue=${ClusterCores} \
+                          ParameterKey=SpotBidPercent,ParameterValue=${SpotBidPercent} \
                           ParameterKey=Auth0Domain,ParameterValue=${Auth0Domain} \
                           ParameterKey=Auth0ManagementClientID,ParameterValue=${Auth0ManagementClientID} \
                           ParameterKey=Auth0ManagementClientSecret,ParameterValue=$auth0_secret \
