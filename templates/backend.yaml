@@ -2921,7 +2921,7 @@ Resources:
                     }, {
                       "Variable": "$.RequestType",
                       "StringEquals": "Delete",
-                      "Next": "DeleteComputeEnvironment"
+                      "Next": "PassDeletedResourceProperties"
                     }]
                   },
                   "CreateComputeEnvironment": {
@@ -2934,7 +2934,7 @@ Resources:
                   "GetStatusWhenCreating": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.computeEnvironmentName",
-                    "ResultPath": "$.DescribedResourceProperties",
+                    "ResultPath": "$.ResourceProperties",
                     "Resource": "${DescribeComputeEnvironment.Arn}",
                     "Next": "CheckIfCreated"
                   },
@@ -2942,10 +2942,10 @@ Resources:
                     "Type": "Choice",
                     "Choices": [{
                       "And": [{
-                        "Variable": "$.DescribedResourceProperties.state",
+                        "Variable": "$.ResourceProperties.state",
                         "StringEquals": "ENABLED"
                       }, {
-                        "Variable": "$.DescribedResourceProperties.status",
+                        "Variable": "$.ResourceProperties.status",
                         "StringEquals": "VALID"
                       }],
                       "Next": "Success"
@@ -2963,7 +2963,7 @@ Resources:
                     "Catch": [{
                       "ErrorEquals": [ "RequiresReplacement" ],
                       "ResultPath": null,
-                      "Next": "PassDisableBeforeDelete"
+                      "Next": "PassReplacedResourceProperties"
                     }],
                     "Next": "UpdateComputeEnvironment"
                   },
@@ -2977,14 +2977,14 @@ Resources:
                   "GetStatusWhenUpdating": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.computeEnvironmentName",
-                    "ResultPath": "$.DescribedResourceProperties",
+                    "ResultPath": "$.ResourceProperties",
                     "Resource": "${DescribeComputeEnvironment.Arn}",
                     "Next": "CheckIfUpdated"
                   },
                   "CheckIfUpdated": {
                     "Type": "Choice",
                     "Choices": [{
-                      "Variable": "$.DescribedResourceProperties.status",
+                      "Variable": "$.ResourceProperties.status",
                       "StringEquals": "VALID",
                       "Next": "Success"
                     }],
@@ -2995,23 +2995,35 @@ Resources:
                     "Seconds": 15,
                     "Next": "GetStatusWhenUpdating"
                   },
+                  "PassReplacedResourceProperties": {
+                    "Type": "Pass",
+                    "InputPath": "$.OldResourceProperties",
+                    "ResultPath": "$.DeletedResourceProperties",
+                    "Next": "PassDisableBeforeDelete"
+                  },
+                  "PassDeletedResourceProperties": {
+                    "Type": "Pass",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.DeletedResourceProperties",
+                    "Next": "PassDisableBeforeDelete"
+                  },
                   "PassDisableBeforeDelete": {
                     "Type": "Pass",
-                    "ResultPath": "$.ResourceProperties.state",
+                    "ResultPath": "$.DeletedResourceProperties.state",
                     "Result": "DISABLED",
                     "Next": "DisableBeforeDelete"
                   },
                   "DisableBeforeDelete": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties",
+                    "InputPath": "$.DeletedResourceProperties",
                     "ResultPath": null,
                     "Resource": "${UpdateComputeEnvironment.Arn}",
                     "Next": "GetStatusWhenDisabling"
                   },
                   "GetStatusWhenDisabling": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.computeEnvironmentName",
-                    "ResultPath": "$.DescribedResourceProperties",
+                    "InputPath": "$.DeletedResourceProperties.computeEnvironmentName",
+                    "ResultPath": "$.DeletedResourceProperties",
                     "Resource": "${DescribeComputeEnvironment.Arn}",
                     "Next": "CheckIfDisabled"
                   },
@@ -3019,10 +3031,10 @@ Resources:
                     "Type": "Choice",
                     "Choices": [{
                       "And": [{
-                        "Variable": "$.DescribedResourceProperties.state",
+                        "Variable": "$.DeletedResourceProperties.state",
                         "StringEquals": "DISABLED"
                       }, {
-                        "Variable": "$.DescribedResourceProperties.status",
+                        "Variable": "$.DeletedResourceProperties.status",
                         "StringEquals": "VALID"
                       }],
                       "Next": "DeleteComputeEnvironment"
@@ -3036,7 +3048,7 @@ Resources:
                   },
                   "DeleteComputeEnvironment": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.computeEnvironmentName",
+                    "InputPath": "$.DeletedResourceProperties.computeEnvironmentName",
                     "ResultPath": null,
                     "Resource": "${DeleteComputeEnvironment.Arn}",
                     "Next": "CheckCreateAfterDelete"
