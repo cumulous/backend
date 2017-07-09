@@ -2925,11 +2925,6 @@ Resources:
                     "InputPath": "$.ResourceProperties",
                     "ResultPath": null,
                     "Resource": "${CreateComputeEnvironment.Arn}",
-                    "Next": "WaitWhileCreating"
-                  },
-                  "WaitWhileCreating" : {
-                    "Type": "Wait",
-                    "Seconds": 15,
                     "Next": "GetStatusWhenCreating"
                   },
                   "GetStatusWhenCreating": {
@@ -2953,6 +2948,11 @@ Resources:
                     }],
                     "Default": "WaitWhileCreating"
                   },
+                  "WaitWhileCreating" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenCreating"
+                  },
                   "CheckReplace": {
                     "Type": "Task",
                     "Resource": "${CheckUpdateComputeEnvironment.Arn}",
@@ -2968,11 +2968,6 @@ Resources:
                     "InputPath": "$.ResourceProperties",
                     "ResultPath": null,
                     "Resource": "${UpdateComputeEnvironment.Arn}",
-                    "Next": "WaitWhileUpdating"
-                  },
-                  "WaitWhileUpdating" : {
-                    "Type": "Wait",
-                    "Seconds": 15,
                     "Next": "GetStatusWhenUpdating"
                   },
                   "GetStatusWhenUpdating": {
@@ -2991,6 +2986,11 @@ Resources:
                     }],
                     "Default": "WaitWhileUpdating"
                   },
+                  "WaitWhileUpdating" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenUpdating"
+                  },
                   "PassDisableBeforeDelete": {
                     "Type": "Pass",
                     "ResultPath": "$.ResourceProperties.state",
@@ -3002,11 +3002,6 @@ Resources:
                     "InputPath": "$.ResourceProperties",
                     "ResultPath": null,
                     "Resource": "${UpdateComputeEnvironment.Arn}",
-                    "Next": "WaitWhileDisabling"
-                  },
-                  "WaitWhileDisabling" : {
-                    "Type": "Wait",
-                    "Seconds": 15,
                     "Next": "GetStatusWhenDisabling"
                   },
                   "GetStatusWhenDisabling": {
@@ -3030,16 +3025,16 @@ Resources:
                     }],
                     "Default": "WaitWhileDisabling"
                   },
+                  "WaitWhileDisabling" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenDisabling"
+                  },
                   "DeleteComputeEnvironment": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.computeEnvironmentName",
                     "ResultPath": null,
                     "Resource": "${DeleteComputeEnvironment.Arn}",
-                    "Next": "WaitWhileDeleting"
-                  },
-                  "WaitWhileDeleting" : {
-                    "Type": "Wait",
-                    "Seconds": 15,
                     "Next": "GetStatusWhenDeleting"
                   },
                   "GetStatusWhenDeleting": {
@@ -3057,6 +3052,11 @@ Resources:
                       "Next": "CheckCreateAfterDelete"
                     }],
                     "Default": "WaitWhileDeleting"
+                  },
+                  "WaitWhileDeleting" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenDeleting"
                   },
                   "CheckCreateAfterDelete": {
                     "Type": "Choice",
