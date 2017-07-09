@@ -3045,15 +3045,15 @@ Resources:
                   "GetStatusWhenDeleting": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.computeEnvironmentName",
-                    "ResultPath": "$.ResourceProperties",
+                    "ResultPath": "$.DeletedResourceProperties",
                     "Resource": "${DescribeComputeEnvironment.Arn}",
                     "Next": "CheckIfDeleted"
                   },
                   "CheckIfDeleted": {
                     "Type": "Choice",
                     "Choices": [{
-                      "Variable": "$.ResourceProperties.status",
-                      "StringEquals": "DELETED",
+                      "Variable": "$.DeletedResourceProperties",
+                      "StringEquals": null,
                       "Next": "CheckCreateAfterDelete"
                     }],
                     "Default": "WaitWhileDeleting"
