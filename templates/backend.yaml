@@ -2847,6 +2847,10 @@ Resources:
             Action: batch:UpdateComputeEnvironment
             Resource:
               - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/updatecomputeenvironment
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource:
+              - !GetAtt BatchServiceRole.Arn
 
   CheckUpdateComputeEnvironment:
     Type: AWS::Serverless::Function
