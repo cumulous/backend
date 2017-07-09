@@ -2934,7 +2934,7 @@ Resources:
                   "GetStatusWhenCreating": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.computeEnvironmentName",
-                    "ResultPath": "$.ResourceProperties",
+                    "ResultPath": "$.DescribedResourceProperties",
                     "Resource": "${DescribeComputeEnvironment.Arn}",
                     "Next": "CheckIfCreated"
                   },
@@ -2942,10 +2942,10 @@ Resources:
                     "Type": "Choice",
                     "Choices": [{
                       "And": [{
-                        "Variable": "$.ResourceProperties.state",
+                        "Variable": "$.DescribedResourceProperties.state",
                         "StringEquals": "ENABLED"
                       }, {
-                        "Variable": "$.ResourceProperties.status",
+                        "Variable": "$.DescribedResourceProperties.status",
                         "StringEquals": "VALID"
                       }],
                       "Next": "Success"
@@ -2977,14 +2977,14 @@ Resources:
                   "GetStatusWhenUpdating": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.computeEnvironmentName",
-                    "ResultPath": "$.ResourceProperties",
+                    "ResultPath": "$.DescribedResourceProperties",
                     "Resource": "${DescribeComputeEnvironment.Arn}",
                     "Next": "CheckIfUpdated"
                   },
                   "CheckIfUpdated": {
                     "Type": "Choice",
                     "Choices": [{
-                      "Variable": "$.ResourceProperties.status",
+                      "Variable": "$.DescribedResourceProperties.status",
                       "StringEquals": "VALID",
                       "Next": "Success"
                     }],
@@ -3011,7 +3011,7 @@ Resources:
                   "GetStatusWhenDisabling": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.computeEnvironmentName",
-                    "ResultPath": "$.ResourceProperties",
+                    "ResultPath": "$.DescribedResourceProperties",
                     "Resource": "${DescribeComputeEnvironment.Arn}",
                     "Next": "CheckIfDisabled"
                   },
@@ -3019,10 +3019,10 @@ Resources:
                     "Type": "Choice",
                     "Choices": [{
                       "And": [{
-                        "Variable": "$.ResourceProperties.state",
+                        "Variable": "$.DescribedResourceProperties.state",
                         "StringEquals": "DISABLED"
                       }, {
-                        "Variable": "$.ResourceProperties.status",
+                        "Variable": "$.DescribedResourceProperties.status",
                         "StringEquals": "VALID"
                       }],
                       "Next": "DeleteComputeEnvironment"
