@@ -3142,7 +3142,7 @@ Resources:
           - Effect: Allow
             Action: batch:DescribeJobQueues
             Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/updatejobqueue
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describejobqueues
 
   UpdateJobQueue:
     Type: AWS::Serverless::Function
@@ -3157,7 +3157,7 @@ Resources:
           - Effect: Allow
             Action: batch:UpdateJobQueue
             Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:job-queue/${AWS::StackName}-*
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/updatejobqueue
 
   DeleteJobQueue:
     Type: AWS::Serverless::Function
@@ -3172,7 +3172,7 @@ Resources:
           - Effect: Allow
             Action: batch:DeleteJobQueue
             Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:job-queue/${AWS::StackName}-*
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/deletejobqueue
 
   SetupJobQueueStateMachine:
     Type: AWS::StepFunctions::StateMachine
