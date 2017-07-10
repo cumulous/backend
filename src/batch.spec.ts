@@ -21,6 +21,8 @@ const fakeInstanceRole = 'fake-instance-role';
 const fakeBidPercentage = 30;
 const fakeSpotFleetRole = 'fake-spot-fleet-role';
 const fakeServiceRole = 'fake-service-role';
+const fakeComputeEnvironmentArn =
+  'arn:aws:batch:us-east-2:012345678910:compute-environment/' + fakeComputeEnvironment;
 
 const fakeInstanceTypes = () => ['c4.large', 'm4.large'];
 const fakeSubnets = () => ['subnet-1234', 'subnet-abcd'];
@@ -76,7 +78,9 @@ describe('batch.createComputeEnvironment()', () => {
 
   beforeEach(() => {
     spyOnCreateComputeEnvironment = spyOn(batch, 'createComputeEnvironment')
-      .and.returnValue(fakeResolve());
+      .and.returnValue(fakeResolve({
+        computeEnvironmentArn: fakeComputeEnvironmentArn,
+      }));
   });
 
   it('calls batch.createComputeEnvironment() once with correct parameters', (done: Callback) => {
@@ -87,8 +91,12 @@ describe('batch.createComputeEnvironment()', () => {
     });
   });
 
-  it('calls callback without an error on successful request', (done: Callback) => {
-    testError(createComputeEnvironment, fakeRequest(), done, false);
+  it('calls callback with correct parameters on successful request', (done: Callback) => {
+    createComputeEnvironment(fakeRequest(), null, (err?: Error, data?: any) => {
+      expect(err).toBeFalsy();
+      expect(data).toEqual(fakeComputeEnvironmentArn);
+      done();
+    });
   });
 
   it('calls callback with an error if batch.createComputeEnvironment() produces an error',

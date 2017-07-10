@@ -2927,7 +2927,7 @@ Resources:
                   "CreateComputeEnvironment": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties",
-                    "ResultPath": null,
+                    "ResultPath": "$.Data.Arn",
                     "Resource": "${CreateComputeEnvironment.Arn}",
                     "Next": "GetStatusWhenCreating"
                   },
