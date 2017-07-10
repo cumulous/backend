@@ -84,7 +84,7 @@ export const updateComputeEnvironment = (
       },
       serviceRole: request.serviceRole,
     }).promise())
-    .then(() => callback())
+    .then(data => callback(null, data.computeEnvironmentArn))
     .catch(callback);
 };
 

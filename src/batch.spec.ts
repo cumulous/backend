@@ -212,7 +212,9 @@ describe('batch.updateComputeEnvironment()', () => {
 
   beforeEach(() => {
     spyOnUpdateComputeEnvironment = spyOn(batch, 'updateComputeEnvironment')
-      .and.returnValue(fakeResolve());
+      .and.returnValue(fakeResolve({
+        computeEnvironmentArn: fakeComputeEnvironmentArn,
+      }));
   });
 
   it('calls batch.updateComputeEnvironment() once with correct parameters', (done: Callback) => {
@@ -227,8 +229,12 @@ describe('batch.updateComputeEnvironment()', () => {
     });
   });
 
-  it('calls callback without an error on successful request', (done: Callback) => {
-    testError(updateComputeEnvironment, fakeRequest(), done, false);
+  it('calls callback without with correct parameters on successful request', (done: Callback) => {
+    updateComputeEnvironment(fakeRequest(), null, (err?: Error, data?: any) => {
+      expect(err).toBeFalsy();
+      expect(data).toEqual(fakeComputeEnvironmentArn);
+      done();
+    });
   });
 
   it('calls callback with an error if batch.updateComputeEnvironment() produces an error',

@@ -2971,7 +2971,7 @@ Resources:
                   "UpdateComputeEnvironment": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties",
-                    "ResultPath": null,
+                    "ResultPath": "$.Data.Arn",
                     "Resource": "${UpdateComputeEnvironment.Arn}",
                     "Next": "GetStatusWhenUpdating"
                   },
