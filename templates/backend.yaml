@@ -3125,7 +3125,7 @@ Resources:
           - Effect: Allow
             Action: batch:CreateJobQueue
             Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:job-queue/${AWS::StackName}-*
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/createjobqueue
 
   DescribeJobQueue:
     Type: AWS::Serverless::Function
