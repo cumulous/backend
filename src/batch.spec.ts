@@ -298,11 +298,23 @@ describe('batch.describeComputeEnvironment()', () => {
     });
   });
 
-  it('calls callback with correct parameters on successful request', (done: Callback) => {
-    describeComputeEnvironment(fakeComputeEnvironment, null, (err?: Error, data?: any) => {
-      expect(err).toBeFalsy();
-      expect(data).toEqual(fakeComputeEnvironmentProperties());
-      done();
+  describe('calls callback with correct parameters when batch.describeComputeEnvironments() returns', () => {
+    let response: any;
+    afterEach((done: Callback) => {
+      describeComputeEnvironment(fakeComputeEnvironment, null, (err?: Error, data?: any) => {
+        expect(err).toBeFalsy();
+        expect(data).toEqual(response);
+        done();
+      });
+    });
+    it('full response', () => {
+      response = fakeComputeEnvironmentProperties();
+    });
+    it('"null" response', () => {
+      spyOnDescribeComputeEnvironments.and.returnValue(fakeResolve({
+        computeEnvironments: [ null ],
+      }));
+      response = {};
     });
   });
 
@@ -376,7 +388,7 @@ describe('batch.describeJobQueue()', () => {
       }));
   });
 
-  it('calls batch.describeComputeEnvironments() once with correct parameters', (done: Callback) => {
+  it('calls batch.describeJobQueues() once with correct parameters', (done: Callback) => {
     describeJobQueue(fakeJobQueue, null, () => {
       expect(spyOnDescribeJobQueues).toHaveBeenCalledWith({
         jobQueues: [ fakeJobQueue ],
@@ -386,11 +398,23 @@ describe('batch.describeJobQueue()', () => {
     });
   });
 
-  it('calls callback with correct parameters on successful request', (done: Callback) => {
-    describeJobQueue(fakeJobQueue, null, (err?: Error, data?: any) => {
-      expect(err).toBeFalsy();
-      expect(data).toEqual(fakeJobQueueProperties());
-      done();
+  describe('calls callback with correct parameters when batch.describeJobQueues() returns', () => {
+    let response: any;
+    afterEach((done: Callback) => {
+      describeJobQueue(fakeJobQueue, null, (err?: Error, data?: any) => {
+        expect(err).toBeFalsy();
+        expect(data).toEqual(response);
+        done();
+      });
+    });
+    it('full response', () => {
+      response = fakeJobQueueProperties();
+    });
+    it('"null" response', () => {
+      spyOnDescribeJobQueues.and.returnValue(fakeResolve({
+        jobQueues: [ null ],
+      }));
+      response = {};
     });
   });
 
