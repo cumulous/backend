@@ -3140,7 +3140,7 @@ Resources:
           - Effect: Allow
             Action: batch:DescribeJobQueues
             Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:job-queue/${AWS::StackName}-*
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/updatejobqueue
 
   UpdateJobQueue:
     Type: AWS::Serverless::Function
