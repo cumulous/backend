@@ -3103,16 +3103,16 @@ Resources:
           }
         }
 
-  JobQueue:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupJobQueueStateMachine
-      jobQueueName: !Sub ${AWS::StackName}
-      priority: 10
-      computeEnvironmentOrder:
-        - order: 1
-          computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
+  # JobQueue:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   Properties:
+  #     ServiceToken: !GetAtt SetupCustomResource.Arn
+  #     StateMachine: !Ref SetupJobQueueStateMachine
+  #     jobQueueName: !Sub ${AWS::StackName}
+  #     priority: 10
+  #     computeEnvironmentOrder:
+  #       - order: 1
+  #         computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
 
   CreateJobQueue:
     Type: AWS::Serverless::Function
