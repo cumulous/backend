@@ -1,10 +1,12 @@
-import { CreateComputeEnvironmentRequest as ComputeEnvironmentProperties,
-         UpdateComputeEnvironmentRequest, DeleteComputeEnvironmentRequest } from 'aws-sdk/clients/batch';
+import { CreateComputeEnvironmentRequest, CreateJobQueueRequest } from 'aws-sdk/clients/batch';
 import * as stringify from 'json-stable-stringify';
 import * as jsonpath from 'jsonpath';
 
 import { batch, CloudFormationRequest } from './aws';
 import { Callback } from './types';
+
+export type ComputeEnvironmentProperties = CreateComputeEnvironmentRequest;
+export type JobQueueProperties = CreateJobQueueRequest;
 
 export const createComputeEnvironment = (
     request: ComputeEnvironmentProperties, context: any, callback: Callback) => {
@@ -99,5 +101,45 @@ export const describeComputeEnvironment = (name: string, context: any, callback:
     computeEnvironments: [ name ],
   }).promise()
     .then(data => callback(null, data.computeEnvironments[0]))
+    .catch(callback);
+};
+
+export const createJobQueue = (request: JobQueueProperties, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => batch.createJobQueue({
+      jobQueueName: request.jobQueueName,
+      priority: request.priority,
+      state: 'ENABLED',
+      computeEnvironmentOrder: [],
+    }).promise())
+    .then(() => callback())
+    .catch(callback);
+};
+
+export const describeJobQueue = (name: string, context: any, callback: Callback) => {
+  batch.describeJobQueues({
+    jobQueues: [ name ],
+  }).promise()
+    .then(data => callback(null, data.jobQueues[0]))
+    .catch(callback);
+};
+
+export const updateJobQueue = (request: JobQueueProperties, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => batch.updateJobQueue({
+      jobQueue: request.jobQueueName,
+      priority: request.priority,
+      state: request.state,
+      computeEnvironmentOrder: request.computeEnvironmentOrder,
+    }).promise())
+    .then(() => callback())
+    .catch(callback);
+};
+
+export const deleteJobQueue = (name: string, context: any, callback: Callback) => {
+  batch.deleteJobQueue({
+    jobQueue: name,
+  }).promise()
+    .then(() => callback())
     .catch(callback);
 };

@@ -3103,6 +3103,261 @@ Resources:
           }
         }
 
+  CreateJobQueue:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CreateJobQueue
+      CodeUri: ../app
+      Handler: batch.createJobQueue
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:CreateJobQueue
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:job-queue/${AWS::StackName}-*
+
+  DescribeJobQueue:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DescribeJobQueue
+      CodeUri: ../app
+      Handler: batch.describeJobQueue
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:DescribeJobQueues
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:job-queue/${AWS::StackName}-*
+
+  UpdateJobQueue:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-UpdateJobQueue
+      CodeUri: ../app
+      Handler: batch.updateJobQueue
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:UpdateJobQueue
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:job-queue/${AWS::StackName}-*
+
+  DeleteJobQueue:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DeleteJobQueue
+      CodeUri: ../app
+      Handler: batch.deleteJobQueue
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:DeleteJobQueue
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:job-queue/${AWS::StackName}-*
+
+  SetupJobQueueStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupJobQueue",
+          "States": {
+            "SetupJobQueue": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "CheckEventType",
+                "States": {
+                  "CheckEventType": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Create",
+                      "Next": "CreateJobQueue"
+                    }, {
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "PassUpdatedResourceProperties"
+                    }, {
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Delete",
+                      "Next": "PassDisableBeforeDelete"
+                    }]
+                  },
+                  "CreateJobQueue": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": null,
+                    "Resource": "${CreateJobQueue.Arn}",
+                    "Next": "GetStatusWhenCreating"
+                  },
+                  "GetStatusWhenCreating": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.jobQueueName",
+                    "ResultPath": "$.ResourceProperties",
+                    "Resource": "${DescribeJobQueue.Arn}",
+                    "Next": "CheckIfCreated"
+                  },
+                  "CheckIfCreated": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "And": [{
+                        "Variable": "$.ResourceProperties.state",
+                        "StringEquals": "ENABLED"
+                      }, {
+                        "Variable": "$.ResourceProperties.status",
+                        "StringEquals": "VALID"
+                      }],
+                      "Next": "PassResourceId"
+                    }],
+                    "Default": "WaitWhileCreating"
+                  },
+                  "WaitWhileCreating" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenCreating"
+                  },
+                  "PassResourceId": {
+                    "Type": "Pass",
+                    "InputPath": "$.ResourceProperties.jobQueueName",
+                    "ResultPath": "$.PhysicalResourceId",
+                    "Next": "Success"
+                  },
+                  "PassUpdatedResourceProperties": {
+                    "Type": "Pass",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.UpdatedResourceProperties",
+                    "Next": "PassOldResourceIdBeforeUpdate"
+                  },
+                  "PassOldResourceIdBeforeUpdate": {
+                    "Type": "Pass",
+                    "InputPath": "$.OldResourceProperties.jobQueueName",
+                    "ResultPath": "$.UpdatedResourceProperties.jobQueueName",
+                    "Next": "UpdateJobQueue"
+                  },
+                  "UpdateJobQueue": {
+                    "Type": "Task",
+                    "InputPath": "$.UpdatedResourceProperties",
+                    "ResultPath": null,
+                    "Resource": "${UpdateJobQueue.Arn}",
+                    "Next": "GetStatusWhenUpdating"
+                  },
+                  "GetStatusWhenUpdating": {
+                    "Type": "Task",
+                    "InputPath": "$.UpdatedResourceProperties.jobQueueName",
+                    "ResultPath": "$.UpdatedResourceProperties",
+                    "Resource": "${DescribeJobQueue.Arn}",
+                    "Next": "CheckIfUpdated"
+                  },
+                  "CheckIfUpdated": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.UpdatedResourceProperties.status",
+                      "StringEquals": "VALID",
+                      "Next": "PassResourceId"
+                    }],
+                    "Default": "WaitWhileUpdating"
+                  },
+                  "WaitWhileUpdating" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenUpdating"
+                  },
+                  "PassDisableBeforeDelete": {
+                    "Type": "Pass",
+                    "ResultPath": "$.ResourceProperties.state",
+                    "Result": "DISABLED",
+                    "Next": "DisableBeforeDelete"
+                  },
+                  "DisableBeforeDelete": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": null,
+                    "Resource": "${UpdateJobQueue.Arn}",
+                    "Next": "GetStatusWhenDisabling"
+                  },
+                  "GetStatusWhenDisabling": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.jobQueueName",
+                    "ResultPath": "$.ResourceProperties",
+                    "Resource": "${DescribeJobQueue.Arn}",
+                    "Next": "CheckIfDisabled"
+                  },
+                  "CheckIfDisabled": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "And": [{
+                        "Variable": "$.ResourceProperties.state",
+                        "StringEquals": "DISABLED"
+                      }, {
+                        "Variable": "$.ResourceProperties.status",
+                        "StringEquals": "VALID"
+                      }],
+                      "Next": "DeleteJobQueue"
+                    }],
+                    "Default": "WaitWhileDisabling"
+                  },
+                  "WaitWhileDisabling" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenDisabling"
+                  },
+                  "DeleteJobQueue": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.jobQueueName",
+                    "ResultPath": null,
+                    "Resource": "${DeleteJobQueue.Arn}",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
+
 Outputs:
   WebSigningKey:
     Condition: SetupWebSigningKeyPair

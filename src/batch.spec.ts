@@ -1,9 +1,7 @@
-import { CreateComputeEnvironmentRequest, DeleteComputeEnvironmentRequest,
-         UpdateComputeEnvironmentRequest } from 'aws-sdk/clients/batch';
-
 import { batch, CloudFormationRequestType } from './aws';
-import { checkUpdateEnvironment, createComputeEnvironment, deleteComputeEnvironment,
-         describeComputeEnvironment, updateComputeEnvironment } from './batch';
+import { checkUpdateEnvironment, ComputeEnvironmentProperties, createComputeEnvironment,
+         createJobQueue, deleteComputeEnvironment, deleteJobQueue, describeComputeEnvironment,
+         describeJobQueue, JobQueueProperties, updateComputeEnvironment, updateJobQueue } from './batch';
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
 import { Callback } from './types';
 
@@ -29,7 +27,7 @@ const fakeSubnets = () => ['subnet-1234', 'subnet-abcd'];
 const fakeSecurityGroups = () => ['sg-1234', 'sg-abcd'];
 const fakeInstanceTags = () => ({ fake: 'tag' });
 
-const fakeComputeEnvironmentProperties = (): CreateComputeEnvironmentRequest => ({
+const fakeComputeEnvironmentProperties = (): ComputeEnvironmentProperties => ({
   type: 'MANAGED',
   computeEnvironmentName: fakeComputeEnvironment,
   computeResources: {
@@ -196,7 +194,7 @@ describe('batch.updateComputeEnvironment()', () => {
 
   const fakeRequest = (): any => {
     const properties = fakeUpdatedProperties();
-    properties.computeEnvironmentName = fakeComputeEnvironment,
+    properties.computeEnvironmentName = fakeComputeEnvironment;
     properties.extra = 'property';
     properties.computeResources.extra = 'property';
     return properties;
@@ -295,5 +293,162 @@ describe('batch.describeComputeEnvironment()', () => {
       (done: Callback) => {
     spyOnDescribeComputeEnvironments.and.returnValue(fakeReject('batch.describeComputeEnvironments()'));
     testError(describeComputeEnvironment, fakeComputeEnvironment, done);
+  });
+});
+
+const fakeJobQueue = 'fake-job-queue';
+
+const fakeJobQueueProperties = (): JobQueueProperties => ({
+  jobQueueName: fakeJobQueue,
+  priority: 10,
+  state: 'ENABLED',
+  computeEnvironmentOrder: [],
+});
+
+describe('batch.createJobQueue()', () => {
+
+  const fakeRequest = (): any => {
+    const properties: any = fakeJobQueueProperties();
+    properties.extra = 'property';
+    return properties;
+  };
+
+  let spyOnCreateJobQueue: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnCreateJobQueue = spyOn(batch, 'createJobQueue')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls batch.createJobQueue() once with correct parameters', (done: Callback) => {
+    createJobQueue(fakeRequest(), null, () => {
+      expect(spyOnCreateJobQueue).toHaveBeenCalledWith(fakeJobQueueProperties());
+      expect(spyOnCreateJobQueue).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback without an error on successful request', (done: Callback) => {
+    testError(createJobQueue, fakeRequest(), done, false);
+  });
+
+  it('calls callback with an error if batch.createJobQueue() produces an error', (done: Callback) => {
+    spyOnCreateJobQueue.and.returnValue(fakeReject('batch.createJobQueue()'));
+    testError(createJobQueue, fakeRequest(), done);
+  });
+});
+
+describe('batch.describeJobQueue()', () => {
+
+  let spyOnDescribeJobQueues: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnDescribeJobQueues = spyOn(batch, 'describeJobQueues')
+      .and.returnValue(fakeResolve({
+        jobQueues: [ fakeJobQueueProperties() ],
+      }));
+  });
+
+  it('calls batch.describeComputeEnvironments() once with correct parameters', (done: Callback) => {
+    describeJobQueue(fakeJobQueue, null, () => {
+      expect(spyOnDescribeJobQueues).toHaveBeenCalledWith({
+        jobQueues: [ fakeJobQueue ],
+      });
+      expect(spyOnDescribeJobQueues).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback with correct parameters on successful request', (done: Callback) => {
+    describeJobQueue(fakeJobQueue, null, (err?: Error, data?: any) => {
+      expect(err).toBeFalsy();
+      expect(data).toEqual(fakeJobQueueProperties());
+      done();
+    });
+  });
+
+  it('calls callback with an error if batch.describeJobQueues() produces an error',
+      (done: Callback) => {
+    spyOnDescribeJobQueues.and.returnValue(fakeReject('batch.describeJobQueues()'));
+    testError(describeJobQueue, fakeJobQueue, done);
+  });
+});
+
+describe('batch.updateJobQueue()', () => {
+
+  const fakeUpdatedProperties = (): any => ({
+    state: 'ENABLED',
+    computeEnvironmentOrder: [{
+      order: 1,
+      computeEnvironment: fakeComputeEnvironment,
+    }, {
+      order: 2,
+      computeEnvironment: fakeComputeEnvironment + '-2',
+    }],
+    priority: 2,
+  });
+
+  const fakeRequest = (): any => {
+    const properties: any = fakeUpdatedProperties();
+    properties.jobQueueName = fakeJobQueue;
+    properties.extra = 'property';
+    return properties;
+  };
+
+  let spyOnUpdateJobQueue: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnUpdateJobQueue = spyOn(batch, 'updateJobQueue')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls batch.updateJobQueue() once with correct parameters', (done: Callback) => {
+    updateJobQueue(fakeRequest(), null, () => {
+      expect(spyOnUpdateJobQueue).toHaveBeenCalledWith(
+        Object.assign(fakeUpdatedProperties(), {
+          jobQueue: fakeJobQueue,
+        }),
+      );
+      expect(spyOnUpdateJobQueue).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback without an error on successful request', (done: Callback) => {
+    testError(updateJobQueue, fakeRequest(), done, false);
+  });
+
+  it('calls callback with an error if batch.updateJobQueue() produces an error', (done: Callback) => {
+    spyOnUpdateJobQueue.and.returnValue(fakeReject('batch.updateJobQueue()'));
+    testError(updateJobQueue, fakeRequest(), done);
+  });
+});
+
+describe('batch.deleteJobQueue()', () => {
+
+  let spyOnDeleteJobQueue: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnDeleteJobQueue = spyOn(batch, 'deleteJobQueue')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls batch.deleteJobQueue() once with correct parameters', (done: Callback) => {
+    deleteJobQueue(fakeJobQueue, null, () => {
+      expect(spyOnDeleteJobQueue).toHaveBeenCalledWith({
+        jobQueue: fakeJobQueue,
+      });
+      expect(spyOnDeleteJobQueue).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback without an error on successful request', (done: Callback) => {
+    testError(deleteJobQueue, fakeJobQueue, done, false);
+  });
+
+  it('calls callback with an error if batch.deleteJobQueue() produces an error', (done: Callback) => {
+    spyOnDeleteJobQueue.and.returnValue(fakeReject('batch.deleteJobQueue()'));
+    testError(deleteJobQueue, fakeJobQueue, done);
   });
 });
