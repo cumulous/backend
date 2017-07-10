@@ -3327,7 +3327,28 @@ Resources:
                     "InputPath": "$.ResourceProperties.jobQueueName",
                     "ResultPath": null,
                     "Resource": "${DeleteJobQueue.Arn}",
-                    "Next": "Success"
+                    "Next": "GetStatusWhenDeleting"
+                  },
+                  "GetStatusWhenDeleting": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.jobQueueName",
+                    "ResultPath": "$.ResourceProperties",
+                    "Resource": "${DescribeJobQueue.Arn}",
+                    "Next": "CheckIfDeleted"
+                  },
+                  "CheckIfDeleted": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.ResourceProperties.status",
+                      "StringEquals": "DELETING",
+                      "Next": "WaitWhileDeleting"
+                    }],
+                    "Default": "Success"
+                  },
+                  "WaitWhileDeleting" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenDeleting"
                   },
                   "Success": {
                     "Type": "Pass",
