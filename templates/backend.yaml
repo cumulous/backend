@@ -3052,7 +3052,28 @@ Resources:
                     "InputPath": "$.DeletedResourceProperties.computeEnvironmentName",
                     "ResultPath": null,
                     "Resource": "${DeleteComputeEnvironment.Arn}",
-                    "Next": "CheckCreateAfterDelete"
+                    "Next": "GetStatusWhenDeleting"
+                  },
+                  "GetStatusWhenDeleting": {
+                    "Type": "Task",
+                    "InputPath": "$.DeletedResourceProperties.computeEnvironmentName",
+                    "ResultPath": "$.DeletedResourceProperties",
+                    "Resource": "${DescribeComputeEnvironment.Arn}",
+                    "Next": "CheckIfDeleted"
+                  },
+                  "CheckIfDeleted": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.DeletedResourceProperties.status",
+                      "StringEquals": "DELETING",
+                      "Next": "WaitWhileDeleting"
+                    }],
+                    "Default": "CheckCreateAfterDelete"
+                  },
+                  "WaitWhileDeleting" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenDeleting"
                   },
                   "CheckCreateAfterDelete": {
                     "Type": "Choice",
