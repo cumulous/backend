@@ -109,8 +109,8 @@ export const createJobQueue = (request: JobQueueProperties, context: any, callba
     .then(() => batch.createJobQueue({
       jobQueueName: request.jobQueueName,
       priority: request.priority,
+      computeEnvironmentOrder: request.computeEnvironmentOrder,
       state: 'ENABLED',
-      computeEnvironmentOrder: [],
     }).promise())
     .then(() => callback())
     .catch(callback);

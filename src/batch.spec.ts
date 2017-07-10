@@ -306,17 +306,23 @@ describe('batch.describeComputeEnvironment()', () => {
 
 const fakeJobQueue = 'fake-job-queue';
 
-const fakeJobQueueProperties = (): JobQueueProperties => ({
-  jobQueueName: fakeJobQueue,
+const fakeJobQueueProperties = (): any => ({
+  computeEnvironmentOrder: [{
+    order: 1,
+    computeEnvironment: fakeComputeEnvironment,
+  }, {
+    order: 2,
+    computeEnvironment: fakeComputeEnvironment + '-2',
+  }],
   priority: 10,
   state: 'ENABLED',
-  computeEnvironmentOrder: [],
 });
 
 describe('batch.createJobQueue()', () => {
 
   const fakeRequest = (): any => {
     const properties: any = fakeJobQueueProperties();
+    properties.jobQueueName = fakeJobQueue;
     properties.extra = 'property';
     return properties;
   };
@@ -330,7 +336,11 @@ describe('batch.createJobQueue()', () => {
 
   it('calls batch.createJobQueue() once with correct parameters', (done: Callback) => {
     createJobQueue(fakeRequest(), null, () => {
-      expect(spyOnCreateJobQueue).toHaveBeenCalledWith(fakeJobQueueProperties());
+      expect(spyOnCreateJobQueue).toHaveBeenCalledWith(
+        Object.assign(fakeJobQueueProperties(), {
+          jobQueueName: fakeJobQueue,
+        })
+      );
       expect(spyOnCreateJobQueue).toHaveBeenCalledTimes(1);
       done();
     });
@@ -384,20 +394,8 @@ describe('batch.describeJobQueue()', () => {
 
 describe('batch.updateJobQueue()', () => {
 
-  const fakeUpdatedProperties = (): any => ({
-    state: 'ENABLED',
-    computeEnvironmentOrder: [{
-      order: 1,
-      computeEnvironment: fakeComputeEnvironment,
-    }, {
-      order: 2,
-      computeEnvironment: fakeComputeEnvironment + '-2',
-    }],
-    priority: 2,
-  });
-
   const fakeRequest = (): any => {
-    const properties: any = fakeUpdatedProperties();
+    const properties: any = fakeJobQueueProperties();
     properties.jobQueueName = fakeJobQueue;
     properties.extra = 'property';
     return properties;
@@ -413,7 +411,7 @@ describe('batch.updateJobQueue()', () => {
   it('calls batch.updateJobQueue() once with correct parameters', (done: Callback) => {
     updateJobQueue(fakeRequest(), null, () => {
       expect(spyOnUpdateJobQueue).toHaveBeenCalledWith(
-        Object.assign(fakeUpdatedProperties(), {
+        Object.assign(fakeJobQueueProperties(), {
           jobQueue: fakeJobQueue,
         }),
       );

@@ -3110,7 +3110,9 @@ Resources:
       StateMachine: !Ref SetupJobQueueStateMachine
       jobQueueName: !Sub ${AWS::StackName}
       priority: 10
-      state: ENABLED
+      computeEnvironmentOrder:
+        - order: 1
+          computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
 
   CreateJobQueue:
     Type: AWS::Serverless::Function
