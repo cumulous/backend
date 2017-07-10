@@ -3103,6 +3103,15 @@ Resources:
           }
         }
 
+  JobQueue:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupJobQueueStateMachine
+      jobQueueName: !Sub ${AWS::StackName}
+      priority: 10
+      state: ENABLED
+
   CreateJobQueue:
     Type: AWS::Serverless::Function
     Properties:
