@@ -314,7 +314,9 @@ describe('batch.describeComputeEnvironment()', () => {
       spyOnDescribeComputeEnvironments.and.returnValue(fakeResolve({
         computeEnvironments: [ null ],
       }));
-      response = {};
+      response = {
+        status: 'DELETED',
+      };
     });
   });
 
@@ -414,7 +416,9 @@ describe('batch.describeJobQueue()', () => {
       spyOnDescribeJobQueues.and.returnValue(fakeResolve({
         jobQueues: [ null ],
       }));
-      response = {};
+      response = {
+        status: 'DELETED',
+      };
     });
   });
 

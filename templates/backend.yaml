@@ -3065,10 +3065,10 @@ Resources:
                     "Type": "Choice",
                     "Choices": [{
                       "Variable": "$.DeletedResourceProperties.status",
-                      "StringEquals": "DELETING",
-                      "Next": "WaitWhileDeleting"
+                      "StringEquals": "DELETED",
+                      "Next": "CheckCreateAfterDelete"
                     }],
-                    "Default": "CheckCreateAfterDelete"
+                    "Default": "WaitWhileDeleting"
                   },
                   "WaitWhileDeleting" : {
                     "Type": "Wait",
@@ -3361,10 +3361,10 @@ Resources:
                     "Type": "Choice",
                     "Choices": [{
                       "Variable": "$.ResourceProperties.status",
-                      "StringEquals": "DELETING",
-                      "Next": "WaitWhileDeleting"
+                      "StringEquals": "DELETED",
+                      "Next": "Success"
                     }],
-                    "Default": "Success"
+                    "Default": "WaitWhileDeleting"
                   },
                   "WaitWhileDeleting" : {
                     "Type": "Wait",
