@@ -48,7 +48,6 @@ const fakeComputeEnvironmentProperties = (): ComputeEnvironmentProperties => ({
     spotIamFleetRole: fakeSpotFleetRole,
   },
   serviceRole: fakeServiceRole,
-  state: 'ENABLED',
 });
 
 const fakeCloudFormationRequest = (
@@ -85,7 +84,11 @@ describe('batch.createComputeEnvironment()', () => {
 
   it('calls batch.createComputeEnvironment() once with correct parameters', (done: Callback) => {
     createComputeEnvironment(fakeRequest(), null, () => {
-      expect(spyOnCreateComputeEnvironment).toHaveBeenCalledWith(fakeComputeEnvironmentProperties());
+      expect(spyOnCreateComputeEnvironment).toHaveBeenCalledWith(
+        Object.assign(fakeComputeEnvironmentProperties(), {
+          state: 'ENABLED',
+        })
+      );
       expect(spyOnCreateComputeEnvironment).toHaveBeenCalledTimes(1);
       done();
     });
@@ -321,7 +324,6 @@ const fakeJobQueueProperties = (): any => ({
     computeEnvironment: fakeComputeEnvironment + '-2',
   }],
   priority: 10,
-  state: 'ENABLED',
 });
 
 describe('batch.createJobQueue()', () => {
@@ -345,6 +347,7 @@ describe('batch.createJobQueue()', () => {
       expect(spyOnCreateJobQueue).toHaveBeenCalledWith(
         Object.assign(fakeJobQueueProperties(), {
           jobQueueName: fakeJobQueue,
+          state: 'ENABLED',
         })
       );
       expect(spyOnCreateJobQueue).toHaveBeenCalledTimes(1);
@@ -399,10 +402,12 @@ describe('batch.describeJobQueue()', () => {
 });
 
 describe('batch.updateJobQueue()', () => {
+  const fakeJobQueueState = 'DISABLED';
 
   const fakeRequest = (): any => {
     const properties: any = fakeJobQueueProperties();
     properties.jobQueueName = fakeJobQueue;
+    properties.state = fakeJobQueueState;
     properties.extra = 'property';
     return properties;
   };
@@ -419,6 +424,7 @@ describe('batch.updateJobQueue()', () => {
       expect(spyOnUpdateJobQueue).toHaveBeenCalledWith(
         Object.assign(fakeJobQueueProperties(), {
           jobQueue: fakeJobQueue,
+          state: fakeJobQueueState,
         }),
       );
       expect(spyOnUpdateJobQueue).toHaveBeenCalledTimes(1);

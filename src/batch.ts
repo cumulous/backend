@@ -31,8 +31,8 @@ export const createComputeEnvironment = (
         bidPercentage: computeResources.bidPercentage,
         spotIamFleetRole: computeResources.spotIamFleetRole,
       },
-      state: request.state,
       serviceRole: request.serviceRole,
+      state: 'ENABLED',
     }).promise())
     .then(data => callback(null, data.computeEnvironmentArn))
     .catch(callback);
