@@ -3109,7 +3109,7 @@ Resources:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupJobQueueStateMachine
       jobQueueName: !Sub ${AWS::StackName}
-      priority: 10
+      priority: 1
       computeEnvironmentOrder:
         - order: 1
           computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
