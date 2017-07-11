@@ -124,6 +124,13 @@ export const describeJobQueue = (name: string, context: any, callback: Callback)
     .catch(callback);
 };
 
+export const checkUpdateJobQueue = (request: CloudFormationRequest, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => assertEqualProperties(request, [ 'jobQueueName' ]))
+    .then(() => callback())
+    .catch(callback);
+};
+
 export const updateJobQueue = (request: JobQueueProperties, context: any, callback: Callback) => {
   Promise.resolve()
     .then(() => batch.updateJobQueue({

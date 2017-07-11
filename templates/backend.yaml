@@ -3165,6 +3165,14 @@ Resources:
             Resource:
               - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describejobqueues
 
+  CheckUpdateJobQueue:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CheckUpdateJobQueue
+      CodeUri: ../app
+      Handler: batch.checkUpdateJobQueue
+      Runtime: nodejs6.10
+
   UpdateJobQueue:
     Type: AWS::Serverless::Function
     Properties:
@@ -3218,11 +3226,11 @@ Resources:
                     }, {
                       "Variable": "$.RequestType",
                       "StringEquals": "Update",
-                      "Next": "PassUpdatedResourceProperties"
+                      "Next": "CheckReplace"
                     }, {
                       "Variable": "$.RequestType",
                       "StringEquals": "Delete",
-                      "Next": "PassDisableBeforeDelete"
+                      "Next": "PassDeletedResourceProperties"
                     }]
                   },
                   "CreateJobQueue": {
@@ -3249,7 +3257,7 @@ Resources:
                         "Variable": "$.ResourceProperties.status",
                         "StringEquals": "VALID"
                       }],
-                      "Next": "PassResourceId"
+                      "Next": "Success"
                     }],
                     "Default": "WaitWhileCreating"
                   },
@@ -3258,44 +3266,37 @@ Resources:
                     "Seconds": 15,
                     "Next": "GetStatusWhenCreating"
                   },
-                  "PassResourceId": {
-                    "Type": "Pass",
-                    "InputPath": "$.ResourceProperties.jobQueueName",
-                    "ResultPath": "$.PhysicalResourceId",
-                    "Next": "Success"
-                  },
-                  "PassUpdatedResourceProperties": {
-                    "Type": "Pass",
-                    "InputPath": "$.ResourceProperties",
-                    "ResultPath": "$.UpdatedResourceProperties",
-                    "Next": "PassOldResourceIdBeforeUpdate"
-                  },
-                  "PassOldResourceIdBeforeUpdate": {
-                    "Type": "Pass",
-                    "InputPath": "$.OldResourceProperties.jobQueueName",
-                    "ResultPath": "$.UpdatedResourceProperties.jobQueueName",
+                  "CheckReplace": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "${CheckUpdateJobQueue.Arn}",
+                    "Catch": [{
+                      "ErrorEquals": [ "RequiresReplacement" ],
+                      "ResultPath": null,
+                      "Next": "PassReplacedResourceProperties"
+                    }],
                     "Next": "UpdateJobQueue"
                   },
                   "UpdateJobQueue": {
                     "Type": "Task",
-                    "InputPath": "$.UpdatedResourceProperties",
+                    "InputPath": "$.ResourceProperties",
                     "ResultPath": null,
                     "Resource": "${UpdateJobQueue.Arn}",
                     "Next": "GetStatusWhenUpdating"
                   },
                   "GetStatusWhenUpdating": {
                     "Type": "Task",
-                    "InputPath": "$.UpdatedResourceProperties.jobQueueName",
-                    "ResultPath": "$.UpdatedResourceProperties",
+                    "InputPath": "$.ResourceProperties.jobQueueName",
+                    "ResultPath": "$.ResourceProperties",
                     "Resource": "${DescribeJobQueue.Arn}",
                     "Next": "CheckIfUpdated"
                   },
                   "CheckIfUpdated": {
                     "Type": "Choice",
                     "Choices": [{
-                      "Variable": "$.UpdatedResourceProperties.status",
+                      "Variable": "$.ResourceProperties.status",
                       "StringEquals": "VALID",
-                      "Next": "PassResourceId"
+                      "Next": "Success"
                     }],
                     "Default": "WaitWhileUpdating"
                   },
@@ -3304,23 +3305,35 @@ Resources:
                     "Seconds": 15,
                     "Next": "GetStatusWhenUpdating"
                   },
+                  "PassReplacedResourceProperties": {
+                    "Type": "Pass",
+                    "InputPath": "$.OldResourceProperties",
+                    "ResultPath": "$.DeletedResourceProperties",
+                    "Next": "PassDisableBeforeDelete"
+                  },
+                  "PassDeletedResourceProperties": {
+                    "Type": "Pass",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.DeletedResourceProperties",
+                    "Next": "PassDisableBeforeDelete"
+                  },
                   "PassDisableBeforeDelete": {
                     "Type": "Pass",
-                    "ResultPath": "$.ResourceProperties.state",
+                    "ResultPath": "$.DeletedResourceProperties.state",
                     "Result": "DISABLED",
                     "Next": "DisableBeforeDelete"
                   },
                   "DisableBeforeDelete": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties",
+                    "InputPath": "$.DeletedResourceProperties",
                     "ResultPath": null,
                     "Resource": "${UpdateJobQueue.Arn}",
                     "Next": "GetStatusWhenDisabling"
                   },
                   "GetStatusWhenDisabling": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.jobQueueName",
-                    "ResultPath": "$.ResourceProperties",
+                    "InputPath": "$.DeletedResourceProperties.jobQueueName",
+                    "ResultPath": "$.DeletedResourceProperties",
                     "Resource": "${DescribeJobQueue.Arn}",
                     "Next": "CheckIfDisabled"
                   },
@@ -3328,10 +3341,10 @@ Resources:
                     "Type": "Choice",
                     "Choices": [{
                       "And": [{
-                        "Variable": "$.ResourceProperties.state",
+                        "Variable": "$.DeletedResourceProperties.state",
                         "StringEquals": "DISABLED"
                       }, {
-                        "Variable": "$.ResourceProperties.status",
+                        "Variable": "$.DeletedResourceProperties.status",
                         "StringEquals": "VALID"
                       }],
                       "Next": "DeleteJobQueue"
@@ -3345,24 +3358,24 @@ Resources:
                   },
                   "DeleteJobQueue": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.jobQueueName",
+                    "InputPath": "$.DeletedResourceProperties.jobQueueName",
                     "ResultPath": null,
                     "Resource": "${DeleteJobQueue.Arn}",
                     "Next": "GetStatusWhenDeleting"
                   },
                   "GetStatusWhenDeleting": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties.jobQueueName",
-                    "ResultPath": "$.ResourceProperties",
+                    "InputPath": "$.DeletedResourceProperties.jobQueueName",
+                    "ResultPath": "$.DeletedResourceProperties",
                     "Resource": "${DescribeJobQueue.Arn}",
                     "Next": "CheckIfDeleted"
                   },
                   "CheckIfDeleted": {
                     "Type": "Choice",
                     "Choices": [{
-                      "Variable": "$.ResourceProperties.status",
+                      "Variable": "$.DeletedResourceProperties.status",
                       "StringEquals": "DELETED",
-                      "Next": "Success"
+                      "Next": "CheckCreateAfterDelete"
                     }],
                     "Default": "WaitWhileDeleting"
                   },
@@ -3370,6 +3383,15 @@ Resources:
                     "Type": "Wait",
                     "Seconds": 15,
                     "Next": "GetStatusWhenDeleting"
+                  },
+                  "CheckCreateAfterDelete": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "CreateJobQueue"
+                    }],
+                    "Default": "Success"
                   },
                   "Success": {
                     "Type": "Pass",

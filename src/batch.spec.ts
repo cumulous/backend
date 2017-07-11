@@ -1,7 +1,8 @@
 import { batch, CloudFormationRequestType } from './aws';
-import { checkUpdateEnvironment, ComputeEnvironmentProperties, createComputeEnvironment,
-         createJobQueue, deleteComputeEnvironment, deleteJobQueue, describeComputeEnvironment,
-         describeJobQueue, JobQueueProperties, updateComputeEnvironment, updateJobQueue } from './batch';
+import { checkUpdateEnvironment, checkUpdateJobQueue, ComputeEnvironmentProperties,
+         createComputeEnvironment, createJobQueue, deleteComputeEnvironment, deleteJobQueue,
+         describeComputeEnvironment, describeJobQueue, JobQueueProperties,
+         updateComputeEnvironment, updateJobQueue } from './batch';
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
 import { Callback } from './types';
 
@@ -426,6 +427,49 @@ describe('batch.describeJobQueue()', () => {
       (done: Callback) => {
     spyOnDescribeJobQueues.and.returnValue(fakeReject('batch.describeJobQueues()'));
     testError(describeJobQueue, fakeJobQueue, done);
+  });
+});
+
+describe('batch.checkUpdateJobQueue()', () => {
+
+  let oldProperties: any;
+  let properties: any;
+  beforeEach(() => {
+    oldProperties = fakeJobQueueProperties();
+    properties = fakeJobQueueProperties();
+    properties.state = 'ENABLED';
+  });
+
+  it('calls callback with "RequiresReplacement" error if jobQueueName has changed', (done: Callback) => {
+    properties.jobQueueName += '-new';
+    const request = fakeCloudFormationRequest('Update', properties, oldProperties);
+    checkUpdateJobQueue(request, null, (err: Error) => {
+      expect(err).toEqual(jasmine.any(Error));
+      expect(err.name).toEqual('RequiresReplacement');
+      done();
+    });
+  });
+
+  describe('calls callback without an error if', () => {
+    afterEach((done: Callback) => {
+      const request = fakeCloudFormationRequest('Update', properties, oldProperties);
+      checkUpdateEnvironment(request, null, (err: Error) => {
+        expect(err).toBeFalsy();
+        done();
+      });
+    });
+    it('state is different', () => {
+      properties.state = 'DISABLED';
+    });
+    it('priority is different', () => {
+      properties.priority++;
+    });
+    it('computeEnvironmentOrder is different', () => {
+      properties.computeEnvironmentOrder.push({
+        order: 3,
+        computeEnvironment: fakeComputeEnvironment + '-3',
+      });
+    });
   });
 });
 
