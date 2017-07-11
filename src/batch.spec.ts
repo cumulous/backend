@@ -333,13 +333,13 @@ const fakeJobQueue = 'fake-job-queue';
 const fakeJobQueueProperties = (order = 2): any => ({
   computeEnvironmentOrder: [{
     order: 1,
-    computeEnvironment: fakeComputeEnvironment,
+    computeEnvironment: fakeComputeEnvironmentArn,
   }, {
     order,
-    computeEnvironment: fakeComputeEnvironment + '-' + order,
+    computeEnvironment: fakeComputeEnvironmentArn + '-' + order,
   }, {
     order,
-    computeEnvironment: fakeComputeEnvironment + '-' + order + '-extra',
+    computeEnvironment: fakeComputeEnvironmentArn + '-' + order + '-extra',
   }],
   priority: 10,
 });
@@ -547,7 +547,7 @@ describe('batch.checkUpdateJobQueue()', () => {
     it('computeEnvironmentOrder is different', () => {
       properties.computeEnvironmentOrder.push({
         order: 3,
-        computeEnvironment: fakeComputeEnvironment + '-3',
+        computeEnvironment: fakeComputeEnvironmentArn + '-3',
       });
     });
   });

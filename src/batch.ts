@@ -139,7 +139,7 @@ export const describeJobQueueWithEnvironment = (computeEnvironment: string, next
     .then(data => {
       const matchedQueue = data.jobQueues.find(queue => {
         const matchedIndex = queue.computeEnvironmentOrder.findIndex(entry =>
-          entry.computeEnvironment === computeEnvironment);
+          entry.computeEnvironment.endsWith(':compute-environment/' + computeEnvironment));
         const foundMatch = matchedIndex >= 0;
         if (foundMatch) {
           queue.computeEnvironmentOrder.splice(matchedIndex, 1);
