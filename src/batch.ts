@@ -126,6 +126,35 @@ export const describeJobQueue = (name: string, context: any, callback: Callback)
     .catch(callback);
 };
 
+export const describeJobQueueMinusEnvironment = (computeEnvironment: string, context: any, callback: Callback) => {
+  describeJobQueueWithEnvironment(computeEnvironment)
+    .then(queue => callback(null, queue || deletedResource))
+    .catch(callback);
+};
+
+export const describeJobQueueWithEnvironment = (computeEnvironment: string, nextToken?: string): Promise<any> => {
+  return batch.describeJobQueues(nextToken == null ? {} : {
+    nextToken,
+  }).promise()
+    .then(data => {
+      const matchedQueue = data.jobQueues.find(queue => {
+        const matchedIndex = queue.computeEnvironmentOrder.findIndex(entry =>
+          entry.computeEnvironment === computeEnvironment);
+        const foundMatch = matchedIndex >= 0;
+        if (foundMatch) {
+          queue.computeEnvironmentOrder.splice(matchedIndex, 1);
+        }
+        return foundMatch;
+      });
+      if (matchedQueue != null) {
+        return matchedQueue;
+      }
+      if (data.nextToken != null) {
+        return describeJobQueueWithEnvironment(computeEnvironment, data.nextToken);
+      }
+    });
+};
+
 export const checkUpdateJobQueue = (request: CloudFormationRequest, context: any, callback: Callback) => {
   Promise.resolve()
     .then(() => assertEqualProperties(request, [ 'jobQueueName' ]))

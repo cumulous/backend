@@ -1,8 +1,8 @@
 import { batch, CloudFormationRequestType } from './aws';
 import { checkUpdateEnvironment, checkUpdateJobQueue, ComputeEnvironmentProperties,
          createComputeEnvironment, createJobQueue, deleteComputeEnvironment, deleteJobQueue,
-         describeComputeEnvironment, describeJobQueue, JobQueueProperties,
-         updateComputeEnvironment, updateJobQueue } from './batch';
+         describeComputeEnvironment, describeJobQueue, describeJobQueueMinusEnvironment,
+         JobQueueProperties, updateComputeEnvironment, updateJobQueue } from './batch';
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
 import { Callback } from './types';
 
@@ -330,13 +330,16 @@ describe('batch.describeComputeEnvironment()', () => {
 
 const fakeJobQueue = 'fake-job-queue';
 
-const fakeJobQueueProperties = (): any => ({
+const fakeJobQueueProperties = (order = 2): any => ({
   computeEnvironmentOrder: [{
     order: 1,
     computeEnvironment: fakeComputeEnvironment,
   }, {
-    order: 2,
-    computeEnvironment: fakeComputeEnvironment + '-2',
+    order,
+    computeEnvironment: fakeComputeEnvironment + '-' + order,
+  }, {
+    order,
+    computeEnvironment: fakeComputeEnvironment + '-' + order + '-extra',
   }],
   priority: 10,
 });
@@ -427,6 +430,83 @@ describe('batch.describeJobQueue()', () => {
       (done: Callback) => {
     spyOnDescribeJobQueues.and.returnValue(fakeReject('batch.describeJobQueues()'));
     testError(describeJobQueue, fakeJobQueue, done);
+  });
+});
+
+describe('batch.describeJobQueueMinusEnvironment()', () => {
+  const fakeNextToken = 'fake-next-token';
+
+  const fakeJobQueueParameters = (order: number) => {
+    const properties = fakeJobQueueProperties(order);
+    properties.jobQueueName = fakeJobQueue + '-' + order;
+    properties.priority = order;
+    return properties;
+  };
+
+  let spyOnDescribeJobQueues: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnDescribeJobQueues = spyOn(batch, 'describeJobQueues')
+      .and.returnValues(fakeResolve({
+        jobQueues: [ fakeJobQueueParameters(4), fakeJobQueueParameters(3) ],
+        nextToken: fakeNextToken,
+      }), fakeResolve({
+        jobQueues: [ fakeJobQueueParameters(2), fakeJobQueueParameters(1) ],
+        nextToken: fakeNextToken + 2,
+      }), fakeResolve({
+        jobQueues: [ fakeJobQueueParameters(6), fakeJobQueueParameters(5) ],
+        nextToken: null,
+      }));
+  });
+
+  it('calls batch.describeJobQueues() correct number of times with correct parameters', (done: Callback) => {
+    describeJobQueueMinusEnvironment(fakeComputeEnvironment + '-2', null, () => {
+      expect(spyOnDescribeJobQueues).toHaveBeenCalledWith({});
+      expect(spyOnDescribeJobQueues).toHaveBeenCalledWith({
+        nextToken: fakeNextToken,
+      });
+      expect(spyOnDescribeJobQueues).toHaveBeenCalledTimes(2);
+      done();
+    });
+  });
+
+  describe('calls callback with correct parameters when', () => {
+    let computeEnvironment: string;
+    let response: any;
+    beforeEach(() => {
+      computeEnvironment = fakeComputeEnvironment;
+    });
+    afterEach((done: Callback) => {
+      describeJobQueueMinusEnvironment(computeEnvironment, null, (err?: Error, data?: any) => {
+        expect(err).toBeFalsy();
+        expect(data).toEqual(response);
+        done();
+      });
+    });
+    describe('a matching queue is', () => {
+      it('found', () => {
+        computeEnvironment += '-2';
+        response = fakeJobQueueParameters(2);
+        const order = response.computeEnvironmentOrder;
+        response.computeEnvironmentOrder = [order[0], order[2]];
+      });
+      it('not found', () => {
+        computeEnvironment += '-10';
+        response = { status: 'DELETED' };
+      });
+    });
+    it('the list of queues was empty', () => {
+      spyOnDescribeJobQueues.and.returnValue(fakeResolve({
+        jobQueues: [],
+      }));
+      response = { status: 'DELETED' };
+    });
+  });
+
+  it('calls callback with an error if batch.describeJobQueues() produces an error',
+      (done: Callback) => {
+    spyOnDescribeJobQueues.and.returnValue(fakeReject('batch.describeJobQueues()'));
+    testError(describeJobQueueMinusEnvironment, fakeJobQueue, done);
   });
 });
 

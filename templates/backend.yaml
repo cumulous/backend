@@ -3188,6 +3188,21 @@ Resources:
             Resource:
               - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describejobqueues
 
+  DescribeJobQueueMinusEnvironment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DescribeJobQueueMinusEnvironment
+      CodeUri: ../app
+      Handler: batch.describeJobQueueMinusEnvironment
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:DescribeJobQueues
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describejobqueues
+
   CheckUpdateJobQueue:
     Type: AWS::Serverless::Function
     Properties:
