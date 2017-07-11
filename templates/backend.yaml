@@ -3059,7 +3059,7 @@ Resources:
                         "Variable": "$.DeletedResourceProperties.status",
                         "StringEquals": "VALID"
                       }],
-                      "Next": "DeleteComputeEnvironment"
+                      "Next": "DescribeJobQueueMinusEnvironment"
                     }],
                     "Default": "WaitWhileDisabling"
                   },
@@ -3067,6 +3067,50 @@ Resources:
                     "Type": "Wait",
                     "Seconds": 15,
                     "Next": "GetStatusWhenDisabling"
+                  },
+                  "DescribeJobQueueMinusEnvironment": {
+                    "Type": "Task",
+                    "InputPath": "$.DeletedResourceProperties.computeEnvironmentName",
+                    "ResultPath": "$.JobQueueProperties",
+                    "Resource": "${DescribeJobQueueMinusEnvironment.Arn}",
+                    "Next": "CheckJobQueueIsDeleted"
+                  },
+                  "CheckJobQueueIsDeleted": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.JobQueueProperties.status",
+                      "StringEquals": "DELETED",
+                      "Next": "DeleteComputeEnvironment"
+                    }],
+                    "Default": "DeleteEnvironmentFromJobQueue"
+                  },
+                  "DeleteEnvironmentFromJobQueue": {
+                    "Type": "Task",
+                    "InputPath": "$.JobQueueProperties",
+                    "ResultPath": null,
+                    "Resource": "${UpdateJobQueue.Arn}",
+                    "Next": "GetJobQueueStatusWhenDeleting"
+                  },
+                  "GetJobQueueStatusWhenDeleting": {
+                    "Type": "Task",
+                    "InputPath": "$.DescribeJobQueue.jobQueueName",
+                    "ResultPath": "$.DescribeJobQueue",
+                    "Resource": "${DescribeJobQueue.Arn}",
+                    "Next": "CheckIfJobQueueUpdated"
+                  },
+                  "CheckIfJobQueueUpdated": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.DescribeJobQueue.status",
+                      "StringEquals": "VALID",
+                      "Next": "DeleteComputeEnvironment"
+                    }],
+                    "Default": "WaitWhileUpdatingJobQueue"
+                  },
+                  "WaitWhileUpdatingJobQueue" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetJobQueueStatusWhenDeleting"
                   },
                   "DeleteComputeEnvironment": {
                     "Type": "Task",
