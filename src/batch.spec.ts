@@ -453,7 +453,7 @@ describe('batch.checkUpdateJobQueue()', () => {
   describe('calls callback without an error if', () => {
     afterEach((done: Callback) => {
       const request = fakeCloudFormationRequest('Update', properties, oldProperties);
-      checkUpdateEnvironment(request, null, (err: Error) => {
+      checkUpdateJobQueue(request, null, (err: Error) => {
         expect(err).toBeFalsy();
         done();
       });

@@ -96,11 +96,13 @@ export const deleteComputeEnvironment = (name: string, context: any, callback: C
     .catch(callback);
 };
 
+const deletedResource = { status: 'DELETED' };
+
 export const describeComputeEnvironment = (name: string, context: any, callback: Callback) => {
   batch.describeComputeEnvironments({
     computeEnvironments: [ name ],
   }).promise()
-    .then(data => callback(null, data.computeEnvironments[0] || { status: 'DELETED' }))
+    .then(data => callback(null, data.computeEnvironments[0] || deletedResource))
     .catch(callback);
 };
 
@@ -120,7 +122,7 @@ export const describeJobQueue = (name: string, context: any, callback: Callback)
   batch.describeJobQueues({
     jobQueues: [ name ],
   }).promise()
-    .then(data => callback(null, data.jobQueues[0] || { status: 'DELETED' }))
+    .then(data => callback(null, data.jobQueues[0] || deletedResource))
     .catch(callback);
 };
 
