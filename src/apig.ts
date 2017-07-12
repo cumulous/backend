@@ -36,6 +36,16 @@ export class ApiError implements Error {
   ) {
     this.code = code;
   }
+
+  static toString(err: ApiError) {
+    return stringify({
+      message: err.message,
+      errors: err.errors,
+      code: err.code,
+      name: err.name,
+      stack: err.stack,
+    });
+  }
 };
 
 export const spec = () => require('./swagger');
@@ -179,7 +189,7 @@ export const respond = (callback: Callback, request: Request,
 
 export const respondWithError = (callback: Callback, request: Request, err: ApiError) => {
   if (err.code == null || err.code === 500 || isNaN(Number(err.code))) {
-    log.error(stringify(err));
+    log.error(ApiError.toString(err));
     err = new ApiError();
   }
   const body = { message: err.message, errors: err.errors };

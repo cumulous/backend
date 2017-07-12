@@ -679,7 +679,13 @@ describe('respondWithError()', () => {
         expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(), {
           message: 'Internal server error',
         }, 500);
-        expect(spyOnLog).toHaveBeenCalledWith(stringify(fakeError));
+        expect(spyOnLog).toHaveBeenCalledWith(stringify({
+          name: fakeError.name,
+          message: fakeError.message,
+          errors: fakeError.errors,
+          code: fakeError.code,
+          stack: fakeError.stack,
+        }));
         done();
       };
       testMethod(callback);
