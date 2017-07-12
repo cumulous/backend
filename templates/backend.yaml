@@ -2969,7 +2969,7 @@ Resources:
                         "Variable": "$.ResourceProperties.status",
                         "StringEquals": "VALID"
                       }],
-                      "Next": "Success"
+                      "Next": "PassVersion"
                     }],
                     "Default": "WaitWhileCreating"
                   },
@@ -3008,7 +3008,7 @@ Resources:
                     "Choices": [{
                       "Variable": "$.ResourceProperties.status",
                       "StringEquals": "VALID",
-                      "Next": "Success"
+                      "Next": "PassVersion"
                     }],
                     "Default": "WaitWhileUpdating"
                   },
@@ -3149,6 +3149,12 @@ Resources:
                     }],
                     "Default": "Success"
                   },
+                  "PassVersion": {
+                    "Type": "Pass",
+                    "InputPath": "$.RequestId",
+                    "ResultPath": "$.Data.Version",
+                    "Next": "Success"
+                  },
                   "Success": {
                     "Type": "Pass",
                     "ResultPath": "$.Status",
@@ -3199,8 +3205,10 @@ Resources:
       computeEnvironmentOrder:
         - order: 1
           computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
+          version: !GetAtt SpotComputeEnvironment.Version
         - order: 2
           computeEnvironment: !GetAtt OnDemandComputeEnvironment.Arn
+          version: !GetAtt OnDemandComputeEnvironment.Version
 
   CreateJobQueue:
     Type: AWS::Serverless::Function

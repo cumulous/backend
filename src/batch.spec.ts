@@ -4,7 +4,7 @@ import { checkUpdateEnvironment, checkUpdateJobQueue, ComputeEnvironmentProperti
          describeComputeEnvironment, describeJobQueue, describeJobQueueMinusEnvironment,
          JobQueueProperties, updateComputeEnvironment, updateJobQueue } from './batch';
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
-import { Callback } from './types';
+import { Callback, Dict } from './types';
 
 const fakeResponseURL = 'https://example.org';
 const fakeStackId = 'arn:aws:cloudformation:us-east-2:012345678910:stack/stack-name/guid';
@@ -350,6 +350,8 @@ describe('batch.createJobQueue()', () => {
     const properties: any = fakeJobQueueProperties();
     properties.jobQueueName = fakeJobQueue;
     properties.extra = 'property';
+    properties.computeEnvironmentOrder.forEach(
+      (entry: Dict<string|number>) => entry.extra = 'property');
     return properties;
   };
 
@@ -561,6 +563,8 @@ describe('batch.updateJobQueue()', () => {
     properties.jobQueueName = fakeJobQueue;
     properties.state = fakeJobQueueState;
     properties.extra = 'property';
+    properties.computeEnvironmentOrder.forEach(
+      (entry: Dict<string|number>) => entry.extra = 'property');
     return properties;
   };
 

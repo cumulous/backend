@@ -1,4 +1,4 @@
-import { CreateComputeEnvironmentRequest, CreateJobQueueRequest } from 'aws-sdk/clients/batch';
+import { ComputeEnvironmentOrder, CreateComputeEnvironmentRequest, CreateJobQueueRequest } from 'aws-sdk/clients/batch';
 import * as stringify from 'json-stable-stringify';
 import * as jsonpath from 'jsonpath';
 
@@ -111,12 +111,19 @@ export const createJobQueue = (request: JobQueueProperties, context: any, callba
     .then(() => batch.createJobQueue({
       jobQueueName: request.jobQueueName,
       priority: request.priority,
-      computeEnvironmentOrder: request.computeEnvironmentOrder,
+      computeEnvironmentOrder: getComputeEnvironmentOrders(request.computeEnvironmentOrder),
       state: 'ENABLED',
     }).promise())
     .then(() => callback())
     .catch(callback);
 };
+
+const getComputeEnvironmentOrders = (computeEnvironmentOrders: ComputeEnvironmentOrder[]) => {
+  return computeEnvironmentOrders.map(entry => ({
+    order: entry.order,
+    computeEnvironment: entry.computeEnvironment,
+  }));
+}
 
 export const describeJobQueue = (name: string, context: any, callback: Callback) => {
   batch.describeJobQueues({
@@ -168,7 +175,7 @@ export const updateJobQueue = (request: JobQueueProperties, context: any, callba
       jobQueue: request.jobQueueName,
       priority: request.priority,
       state: request.state,
-      computeEnvironmentOrder: request.computeEnvironmentOrder,
+      computeEnvironmentOrder: getComputeEnvironmentOrders(request.computeEnvironmentOrder),
     }).promise())
     .then(() => callback())
     .catch(callback);
