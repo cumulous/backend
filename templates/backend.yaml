@@ -3200,7 +3200,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupJobQueueStateMachine
-      jobQueueName: !Sub ${AWS::StackName}
+      jobQueueName: !Sub ${AWS::StackName}-job-queue
       priority: 1
       computeEnvironmentOrder:
         - order: 1
