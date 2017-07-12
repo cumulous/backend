@@ -1,0 +1,794 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  SubnetIds:
+    Type: CommaDelimitedList
+  SecurityGroup:
+    Type: String
+  ClusterCores:
+    Type: Number
+  SpotBidPercent:
+    Type: Number
+  SSHKeyName:
+    Type: String
+  SetupCustomResourceArn:
+    Type: String
+  StatesExecutionRoleArn:
+    Type: String
+
+Resources:
+  BatchServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: batch.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSBatchServiceRole
+
+  SpotFleetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: spotfleet.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ${AWS::StackName}-instance-profile
+      Roles:
+        - !Ref InstanceRole
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
+
+  SpotComputeEnvironment:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Ref SetupCustomResourceArn
+      StateMachine: !Ref SetupComputeEnvironmentStateMachine
+      type: MANAGED
+      state: ENABLED
+      serviceRole: !GetAtt BatchServiceRole.Arn
+      computeEnvironmentName: !Sub ${AWS::StackName}-spot-environment
+      computeResources:
+        type: SPOT
+        bidPercentage: !Ref SpotBidPercent
+        minvCpus: 0
+        maxvCpus: !Ref ClusterCores
+        instanceTypes: [ optimal ]
+        instanceRole: !GetAtt InstanceRole.Arn
+        spotIamFleetRole: !GetAtt SpotFleetRole.Arn
+        subnets: !Ref SubnetIds
+        securityGroupIds:
+          - !Ref SecurityGroup
+        ec2KeyPair: !Ref SSHKeyName
+
+  OnDemandComputeEnvironment:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn: SpotComputeEnvironment
+    Properties:
+      ServiceToken: !Ref SetupCustomResourceArn
+      StateMachine: !Ref SetupComputeEnvironmentStateMachine
+      type: MANAGED
+      state: ENABLED
+      serviceRole: !GetAtt BatchServiceRole.Arn
+      computeEnvironmentName: !Sub ${AWS::StackName}-ondemand-environment
+      computeResources:
+        type: EC2
+        minvCpus: 0
+        maxvCpus: !Ref ClusterCores
+        instanceTypes: [ optimal ]
+        instanceRole: !GetAtt InstanceRole.Arn
+        subnets: !Ref SubnetIds
+        securityGroupIds:
+          - !Ref SecurityGroup
+        ec2KeyPair: !Ref SSHKeyName
+
+  CreateComputeEnvironment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CreateComputeEnvironment
+      CodeUri: ../app
+      Handler: batch.createComputeEnvironment
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:CreateComputeEnvironment
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/createcomputeenvironment
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource:
+              - !GetAtt BatchServiceRole.Arn
+              - !GetAtt InstanceRole.Arn
+              - !GetAtt SpotFleetRole.Arn
+
+  UpdateComputeEnvironment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-UpdateComputeEnvironment
+      CodeUri: ../app
+      Handler: batch.updateComputeEnvironment
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:UpdateComputeEnvironment
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/updatecomputeenvironment
+          - Effect: Allow
+            Action: iam:PassRole
+            Resource:
+              - !GetAtt BatchServiceRole.Arn
+
+  CheckUpdateComputeEnvironment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CheckUpdateComputeEnvironment
+      CodeUri: ../app
+      Handler: batch.checkUpdateEnvironment
+      Runtime: nodejs6.10
+
+  DeleteComputeEnvironment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DeleteComputeEnvironment
+      CodeUri: ../app
+      Handler: batch.deleteComputeEnvironment
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:DeleteComputeEnvironment
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/deletecomputeenvironment
+
+  DescribeComputeEnvironment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DescribeComputeEnvironment
+      CodeUri: ../app
+      Handler: batch.describeComputeEnvironment
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:DescribeComputeEnvironments
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describecomputeenvironments
+
+  SetupComputeEnvironmentStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !Ref StatesExecutionRoleArn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupComputeEnvironment",
+          "States": {
+            "SetupComputeEnvironment": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "CheckEventType",
+                "States": {
+                  "CheckEventType": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Create",
+                      "Next": "CreateComputeEnvironment"
+                    }, {
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "CheckReplace"
+                    }, {
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Delete",
+                      "Next": "PassDeletedResourceProperties"
+                    }]
+                  },
+                  "CreateComputeEnvironment": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.Data.Arn",
+                    "Resource": "${CreateComputeEnvironment.Arn}",
+                    "Next": "GetStatusWhenCreating"
+                  },
+                  "GetStatusWhenCreating": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.computeEnvironmentName",
+                    "ResultPath": "$.ResourceProperties",
+                    "Resource": "${DescribeComputeEnvironment.Arn}",
+                    "Next": "CheckIfCreated"
+                  },
+                  "CheckIfCreated": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "And": [{
+                        "Variable": "$.ResourceProperties.state",
+                        "StringEquals": "ENABLED"
+                      }, {
+                        "Variable": "$.ResourceProperties.status",
+                        "StringEquals": "VALID"
+                      }],
+                      "Next": "PassVersion"
+                    }],
+                    "Default": "WaitWhileCreating"
+                  },
+                  "WaitWhileCreating" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenCreating"
+                  },
+                  "CheckReplace": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "${CheckUpdateComputeEnvironment.Arn}",
+                    "Catch": [{
+                      "ErrorEquals": [ "RequiresReplacement" ],
+                      "ResultPath": null,
+                      "Next": "PassReplacedResourceProperties"
+                    }],
+                    "Next": "UpdateComputeEnvironment"
+                  },
+                  "UpdateComputeEnvironment": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.Data.Arn",
+                    "Resource": "${UpdateComputeEnvironment.Arn}",
+                    "Next": "GetStatusWhenUpdating"
+                  },
+                  "GetStatusWhenUpdating": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.computeEnvironmentName",
+                    "ResultPath": "$.ResourceProperties",
+                    "Resource": "${DescribeComputeEnvironment.Arn}",
+                    "Next": "CheckIfUpdated"
+                  },
+                  "CheckIfUpdated": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.ResourceProperties.status",
+                      "StringEquals": "VALID",
+                      "Next": "PassVersion"
+                    }],
+                    "Default": "WaitWhileUpdating"
+                  },
+                  "WaitWhileUpdating" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenUpdating"
+                  },
+                  "PassReplacedResourceProperties": {
+                    "Type": "Pass",
+                    "InputPath": "$.OldResourceProperties",
+                    "ResultPath": "$.DeletedResourceProperties",
+                    "Next": "PassDisableBeforeDelete"
+                  },
+                  "PassDeletedResourceProperties": {
+                    "Type": "Pass",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.DeletedResourceProperties",
+                    "Next": "PassDisableBeforeDelete"
+                  },
+                  "PassDisableBeforeDelete": {
+                    "Type": "Pass",
+                    "ResultPath": "$.DeletedResourceProperties.state",
+                    "Result": "DISABLED",
+                    "Next": "DisableBeforeDelete"
+                  },
+                  "DisableBeforeDelete": {
+                    "Type": "Task",
+                    "InputPath": "$.DeletedResourceProperties",
+                    "ResultPath": null,
+                    "Resource": "${UpdateComputeEnvironment.Arn}",
+                    "Next": "GetStatusWhenDisabling"
+                  },
+                  "GetStatusWhenDisabling": {
+                    "Type": "Task",
+                    "InputPath": "$.DeletedResourceProperties.computeEnvironmentName",
+                    "ResultPath": "$.DeletedResourceProperties",
+                    "Resource": "${DescribeComputeEnvironment.Arn}",
+                    "Next": "CheckIfDisabled"
+                  },
+                  "CheckIfDisabled": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "And": [{
+                        "Variable": "$.DeletedResourceProperties.state",
+                        "StringEquals": "DISABLED"
+                      }, {
+                        "Variable": "$.DeletedResourceProperties.status",
+                        "StringEquals": "VALID"
+                      }],
+                      "Next": "DescribeJobQueueMinusEnvironment"
+                    }],
+                    "Default": "WaitWhileDisabling"
+                  },
+                  "WaitWhileDisabling" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenDisabling"
+                  },
+                  "DescribeJobQueueMinusEnvironment": {
+                    "Type": "Task",
+                    "InputPath": "$.DeletedResourceProperties.computeEnvironmentName",
+                    "ResultPath": "$.JobQueueProperties",
+                    "Resource": "${DescribeJobQueueMinusEnvironment.Arn}",
+                    "Next": "CheckJobQueueIsDeleted"
+                  },
+                  "CheckJobQueueIsDeleted": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.JobQueueProperties.status",
+                      "StringEquals": "DELETED",
+                      "Next": "DeleteComputeEnvironment"
+                    }],
+                    "Default": "DeleteEnvironmentFromJobQueue"
+                  },
+                  "DeleteEnvironmentFromJobQueue": {
+                    "Type": "Task",
+                    "InputPath": "$.JobQueueProperties",
+                    "ResultPath": null,
+                    "Resource": "${UpdateJobQueue.Arn}",
+                    "Next": "GetJobQueueStatusWhenDeleting"
+                  },
+                  "GetJobQueueStatusWhenDeleting": {
+                    "Type": "Task",
+                    "InputPath": "$.JobQueueProperties.jobQueueName",
+                    "ResultPath": "$.JobQueueProperties",
+                    "Resource": "${DescribeJobQueue.Arn}",
+                    "Next": "CheckIfJobQueueUpdated"
+                  },
+                  "CheckIfJobQueueUpdated": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.JobQueueProperties.status",
+                      "StringEquals": "VALID",
+                      "Next": "DeleteComputeEnvironment"
+                    }],
+                    "Default": "WaitWhileUpdatingJobQueue"
+                  },
+                  "WaitWhileUpdatingJobQueue" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetJobQueueStatusWhenDeleting"
+                  },
+                  "DeleteComputeEnvironment": {
+                    "Type": "Task",
+                    "InputPath": "$.DeletedResourceProperties.computeEnvironmentName",
+                    "ResultPath": null,
+                    "Resource": "${DeleteComputeEnvironment.Arn}",
+                    "Next": "GetStatusWhenDeleting"
+                  },
+                  "GetStatusWhenDeleting": {
+                    "Type": "Task",
+                    "InputPath": "$.DeletedResourceProperties.computeEnvironmentName",
+                    "ResultPath": "$.DeletedResourceProperties",
+                    "Resource": "${DescribeComputeEnvironment.Arn}",
+                    "Next": "CheckIfDeleted"
+                  },
+                  "CheckIfDeleted": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.DeletedResourceProperties.status",
+                      "StringEquals": "DELETED",
+                      "Next": "CheckCreateAfterDelete"
+                    }],
+                    "Default": "WaitWhileDeleting"
+                  },
+                  "WaitWhileDeleting" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenDeleting"
+                  },
+                  "CheckCreateAfterDelete": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "CreateComputeEnvironment"
+                    }],
+                    "Default": "Success"
+                  },
+                  "PassVersion": {
+                    "Type": "Pass",
+                    "InputPath": "$.RequestId",
+                    "ResultPath": "$.Data.Version",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
+
+  JobQueue:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Ref SetupCustomResourceArn
+      StateMachine: !Ref SetupJobQueueStateMachine
+      jobQueueName: !Sub ${AWS::StackName}-job-queue
+      priority: 1
+      computeEnvironmentOrder:
+        - order: 1
+          computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
+          version: !GetAtt SpotComputeEnvironment.Version
+        - order: 2
+          computeEnvironment: !GetAtt OnDemandComputeEnvironment.Arn
+          version: !GetAtt OnDemandComputeEnvironment.Version
+
+  CreateJobQueue:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CreateJobQueue
+      CodeUri: ../app
+      Handler: batch.createJobQueue
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:CreateJobQueue
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/createjobqueue
+
+  DescribeJobQueue:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DescribeJobQueue
+      CodeUri: ../app
+      Handler: batch.describeJobQueue
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:DescribeJobQueues
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describejobqueues
+
+  DescribeJobQueueMinusEnvironment:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DescribeJobQueueMinusEnvironment
+      CodeUri: ../app
+      Handler: batch.describeJobQueueMinusEnvironment
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:DescribeJobQueues
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describejobqueues
+
+  CheckUpdateJobQueue:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CheckUpdateJobQueue
+      CodeUri: ../app
+      Handler: batch.checkUpdateJobQueue
+      Runtime: nodejs6.10
+
+  UpdateJobQueue:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-UpdateJobQueue
+      CodeUri: ../app
+      Handler: batch.updateJobQueue
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:UpdateJobQueue
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/updatejobqueue
+
+  DeleteJobQueue:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DeleteJobQueue
+      CodeUri: ../app
+      Handler: batch.deleteJobQueue
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: batch:DeleteJobQueue
+            Resource:
+              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/deletejobqueue
+
+  SetupJobQueueStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !Ref StatesExecutionRoleArn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupJobQueue",
+          "States": {
+            "SetupJobQueue": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "CheckEventType",
+                "States": {
+                  "CheckEventType": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Create",
+                      "Next": "CreateJobQueue"
+                    }, {
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "CheckReplace"
+                    }, {
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Delete",
+                      "Next": "PassDeletedResourceProperties"
+                    }]
+                  },
+                  "CreateJobQueue": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": null,
+                    "Resource": "${CreateJobQueue.Arn}",
+                    "Next": "GetStatusWhenCreating"
+                  },
+                  "GetStatusWhenCreating": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.jobQueueName",
+                    "ResultPath": "$.ResourceProperties",
+                    "Resource": "${DescribeJobQueue.Arn}",
+                    "Next": "CheckIfCreated"
+                  },
+                  "CheckIfCreated": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "And": [{
+                        "Variable": "$.ResourceProperties.state",
+                        "StringEquals": "ENABLED"
+                      }, {
+                        "Variable": "$.ResourceProperties.status",
+                        "StringEquals": "VALID"
+                      }],
+                      "Next": "Success"
+                    }],
+                    "Default": "WaitWhileCreating"
+                  },
+                  "WaitWhileCreating" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenCreating"
+                  },
+                  "CheckReplace": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "${CheckUpdateJobQueue.Arn}",
+                    "Catch": [{
+                      "ErrorEquals": [ "RequiresReplacement" ],
+                      "ResultPath": null,
+                      "Next": "PassReplacedResourceProperties"
+                    }],
+                    "Next": "UpdateJobQueue"
+                  },
+                  "UpdateJobQueue": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": null,
+                    "Resource": "${UpdateJobQueue.Arn}",
+                    "Next": "GetStatusWhenUpdating"
+                  },
+                  "GetStatusWhenUpdating": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.jobQueueName",
+                    "ResultPath": "$.ResourceProperties",
+                    "Resource": "${DescribeJobQueue.Arn}",
+                    "Next": "CheckIfUpdated"
+                  },
+                  "CheckIfUpdated": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.ResourceProperties.status",
+                      "StringEquals": "VALID",
+                      "Next": "Success"
+                    }],
+                    "Default": "WaitWhileUpdating"
+                  },
+                  "WaitWhileUpdating" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenUpdating"
+                  },
+                  "PassReplacedResourceProperties": {
+                    "Type": "Pass",
+                    "InputPath": "$.OldResourceProperties",
+                    "ResultPath": "$.DeletedResourceProperties",
+                    "Next": "PassDisableBeforeDelete"
+                  },
+                  "PassDeletedResourceProperties": {
+                    "Type": "Pass",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.DeletedResourceProperties",
+                    "Next": "PassDisableBeforeDelete"
+                  },
+                  "PassDisableBeforeDelete": {
+                    "Type": "Pass",
+                    "ResultPath": "$.DeletedResourceProperties.state",
+                    "Result": "DISABLED",
+                    "Next": "DisableBeforeDelete"
+                  },
+                  "DisableBeforeDelete": {
+                    "Type": "Task",
+                    "InputPath": "$.DeletedResourceProperties",
+                    "ResultPath": null,
+                    "Resource": "${UpdateJobQueue.Arn}",
+                    "Next": "GetStatusWhenDisabling"
+                  },
+                  "GetStatusWhenDisabling": {
+                    "Type": "Task",
+                    "InputPath": "$.DeletedResourceProperties.jobQueueName",
+                    "ResultPath": "$.DeletedResourceProperties",
+                    "Resource": "${DescribeJobQueue.Arn}",
+                    "Next": "CheckIfDisabled"
+                  },
+                  "CheckIfDisabled": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "And": [{
+                        "Variable": "$.DeletedResourceProperties.state",
+                        "StringEquals": "DISABLED"
+                      }, {
+                        "Variable": "$.DeletedResourceProperties.status",
+                        "StringEquals": "VALID"
+                      }],
+                      "Next": "DeleteJobQueue"
+                    }],
+                    "Default": "WaitWhileDisabling"
+                  },
+                  "WaitWhileDisabling" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenDisabling"
+                  },
+                  "DeleteJobQueue": {
+                    "Type": "Task",
+                    "InputPath": "$.DeletedResourceProperties.jobQueueName",
+                    "ResultPath": null,
+                    "Resource": "${DeleteJobQueue.Arn}",
+                    "Next": "GetStatusWhenDeleting"
+                  },
+                  "GetStatusWhenDeleting": {
+                    "Type": "Task",
+                    "InputPath": "$.DeletedResourceProperties.jobQueueName",
+                    "ResultPath": "$.DeletedResourceProperties",
+                    "Resource": "${DescribeJobQueue.Arn}",
+                    "Next": "CheckIfDeleted"
+                  },
+                  "CheckIfDeleted": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.DeletedResourceProperties.status",
+                      "StringEquals": "DELETED",
+                      "Next": "CheckCreateAfterDelete"
+                    }],
+                    "Default": "WaitWhileDeleting"
+                  },
+                  "WaitWhileDeleting" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "GetStatusWhenDeleting"
+                  },
+                  "CheckCreateAfterDelete": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "CreateJobQueue"
+                    }],
+                    "Default": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
