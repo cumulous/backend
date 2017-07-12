@@ -121,19 +121,33 @@ const getRequestValue = (request: Request, model: Model) => {
     case 'header':
       return getHeaderValue(request, model.name);
     case 'body':
-      let body = jsonpath.value(request, 'body');
-      if (typeof body === 'string') {
-        if (jsonpath.value(request, 'isBase64Encoded') === true) {
-          body = Buffer.from(body, 'base64');
-        }
-        return JSON.parse(body);
-      } else {
-        return null;
-      }
+      return getBodyValue(request);
     default:
       throw new ApiError(`${model.in} parameters are not supported`);
   }
 };
+
+const getBodyValue = (request: Request) => {
+  const errParse = new ApiError('Invalid request', ['body could not be parsed'], 400);
+
+  let body = jsonpath.value(request, 'body');
+  if (typeof body === 'string') {
+    if (jsonpath.value(request, 'isBase64Encoded') === true) {
+      body = Buffer.from(body, 'base64');
+    }
+    try {
+      return JSON.parse(body);
+    } catch (err) {
+      log.error(err.message);
+      throw errParse;
+    }
+  } else if (body == null) {
+    return body;
+  } else {
+    log.error('typeof body === ' + typeof body);
+    throw errParse;
+  }
+}
 
 const setDefaultValue = (request: Request, model: Model) => {
   switch (model.in) {

@@ -225,7 +225,7 @@ describe('validate()', () => {
 
     describe('body is required, but', () => {
       describe('its value is', () => {
-        it('invalid', () => {
+        it('missing a required parameter', () => {
           request.body = '{}';
         });
         it('undefined', () => {
@@ -236,6 +236,9 @@ describe('validate()', () => {
         });
         it('not a string', () => {
           (request as any).body = { fake: 'body' };
+        });
+        it('not parsable', () => {
+          request.body = '{';
         });
       });
     });
