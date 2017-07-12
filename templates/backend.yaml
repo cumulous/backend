@@ -3093,15 +3093,15 @@ Resources:
                   },
                   "GetJobQueueStatusWhenDeleting": {
                     "Type": "Task",
-                    "InputPath": "$.DescribeJobQueue.jobQueueName",
-                    "ResultPath": "$.DescribeJobQueue",
+                    "InputPath": "$.JobQueueProperties.jobQueueName",
+                    "ResultPath": "$.JobQueueProperties",
                     "Resource": "${DescribeJobQueue.Arn}",
                     "Next": "CheckIfJobQueueUpdated"
                   },
                   "CheckIfJobQueueUpdated": {
                     "Type": "Choice",
                     "Choices": [{
-                      "Variable": "$.DescribeJobQueue.status",
+                      "Variable": "$.JobQueueProperties.status",
                       "StringEquals": "VALID",
                       "Next": "DeleteComputeEnvironment"
                     }],
