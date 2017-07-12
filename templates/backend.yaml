@@ -2824,6 +2824,13 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2SpotFleetRole
 
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub ${AWS::StackName}-instance-profile
+      Roles:
+        - !Ref InstanceRole
+
   InstanceRole:
     Type: AWS::IAM::Role
     Properties:

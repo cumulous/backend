@@ -902,6 +902,16 @@ Resources:
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/backend-release-*
               - Effect: Allow
                 Action:
+                  - iam:CreateInstanceProfile
+                  - iam:GetInstanceProfile
+                  - iam:AddRoleToInstanceProfile
+                  - iam:RemoveRoleFromInstanceProfile
+                  - iam:DeleteInstanceProfile
+                Resource:
+                  - !Sub arn:aws:iam::${AWS::AccountId}:instance-profile/backend-beta-*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:instance-profile/backend-release-*
+              - Effect: Allow
+                Action:
                   - iam:PassRole
                 Resource:
                   - !GetAtt SSHKeyPutRole.Arn
