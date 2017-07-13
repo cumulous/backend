@@ -1,20 +1,23 @@
-AWSTemplateFormatVersion: 2010-09-09
-Transform: AWS::Serverless-2016-10-31
-
 Parameters:
   SubnetIds:
-    Type: CommaDelimitedList
+    Type: List<AWS::EC2::Subnet::Id>
   SecurityGroup:
-    Type: String
+    Type: AWS::EC2::SecurityGroup::Id
   ClusterCores:
     Type: Number
   SpotBidPercent:
     Type: Number
   SSHKeyName:
-    Type: String
+    Type: AWS::EC2::KeyPair::KeyName
   SetupCustomResourceArn:
     Type: String
   StatesExecutionRoleArn:
+    Type: String
+  BasicLambdaExecutionRoleArn:
+    Type: String
+  ArtifactsBucket:
+    Type: String
+  LambdaPackage:
     Type: String
 
 Resources:
@@ -64,126 +67,205 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
 
-  SpotComputeEnvironment:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !Ref SetupCustomResourceArn
-      StateMachine: !Ref SetupComputeEnvironmentStateMachine
-      type: MANAGED
-      state: ENABLED
-      serviceRole: !GetAtt BatchServiceRole.Arn
-      computeEnvironmentName: !Sub ${AWS::StackName}-spot-environment
-      computeResources:
-        type: SPOT
-        bidPercentage: !Ref SpotBidPercent
-        minvCpus: 0
-        maxvCpus: !Ref ClusterCores
-        instanceTypes: [ optimal ]
-        instanceRole: !GetAtt InstanceRole.Arn
-        spotIamFleetRole: !GetAtt SpotFleetRole.Arn
-        subnets: !Ref SubnetIds
-        securityGroupIds:
-          - !Ref SecurityGroup
-        ec2KeyPair: !Ref SSHKeyName
+  # SpotComputeEnvironment:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   Properties:
+  #     ServiceToken: !Ref SetupCustomResourceArn
+  #     StateMachine: !Ref SetupComputeEnvironmentStateMachine
+  #     type: MANAGED
+  #     state: ENABLED
+  #     serviceRole: !GetAtt BatchServiceRole.Arn
+  #     computeEnvironmentName: !Sub ${AWS::StackName}-spot-environment
+  #     computeResources:
+  #       type: SPOT
+  #       bidPercentage: !Ref SpotBidPercent
+  #       minvCpus: 0
+  #       maxvCpus: !Ref ClusterCores
+  #       instanceTypes: [ optimal ]
+  #       instanceRole: !GetAtt InstanceRole.Arn
+  #       spotIamFleetRole: !GetAtt SpotFleetRole.Arn
+  #       subnets: !Ref SubnetIds
+  #       securityGroupIds:
+  #         - !Ref SecurityGroup
+  #       ec2KeyPair: !Ref SSHKeyName
 
-  OnDemandComputeEnvironment:
-    Type: AWS::CloudFormation::CustomResource
-    DependsOn: SpotComputeEnvironment
-    Properties:
-      ServiceToken: !Ref SetupCustomResourceArn
-      StateMachine: !Ref SetupComputeEnvironmentStateMachine
-      type: MANAGED
-      state: ENABLED
-      serviceRole: !GetAtt BatchServiceRole.Arn
-      computeEnvironmentName: !Sub ${AWS::StackName}-ondemand-environment
-      computeResources:
-        type: EC2
-        minvCpus: 0
-        maxvCpus: !Ref ClusterCores
-        instanceTypes: [ optimal ]
-        instanceRole: !GetAtt InstanceRole.Arn
-        subnets: !Ref SubnetIds
-        securityGroupIds:
-          - !Ref SecurityGroup
-        ec2KeyPair: !Ref SSHKeyName
+  # OnDemandComputeEnvironment:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   DependsOn: SpotComputeEnvironment
+  #   Properties:
+  #     ServiceToken: !Ref SetupCustomResourceArn
+  #     StateMachine: !Ref SetupComputeEnvironmentStateMachine
+  #     type: MANAGED
+  #     state: ENABLED
+  #     serviceRole: !GetAtt BatchServiceRole.Arn
+  #     computeEnvironmentName: !Sub ${AWS::StackName}-ondemand-environment
+  #     computeResources:
+  #       type: EC2
+  #       minvCpus: 0
+  #       maxvCpus: !Ref ClusterCores
+  #       instanceTypes: [ optimal ]
+  #       instanceRole: !GetAtt InstanceRole.Arn
+  #       subnets: !Ref SubnetIds
+  #       securityGroupIds:
+  #         - !Ref SecurityGroup
+  #       ec2KeyPair: !Ref SSHKeyName
 
   CreateComputeEnvironment:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CreateComputeEnvironment
-      CodeUri: ../app
       Handler: batch.createComputeEnvironment
+      Role: !GetAtt CreateComputeEnvironmentRole.Arn
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
       Runtime: nodejs6.10
       Timeout: 10
-      Policies:
+
+  CreateComputeEnvironmentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
-            Action: batch:CreateComputeEnvironment
-            Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/createcomputeenvironment
-          - Effect: Allow
-            Action: iam:PassRole
-            Resource:
-              - !GetAtt BatchServiceRole.Arn
-              - !GetAtt InstanceRole.Arn
-              - !GetAtt SpotFleetRole.Arn
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateComputeEnvironmentRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: batch:CreateComputeEnvironment
+                Resource:
+                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/createcomputeenvironment
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - !GetAtt BatchServiceRole.Arn
+                  - !GetAtt InstanceRole.Arn
+                  - !GetAtt SpotFleetRole.Arn
 
   UpdateComputeEnvironment:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-UpdateComputeEnvironment
-      CodeUri: ../app
+      Role: !GetAtt UpdateComputeEnvironmentRole.Arn
       Handler: batch.updateComputeEnvironment
       Runtime: nodejs6.10
       Timeout: 10
-      Policies:
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  UpdateComputeEnvironmentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
-            Action: batch:UpdateComputeEnvironment
-            Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/updatecomputeenvironment
-          - Effect: Allow
-            Action: iam:PassRole
-            Resource:
-              - !GetAtt BatchServiceRole.Arn
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateComputeEnvironmentRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: batch:UpdateComputeEnvironment
+                Resource:
+                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/updatecomputeenvironment
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - !GetAtt BatchServiceRole.Arn
 
   CheckUpdateComputeEnvironment:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CheckUpdateComputeEnvironment
-      CodeUri: ../app
+      Role: !Ref BasicLambdaExecutionRoleArn
       Handler: batch.checkUpdateEnvironment
       Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
 
   DeleteComputeEnvironment:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DeleteComputeEnvironment
-      CodeUri: ../app
+      Role: !GetAtt DeleteComputeEnvironmentRole.Arn
       Handler: batch.deleteComputeEnvironment
       Runtime: nodejs6.10
       Timeout: 10
-      Policies:
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DeleteComputeEnvironmentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
-            Action: batch:DeleteComputeEnvironment
-            Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/deletecomputeenvironment
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DeleteComputeEnvironmentRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: batch:DeleteComputeEnvironment
+                Resource:
+                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/deletecomputeenvironment
 
   DescribeComputeEnvironment:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DescribeComputeEnvironment
-      CodeUri: ../app
+      Role: !GetAtt DescribeComputeEnvironmentRole.Arn
       Handler: batch.describeComputeEnvironment
       Runtime: nodejs6.10
       Timeout: 10
-      Policies:
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DescribeComputeEnvironmentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
-            Action: batch:DescribeComputeEnvironments
-            Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describecomputeenvironments
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DescribeComputeEnvironmentRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: batch:DescribeComputeEnvironments
+                Resource:
+                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describecomputeenvironments
 
   SetupComputeEnvironmentStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -465,103 +547,201 @@ Resources:
           }
         }
 
-  JobQueue:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !Ref SetupCustomResourceArn
-      StateMachine: !Ref SetupJobQueueStateMachine
-      jobQueueName: !Sub ${AWS::StackName}-job-queue
-      priority: 1
-      computeEnvironmentOrder:
-        - order: 1
-          computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
-          version: !GetAtt SpotComputeEnvironment.Version
-        - order: 2
-          computeEnvironment: !GetAtt OnDemandComputeEnvironment.Arn
-          version: !GetAtt OnDemandComputeEnvironment.Version
+  # JobQueue:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   Properties:
+  #     ServiceToken: !Ref SetupCustomResourceArn
+  #     StateMachine: !Ref SetupJobQueueStateMachine
+  #     jobQueueName: !Sub ${AWS::StackName}-job-queue
+  #     priority: 1
+  #     computeEnvironmentOrder:
+  #       - order: 1
+  #         computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
+  #         version: !GetAtt SpotComputeEnvironment.Version
+  #       - order: 2
+  #         computeEnvironment: !GetAtt OnDemandComputeEnvironment.Arn
+  #         version: !GetAtt OnDemandComputeEnvironment.Version
 
   CreateJobQueue:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CreateJobQueue
-      CodeUri: ../app
+      Role: !GetAtt CreateJobQueueRole.Arn
       Handler: batch.createJobQueue
       Runtime: nodejs6.10
       Timeout: 10
-      Policies:
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  CreateJobQueueRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
-            Action: batch:CreateJobQueue
-            Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/createjobqueue
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateJobQueueRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: batch:CreateJobQueue
+                Resource:
+                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/createjobqueue
 
   DescribeJobQueue:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DescribeJobQueue
-      CodeUri: ../app
+      Role: !GetAtt DescribeJobQueue.Arn
       Handler: batch.describeJobQueue
       Runtime: nodejs6.10
       Timeout: 10
-      Policies:
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DescribeJobQueue:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
-            Action: batch:DescribeJobQueues
-            Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describejobqueues
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DescribeJobQueuePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: batch:DescribeJobQueues
+                Resource:
+                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describejobqueues
 
   DescribeJobQueueMinusEnvironment:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DescribeJobQueueMinusEnvironment
-      CodeUri: ../app
+      Role: !GetAtt DescribeJobQueueMinusEnvironmentRole.Arn
       Handler: batch.describeJobQueueMinusEnvironment
       Runtime: nodejs6.10
       Timeout: 10
-      Policies:
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DescribeJobQueueMinusEnvironmentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
-            Action: batch:DescribeJobQueues
-            Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describejobqueues
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DescribeJobQueueMinusEnvironmentRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: batch:DescribeJobQueues
+                Resource:
+                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describejobqueues
 
   CheckUpdateJobQueue:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CheckUpdateJobQueue
-      CodeUri: ../app
+      Role: !Ref BasicLambdaRoleArn
       Handler: batch.checkUpdateJobQueue
       Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
 
   UpdateJobQueue:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-UpdateJobQueue
-      CodeUri: ../app
+      Role: !GetAtt UpdateJobQueueRole.Arn
       Handler: batch.updateJobQueue
       Runtime: nodejs6.10
       Timeout: 10
-      Policies:
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  UpdateJobQueueRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
-            Action: batch:UpdateJobQueue
-            Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/updatejobqueue
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: UpdateJobQueueRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: batch:UpdateJobQueue
+                Resource:
+                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/updatejobqueue
 
   DeleteJobQueue:
-    Type: AWS::Serverless::Function
+    Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-DeleteJobQueue
-      CodeUri: ../app
+      Role: !GetAtt DeleteJobQueueRole.Arn
       Handler: batch.deleteJobQueue
       Runtime: nodejs6.10
       Timeout: 10
-      Policies:
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DeleteJobQueueRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
         Statement:
           - Effect: Allow
-            Action: batch:DeleteJobQueue
-            Resource:
-              - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/deletejobqueue
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DeleteJobQueueRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: batch:DeleteJobQueue
+                Resource:
+                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/deletejobqueue
 
   SetupJobQueueStateMachine:
     Type: AWS::StepFunctions::StateMachine

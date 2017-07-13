@@ -1,6 +1,7 @@
 #!/bin/sh
 
 TEMPLATE_FILE="backend.yaml"
+PACKAGE_FILE="app.zip"
 
 aws s3 cp api/swagger/swagger.yaml s3://${ARTIFACTS_BUCKET}/templates/${STACK_NAME}/
 aws cloudformation package \
@@ -10,6 +11,15 @@ aws cloudformation package \
   --s3-prefix lambda/${STACK_NAME}
 aws s3 cp ${TEMPLATE_FILE} s3://${ARTIFACTS_BUCKET}/templates/${STACK_NAME}/
 
+cd app
+zip -r ../${PACKAGE_FILE} .
+cd ..
+
+PACKAGE_VERSION=$(sha256sum ${PACKAGE_FILE} | head -c 64)
+PACKAGE_PATH="lambda/${STACK_NAME}/${PACKAGE_VERSION}.zip"
+
+aws s3 cp ${PACKAGE_FILE} s3://${ARTIFACTS_BUCKET}/${PACKAGE_PATH}
+
 CHANGE_SET="--stack-name ${STACK_NAME} --change-set-name Deploy"
 ARGS=" \
   ${CHANGE_SET} \
@@ -18,6 +28,7 @@ ARGS=" \
   --capabilities CAPABILITY_IAM \
   --parameters \
     ParameterKey=ArtifactsBucket,ParameterValue=${ARTIFACTS_BUCKET} \
+    ParameterKey=LambdaPackage,ParameterValue=${PACKAGE_PATH} \
     ParameterKey=VpcRange,ParameterValue=${VPC_RANGE} \
     ParameterKey=EncryptionKeyId,ParameterValue=${ENCRYPTION_KEY_ID} \
     ParameterKey=SecretsBucket,ParameterValue=${SECRETS_BUCKET} \
