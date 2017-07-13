@@ -11,6 +11,8 @@ Parameters:
     Type: AWS::EC2::KeyPair::KeyName
   SetupCustomResourceArn:
     Type: String
+  SendCloudFormationResponseArn:
+    Type: String
   StatesExecutionRoleArn:
     Type: String
   BasicLambdaExecutionRoleArn:
@@ -541,7 +543,7 @@ Resources:
             "End": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": "${SendCloudFormationResponse.Arn}",
+              "Resource": "${SendCloudFormationResponseArn}",
               "End": true
             }
           }
@@ -967,7 +969,7 @@ Resources:
             "End": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": "${SendCloudFormationResponse.Arn}",
+              "Resource": "${SendCloudFormationResponseArn}",
               "End": true
             }
           }

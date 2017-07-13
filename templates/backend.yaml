@@ -2767,6 +2767,7 @@ Resources:
         SpotBidPercent: !Ref SpotBidPercent
         SSHKeyName: !Ref SSHKeyName
         SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
         StatesExecutionRoleArn: !GetAtt StatesExecutionRole.Arn
         BasicLambdaExecutionRoleArn: !GetAtt BasicLambdaExecutionRole.Arn
         ArtifactsBucket: !Ref ArtifactsBucket
