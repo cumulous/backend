@@ -2760,7 +2760,7 @@ Resources:
     Properties:
       TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/batch.yaml
       Parameters:
-        SubnetIds: !GetAtt Subnets.SubnetIds
+        SubnetIds: !Join [ ':', !GetAtt Subnets.SubnetIds ]
         SecurityGroup: !GetAtt BackendVPC.DefaultSecurityGroup
         ClusterCores: !Ref ClusterCores
         SpotBidPercent: !Ref SpotBidPercent
