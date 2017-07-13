@@ -12,7 +12,7 @@ aws cloudformation package \
 aws s3 cp ${TEMPLATE_FILE} s3://${ARTIFACTS_BUCKET}/templates/${STACK_NAME}/
 
 cd app
-zip -r ../${PACKAGE_FILE} .
+zip -qr ../${PACKAGE_FILE} .
 cd ..
 
 PACKAGE_VERSION=$(sha256sum ${PACKAGE_FILE} | head -c 64)
