@@ -3,6 +3,7 @@ phases:
   install:
     commands:
       - npm install
+      - pip install --upgrade awscli
       - chmod -R +x scripts
   pre_build:
     commands:
