@@ -7,16 +7,6 @@ PACKAGE_FILE="app.zip"
 TEMPLATES_DEST_PATH="templates/${STACK_NAME}"
 TEMPLATES_DEST="s3://${ARTIFACTS_BUCKET}/${TEMPLATES_DEST_PATH}/"
 
-aws cloudformation package \
-  --template-file templates/${BACKEND_TEMPLATE} \
-  --output-template-file ${BACKEND_TEMPLATE} \
-  --s3-bucket ${ARTIFACTS_BUCKET} \
-  --s3-prefix lambda/${STACK_NAME}
-
-aws s3 sync templates/nested/ ${TEMPLATES_DEST}
-aws s3 cp ${BACKEND_TEMPLATE} ${TEMPLATES_DEST}
-aws s3 cp api/swagger/swagger.yaml ${TEMPLATES_DEST}
-
 cd app
 zip -qr ../${PACKAGE_FILE} .
 cd ..
@@ -24,7 +14,16 @@ cd ..
 PACKAGE_VERSION=$(sha256sum ${PACKAGE_FILE} | head -c 64)
 PACKAGE_PATH="lambda/${STACK_NAME}/${PACKAGE_VERSION}.zip"
 
+aws cloudformation package \
+  --template-file templates/${BACKEND_TEMPLATE} \
+  --output-template-file ${BACKEND_TEMPLATE} \
+  --s3-bucket ${ARTIFACTS_BUCKET} \
+  --s3-prefix lambda/${STACK_NAME}
+
 aws s3 cp ${PACKAGE_FILE} s3://${ARTIFACTS_BUCKET}/${PACKAGE_PATH}
+aws s3 cp ${BACKEND_TEMPLATE} ${TEMPLATES_DEST}
+aws s3 cp api/swagger/swagger.yaml ${TEMPLATES_DEST}
+aws s3 sync templates/nested/ ${TEMPLATES_DEST}
 
 CHANGE_SET="--stack-name ${STACK_NAME} --change-set-name Deploy"
 ARGS=" \
