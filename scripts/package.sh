@@ -5,7 +5,7 @@ PACKAGE_FILE="app.zip"
 
 aws s3 cp . s3://${ARTIFACTS_BUCKET}/templates/${STACK_NAME}/ \
   --recursive \
-  --exclude '*'
+  --exclude '*' \
   --include 'templates/*.yaml' \
   --exclude 'infrastructure.yaml' \
   --include 'api/swagger/swagger.yaml'
