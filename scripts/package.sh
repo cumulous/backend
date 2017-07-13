@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
-trap 'exit' ERR
+set -e
 
 TEMPLATE_FILE="backend.yaml"
 PACKAGE_FILE="app.zip"
