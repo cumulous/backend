@@ -38,8 +38,6 @@ Parameters:
     Type: String
   WebSigningKeyGetRoleArn:
     Type: String
-  DatasetsTableName:
-    Type: String
   SearchDomain:
     Type: String
   DatasetsBucket:
@@ -2461,7 +2459,7 @@ Resources:
         Fn::Transform:
           Name: AWS::Include
           Parameters:
-            Location: !Sub s3://${ArtifactsBucket}/swagger.yaml
+            Location: !Sub s3://${ArtifactsBucket}/templates/${AWS::StackName}/swagger.yaml
 
   CreateDataset:
     Type: AWS::Serverless::Function
@@ -2754,19 +2752,6 @@ Resources:
               - dynamodb:PutItem
             Resource:
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}
-
-  Batch:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/batch.yaml
-      Parameters:
-        SubnetIds: !Join [ ':', !GetAtt Subnets.SubnetIds ]
-        SecurityGroup: !GetAtt BackendVPC.DefaultSecurityGroup
-        ClusterCores: !Ref ClusterCores
-        SpotBidPercent: !Ref SpotBidPercent
-        SSHKeyName: !Ref SSHKeyName
-        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
-        StatesExecutionRoleArn: !GetAtt StatesExecutionRole.Arn
 
 Outputs:
   WebSigningKey:

@@ -70,11 +70,6 @@ Parameters:
       ^(1?\\d{0,2}|2[0-4]\\d|25[0-5])(\\.(1?\\d{0,2}|2[0-4]\\d|25[0-5])){3}/([1-2]?[0-9]|3[0-2])\
       (,(1?\\d{0,2}|2[0-4]\\d|25[0-5])(\\.(1?\\d{0,2}|2[0-4]\\d|25[0-5])){3}/([1-2]?[0-9]|3[0-2]))*$"
     Default: 0.0.0.0/0
-  DatasetsTableName:
-    Description: "The name of the Datasets table to reuse when re-creating this template"
-    Type: String
-    AllowedPattern: ^[\w-.]{0,255}$
-    Default: ''
   SearchDomainName:
     Description: "The name of the Cloudsearch domain to reuse when re-creating this template"
     Type: String
@@ -159,7 +154,6 @@ Metadata:
         Label:
           default: "Databases"
         Parameters:
-          - DatasetsTableName
           - SearchDomainName
       -
         Label:
@@ -354,7 +348,7 @@ Resources:
               OutputArtifacts:
                 - Name: Source
         -
-          Name: Build
+          Name: Beta
           Actions:
             -
               Name: Build
@@ -364,29 +358,12 @@ Resources:
                 Provider: CodeBuild
                 Version: 1
               Configuration:
-                ProjectName: !Ref BackendBuildProject
+                ProjectName: !Ref BackendBuildBetaProject
               InputArtifacts:
                 - Name: Source
-              OutputArtifacts:
-                - Name: Package
-        -
-          Name: Package
-          Actions:
+              RunOrder: 1
             -
-              Name: Package
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Provider: CodeBuild
-                Version: 1
-              Configuration:
-                ProjectName: !Ref BackendPackageProject
-              InputArtifacts:
-                - Name: Package
-        -
-          Name: Beta
-          Actions:
-            - Name: ApproveChangeSet
+              Name: ApproveChangeSet
               ActionTypeId:
                 Category: Approval
                 Owner: AWS
@@ -397,7 +374,7 @@ Resources:
                   - CreateNotification
                   - !Ref PipelineNotification
                   - !Ref AWS::NoValue
-              RunOrder: 1
+              RunOrder: 2
             -
               Name: Deploy
               ActionTypeId:
@@ -409,11 +386,24 @@ Resources:
                 ActionMode: CHANGE_SET_EXECUTE
                 ChangeSetName: Deploy
                 StackName: backend-beta
-              RunOrder: 2
+              RunOrder: 3
         -
           Name: Release
           Actions:
-            - Name: ApproveChangeSet
+            -
+              Name: Build
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: 1
+              Configuration:
+                ProjectName: !Ref BackendBuildReleaseProject
+              InputArtifacts:
+                - Name: Source
+              RunOrder: 1
+            -
+              Name: ApproveChangeSet
               ActionTypeId:
                 Category: Approval
                 Owner: AWS
@@ -424,7 +414,7 @@ Resources:
                   - CreateNotification
                   - !Ref PipelineNotification
                   - !Ref AWS::NoValue
-              RunOrder: 1
+              RunOrder: 2
             -
               Name: Deploy
               ActionTypeId:
@@ -436,32 +426,72 @@ Resources:
                 ActionMode: CHANGE_SET_EXECUTE
                 ChangeSetName: Deploy
                 StackName: backend-release
-              RunOrder: 2
+              RunOrder: 3
 
-  BackendBuildProject:
+  BackendBuildBetaProject:
     Type: AWS::CodeBuild::Project
     Properties:
-      Name: backend-build
+      Name: backend-beta
       ServiceRole: !Ref BackendBuildRole
       Environment:
         Type: LINUX_CONTAINER
         Image: aws/codebuild/nodejs:6.3.1
         ComputeType: BUILD_GENERAL1_SMALL
-      Artifacts:
-        Type: CODEPIPELINE
-      Source:
-        Type: CODEPIPELINE
-
-  BackendPackageProject:
-    Type: AWS::CodeBuild::Project
-    Properties:
-      Name: backend-package
-      ServiceRole: !Ref BackendPackageRole
-      Environment:
-        Type: LINUX_CONTAINER
-        Image: aws/codebuild/ubuntu-base:14.04
-        ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
+          - Name: STACK_NAME
+            Value: backend-beta
+          - Name: ARTIFACTS_BUCKET
+            Value: !Ref BackendArtifactsBucket
+          - Name: DEPLOYMENT_ROLE
+            Value: !GetAtt BackendDeploymentRole.Arn
+          - Name: VPC_RANGE
+            Value: !Ref BetaVPCRange
+          - Name: ENCRYPTION_KEY_ID
+            Value: !Ref EncryptionKey
+          - Name: SECRETS_BUCKET
+            Value: !Ref SecretsBucket
+          - Name: SSH_KEY_GET_ROLE
+            Value: !Ref SSHKeyGetRole
+          - Name: SSH_KEY_PUT_ROLE
+            Value: !Ref SSHKeyPutRole
+          - Name: DOMAIN_ZONE
+            Value: !If [CreateHostedZone, !Ref DomainZone, !Ref HostedZone]
+          - Name: WEB_DOMAIN
+            Value: !Sub beta.${Domain}
+          - Name: WEB_BUCKET
+            Value: !Ref BetaWebBucket
+          - Name: WEB_TTL
+            Value: !Ref WebTTL
+          - Name: WEB_PRICE_CLASS
+            Value: !Ref WebPriceClass
+          - Name: WEB_LOCATIONS
+            Value: !Ref WebLocations
+          - Name: WEB_ACL
+            Value: !Ref WebACL
+          - Name: WEB_SIGNING_GET_ROLE_ARN
+            Value: !GetAtt WebSigningKeyGetRole.Arn
+          - Name: WEB_SIGNING_PUT_ROLE_ARN
+            Value: !GetAtt WebSigningKeyPutRole.Arn
+          - Name: DATASETS_BUCKET
+            Value: !Ref BetaDatasetsBucket
+          - Name: CLUSTER_CORES
+            Value: !Ref ClusterCores
+          - Name: SPOT_BID_PERCENT
+            Value: !Ref SpotBidPercent
+          - Name: AUTH0_DOMAIN
+            Value: !Ref Auth0Domain
+          - Name: AUTH0_MANAGEMENT_CLIENT_ID
+            Value: !Ref Auth0ManagementClientID
+          - Name: AUTH0_MANAGEMENT_CLIENT_SECRET
+            Value: !Ref Auth0ManagementClientSecret
+          - Name: AUTH0_USER_TOKEN_LIFETIME
+            Value: !Ref Auth0UserTokenLifetime
+          - Name: AUTH0_PUT_SECRET_ROLE_ARN
+            Value: !GetAtt Auth0PutSecretRole.Arn
+          - Name: AUTH0_GET_MANAGEMENT_SECRET_ROLE_ARN
+            Value: !GetAtt Auth0GetManagementSecretRole.Arn
+          - Name: AUTH0_CREATE_CLIENT_ROLE_ARN
+            Value: !GetAtt Auth0CreateClientRole.Arn
           - Name: SEARCH_DOMAIN
             Value: !If
               - CreateSearchDomain
@@ -471,108 +501,76 @@ Resources:
         Type: CODEPIPELINE
       Source:
         Type: CODEPIPELINE
-        BuildSpec: !Sub
-          - |-
-            version: 0.1
-            phases:
-              install:
-                commands:
-                  - pip install --upgrade awscli
 
-              build:
-                commands:
-                  - aws s3 cp api/swagger/swagger.yaml s3://${BackendArtifactsBucket}
-                  - |-
-                    package() {
-                      local stack="$1"
-
-                      aws cloudformation package \
-                        --template-file templates/$stack.yaml \
-                        --output-template-file $stack.yaml \
-                        --s3-bucket ${BackendArtifactsBucket} \
-                        --s3-prefix lambda
-                      aws s3 cp $stack.yaml s3://${BackendArtifactsBucket}
-                    }
-                    package backend
-                    package batch
-
-              post_build:
-                commands:
-                  - |-
-                    cfm="aws cloudformation" &&
-
-                    create_change_set() {
-                      local stack_name="$1"
-                      local vpc_range="$2"
-                      local web_domain="$3"
-                      local web_bucket="$4"
-                      local datasets_bucket="$5"
-                      local datasets_table="$6"
-                      local auth0_secret="$7"
-                      local signing_put_role="$8"
-                      local change_set="--stack-name $stack_name --change-set-name Deploy"
-
-                      local args=" \
-                        $change_set \
-                        --template-url https://${BackendArtifactsBucket}.s3.amazonaws.com/backend.yaml \
-                        --role-arn ${BackendDeploymentRole.Arn} \
-                        --capabilities CAPABILITY_IAM \
-                        --parameters \
-                          ParameterKey=ArtifactsBucket,ParameterValue=${BackendArtifactsBucket} \
-                          ParameterKey=VpcRange,ParameterValue=$vpc_range \
-                          ParameterKey=EncryptionKeyId,ParameterValue=${EncryptionKey} \
-                          ParameterKey=SecretsBucket,ParameterValue=${SecretsBucket} \
-                          ParameterKey=SSHKeyName,ParameterValue=$stack_name \
-                          ParameterKey=SSHKeyS3Path,ParameterValue=ssh/$stack_name.pem \
-                          ParameterKey=SSHKeyPutRole,ParameterValue=${SSHKeyPutRole} \
-                          ParameterKey=SSHKeyGetRole,ParameterValue=${SSHKeyGetRole} \
-                          ParameterKey=DomainZone,ParameterValue=${HostedZoneId} \
-                          ParameterKey=APIDomain,ParameterValue=api.$web_domain \
-                          ParameterKey=WebDomain,ParameterValue=$web_domain \
-                          ParameterKey=WebBucket,ParameterValue=$web_bucket \
-                          ParameterKey=WebTTL,ParameterValue=${WebTTL} \
-                          ParameterKey=WebPriceClass,ParameterValue=${WebPriceClass} \
-                          ParameterKey=WebLocations,ParameterValue=${WebLocations} \
-                          ParameterKey=WebACL,ParameterValue=${WebACL} \
-                          ParameterKey=WebSigningKeyPutRoleArn,ParameterValue=$signing_put_role \
-                          ParameterKey=WebSigningKeyGetRoleArn,ParameterValue=${WebSigningKeyGetRole.Arn} \
-                          ParameterKey=DatasetsTableName,ParameterValue=$datasets_table \
-                          ParameterKey=SearchDomain,ParameterValue=$SEARCH_DOMAIN \
-                          ParameterKey=DatasetsBucket,ParameterValue=$datasets_bucket \
-                          ParameterKey=ClusterCores,ParameterValue=${ClusterCores} \
-                          ParameterKey=SpotBidPercent,ParameterValue=${SpotBidPercent} \
-                          ParameterKey=Auth0Domain,ParameterValue=${Auth0Domain} \
-                          ParameterKey=Auth0ManagementClientID,ParameterValue=${Auth0ManagementClientID} \
-                          ParameterKey=Auth0ManagementClientSecret,ParameterValue=$auth0_secret \
-                          ParameterKey=Auth0UserTokenLifetime,ParameterValue=${Auth0UserTokenLifetime} \
-                          ParameterKey=Auth0PutSecretRoleArn,ParameterValue=${Auth0PutSecretRole.Arn} \
-                          ParameterKey=Auth0GetManagementSecretRoleArn,ParameterValue=${Auth0GetManagementSecretRole.Arn} \
-                          ParameterKey=Auth0CreateClientRoleArn,ParameterValue=${Auth0CreateClientRole.Arn} "
-
-                      $cfm delete-change-set $change_set || true
-                      $cfm create-change-set $args || $cfm create-change-set --change-set-type CREATE $args
-                    } &&
-
-                    create_change_set backend-beta "${BetaVPCRange}" "beta.${Domain}" \
-                      "${BetaWebBucket}" "${BetaDatasetsBucket}" \
-                      "" "${Auth0ManagementClientSecret}" "${WebSigningKeyPutRole.Arn}" &&
-
-                    create_change_set backend-release "${ProductionVPCRange}" "${Domain}" \
-                      "${ReleaseWebBucket}" "${ReleaseDatasetsBucket}" \
-                      "${DatasetsTableName}" &&
-
-                    wait_change_set() {
-                      local stack_name="$1"
-                      local change_set="--stack-name $stack_name --change-set-name Deploy"
-
-                      $cfm wait change-set-create-complete $change_set
-                    } &&
-
-                    wait_change_set backend-beta &&
-                    wait_change_set backend-release
-
-          - HostedZoneId: !If [CreateHostedZone, !Ref DomainZone, !Ref HostedZone]
-            ReleaseDatasetsBucket: !If [CreateDatasetsBucket, !Ref DatasetsBucket, !Ref DatasetsBucketName]
+  BackendBuildReleaseProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: backend-release
+      ServiceRole: !Ref BackendBuildRole
+      Environment:
+        Type: LINUX_CONTAINER
+        Image: aws/codebuild/nodejs:6.3.1
+        ComputeType: BUILD_GENERAL1_SMALL
+        EnvironmentVariables:
+          - Name: STACK_NAME
+            Value: backend-release
+          - Name: ARTIFACTS_BUCKET
+            Value: !Ref BackendArtifactsBucket
+          - Name: DEPLOYMENT_ROLE
+            Value: !GetAtt BackendDeploymentRole.Arn
+          - Name: VPC_RANGE
+            Value: !Ref ProductionVPCRange
+          - Name: ENCRYPTION_KEY_ID
+            Value: !Ref EncryptionKey
+          - Name: SECRETS_BUCKET
+            Value: !Ref SecretsBucket
+          - Name: SSH_KEY_GET_ROLE
+            Value: !Ref SSHKeyGetRole
+          - Name: SSH_KEY_PUT_ROLE
+            Value: !Ref SSHKeyPutRole
+          - Name: DOMAIN_ZONE
+            Value: !If [CreateHostedZone, !Ref DomainZone, !Ref HostedZone]
+          - Name: WEB_DOMAIN
+            Value: !Sub ${Domain}
+          - Name: WEB_BUCKET
+            Value: !Ref ReleaseWebBucket
+          - Name: WEB_TTL
+            Value: !Ref WebTTL
+          - Name: WEB_PRICE_CLASS
+            Value: !Ref WebPriceClass
+          - Name: WEB_LOCATIONS
+            Value: !Ref WebLocations
+          - Name: WEB_ACL
+            Value: !Ref WebACL
+          - Name: WEB_SIGNING_GET_ROLE_ARN
+            Value: !GetAtt WebSigningKeyGetRole.Arn
+          - Name: DATASETS_BUCKET
+            Value: !If [CreateDatasetsBucket, !Ref DatasetsBucket, !Ref DatasetsBucketName]
+          - Name: CLUSTER_CORES
+            Value: !Ref ClusterCores
+          - Name: SPOT_BID_PERCENT
+            Value: !Ref SpotBidPercent
+          - Name: AUTH0_DOMAIN
+            Value: !Ref Auth0Domain
+          - Name: AUTH0_MANAGEMENT_CLIENT_ID
+            Value: !Ref Auth0ManagementClientID
+          - Name: AUTH0_USER_TOKEN_LIFETIME
+            Value: !Ref Auth0UserTokenLifetime
+          - Name: AUTH0_PUT_SECRET_ROLE_ARN
+            Value: !GetAtt Auth0PutSecretRole.Arn
+          - Name: AUTH0_GET_MANAGEMENT_SECRET_ROLE_ARN
+            Value: !GetAtt Auth0GetManagementSecretRole.Arn
+          - Name: AUTH0_CREATE_CLIENT_ROLE_ARN
+            Value: !GetAtt Auth0CreateClientRole.Arn
+          - Name: SEARCH_DOMAIN
+            Value: !If
+              - CreateSearchDomain
+              - !GetAtt SearchDomain.Name
+              - !Ref SearchDomainName
+      Artifacts:
+        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE
 
   EncryptionKeyAlias:
     Type: AWS::KMS::Alias
@@ -771,8 +769,8 @@ Resources:
                   - codebuild:BatchGetBuilds
                   - codebuild:StartBuild
                 Resource:
-                  - !GetAtt BackendBuildProject.Arn
-                  - !GetAtt BackendPackageProject.Arn
+                  - !GetAtt BackendBuildBetaProject.Arn
+                  - !GetAtt BackendBuildReleaseProject.Arn
               - Effect: Allow
                 Action:
                   - cloudformation:DescribeStacks
@@ -818,57 +816,20 @@ Resources:
                   - s3:GetObject
                 Resource:
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend/Source/*
-              - Effect: Allow
-                Action:
-                  - s3:PutObject
-                Resource:
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend/Package/*
-
-  BackendPackageRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: codebuild.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: BackendPackagePolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:ListBucket
-                Resource:
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                Resource:
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend/Package/*
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend.yaml
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/batch.yaml
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/templates/*
               - Effect: Allow
                 Action:
                   - s3:PutObject
                 Resource:
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/lambda/*
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend.yaml
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/batch.yaml
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/swagger.yaml
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/templates/*
               - Effect: Allow
                 Action:
                   - cloudformation:CreateChangeSet
                   - cloudformation:DescribeChangeSet
                   - cloudformation:DeleteChangeSet
                 Resource:
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/backend-beta/*
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/backend-release/*
+                  - !Sub arn:aws:cloudformation:${AWS::Region}:${AWS::AccountId}:stack/backend-*
               - Effect: Allow
                 Action:
                   - iam:PassRole
@@ -954,7 +915,7 @@ Resources:
                   - s3:GetObject
                 Resource:
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/lambda/*
-                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/swagger.yaml
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/templates/*
               - Effect: Allow
                 Action:
                   - s3:CreateBucket
