@@ -2755,6 +2755,19 @@ Resources:
             Resource:
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}
 
+  Batch:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/batch.yaml
+      Parameters:
+        SubnetIds: !GetAtt Subnets.SubnetIds
+        SecurityGroup: !GetAtt BackendVPC.DefaultSecurityGroup
+        ClusterCores: !Ref ClusterCores
+        SpotBidPercent: !Ref SpotBidPercent
+        SSHKeyName: !Ref SSHKeyName
+        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+        StatesExecutionRoleArn: !GetAtt StatesExecutionRole.Arn
+
 Outputs:
   WebSigningKey:
     Condition: SetupWebSigningKeyPair

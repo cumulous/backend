@@ -490,6 +490,7 @@ Resources:
                       --s3-prefix lambda
 
                   - aws s3 cp backend.yaml s3://${BackendArtifactsBucket}
+                  - aws s3 cp batch.yaml s3://${BackendArtifactsBucket}
 
               post_build:
                 commands:
@@ -847,12 +848,14 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend/Package/*
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend.yaml
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/batch.yaml
               - Effect: Allow
                 Action:
                   - s3:PutObject
                 Resource:
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/lambda/*
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/backend.yaml
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/batch.yaml
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/swagger.yaml
               - Effect: Allow
                 Action:

@@ -13,4 +13,5 @@ artifacts:
   files:
     - app/**/*
     - templates/backend.yaml
+    - templates/batch.yaml
     - api/swagger/swagger.yaml
