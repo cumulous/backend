@@ -2,22 +2,20 @@
 
 set -e
 
-TEMPLATE_FILE="backend.yaml"
+BACKEND_TEMPLATE="backend.yaml"
 PACKAGE_FILE="app.zip"
-
-aws s3 cp . s3://${ARTIFACTS_BUCKET}/templates/${STACK_NAME}/ \
-  --recursive \
-  --exclude '*' \
-  --include 'templates/*.yaml' \
-  --exclude 'infrastructure.yaml' \
-  --include 'api/swagger/swagger.yaml'
+TEMPLATES_DEST_PATH="templates/${STACK_NAME}"
+TEMPLATES_DEST="s3://${ARTIFACTS_BUCKET}/${TEMPLATES_DEST_PATH}/"
 
 aws cloudformation package \
-  --template-file templates/${TEMPLATE_FILE} \
-  --output-template-file ${TEMPLATE_FILE} \
+  --template-file templates/${BACKEND_TEMPLATE} \
+  --output-template-file ${BACKEND_TEMPLATE} \
   --s3-bucket ${ARTIFACTS_BUCKET} \
   --s3-prefix lambda/${STACK_NAME}
-aws s3 cp ${TEMPLATE_FILE} s3://${ARTIFACTS_BUCKET}/templates/${STACK_NAME}/
+
+aws s3 sync templates/nested/ ${TEMPLATES_DEST}
+aws s3 cp ${BACKEND_TEMPLATE} ${TEMPLATES_DEST}
+aws s3 cp api/swagger/swagger.yaml ${TEMPLATES_DEST}
 
 cd app
 zip -qr ../${PACKAGE_FILE} .
@@ -31,7 +29,7 @@ aws s3 cp ${PACKAGE_FILE} s3://${ARTIFACTS_BUCKET}/${PACKAGE_PATH}
 CHANGE_SET="--stack-name ${STACK_NAME} --change-set-name Deploy"
 ARGS=" \
   ${CHANGE_SET} \
-  --template-url https://${ARTIFACTS_BUCKET}.s3.amazonaws.com/templates/${STACK_NAME}/${TEMPLATE_FILE} \
+  --template-url https://${ARTIFACTS_BUCKET}.s3.amazonaws.com/${TEMPLATES_DEST_PATH}/${BACKEND_TEMPLATE} \
   --role-arn ${DEPLOYMENT_ROLE} \
   --capabilities CAPABILITY_IAM \
   --parameters \
