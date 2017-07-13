@@ -483,14 +483,18 @@ Resources:
                 commands:
                   - aws s3 cp api/swagger/swagger.yaml s3://${BackendArtifactsBucket}
                   - |-
-                    aws cloudformation package \
-                      --template-file templates/backend.yaml \
-                      --output-template-file backend.yaml \
-                      --s3-bucket ${BackendArtifactsBucket} \
-                      --s3-prefix lambda
+                    package() {
+                      local stack="$1"
 
-                  - aws s3 cp backend.yaml s3://${BackendArtifactsBucket}
-                  - aws s3 cp batch.yaml s3://${BackendArtifactsBucket}
+                      aws cloudformation package \
+                        --template-file templates/$stack.yaml \
+                        --output-template-file $stack.yaml \
+                        --s3-bucket ${BackendArtifactsBucket} \
+                        --s3-prefix lambda
+                      aws s3 cp $stack.yaml s3://${BackendArtifactsBucket}
+                    }
+                    package backend
+                    package batch
 
               post_build:
                 commands:
