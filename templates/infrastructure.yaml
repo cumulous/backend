@@ -468,9 +468,9 @@ Resources:
             Value: !Ref WebLocations
           - Name: WEB_ACL
             Value: !Ref WebACL
-          - Name: WEB_SIGNING_GET_ROLE_ARN
+          - Name: WEB_SIGNING_KEY_GET_ROLE_ARN
             Value: !GetAtt WebSigningKeyGetRole.Arn
-          - Name: WEB_SIGNING_PUT_ROLE_ARN
+          - Name: WEB_SIGNING_KEY_PUT_ROLE_ARN
             Value: !GetAtt WebSigningKeyPutRole.Arn
           - Name: DATASETS_BUCKET
             Value: !Ref BetaDatasetsBucket
@@ -542,7 +542,7 @@ Resources:
             Value: !Ref WebLocations
           - Name: WEB_ACL
             Value: !Ref WebACL
-          - Name: WEB_SIGNING_GET_ROLE_ARN
+          - Name: WEB_SIGNING_KEY_GET_ROLE_ARN
             Value: !GetAtt WebSigningKeyGetRole.Arn
           - Name: DATASETS_BUCKET
             Value: !If [CreateDatasetsBucket, !Ref DatasetsBucket, !Ref DatasetsBucketName]

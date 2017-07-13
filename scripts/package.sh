@@ -23,8 +23,8 @@ ARGS=" \
     ParameterKey=SecretsBucket,ParameterValue=${SECRETS_BUCKET} \
     ParameterKey=SSHKeyName,ParameterValue=${STACK_NAME} \
     ParameterKey=SSHKeyS3Path,ParameterValue=ssh/${STACK_NAME}.pem \
-    ParameterKey=SSHKeyPutRole,ParameterValue=${SSH_KEY_PUT_ROLE} \
     ParameterKey=SSHKeyGetRole,ParameterValue=${SSH_KEY_GET_ROLE} \
+    ParameterKey=SSHKeyPutRole,ParameterValue=${SSH_KEY_PUT_ROLE} \
     ParameterKey=DomainZone,ParameterValue=${DOMAIN_ZONE} \
     ParameterKey=APIDomain,ParameterValue=api.${WEB_DOMAIN} \
     ParameterKey=WebDomain,ParameterValue=${WEB_DOMAIN} \
@@ -33,8 +33,8 @@ ARGS=" \
     ParameterKey=WebPriceClass,ParameterValue=${WEB_PRICE_CLASS} \
     ParameterKey=WebLocations,ParameterValue=${WEB_LOCATIONS} \
     ParameterKey=WebACL,ParameterValue=${WEB_ACL} \
-    ParameterKey=WebSigningKeyPutRoleArn,ParameterValue=${WEB_SIGNING_PUT_ROLE_ARN} \
     ParameterKey=WebSigningKeyGetRoleArn,ParameterValue=${WEB_SIGNING_KEY_GET_ROLE_ARN} \
+    ParameterKey=WebSigningKeyPutRoleArn,ParameterValue=${WEB_SIGNING_KEY_PUT_ROLE_ARN} \
     ParameterKey=SearchDomain,ParameterValue=${SEARCH_DOMAIN} \
     ParameterKey=DatasetsBucket,ParameterValue=${DATASETS_BUCKET} \
     ParameterKey=ClusterCores,ParameterValue=${CLUSTER_CORES} \
@@ -43,8 +43,8 @@ ARGS=" \
     ParameterKey=Auth0ManagementClientID,ParameterValue=${AUTH0_MANAGEMENT_CLIENT_ID} \
     ParameterKey=Auth0ManagementClientSecret,ParameterValue=${AUTH0_MANAGEMENT_CLIENT_SECRET} \
     ParameterKey=Auth0UserTokenLifetime,ParameterValue=${AUTH0_USER_TOKEN_LIFETIME} \
-    ParameterKey=Auth0PutSecretRoleArn,ParameterValue=${AUTH0_PUT_SECRET_ROLE_ARN} \
     ParameterKey=Auth0GetManagementSecretRoleArn,ParameterValue=${AUTH0_GET_MANAGEMENT_SECRET_ROLE_ARN} \
+    ParameterKey=Auth0PutSecretRoleArn,ParameterValue=${AUTH0_PUT_SECRET_ROLE_ARN} \
     ParameterKey=Auth0CreateClientRoleArn,ParameterValue=${AUTH0_CREATE_CLIENT_ROLE_ARN} "
 
 aws cloudformation delete-change-set ${CHANGE_SET} || true
