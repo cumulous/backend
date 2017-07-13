@@ -1,5 +1,7 @@
 #!/bin/sh
 
+trap 'exit' ERR
+
 TEMPLATE_FILE="backend.yaml"
 PACKAGE_FILE="app.zip"
 
