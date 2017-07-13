@@ -3,8 +3,12 @@
 TEMPLATE_FILE="backend.yaml"
 PACKAGE_FILE="app.zip"
 
-aws s3 cp templates/*.yaml s3://${ARTIFACTS_BUCKET}/templates/${STACK_NAME}/ --exclude infrastructure.yaml
-aws s3 cp api/swagger/swagger.yaml s3://${ARTIFACTS_BUCKET}/templates/${STACK_NAME}/
+aws s3 cp . s3://${ARTIFACTS_BUCKET}/templates/${STACK_NAME}/ \
+  --recursive \
+  --exclude '*'
+  --include 'templates/*.yaml' \
+  --exclude 'infrastructure.yaml' \
+  --include 'api/swagger/swagger.yaml'
 
 aws cloudformation package \
   --template-file templates/${TEMPLATE_FILE} \
