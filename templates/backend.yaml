@@ -2035,18 +2035,18 @@ Resources:
             Resource:
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}
 
-  # VPC:
-  #   Type: AWS::CloudFormation::Stack
-  #   Properties:
-  #     TemplateURL:
-  #       !Sub https://s3.amazonaws.com/${ArtifactsBucket}/templates/${AWS::StackName}/vpc.yaml
-  #     Parameters:
-  #       BackendStack: !Ref AWS::StackName
-  #       SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
-  #       SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
-  #       ArtifactsBucket: !Ref ArtifactsBucket
-  #       LambdaPackage: !Ref LambdaPackage
-  #       VpcRange: !Ref VpcRange
+  VPC:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL:
+        !Sub https://s3.amazonaws.com/${ArtifactsBucket}/templates/${AWS::StackName}/vpc.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
+        ArtifactsBucket: !Ref ArtifactsBucket
+        LambdaPackage: !Ref LambdaPackage
+        VpcRange: !Ref VpcRange
 
   # Batch:
   #   Type: AWS::CloudFormation::Stack
