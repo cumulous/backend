@@ -9,7 +9,7 @@ TEMPLATES_DEST="s3://${ARTIFACTS_BUCKET}/${TEMPLATES_DEST_PATH}/"
 
 cd app
 zip -qr ../${PACKAGE_FILE} .
-PACKAGE_VERSION=$(find . -type f -exec md5sum {} \; | sort -k 2 | md5sum)
+PACKAGE_VERSION=$(find . -type f -exec md5sum {} \; | sort -k 2 | md5sum | cut -d' ' -f1)
 PACKAGE_PATH="lambda/${STACK_NAME}/${PACKAGE_VERSION}.zip"
 cd ..
 
