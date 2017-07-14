@@ -4,6 +4,8 @@ Transform: AWS::Serverless-2016-10-31
 Parameters:
   ArtifactsBucket:
     Type: String
+  TemplateURLBase:
+    Type: String
   LambdaPackage:
     Type: String
   VpcRange:
@@ -2038,8 +2040,7 @@ Resources:
   VPC:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL:
-        !Sub https://s3.amazonaws.com/${ArtifactsBucket}/templates/${AWS::StackName}/vpc.yaml
+      TemplateURL: !Sub ${TemplateURLBase}/vpc.yaml
       Parameters:
         BackendStack: !Ref AWS::StackName
         SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
@@ -2051,8 +2052,7 @@ Resources:
   # Batch:
   #   Type: AWS::CloudFormation::Stack
   #   Properties:
-  #     TemplateURL:
-  #       !Sub https://s3.amazonaws.com/${ArtifactsBucket}/templates/${AWS::StackName}/batch.yaml
+  #     TemplateURL: !Sub ${TemplateURLBase}/batch.yaml
   #     Parameters:
   #       BackendStack: !Ref AWS::StackName
   #       SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
@@ -2068,8 +2068,7 @@ Resources:
   # Instances:
   #   Type: AWS::CloudFormation::Stack
   #   Properties:
-  #     TemplateURL:
-  #       !Sub https://s3.amazonaws.com/${ArtifactsBucket}/templates/${AWS::StackName}/instances.yaml
+  #     TemplateURL: !Sub ${TemplateURLBase}/instances.yaml
   #     Parameters:
   #       BackendStack: !Ref AWS::StackName
   #       SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
