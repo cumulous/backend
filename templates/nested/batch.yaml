@@ -70,48 +70,48 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role
 
-  # SpotComputeEnvironment:
-  #   Type: AWS::CloudFormation::CustomResource
-  #   Properties:
-  #     ServiceToken: !Ref SetupCustomResourceArn
-  #     StateMachine: !Ref SetupComputeEnvironmentStateMachine
-  #     type: MANAGED
-  #     state: ENABLED
-  #     serviceRole: !GetAtt BatchServiceRole.Arn
-  #     computeEnvironmentName: !Sub ${BackendStack}-spot-environment
-  #     computeResources:
-  #       type: SPOT
-  #       bidPercentage: !Ref SpotBidPercent
-  #       minvCpus: 0
-  #       maxvCpus: !Ref ClusterCores
-  #       instanceTypes: [ optimal ]
-  #       instanceRole: !GetAtt InstanceRole.Arn
-  #       spotIamFleetRole: !GetAtt SpotFleetRole.Arn
-  #       subnets: !Ref SubnetIds
-  #       securityGroupIds:
-  #         - !Ref SecurityGroup
-  #       ec2KeyPair: !Ref SSHKeyName
+  SpotComputeEnvironment:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Ref SetupCustomResourceArn
+      StateMachine: !Ref SetupComputeEnvironmentStateMachine
+      type: MANAGED
+      state: ENABLED
+      serviceRole: !GetAtt BatchServiceRole.Arn
+      computeEnvironmentName: !Sub ${BackendStack}-spot-environment
+      computeResources:
+        type: SPOT
+        bidPercentage: !Ref SpotBidPercent
+        minvCpus: 0
+        maxvCpus: !Ref ClusterCores
+        instanceTypes: [ optimal ]
+        instanceRole: !GetAtt InstanceRole.Arn
+        spotIamFleetRole: !GetAtt SpotFleetRole.Arn
+        subnets: !Ref SubnetIds
+        securityGroupIds:
+          - !Ref SecurityGroup
+        ec2KeyPair: !Ref SSHKeyName
 
-  # OnDemandComputeEnvironment:
-  #   Type: AWS::CloudFormation::CustomResource
-  #   DependsOn: SpotComputeEnvironment
-  #   Properties:
-  #     ServiceToken: !Ref SetupCustomResourceArn
-  #     StateMachine: !Ref SetupComputeEnvironmentStateMachine
-  #     type: MANAGED
-  #     state: ENABLED
-  #     serviceRole: !GetAtt BatchServiceRole.Arn
-  #     computeEnvironmentName: !Sub ${BackendStack}-ondemand-environment
-  #     computeResources:
-  #       type: EC2
-  #       minvCpus: 0
-  #       maxvCpus: !Ref ClusterCores
-  #       instanceTypes: [ optimal ]
-  #       instanceRole: !GetAtt InstanceRole.Arn
-  #       subnets: !Ref SubnetIds
-  #       securityGroupIds:
-  #         - !Ref SecurityGroup
-  #       ec2KeyPair: !Ref SSHKeyName
+  OnDemandComputeEnvironment:
+    Type: AWS::CloudFormation::CustomResource
+    DependsOn: SpotComputeEnvironment
+    Properties:
+      ServiceToken: !Ref SetupCustomResourceArn
+      StateMachine: !Ref SetupComputeEnvironmentStateMachine
+      type: MANAGED
+      state: ENABLED
+      serviceRole: !GetAtt BatchServiceRole.Arn
+      computeEnvironmentName: !Sub ${BackendStack}-ondemand-environment
+      computeResources:
+        type: EC2
+        minvCpus: 0
+        maxvCpus: !Ref ClusterCores
+        instanceTypes: [ optimal ]
+        instanceRole: !GetAtt InstanceRole.Arn
+        subnets: !Ref SubnetIds
+        securityGroupIds:
+          - !Ref SecurityGroup
+        ec2KeyPair: !Ref SSHKeyName
 
   CreateComputeEnvironment:
     Type: AWS::Lambda::Function
@@ -550,20 +550,20 @@ Resources:
           }
         }
 
-  # JobQueue:
-  #   Type: AWS::CloudFormation::CustomResource
-  #   Properties:
-  #     ServiceToken: !Ref SetupCustomResourceArn
-  #     StateMachine: !Ref SetupJobQueueStateMachine
-  #     jobQueueName: !Sub ${BackendStack}-job-queue
-  #     priority: 1
-  #     computeEnvironmentOrder:
-  #       - order: 1
-  #         computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
-  #         version: !GetAtt SpotComputeEnvironment.Version
-  #       - order: 2
-  #         computeEnvironment: !GetAtt OnDemandComputeEnvironment.Arn
-  #         version: !GetAtt OnDemandComputeEnvironment.Version
+  JobQueue:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Ref SetupCustomResourceArn
+      StateMachine: !Ref SetupJobQueueStateMachine
+      jobQueueName: !Sub ${BackendStack}-job-queue
+      priority: 1
+      computeEnvironmentOrder:
+        - order: 1
+          computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
+          version: !GetAtt SpotComputeEnvironment.Version
+        - order: 2
+          computeEnvironment: !GetAtt OnDemandComputeEnvironment.Arn
+          version: !GetAtt OnDemandComputeEnvironment.Version
 
   CreateJobQueue:
     Type: AWS::Lambda::Function
