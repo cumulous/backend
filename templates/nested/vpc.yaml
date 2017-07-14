@@ -408,6 +408,6 @@ Resources:
 
 Outputs:
   SubnetIds:
-    Value: !Join [ ',', Subnets.SubnetIds ]
+    Value: !Join [ ',', !GetAtt Subnets.SubnetIds ]
   DefaultSecurityGroup:
     Value: !GetAtt VPC.DefaultSecurityGroup
