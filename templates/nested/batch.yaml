@@ -15,8 +15,6 @@ Parameters:
     Type: String
   SendCloudFormationResponseArn:
     Type: String
-  StatesExecutionRoleArn:
-    Type: String
   BasicLambdaExecutionRoleArn:
     Type: String
   ArtifactsBucket:
@@ -270,10 +268,38 @@ Resources:
                 Resource:
                   - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/describecomputeenvironments
 
+  SetupComputeEnvironmentExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StatesExecutionRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CreateComputeEnvironment.Arn
+                  - !GetAtt DescribeComputeEnvironment.Arn
+                  - !GetAtt CheckUpdateComputeEnvironment.Arn
+                  - !GetAtt UpdateComputeEnvironment.Arn
+                  - !GetAtt DescribeJobQueueMinusEnvironment.Arn
+                  - !GetAtt UpdateJobQueue.Arn
+                  - !GetAtt DescribeJobQueue.Arn
+                  - !GetAtt DeleteComputeEnvironment.Arn
+                  - !GetAtt SendCloudFormationResponseArn
+
   SetupComputeEnvironmentStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      RoleArn: !Ref StatesExecutionRoleArn
+      RoleArn: !GetAtt SetupComputeEnvironmentExecutionRole.Arn
       DefinitionString: !Sub |-
         {
           "StartAt": "SetupComputeEnvironment",
@@ -746,10 +772,35 @@ Resources:
                 Resource:
                   - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/deletejobqueue
 
+  SetupJobQueueExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StatesExecutionRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CreateJobQueue.Arn
+                  - !GetAtt DescribeJobQueue.Arn
+                  - !GetAtt CheckUpdateJobQueue.Arn
+                  - !GetAtt UpdateJobQueue.Arn
+                  - !GetAtt DeleteJobQueue.Arn
+                  - !GetAtt SendCloudFormationResponseArn
+
   SetupJobQueueStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      RoleArn: !Ref StatesExecutionRoleArn
+      RoleArn: !GetAtt SetupJobQueueExecutionRole.Arn
       DefinitionString: !Sub |-
         {
           "StartAt": "SetupJobQueue",
