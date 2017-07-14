@@ -126,13 +126,13 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${BackendStack}-CreateComputeEnvironment
-      Handler: batch.createComputeEnvironment
       Role: !GetAtt CreateComputeEnvironmentRole.Arn
+      Handler: batch.createComputeEnvironment
+      Runtime: nodejs6.10
+      Timeout: 10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
-      Runtime: nodejs6.10
-      Timeout: 10
 
   CreateComputeEnvironmentRole:
     Type: AWS::IAM::Role
@@ -305,7 +305,7 @@ Resources:
                   - !GetAtt UpdateJobQueue.Arn
                   - !GetAtt DescribeJobQueue.Arn
                   - !GetAtt DeleteComputeEnvironment.Arn
-                  - !GetAtt SendCloudFormationResponseArn
+                  - !Ref SendCloudFormationResponseArn
 
   SetupComputeEnvironmentStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -806,7 +806,7 @@ Resources:
                   - !GetAtt CheckUpdateJobQueue.Arn
                   - !GetAtt UpdateJobQueue.Arn
                   - !GetAtt DeleteJobQueue.Arn
-                  - !GetAtt SendCloudFormationResponseArn
+                  - !Ref SendCloudFormationResponseArn
 
   SetupJobQueueStateMachine:
     Type: AWS::StepFunctions::StateMachine
