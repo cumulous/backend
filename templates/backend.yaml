@@ -2761,17 +2761,18 @@ Resources:
       TemplateURL:
         !Sub https://s3.amazonaws.com/${ArtifactsBucket}/templates/${AWS::StackName}/batch.yaml
       Parameters:
-        SubnetIds: !Join [ ',', !GetAtt Subnets.SubnetIds]
-        SecurityGroup: !GetAtt BackendVPC.DefaultSecurityGroup
-        ClusterCores: !Ref ClusterCores
-        SpotBidPercent: !Ref SpotBidPercent
-        SSHKeyName: !Ref SSHKeyName
+        BackendStack: !Ref AWS::StackName
         SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
         SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
         StatesExecutionRoleArn: !GetAtt StatesExecutionRole.Arn
         BasicLambdaExecutionRoleArn: !GetAtt BasicLambdaExecutionRole.Arn
         ArtifactsBucket: !Ref ArtifactsBucket
         LambdaPackage: !Ref LambdaPackage
+        SubnetIds: !Join [ ',', !GetAtt Subnets.SubnetIds]
+        SecurityGroup: !GetAtt BackendVPC.DefaultSecurityGroup
+        ClusterCores: !Ref ClusterCores
+        SpotBidPercent: !Ref SpotBidPercent
+        SSHKeyName: !Ref SSHKeyName
 
 Outputs:
   WebSigningKey:

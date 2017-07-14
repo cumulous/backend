@@ -1,4 +1,6 @@
 Parameters:
+  BackendStack:
+    Type: String
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
   SecurityGroup:
@@ -76,7 +78,7 @@ Resources:
   #     type: MANAGED
   #     state: ENABLED
   #     serviceRole: !GetAtt BatchServiceRole.Arn
-  #     computeEnvironmentName: !Sub ${AWS::StackName}-spot-environment
+  #     computeEnvironmentName: !Sub ${BackendStack}-spot-environment
   #     computeResources:
   #       type: SPOT
   #       bidPercentage: !Ref SpotBidPercent
@@ -99,7 +101,7 @@ Resources:
   #     type: MANAGED
   #     state: ENABLED
   #     serviceRole: !GetAtt BatchServiceRole.Arn
-  #     computeEnvironmentName: !Sub ${AWS::StackName}-ondemand-environment
+  #     computeEnvironmentName: !Sub ${BackendStack}-ondemand-environment
   #     computeResources:
   #       type: EC2
   #       minvCpus: 0
@@ -114,7 +116,7 @@ Resources:
   CreateComputeEnvironment:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-CreateComputeEnvironment
+      FunctionName: !Sub ${BackendStack}-CreateComputeEnvironment
       Handler: batch.createComputeEnvironment
       Role: !GetAtt CreateComputeEnvironmentRole.Arn
       Code:
@@ -154,7 +156,7 @@ Resources:
   UpdateComputeEnvironment:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-UpdateComputeEnvironment
+      FunctionName: !Sub ${BackendStack}-UpdateComputeEnvironment
       Role: !GetAtt UpdateComputeEnvironmentRole.Arn
       Handler: batch.updateComputeEnvironment
       Runtime: nodejs6.10
@@ -192,7 +194,7 @@ Resources:
   CheckUpdateComputeEnvironment:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-CheckUpdateComputeEnvironment
+      FunctionName: !Sub ${BackendStack}-CheckUpdateComputeEnvironment
       Role: !Ref BasicLambdaExecutionRoleArn
       Handler: batch.checkUpdateEnvironment
       Runtime: nodejs6.10
@@ -203,7 +205,7 @@ Resources:
   DeleteComputeEnvironment:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-DeleteComputeEnvironment
+      FunctionName: !Sub ${BackendStack}-DeleteComputeEnvironment
       Role: !GetAtt DeleteComputeEnvironmentRole.Arn
       Handler: batch.deleteComputeEnvironment
       Runtime: nodejs6.10
@@ -237,7 +239,7 @@ Resources:
   DescribeComputeEnvironment:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-DescribeComputeEnvironment
+      FunctionName: !Sub ${BackendStack}-DescribeComputeEnvironment
       Role: !GetAtt DescribeComputeEnvironmentRole.Arn
       Handler: batch.describeComputeEnvironment
       Runtime: nodejs6.10
@@ -553,7 +555,7 @@ Resources:
   #   Properties:
   #     ServiceToken: !Ref SetupCustomResourceArn
   #     StateMachine: !Ref SetupJobQueueStateMachine
-  #     jobQueueName: !Sub ${AWS::StackName}-job-queue
+  #     jobQueueName: !Sub ${BackendStack}-job-queue
   #     priority: 1
   #     computeEnvironmentOrder:
   #       - order: 1
@@ -566,7 +568,7 @@ Resources:
   CreateJobQueue:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-CreateJobQueue
+      FunctionName: !Sub ${BackendStack}-CreateJobQueue
       Role: !GetAtt CreateJobQueueRole.Arn
       Handler: batch.createJobQueue
       Runtime: nodejs6.10
@@ -600,7 +602,7 @@ Resources:
   DescribeJobQueue:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-DescribeJobQueue
+      FunctionName: !Sub ${BackendStack}-DescribeJobQueue
       Role: !GetAtt DescribeJobQueue.Arn
       Handler: batch.describeJobQueue
       Runtime: nodejs6.10
@@ -634,7 +636,7 @@ Resources:
   DescribeJobQueueMinusEnvironment:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-DescribeJobQueueMinusEnvironment
+      FunctionName: !Sub ${BackendStack}-DescribeJobQueueMinusEnvironment
       Role: !GetAtt DescribeJobQueueMinusEnvironmentRole.Arn
       Handler: batch.describeJobQueueMinusEnvironment
       Runtime: nodejs6.10
@@ -668,7 +670,7 @@ Resources:
   CheckUpdateJobQueue:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-CheckUpdateJobQueue
+      FunctionName: !Sub ${BackendStack}-CheckUpdateJobQueue
       Role: !Ref BasicLambdaExecutionRoleArn
       Handler: batch.checkUpdateJobQueue
       Runtime: nodejs6.10
@@ -679,7 +681,7 @@ Resources:
   UpdateJobQueue:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-UpdateJobQueue
+      FunctionName: !Sub ${BackendStack}-UpdateJobQueue
       Role: !GetAtt UpdateJobQueueRole.Arn
       Handler: batch.updateJobQueue
       Runtime: nodejs6.10
@@ -713,7 +715,7 @@ Resources:
   DeleteJobQueue:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-DeleteJobQueue
+      FunctionName: !Sub ${BackendStack}-DeleteJobQueue
       Role: !GetAtt DeleteJobQueueRole.Arn
       Handler: batch.deleteJobQueue
       Runtime: nodejs6.10
