@@ -38,8 +38,8 @@ ARGS=" \
     ParameterKey=SecretsBucket,ParameterValue=${SECRETS_BUCKET} \
     ParameterKey=SSHKeyName,ParameterValue=${STACK_NAME} \
     ParameterKey=SSHKeyS3Path,ParameterValue=ssh/${STACK_NAME}.pem \
-    ParameterKey=SSHKeyGetRole,ParameterValue=${SSH_KEY_GET_ROLE} \
-    ParameterKey=SSHKeyPutRole,ParameterValue=${SSH_KEY_PUT_ROLE} \
+    ParameterKey=SSHKeyGetRoleArn,ParameterValue=${SSH_KEY_GET_ROLE_ARN} \
+    ParameterKey=SSHKeyPutRoleArn,ParameterValue=${SSH_KEY_PUT_ROLE_ARN} \
     ParameterKey=DomainZone,ParameterValue=${DOMAIN_ZONE} \
     ParameterKey=APIDomain,ParameterValue=api.${WEB_DOMAIN} \
     ParameterKey=WebDomain,ParameterValue=${WEB_DOMAIN} \

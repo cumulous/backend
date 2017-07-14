@@ -1,0 +1,762 @@
+Parameters:
+  BackendStack:
+    Type: String
+  SetupCustomResourceArn:
+    Type: String
+  SendCloudFormationResponseArn:
+    Type: String
+  ArtifactsBucket:
+    Type: String
+  SecretsBucket:
+    Type: String
+  LambdaPackage:
+    Type: String
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup::Id
+  EncryptionKeyId:
+    Type: String
+  SSHKeyPutRoleArn:
+    Type: String
+  SSHKeyGetRoleArn:
+    Type: String
+  SSHKeyS3Path:
+    Type: String
+  SSHKeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+
+Resources:
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  InstancesInit:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-InstancesInit
+      Role: !GetAtt InstancesInitRole.Arn
+      Handler: aws.executeStateMachine
+      Runtime: nodejs6.10
+      Environment:
+        Variables:
+          STATE_MACHINE: !Ref InstancesInitStateMachine
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  InstancesInitRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: InstancesInitRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref InstancesInitStateMachine
+
+  InstancesInitEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.ec2
+        detail-type:
+          - EC2 Instance State-change Notification
+        detail:
+          state:
+            - running
+      Targets:
+        - Arn: !GetAtt InstancesInit.Arn
+          Id: InstancesInitFunction
+
+  InstancesInitEventPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref InstancesInit
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt InstancesInitEventRule.Arn
+
+  DescribeInstance:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-DescribeInstance
+      Role: !GetAtt DescribeInstanceRole.Arn
+      Handler: instances.describeInstance
+      Runtime: nodejs6.10
+      Timeout: 5
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DescribeInstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DescribeInstanceRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: ec2:DescribeInstances
+                Resource: '*'
+
+  CheckSSHKeyName:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CheckSSHKeyName
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+      Handler: instances.checkSSHKeyName
+      Runtime: nodejs6.10
+      Environment:
+        Variables:
+          SSH_KEY_NAME: !Ref SSHKeyName
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  CalculateVolumeSizes:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CalculateVolumeSizes
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+      Handler: instances.calculateVolumeSizes
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  CreateVolumes:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CreateVolumes
+      Role: !GetAtt CreateVolumesRole.Arn
+      Handler: instances.createVolumes
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  CreateVolumesRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateVolumesRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: ec2:CreateVolume
+                Resource: '*'
+
+  WaitForVolumesAvailable:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-WaitForVolumesAvailable
+      Role: !GetAtt WaitForVolumesAvailableRole.Arn
+      Handler: instances.waitForVolumesAvailable
+      Runtime: nodejs6.10
+      Timeout: 20
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  WaitForVolumesAvailableRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: WaitForVolumesAvailableRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: ec2:DescribeVolumes
+                Resource: '*'
+
+  CalculateVolumeDevices:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CalculateVolumeDevices
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+      Handler: instances.calculateVolumeDevices
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  AttachVolumes:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-AttachVolumes
+      Role: !GetAtt AttachVolumesRole.Arn
+      Handler: instances.attachVolumes
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  AttachVolumesRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: AttachVolumesRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: ec2:AttachVolume
+                Resource: '*'
+
+  DetachVolumes:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-DetachVolumes
+      Role: !GetAtt DetachVolumesRole.Arn
+      Handler: instances.detachVolumes
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DetachVolumesRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DetachVolumesRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: ec2:DetachVolume
+                Resource: '*'
+
+  DeleteVolumes:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-DeleteVolumes
+      Role: !GetAtt DeleteVolumesRole.Arn
+      Handler: instances.deleteVolumes
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DeleteVolumesRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DeleteVolumesRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: ec2:DeleteVolume
+                Resource: '*'
+
+  DeleteVolumesOnTermination:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-DeleteVolumesOnTermination
+      Role: !GetAtt DeleteVolumesOnTerminationRole.Arn
+      Handler: instances.deleteVolumesOnTermination
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DeleteVolumesOnTerminationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DeleteVolumesOnTerminationRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: ec2:ModifyInstanceAttribute
+                Resource: '*'
+
+  TransferInitScript:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-TransferInitScript
+      Role: !Ref SSHKeyGetRoleArn
+      Handler: instances.transferInitScript
+      Runtime: nodejs6.10
+      Timeout: 10
+      Environment:
+        Variables:
+          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
+          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref SecurityGroup
+        SubnetIds: !Ref SubnetIds
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  ExecuteInitScript:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-ExecuteInitScript
+      Role: !Ref SSHKeyGetRoleArn
+      Handler: instances.executeInitScript
+      Runtime: nodejs6.10
+      Timeout: 15
+      Environment:
+        Variables:
+          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
+          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
+      VpcConfig:
+        SecurityGroupIds:
+          - !Ref SecurityGroup
+        SubnetIds: !Ref SubnetIds
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  InstancesInitExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StatesExecutionRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt DescribeInstance.Arn
+                  - !GetAtt CheckSSHKeyName.Arn
+                  - !GetAtt CalculateVolumeSizes.Arn
+                  - !GetAtt CreateVolumes.Arn
+                  - !GetAtt WaitForVolumesAvailable.Arn
+                  - !GetAtt CalculateVolumeDevices.Arn
+                  - !GetAtt AttachVolumes.Arn
+                  - !GetAtt DeleteVolumesOnTermination.Arn
+                  - !GetAtt TransferInitScript.Arn
+                  - !GetAtt ExecuteInitScript.Arn
+                  - !GetAtt DetachVolumes.Arn
+                  - !GetAtt DeleteVolumes.Arn
+
+  InstancesInitStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt InstancesInitExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "DescribeInstance",
+          "States": {
+            "DescribeInstance": {
+              "Type": "Task",
+              "InputPath": "$.detail.instance-id",
+              "Resource": "${DescribeInstance.Arn}",
+              "Next": "CheckSSHKeyName"
+            },
+            "CheckSSHKeyName": {
+              "Type": "Task",
+              "InputPath": "$.KeyName",
+              "ResultPath": null,
+              "Resource": "${CheckSSHKeyName.Arn}",
+              "Next": "CalculateVolumeSizes"
+            },
+            "CalculateVolumeSizes": {
+              "Type": "Task",
+              "InputPath": "$.InstanceType",
+              "ResultPath": "$.volumeSizes",
+              "Resource": "${CalculateVolumeSizes.Arn}",
+              "Next": "PrepareVolumes"
+            },
+            "PrepareVolumes": {
+              "Type": "Parallel",
+              "Next": "MountVolumes",
+              "Branches": [{
+                "StartAt": "CreateVolumes",
+                "States": {
+                  "CreateVolumes": {
+                    "Type": "Task",
+                    "ResultPath": "$.volumeIds",
+                    "Resource": "${CreateVolumes.Arn}",
+                    "Next": "WaitForVolumesCreated"
+                  },
+                  "WaitForVolumesCreated": {
+                    "Type": "Task",
+                    "InputPath": "$.volumeIds",
+                    "ResultPath": null,
+                    "Resource": "${WaitForVolumesAvailable.Arn}",
+                    "Next": "CalculateVolumeDevices"
+                  },
+                  "CalculateVolumeDevices": {
+                    "Type": "Task",
+                    "InputPath": "$.volumeIds",
+                    "ResultPath": "$.volumeDevices",
+                    "Resource": "${CalculateVolumeDevices.Arn}",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.error",
+                "Next": "DeleteVolumes"
+              }]
+            },
+            "MountVolumes": {
+              "Type": "Parallel",
+              "InputPath": "$.[0]",
+              "End": true,
+              "Branches": [{
+                "StartAt": "AttachVolumes",
+                "States": {
+                  "AttachVolumes": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "${AttachVolumes.Arn}",
+                    "Next": "DeleteVolumesOnTermination",
+                    "Retry": [{
+                        "ErrorEquals": [ "HandledError" ],
+                        "IntervalSeconds": 5
+                    }]
+                  },
+                  "DeleteVolumesOnTermination": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "${DeleteVolumesOnTermination.Arn}",
+                    "Next": "TransferInitScript"
+                  },
+                  "TransferInitScript": {
+                    "Type": "Task",
+                    "InputPath": "$.PrivateIpAddress",
+                    "ResultPath": null,
+                    "Resource": "${TransferInitScript.Arn}",
+                    "TimeoutSeconds": 5,
+                    "Next": "ExecuteInitScript",
+                    "Retry": [{
+                        "ErrorEquals": [ "HandledError", "States.Timeout" ],
+                        "IntervalSeconds": 5, "MaxAttempts": 5
+                    }]
+                  },
+                  "ExecuteInitScript": {
+                    "Type": "Task",
+                    "Resource": "${ExecuteInitScript.Arn}",
+                    "TimeoutSeconds": 10,
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.error",
+                "Next": "DetachVolumes"
+              }]
+            },
+            "DetachVolumes": {
+              "Type": "Task",
+              "InputPath": "$.volumeIds",
+              "ResultPath": null,
+              "Resource": "${DetachVolumes.Arn}",
+              "Next": "WaitForVolumesDetached"
+            },
+            "WaitForVolumesDetached": {
+              "Type": "Task",
+              "InputPath": "$.volumeIds",
+              "ResultPath": null,
+              "Resource": "${WaitForVolumesAvailable.Arn}",
+              "Next": "DeleteVolumes",
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.error",
+                "Next": "DeleteVolumes"
+              }]
+            },
+            "DeleteVolumes": {
+              "Type": "Task",
+              "InputPath": "$.volumeIds",
+              "Resource": "${DeleteVolumes.Arn}",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Fail",
+              "Cause": "Failed to initialize instance"
+            }
+          }
+        }
+
+  SetupSSHKey:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Ref SetupCustomResourceArn
+      StateMachine: !Ref SetupSSHKeyStateMachine
+
+  CreateSSHKey:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CreateSSHKey
+      Role: !Ref SSHKeyPutRoleArn
+      Handler: instances.createSSHKey
+      Runtime: nodejs6.10
+      Environment:
+        Variables:
+          ENCRYPTION_KEY_ID: !Ref EncryptionKeyId
+          SSH_KEY_NAME: !Ref SSHKeyName
+          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
+          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DeleteSSHKey:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-DeleteSSHKey
+      Role: !GetAtt DeleteSSHKeyRole.Arn
+      Handler: instances.deleteSSHKey
+      Runtime: nodejs6.10
+      Environment:
+        Variables:
+          SSH_KEY_NAME: !Ref SSHKeyName
+          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
+          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DeleteSSHKeyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DeleteSSHKeyRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: ec2:DeleteKeyPair
+                Resource: '*'
+              - Effect: Allow
+                Action: s3:DeleteObject
+                Resource:
+                  - !Sub arn:aws:s3:::${SecretsBucket}/${SSHKeyS3Path}
+
+  SetupSSHKeyExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StatesExecutionRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CreateSSHKey.Arn
+                  - !GetAtt DeleteSSHKey.Arn
+                  - !Ref SendCloudFormationResponseArn
+
+  SetupSSHKeyStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt SetupSSHKeyExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupSSHKey",
+          "States": {
+            "SetupSSHKey": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "ChooseEventType",
+                "States": {
+                  "ChooseEventType": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Or": [
+                          {
+                            "Variable": "$.RequestType",
+                            "StringEquals": "Update"
+                          },
+                          {
+                            "Variable": "$.RequestType",
+                            "StringEquals": "Delete"
+                          }
+                        ],
+                        "Next": "DeleteSSHKey"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Create",
+                        "Next": "CreateSSHKey"
+                      }
+                    ]
+                  },
+                  "DeleteSSHKey": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "${DeleteSSHKey.Arn}",
+                    "Next": "CheckCreateSSHKey"
+                  },
+                  "CheckCreateSSHKey": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "Success"
+                      }
+                    ],
+                    "Default": "CreateSSHKey"
+                  },
+                  "CreateSSHKey": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "${CreateSSHKey.Arn}",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponseArn}",
+              "End": true
+            }
+          }
+        }

@@ -450,10 +450,10 @@ Resources:
             Value: !Ref EncryptionKey
           - Name: SECRETS_BUCKET
             Value: !Ref SecretsBucket
-          - Name: SSH_KEY_GET_ROLE
-            Value: !Ref SSHKeyGetRole
-          - Name: SSH_KEY_PUT_ROLE
-            Value: !Ref SSHKeyPutRole
+          - Name: SSH_KEY_GET_ROLE_ARN
+            Value: !GetAtt SSHKeyGetRole.Arn
+          - Name: SSH_KEY_PUT_ROLE_ARN
+            Value: !GetAtt SSHKeyPutRole.Arn
           - Name: DOMAIN_ZONE
             Value: !If [CreateHostedZone, !Ref DomainZone, !Ref HostedZone]
           - Name: WEB_DOMAIN
@@ -524,10 +524,10 @@ Resources:
             Value: !Ref EncryptionKey
           - Name: SECRETS_BUCKET
             Value: !Ref SecretsBucket
-          - Name: SSH_KEY_GET_ROLE
-            Value: !Ref SSHKeyGetRole
-          - Name: SSH_KEY_PUT_ROLE
-            Value: !Ref SSHKeyPutRole
+          - Name: SSH_KEY_GET_ROLE_ARN
+            Value: !GetAtt SSHKeyGetRole.Arn
+          - Name: SSH_KEY_PUT_ROLE_ARN
+            Value: !GetAtt SSHKeyPutRole.Arn
           - Name: DOMAIN_ZONE
             Value: !If [CreateHostedZone, !Ref DomainZone, !Ref HostedZone]
           - Name: WEB_DOMAIN
