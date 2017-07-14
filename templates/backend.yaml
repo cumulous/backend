@@ -219,7 +219,7 @@ Resources:
             Resource:
               - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Setup*
 
-  BasicLambdaExecutionRole:
+  LambdaBasicExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -1882,7 +1882,7 @@ Resources:
       Role: !If
         - SetupWebSigningKeyPair
         - !Ref WebSigningKeyPutRoleArn
-        - !GetAtt BasicLambdaExecutionRole.Arn
+        - !GetAtt LambdaBasicExecutionRole.Arn
 
   GenerateSignedCookies:
     Type: AWS::Serverless::Function
@@ -2764,7 +2764,6 @@ Resources:
         BackendStack: !Ref AWS::StackName
         SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
         SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
-        BasicLambdaExecutionRoleArn: !GetAtt BasicLambdaExecutionRole.Arn
         ArtifactsBucket: !Ref ArtifactsBucket
         LambdaPackage: !Ref LambdaPackage
         SubnetIds: !Join [ ',', !GetAtt Subnets.SubnetIds]

@@ -1,6 +1,14 @@
 Parameters:
   BackendStack:
     Type: String
+  SetupCustomResourceArn:
+    Type: String
+  SendCloudFormationResponseArn:
+    Type: String
+  ArtifactsBucket:
+    Type: String
+  LambdaPackage:
+    Type: String
   SubnetIds:
     Type: List<AWS::EC2::Subnet::Id>
   SecurityGroup:
@@ -11,16 +19,6 @@ Parameters:
     Type: Number
   SSHKeyName:
     Type: AWS::EC2::KeyPair::KeyName
-  SetupCustomResourceArn:
-    Type: String
-  SendCloudFormationResponseArn:
-    Type: String
-  BasicLambdaExecutionRoleArn:
-    Type: String
-  ArtifactsBucket:
-    Type: String
-  LambdaPackage:
-    Type: String
 
 Resources:
   BatchServiceRole:
@@ -111,6 +109,19 @@ Resources:
           - !Ref SecurityGroup
         ec2KeyPair: !Ref SSHKeyName
 
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
   CreateComputeEnvironment:
     Type: AWS::Lambda::Function
     Properties:
@@ -193,7 +204,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${BackendStack}-CheckUpdateComputeEnvironment
-      Role: !Ref BasicLambdaExecutionRoleArn
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
       Handler: batch.checkUpdateEnvironment
       Runtime: nodejs6.10
       Code:
@@ -697,7 +708,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${BackendStack}-CheckUpdateJobQueue
-      Role: !Ref BasicLambdaExecutionRoleArn
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
       Handler: batch.checkUpdateJobQueue
       Runtime: nodejs6.10
       Code:
