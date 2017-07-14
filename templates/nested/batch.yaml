@@ -670,7 +670,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${AWS::StackName}-CheckUpdateJobQueue
-      Role: !Ref BasicLambdaRoleArn
+      Role: !Ref BasicLambdaExecutionRoleArn
       Handler: batch.checkUpdateJobQueue
       Runtime: nodejs6.10
       Code:
