@@ -9,10 +9,9 @@ TEMPLATES_DEST="s3://${ARTIFACTS_BUCKET}/${TEMPLATES_DEST_PATH}/"
 
 cd app
 zip -qr ../${PACKAGE_FILE} .
-cd ..
-
-PACKAGE_VERSION=$(sha256sum ${PACKAGE_FILE} | head -c 64)
+PACKAGE_VERSION=$(find . -type f -exec md5sum {} \; | sort -k 2 | md5sum)
 PACKAGE_PATH="lambda/${STACK_NAME}/${PACKAGE_VERSION}.zip"
+cd ..
 
 aws cloudformation package \
   --template-file templates/${BACKEND_TEMPLATE} \
