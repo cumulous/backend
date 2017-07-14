@@ -1,0 +1,413 @@
+Parameters:
+  BackendStack:
+    Type: String
+  SetupCustomResourceArn:
+    Type: String
+  SendCloudFormationResponseArn:
+    Type: String
+  ArtifactsBucket:
+    Type: String
+  LambdaPackage:
+    Type: String
+  VpcRange:
+    Type: String
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcRange
+      Tags:
+        - Key: Name
+          Value: !Ref BackendStack
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: !Ref BackendStack
+
+  VPCInternetRoute:
+    Type: AWS::EC2::Route
+    DependsOn: VPCGatewayAttachment
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      RouteTableId: !Ref RouteTable
+      GatewayId: !Ref InternetGateway
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Ref BackendStack
+
+  S3Endpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
+      VpcId: !Ref VPC
+      RouteTableIds:
+        - !Ref RouteTable
+
+  Subnets:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Ref SetupCustomResourceArn
+      StateMachine: !Ref SetupSubnetsStateMachine
+      VpcId: !Ref VPC
+      VpcRange: !Ref VpcRange
+      AvailabilityZones: !GetAZs
+        Ref: AWS::Region
+
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  CalculateSubnets:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CalculateSubnets
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+      Handler: vpc.calculateSubnets
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  CreateSubnets:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CreateSubnets
+      Role: !GetAtt CreateSubnetsRole.Arn
+      Handler: vpc.createSubnets
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  CreateSubnetsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateSubnetsRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:CreateSubnet
+                Resource: '*'
+
+  ModifySubnets:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-ModifySubnets
+      Role: !GetAtt ModifySubnetsRole.Arn
+      Handler: vpc.modifySubnets
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  ModifySubnetsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ModifySubnetsRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:ModifySubnetAttribute
+                Resource: '*'
+
+  RouteSubnets:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-RouteSubnets
+      Role: !GetAtt RouteSubnetsRole.Arn
+      Handler: vpc.routeSubnets
+      Runtime: nodejs6.10
+      Environment:
+        Variables:
+          ROUTE_TABLE: !Ref RouteTable
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  RouteSubnetsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: RouteSubnetsRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:AssociateRouteTable
+                Resource: '*'
+
+  DescribeSubnets:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-DescribeSubnets
+      Role: !GetAtt DescribeSubnetsRole.Arn
+      Handler: vpc.describeSubnets
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DescribeSubnetsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DescribeSubnetsRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DescribeSubnets
+                Resource: '*'
+
+  DeleteSubnets:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-DeleteSubnets
+      Role: !GetAtt DeleteSubnetsRole.Arn
+      Handler: vpc.deleteSubnets
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DeleteSubnetsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DeleteSubnetsRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ec2:DeleteSubnet
+                Resource: '*'
+
+  SetupSubnetsExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StatesExecutionRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CalculateSubnets.Arn
+                  - !GetAtt CreateSubnets.Arn
+                  - !GetAtt ModifySubnets.Arn
+                  - !GetAtt RouteSubnets.Arn
+                  - !GetAtt DescribeSubnets.Arn
+                  - !GetAtt DeleteSubnets.Arn
+                  - !GetAtt SendCloudFormationResponseArn
+
+  SetupSubnetsStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt SetupSubnetsExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupSubnets",
+          "States": {
+            "SetupSubnets": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "CheckCreate",
+                "States": {
+                  "CheckCreate": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Create",
+                      "Next": "CalculateSubnets"
+                    }],
+                    "Default": "DescribeSubnets"
+                  },
+                  "CalculateSubnets": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.ResourceProperties.SubnetRanges",
+                    "Resource": "${CalculateSubnets.Arn}",
+                    "Next": "CreateSubnets"
+                  },
+                  "CreateSubnets": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.Data.SubnetIds",
+                    "Resource": "${CreateSubnets.Arn}",
+                    "Next": "ModifySubnets"
+                  },
+                  "ModifySubnets": {
+                    "Type": "Task",
+                    "InputPath": "$.Data.SubnetIds",
+                    "ResultPath": null,
+                    "Resource": "${ModifySubnets.Arn}",
+                    "Next": "RouteSubnets"
+                  },
+                  "RouteSubnets": {
+                    "Type": "Task",
+                    "InputPath": "$.Data.SubnetIds",
+                    "ResultPath": null,
+                    "Resource": "${RouteSubnets.Arn}",
+                    "Next": "Success"
+                  },
+                  "DescribeSubnets": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.VpcId",
+                    "ResultPath": "$.Data.SubnetIds",
+                    "Resource": "${DescribeSubnets.Arn}",
+                    "Next": "ChooseUpdateOrDelete"
+                  },
+                  "ChooseUpdateOrDelete": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Update",
+                        "Next": "ModifySubnets"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "DeleteSubnets"
+                      }
+                    ]
+                  },
+                  "DeleteSubnets": {
+                    "Type": "Task",
+                    "InputPath": "$.Data.SubnetIds",
+                    "ResultPath": null,
+                    "Resource": "${DeleteSubnets.Arn}",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponseArn}",
+              "End": true
+            }
+          }
+        }
+
+Outputs:
+  SubnetIds:
+    Value: !Join [ ',', Subnets.SubnetIds ]
+  DefaultSecurityGroup:
+    Value: !GetAtt VPC.DefaultSecurityGroup

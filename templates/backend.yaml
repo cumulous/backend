@@ -151,51 +151,6 @@ Resources:
                 'aws:SourceAccount': !Ref AWS::AccountId
                 's3:x-amz-acl': bucket-owner-full-control
 
-  BackendVPC:
-    Type: AWS::EC2::VPC
-    Properties:
-      CidrBlock: !Ref VpcRange
-      Tags:
-        - Key: Name
-          Value: !Ref AWS::StackName
-
-  BackendRouteTable:
-    Type: AWS::EC2::RouteTable
-    Properties:
-      VpcId: !Ref BackendVPC
-      Tags:
-        - Key: Name
-          Value: !Ref AWS::StackName
-
-  BackendVPCInternetRoute:
-    Type: AWS::EC2::Route
-    DependsOn: BackendVPCGatewayAttachment
-    Properties:
-      DestinationCidrBlock: 0.0.0.0/0
-      RouteTableId: !Ref BackendRouteTable
-      GatewayId: !Ref BackendInternetGateway
-
-  BackendVPCGatewayAttachment:
-    Type: AWS::EC2::VPCGatewayAttachment
-    Properties:
-      VpcId: !Ref BackendVPC
-      InternetGatewayId: !Ref BackendInternetGateway
-
-  BackendInternetGateway:
-    Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-        - Key: Name
-          Value: !Ref AWS::StackName
-
-  BackendS3Endpoint:
-    Type: AWS::EC2::VPCEndpoint
-    Properties:
-      ServiceName: !Sub com.amazonaws.${AWS::Region}.s3
-      VpcId: !Ref BackendVPC
-      RouteTableIds:
-        - !Ref BackendRouteTable
-
   SendCloudFormationResponse:
     Type: AWS::Serverless::Function
     Properties:
@@ -231,97 +186,6 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-
-  Subnets:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupSubnetsStateMachine
-      VpcId: !Ref BackendVPC
-      VpcRange: !Ref VpcRange
-      AvailabilityZones: !GetAZs
-        Ref: AWS::Region
-
-  CalculateSubnets:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-CalculateSubnets
-      CodeUri: ../app
-      Handler: vpc.calculateSubnets
-      Runtime: nodejs6.10
-
-  CreateSubnets:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-CreateSubnets
-      CodeUri: ../app
-      Handler: vpc.createSubnets
-      Runtime: nodejs6.10
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action:
-              - ec2:CreateSubnet
-            Resource: '*'
-
-  ModifySubnets:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-ModifySubnets
-      CodeUri: ../app
-      Handler: vpc.modifySubnets
-      Runtime: nodejs6.10
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action:
-              - ec2:ModifySubnetAttribute
-            Resource: '*'
-
-  RouteSubnets:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-RouteSubnets
-      CodeUri: ../app
-      Handler: vpc.routeSubnets
-      Runtime: nodejs6.10
-      Environment:
-        Variables:
-          ROUTE_TABLE: !Ref BackendRouteTable
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action:
-              - ec2:AssociateRouteTable
-            Resource: '*'
-
-  DescribeSubnets:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-DescribeSubnets
-      CodeUri: ../app
-      Handler: vpc.describeSubnets
-      Runtime: nodejs6.10
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action:
-              - ec2:DescribeSubnets
-            Resource: '*'
-
-  DeleteSubnets:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-DeleteSubnets
-      CodeUri: ../app
-      Handler: vpc.deleteSubnets
-      Runtime: nodejs6.10
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action:
-              - ec2:DeleteSubnet
-            Resource: '*'
 
   InstancesInit:
     Type: AWS::Serverless::Function
@@ -530,8 +394,8 @@ Resources:
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
       VpcConfig:
         SecurityGroupIds:
-          - !GetAtt BackendVPC.DefaultSecurityGroup
-        SubnetIds: !GetAtt Subnets.SubnetIds
+          - !GetAtt VPC.Outputs.DefaultSecurityGroup
+        SubnetIds: !GetAtt VPC.Outputs.SubnetIds
 
   ExecuteInitScript:
     Type: AWS::Serverless::Function
@@ -548,8 +412,8 @@ Resources:
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SSHKeyGetRole}
       VpcConfig:
         SecurityGroupIds:
-          - !GetAtt BackendVPC.DefaultSecurityGroup
-        SubnetIds: !GetAtt Subnets.SubnetIds
+          - !GetAtt VPC.Outputs.DefaultSecurityGroup
+        SubnetIds: !GetAtt VPC.Outputs.SubnetIds
 
   DeleteS3Secret:
     Type: AWS::Serverless::Function
@@ -771,126 +635,6 @@ Resources:
             "Fail": {
               "Type": "Fail",
               "Cause": "Failed to initialize instance"
-            }
-          }
-        }
-
-  SetupSubnetsStateMachine:
-    Type: AWS::StepFunctions::StateMachine
-    Properties:
-      RoleArn: !GetAtt StatesExecutionRole.Arn
-      DefinitionString: !Sub |-
-        {
-          "StartAt": "SetupSubnets",
-          "States": {
-            "SetupSubnets": {
-              "Type": "Parallel",
-              "Next": "Succeed",
-              "Branches": [{
-                "StartAt": "CheckCreate",
-                "States": {
-                  "CheckCreate": {
-                    "Type": "Choice",
-                    "Choices": [{
-                      "Variable": "$.RequestType",
-                      "StringEquals": "Create",
-                      "Next": "CalculateSubnets"
-                    }],
-                    "Default": "DescribeSubnets"
-                  },
-                  "CalculateSubnets": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties",
-                    "ResultPath": "$.ResourceProperties.SubnetRanges",
-                    "Resource": "${CalculateSubnets.Arn}",
-                    "Next": "CreateSubnets"
-                  },
-                  "CreateSubnets": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties",
-                    "ResultPath": "$.Data.SubnetIds",
-                    "Resource": "${CreateSubnets.Arn}",
-                    "Next": "ModifySubnets"
-                  },
-                  "ModifySubnets": {
-                    "Type": "Task",
-                    "InputPath": "$.Data.SubnetIds",
-                    "ResultPath": null,
-                    "Resource": "${ModifySubnets.Arn}",
-                    "Next": "RouteSubnets"
-                  },
-                  "RouteSubnets": {
-                    "Type": "Task",
-                    "InputPath": "$.Data.SubnetIds",
-                    "ResultPath": null,
-                    "Resource": "${RouteSubnets.Arn}",
-                    "Next": "Success"
-                  },
-                  "DescribeSubnets": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.VpcId",
-                    "ResultPath": "$.Data.SubnetIds",
-                    "Resource": "${DescribeSubnets.Arn}",
-                    "Next": "ChooseUpdateOrDelete"
-                  },
-                  "ChooseUpdateOrDelete": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Update",
-                        "Next": "ModifySubnets"
-                      },
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Delete",
-                        "Next": "DeleteSubnets"
-                      }
-                    ]
-                  },
-                  "DeleteSubnets": {
-                    "Type": "Task",
-                    "InputPath": "$.Data.SubnetIds",
-                    "ResultPath": null,
-                    "Resource": "${DeleteSubnets.Arn}",
-                    "Next": "Success"
-                  },
-                  "Success": {
-                    "Type": "Pass",
-                    "ResultPath": "$.Status",
-                    "Result": "SUCCESS",
-                    "End": true
-                  }
-                }
-              }],
-              "Catch": [{
-                "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.Error",
-                "Next": "PassReason"
-              }]
-            },
-            "Succeed": {
-              "InputPath": "$.[0]",
-              "Type": "Pass",
-              "Next": "End"
-            },
-            "PassReason": {
-              "Type": "Pass",
-              "InputPath": "$.Error.Cause",
-              "ResultPath": "$.Reason",
-              "Next": "Fail"
-            },
-            "Fail": {
-              "Type": "Pass",
-              "ResultPath": "$.Status",
-              "Result": "FAILED",
-              "Next": "End"
-            },
-            "End": {
-              "Type": "Task",
-              "ResultPath": null,
-              "Resource": "${SendCloudFormationResponse.Arn}",
-              "End": true
             }
           }
         }
@@ -2762,6 +2506,19 @@ Resources:
             Resource:
               - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}
 
+  VPC:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL:
+        !Sub https://s3.amazonaws.com/${ArtifactsBucket}/templates/${AWS::StackName}/vpc.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
+        ArtifactsBucket: !Ref ArtifactsBucket
+        LambdaPackage: !Ref LambdaPackage
+        VpcRange: !Ref VpcRange
+
   Batch:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -2773,8 +2530,8 @@ Resources:
         SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
         ArtifactsBucket: !Ref ArtifactsBucket
         LambdaPackage: !Ref LambdaPackage
-        SubnetIds: !Join [ ',', !GetAtt Subnets.SubnetIds]
-        SecurityGroup: !GetAtt BackendVPC.DefaultSecurityGroup
+        SubnetIds: !GetAtt VPC.Outputs.SubnetIds
+        SecurityGroup: !GetAtt VPC.Outputs.DefaultSecurityGroup
         ClusterCores: !Ref ClusterCores
         SpotBidPercent: !Ref SpotBidPercent
         SSHKeyName: !Ref SSHKeyName
