@@ -2059,7 +2059,7 @@ Resources:
         SecurityGroup: !GetAtt VPC.Outputs.DefaultSecurityGroup
         ClusterCores: !Ref ClusterCores
         SpotBidPercent: !Ref SpotBidPercent
-        SSHKeyName: !Ref Instances.Outputs.SSHKeyName
+        SSHKeyName: !GetAtt Instances.Outputs.SSHKeyName
 
   Instances:
     Type: AWS::CloudFormation::Stack
