@@ -2045,21 +2045,21 @@ Resources:
         LambdaPackage: !Ref LambdaPackage
         VpcRange: !Ref VpcRange
 
-  # Batch:
-  #   Type: AWS::CloudFormation::Stack
-  #   Properties:
-  #     TemplateURL: !Sub ${TemplateURLBase}/batch.yaml
-  #     Parameters:
-  #       BackendStack: !Ref AWS::StackName
-  #       SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
-  #       SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
-  #       ArtifactsBucket: !Ref ArtifactsBucket
-  #       LambdaPackage: !Ref LambdaPackage
-  #       SubnetIds: !GetAtt VPC.Outputs.SubnetIds
-  #       SecurityGroup: !GetAtt VPC.Outputs.DefaultSecurityGroup
-  #       ClusterCores: !Ref ClusterCores
-  #       SpotBidPercent: !Ref SpotBidPercent
-  #       SSHKeyName: !Ref Instances.Outputs.SSHKeyName
+  Batch:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub ${TemplateURLBase}/batch.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
+        ArtifactsBucket: !Ref ArtifactsBucket
+        LambdaPackage: !Ref LambdaPackage
+        SubnetIds: !GetAtt VPC.Outputs.SubnetIds
+        SecurityGroup: !GetAtt VPC.Outputs.DefaultSecurityGroup
+        ClusterCores: !Ref ClusterCores
+        SpotBidPercent: !Ref SpotBidPercent
+        SSHKeyName: !Ref Instances.Outputs.SSHKeyName
 
   Instances:
     Type: AWS::CloudFormation::Stack
