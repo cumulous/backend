@@ -37,8 +37,6 @@ ARGS=" \
     ParameterKey=VpcRange,ParameterValue=${VPC_RANGE} \
     ParameterKey=EncryptionKeyId,ParameterValue=${ENCRYPTION_KEY_ID} \
     ParameterKey=SecretsBucket,ParameterValue=${SECRETS_BUCKET} \
-    ParameterKey=SSHKeyName,ParameterValue=${STACK_NAME} \
-    ParameterKey=SSHKeyS3Path,ParameterValue=ssh/${STACK_NAME}.pem \
     ParameterKey=SSHKeyGetRoleArn,ParameterValue=${SSH_KEY_GET_ROLE_ARN} \
     ParameterKey=SSHKeyPutRoleArn,ParameterValue=${SSH_KEY_PUT_ROLE_ARN} \
     ParameterKey=DomainZone,ParameterValue=${DOMAIN_ZONE} \

@@ -2,7 +2,6 @@ import * as stringify from 'json-stable-stringify';
 import { Client as SSHClient, ClientChannel as SSHClientChannel, SFTPWrapper } from 'ssh2';
 
 import { ec2, s3 } from './aws';
-import { envNames } from './env';
 import { log } from './log';
 import { AWSError, Callback } from './types';
 import { assertNonEmptyArray } from './util';
@@ -10,13 +9,10 @@ import { assertNonEmptyArray } from './util';
 // shim to be replaced with a DB lookup
 const instanceTypes = require('./instance-types.json');
 
-export const defaults = {
-  sshUser: 'ec2-user',
-  mountPath: '/mnt/scratch',
-};
-
-export const initScriptFile = 'init.sh';
 export const volumeType = 'gp2';
+export const sshUser = 'ec2-user';
+export const initScriptFile = 'init.sh';
+export const mountPath = '/mnt/scratch';
 
 export function describeInstance(instanceId: string, context: any, callback: Callback) {
   ec2.describeInstances({
@@ -27,61 +23,59 @@ export function describeInstance(instanceId: string, context: any, callback: Cal
     .catch(callback);
 }
 
-export function createSSHKey(event: any, context: any, callback: Callback) {
-  createKeyPair()
-    .then(putSSHKey)
+interface SSHKeyConfig {
+  Name: string;
+  Bucket: string;
+  Path: string;
+  EncryptionKeyId?: string;
+}
+
+export function createSSHKey(request: SSHKeyConfig, context: any, callback: Callback) {
+  Promise.resolve()
+    .then(() => createKeyPair(request.Name))
+    .then(key => putSSHKey(key, request.Bucket, request.Path, request.EncryptionKeyId))
     .then(() => callback())
     .catch((err: AWSError) =>
       callback(err.code === 'InvalidKeyPair.Duplicate' ? null : err));
 }
 
-function createKeyPair() {
+function createKeyPair(name: string) {
   return ec2.createKeyPair({
-    KeyName: process.env[envNames.sshKeyName],
+    KeyName: name,
   }).promise()
     .then(data => data.KeyMaterial);
 }
 
-function putSSHKey(key: string) {
+function putSSHKey(key: string, bucket: string, path: string, encryptionKeyId: string) {
   return s3.putObject({
-    Bucket: process.env[envNames.sshKeyS3Bucket],
-    Key: process.env[envNames.sshKeyS3Path],
+    Bucket: bucket,
+    Key: path,
     Body: key,
-    SSEKMSKeyId: process.env[envNames.encryptionKeyId],
+    SSEKMSKeyId: encryptionKeyId,
     ServerSideEncryption: 'aws:kms',
   }).promise();
 }
 
-export function deleteSSHKey(event: any, context: any, callback: Callback) {
-  deleteKeyPair()
-    .then(deleteSSHKeyObject)
+export function deleteSSHKey(request: SSHKeyConfig, context: any, callback: Callback) {
+  Promise.resolve()
+    .then(() => deleteKeyPair(request.Name))
+    .then(() => deleteSSHKeyObject(request.Bucket, request.Path))
     .then(() => callback())
     .catch((err: AWSError) =>
       callback(err.code === 'InvalidKeyPair.NotFound' ? null : err));
 }
 
-function deleteKeyPair() {
+function deleteKeyPair(name: string) {
   return ec2.deleteKeyPair({
-    KeyName: process.env[envNames.sshKeyName],
+    KeyName: name,
   }).promise();
 }
 
-function deleteSSHKeyObject() {
+function deleteSSHKeyObject(bucket: string, path: string) {
   return s3.deleteObject({
-    Bucket: process.env[envNames.sshKeyS3Bucket],
-    Key: process.env[envNames.sshKeyS3Path],
+    Bucket: bucket,
+    Key: path,
   }).promise();
-}
-
-export function checkSSHKeyName(keyName: string, context: any, callback: Callback) {
-  if (process.env[envNames.sshKeyName] == null) {
-    callback(Error(envNames.sshKeyName + ' is missing from the environment'));
-  } else if (process.env[envNames.sshKeyName] != keyName) {
-    callback(Error('Instance key name mismatch: ' + keyName + ', ' +
-                   'expected: ' + process.env[envNames.sshKeyName] + '.'));
-  } else {
-    callback();
-  }
 }
 
 export function calculateVolumeSizes(instanceType: string, context: any, callback: Callback) {
@@ -194,8 +188,53 @@ export function deleteVolumesOnTermination(event: {volumeDevices: string[], Inst
     .catch(callback);
 }
 
-export function transferInitScript(instanceAddress: string, context: any, callback: Callback) {
-  sshRun(instanceAddress, sshTransfer, initScriptFile, callback);
+export interface SSHConfig {
+  PrivateIpAddress: string;
+  bucket: string;
+  path: string;
+  volumeDevices?: string[];
+}
+
+export function transferInitScript(request: SSHConfig, context: any, callback: Callback) {
+  sshRun(request, sshTransfer, initScriptFile, callback)
+    .catch(callback);
+}
+
+export function executeInitScript(request: SSHConfig, context: any, callback: Callback) {
+  Promise.resolve()
+    .then(() => initCommand(request.volumeDevices))
+    .then(command => sshRun(request, sshExecute, command, callback))
+    .catch(callback);
+}
+
+function sshRun(request: SSHConfig,
+                action: (client: SSHClient, args: any, callback: Callback) => void,
+                args: any,
+                callback: Callback) {
+  return Promise.resolve()
+    .then(() => fetchSSHKey(request.bucket, request.path))
+    .then(key => {
+      const client = new SSHClient();
+      client.on('ready', () => action(client, args, callback))
+            .on('error', callback);
+      sshConnect(client, request.PrivateIpAddress, key as Buffer);
+    });
+}
+
+function fetchSSHKey(bucket: string, path: string) {
+  return s3.getObject({
+    Bucket: bucket,
+    Key: path,
+  }).promise()
+    .then(data => data.Body);
+}
+
+function sshConnect(client: SSHClient, instanceAddress: string, sshKey: Buffer) {
+  client.connect({
+    host: instanceAddress,
+    username: sshUser,
+    privateKey: sshKey,
+  });
 }
 
 function sshTransfer(client: SSHClient, scriptFile: string, callback: Callback) {
@@ -211,45 +250,6 @@ function sshTransfer(client: SSHClient, scriptFile: string, callback: Callback) 
   });
 }
 
-function sshRun(instanceAddress: string,
-                action: (client: SSHClient, args: any, callback: Callback) => void,
-                args: any,
-                callback: Callback) {
-  fetchSSHKey().then(key => {
-    const client = new SSHClient();
-    client.on('ready', () => action(client, args, callback))
-          .on('error', callback);
-    sshConnect(client, instanceAddress, key as Buffer);
-  }).catch(callback);
-}
-
-function fetchSSHKey() {
-  return s3.getObject({
-    Bucket: process.env[envNames.sshKeyS3Bucket],
-    Key: process.env[envNames.sshKeyS3Path],
-  }).promise()
-    .then(data => data.Body);
-}
-
-function sshConnect(client: SSHClient, instanceAddress: string, sshKey: Buffer) {
-  client.connect({
-    host: instanceAddress,
-    username: process.env[envNames.sshUser] || defaults.sshUser,
-    privateKey: sshKey,
-  });
-}
-
-export function executeInitScript(event: {volumeDevices: string[], PrivateIpAddress: string},
-                                context: any, callback: Callback) {
-  sshRun(event.PrivateIpAddress, sshExecute, initCommand(event.volumeDevices), callback);
-}
-
-function initCommand(volumeDevices: string[]) {
-  return 'sudo sh ' + initScriptFile + ' ' +
-                '"' + volumeDevices.join(' ') + '"' + ' ' +
-                '"' + (process.env[envNames.mountPath] || defaults.mountPath) + '"';
-}
-
 function sshExecute(client: SSHClient, command: string, callback: Callback) {
   client.exec(command, (err: Error, channel: SSHClientChannel) => {
     if (err) return callback(err);
@@ -263,4 +263,8 @@ function sshExecute(client: SSHClient, command: string, callback: Callback) {
     }).on('data', (stdout: Buffer) => log.info(stdout.toString()))
       .stderr.on('data', (stderr: Buffer) => log.error(stderr.toString()));
   });
+}
+
+function initCommand(volumeDevices: string[]) {
+  return `sudo sh ${initScriptFile} "${volumeDevices.join(' ')}" "${mountPath}"`;
 }

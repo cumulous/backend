@@ -14,10 +14,6 @@ Parameters:
     Type: String
   SecretsBucket:
     Type: String
-  SSHKeyName:
-    Type: String
-  SSHKeyS3Path:
-    Type: String
   SSHKeyPutRoleArn:
     Type: String
   SSHKeyGetRoleArn:
@@ -2049,40 +2045,38 @@ Resources:
         LambdaPackage: !Ref LambdaPackage
         VpcRange: !Ref VpcRange
 
-  Batch:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub ${TemplateURLBase}/batch.yaml
-      Parameters:
-        BackendStack: !Ref AWS::StackName
-        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
-        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
-        ArtifactsBucket: !Ref ArtifactsBucket
-        LambdaPackage: !Ref LambdaPackage
-        SubnetIds: !GetAtt VPC.Outputs.SubnetIds
-        SecurityGroup: !GetAtt VPC.Outputs.DefaultSecurityGroup
-        ClusterCores: !Ref ClusterCores
-        SpotBidPercent: !Ref SpotBidPercent
-        SSHKeyName: !Ref SSHKeyName
-
-  # Instances:
+  # Batch:
   #   Type: AWS::CloudFormation::Stack
   #   Properties:
-  #     TemplateURL: !Sub ${TemplateURLBase}/instances.yaml
+  #     TemplateURL: !Sub ${TemplateURLBase}/batch.yaml
   #     Parameters:
   #       BackendStack: !Ref AWS::StackName
   #       SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
   #       SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
   #       ArtifactsBucket: !Ref ArtifactsBucket
-  #       SecretsBucket: !Ref SecretsBucket
   #       LambdaPackage: !Ref LambdaPackage
   #       SubnetIds: !GetAtt VPC.Outputs.SubnetIds
   #       SecurityGroup: !GetAtt VPC.Outputs.DefaultSecurityGroup
-  #       EncryptionKeyId: !Ref EncryptionKeyId
-  #       SSHKeyPutRoleArn: !Ref SSHKeyPutRoleArn
-  #       SSHKeyGetRoleArn: !Ref SSHKeyGetRoleArn
-  #       SSHKeyS3Path: !Ref SSHKeyS3Path
-  #       SSHKeyName: !Ref SSHKeyName
+  #       ClusterCores: !Ref ClusterCores
+  #       SpotBidPercent: !Ref SpotBidPercent
+  #       SSHKeyName: !Ref Instances.Outputs.SSHKeyName
+
+  Instances:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub ${TemplateURLBase}/instances.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
+        ArtifactsBucket: !Ref ArtifactsBucket
+        SecretsBucket: !Ref SecretsBucket
+        LambdaPackage: !Ref LambdaPackage
+        SubnetIds: !GetAtt VPC.Outputs.SubnetIds
+        SecurityGroup: !GetAtt VPC.Outputs.DefaultSecurityGroup
+        EncryptionKeyId: !Ref EncryptionKeyId
+        SSHKeyPutRoleArn: !Ref SSHKeyPutRoleArn
+        SSHKeyGetRoleArn: !Ref SSHKeyGetRoleArn
 
 Outputs:
   WebSigningKey:

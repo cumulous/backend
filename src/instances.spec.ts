@@ -2,9 +2,8 @@ import * as stringify from 'json-stable-stringify';
 import { Client as SSHClient } from 'ssh2';
 
 import { ec2, s3 } from './aws';
-import { envNames } from './env';
-import { defaults, volumeType, initScriptFile, describeInstance,
-         createSSHKey, deleteSSHKey, checkSSHKeyName, calculateVolumeSizes,
+import { volumeType, sshUser, initScriptFile, mountPath,
+         createSSHKey, deleteSSHKey, describeInstance, calculateVolumeSizes,
          createVolumes, waitForVolumesAvailable, calculateVolumeDevices, attachVolumes,
          detachVolumes, deleteVolumes, deleteVolumesOnTermination,
          transferInitScript, executeInitScript } from './instances';
@@ -22,10 +21,8 @@ const fakeInstanceAddress = 'EC2-fake.compute-1.amazonaws.com';
 const fakeAvailabilityZone = 'us-east-1a';
 const fakeEncryptionKeyId = 'fake-encryption-key';
 const fakeSSHKeyName = 'fake-ssh-key';
-const fakeSSHKeyS3Bucket = 'fake-ssh-key-bucket';
-const fakeSSHKeyS3Path = 'fake-ssh-key-path/key.pem';
-const fakeSSHUser = 'fake-user';
-const fakeMountPath = '/mnt/testmount';
+const fakeSSHKeyBucket = 'fake-ssh-key-bucket';
+const fakeSSHKeyPath = 'fake-ssh-key-path/key.pem';
 
 let fakeEvent: any;
 let fakeVolumeSizes: number[];
@@ -88,15 +85,21 @@ describe('describeInstance()', () => {
 describe('createSSHKey()', () => {
   const fakeSSHKey = 'FAKE-KEY-MATERIAL';
 
+  const fakeRequest = () => ({
+    Name: fakeSSHKeyName,
+    Bucket: fakeSSHKeyBucket,
+    Path: fakeSSHKeyPath,
+    EncryptionKeyId: fakeEncryptionKeyId,
+    Extra: 'value',
+  });
+
+  const testMethod = (callback: Callback) =>
+    createSSHKey(fakeRequest(), null, callback);
+
   let spyOnEC2CreateKeyPair: jasmine.Spy;
   let spyOnS3PutObject: jasmine.Spy;
 
   beforeEach(() => {
-    process.env[envNames.encryptionKeyId] = fakeEncryptionKeyId;
-    process.env[envNames.sshKeyName] = fakeSSHKeyName;
-    process.env[envNames.sshKeyS3Bucket] = fakeSSHKeyS3Bucket;
-    process.env[envNames.sshKeyS3Path] = fakeSSHKeyS3Path;
-
     spyOnEC2CreateKeyPair = spyOn(ec2, 'createKeyPair')
       .and.returnValue(fakeResolve({ KeyMaterial: fakeSSHKey }));
     spyOnS3PutObject = spyOn(s3, 'putObject')
@@ -110,7 +113,7 @@ describe('createSSHKey()', () => {
 
   describe('calls', () => {
     it('ec2.createKeyPair() once with correct parameters', (done: Callback) => {
-      createSSHKey(null, null, () => {
+      testMethod(() => {
         expect(spyOnEC2CreateKeyPair).toHaveBeenCalledWith({
           KeyName: fakeSSHKeyName,
         });
@@ -119,10 +122,10 @@ describe('createSSHKey()', () => {
       });
     });
     it('s3.putObject() once with correct parameters', (done: Callback) => {
-      createSSHKey(null, null, () => {
+      testMethod(() => {
         expect(spyOnS3PutObject).toHaveBeenCalledWith({
-          Bucket: fakeSSHKeyS3Bucket,
-          Key: fakeSSHKeyS3Path,
+          Bucket: fakeSSHKeyBucket,
+          Key: fakeSSHKeyPath,
           Body: fakeSSHKey,
           SSEKMSKeyId: fakeEncryptionKeyId,
           ServerSideEncryption: 'aws:kms',
@@ -133,30 +136,39 @@ describe('createSSHKey()', () => {
     });
 
     describe('callback with an error if', () => {
-      it('ec2.createKeyPair() produces an unrecoverable error', (done: Callback) => {
-        spyOnEC2CreateKeyPair.and.returnValue(fakeReject('ec2.createKeyPair()'));
-        testError(createSSHKey, null, done);
+      let request: any;
+      beforeEach(() => {
+        request = fakeRequest();
       });
-      it('s3.putObject() produces an error', (done: Callback) => {
+      afterEach((done: Callback) => {
+        testError(createSSHKey, request, done);
+      });
+      it('ec2.createKeyPair() produces an unrecoverable error', () => {
+        spyOnEC2CreateKeyPair.and.returnValue(fakeReject('ec2.createKeyPair()'));
+      });
+      it('s3.putObject() produces an error', () => {
         spyOnS3PutObject.and.returnValue(fakeReject('s3.putObject()'));
-        testError(createSSHKey, null, done);
+      });
+      describe('request is', () => {
+        it('undefined', () => request = undefined);
+        it('null', () => request = null);
       });
     });
 
     describe('callback without an error if', () => {
-      it('AWS does not produce an error', (done: Callback) => {
-        testError(createSSHKey, null, done, false);
+      afterEach((done: Callback) => {
+        testError(createSSHKey, fakeRequest(), done, false);
       });
-      it('ec2.createKeyPair() produces "InvalidKeyPair.Duplicate" error', (done: Callback) => {
+      it('AWS does not produce an error', () => {});
+      it('ec2.createKeyPair() produces "InvalidKeyPair.Duplicate" error', () => {
         causeDuplicateKeyError();
-        testError(createSSHKey, null, done, false);
       });
     });
   });
 
   describe('does not call s3.putObject() if ec2.createKeyPair() produces', () => {
     afterEach((done: Callback) => {
-      createSSHKey(null, null, () => {
+      testMethod(() => {
         expect(spyOnS3PutObject).not.toHaveBeenCalled();
         done();
       });
@@ -171,14 +183,21 @@ describe('createSSHKey()', () => {
 });
 
 describe('deleteSSHKey()', () => {
+
+  const fakeRequest = () => ({
+    Name: fakeSSHKeyName,
+    Bucket: fakeSSHKeyBucket,
+    Path: fakeSSHKeyPath,
+    Extra: 'property',
+  });
+
+  const testMethod = (callback: Callback) =>
+    deleteSSHKey(fakeRequest(), null, callback);
+
   let spyOnEC2DeleteKeyPair: jasmine.Spy;
   let spyOnS3DeleteObject: jasmine.Spy;
 
   beforeEach(() => {
-    process.env[envNames.sshKeyName] = fakeSSHKeyName;
-    process.env[envNames.sshKeyS3Bucket] = fakeSSHKeyS3Bucket;
-    process.env[envNames.sshKeyS3Path] = fakeSSHKeyS3Path;
-
     spyOnEC2DeleteKeyPair = spyOn(ec2, 'deleteKeyPair')
       .and.returnValue(fakeResolve());
     spyOnS3DeleteObject = spyOn(s3, 'deleteObject')
@@ -192,7 +211,7 @@ describe('deleteSSHKey()', () => {
 
   describe('calls', () => {
     it('ec2.deleteKeyPair() once with correct parameters', (done: Callback) => {
-      deleteSSHKey(null, null, () => {
+      testMethod(() => {
         expect(spyOnEC2DeleteKeyPair).toHaveBeenCalledWith({
           KeyName: fakeSSHKeyName,
         });
@@ -201,10 +220,10 @@ describe('deleteSSHKey()', () => {
       });
     });
     it('s3.deleteObject() once with correct parameters', (done: Callback) => {
-      deleteSSHKey(null, null, () => {
+      testMethod(() => {
         expect(spyOnS3DeleteObject).toHaveBeenCalledWith({
-          Bucket: fakeSSHKeyS3Bucket,
-          Key: fakeSSHKeyS3Path,
+          Bucket: fakeSSHKeyBucket,
+          Key: fakeSSHKeyPath,
         });
         expect(spyOnS3DeleteObject).toHaveBeenCalledTimes(1);
         done();
@@ -212,30 +231,39 @@ describe('deleteSSHKey()', () => {
     });
 
     describe('callback with an error if', () => {
-      it('ec2.deleteKeyPair() produces an unrecoverable error', (done: Callback) => {
-        spyOnEC2DeleteKeyPair.and.returnValue(fakeReject('ec2.deleteKeyPair()'));
-        testError(deleteSSHKey, null, done);
+      let request: any;
+      beforeEach(() => {
+        request = fakeRequest();
       });
-      it('s3.deleteObject() produces an error', (done: Callback) => {
+      afterEach((done: Callback) => {
+        testError(deleteSSHKey, request, done);
+      });
+      it('ec2.deleteKeyPair() produces an unrecoverable error', () => {
+        spyOnEC2DeleteKeyPair.and.returnValue(fakeReject('ec2.deleteKeyPair()'));
+      });
+      it('s3.deleteObject() produces an error', () => {
         spyOnS3DeleteObject.and.returnValue(fakeReject('s3.deleteObject()'));
-        testError(deleteSSHKey, null, done);
+      });
+      describe('request is', () => {
+        it('undefined', () => request = undefined);
+        it('null', () => request = null);
       });
     });
 
     describe('callback without an error if', () => {
-      it('AWS does not produce an error', (done: Callback) => {
-        testError(deleteSSHKey, null, done, false);
+      afterEach((done: Callback) => {
+        testError(deleteSSHKey, fakeRequest(), done, false);
       });
-      it('ec2.deleteKeyPair() produces "InvalidKeyPair.NotFound" error', (done: Callback) => {
+      it('AWS does not produce an error', () => {});
+      it('ec2.deleteKeyPair() produces "InvalidKeyPair.NotFound" error', () => {
         causeKeyNotFoundError();
-        testError(deleteSSHKey, null, done, false);
       });
     });
   });
 
   describe('does not call s3.deleteObject() if ec2.deleteKeyPair() produces', () => {
     afterEach((done: Callback) => {
-      deleteSSHKey(null, null, () => {
+      testMethod(() => {
         expect(spyOnS3DeleteObject).not.toHaveBeenCalled();
         done();
       });
@@ -246,56 +274,6 @@ describe('deleteSSHKey()', () => {
     it('"InvalidKeyPair.NotFound" error', () => {
       causeKeyNotFoundError();
     });
-  });
-});
-
-describe('checkSSHKeyName()', () => {
-  beforeEach(() => {
-    process.env[envNames.sshKeyName] = fakeSSHKeyName;
-  });
-
-  describe('calls callback with an error if SSH key name', () => {
-    let sshKeyName: string;
-
-    beforeEach(() => {
-      sshKeyName = fakeSSHKeyName;
-    });
-
-    const testInstanceKey = () => {
-      it('undefined', () => {
-        sshKeyName = undefined;
-      });
-
-      it('null', () => {
-        sshKeyName = null;
-      });
-
-      it('incorrect', () => {
-        sshKeyName += '-incorrect';
-      });
-    };
-
-    afterEach((done: Callback) => {
-      testError(checkSSHKeyName, sshKeyName, done);
-    });
-
-    describe('is missing from the environment, and the instance key is', () => {
-      beforeEach(() => {
-        delete process.env[envNames.sshKeyName];
-      });
-
-      testInstanceKey();
-      it('correct', () => null);
-    });
-
-    describe('is provided by the environment, but the instance key is', () => {
-      testInstanceKey();
-    });
-  });
-
-  it('does not produce an error when called with correct parameters',
-      (done: Callback) => {
-    testError(checkSSHKeyName, fakeSSHKeyName, done, false);
   });
 });
 
@@ -563,6 +541,14 @@ describe('deleteVolumesOnTermination()', () => {
 describe('', () => {
   const fakeSSHKey = 'FAKE_KEY';
 
+  const fakeRequest = () => ({
+    PrivateIpAddress: fakeInstanceAddress,
+    bucket: fakeSSHKeyBucket,
+    path: fakeSSHKeyPath,
+    volumeDevices: fakeVolumeDevices,
+    extra: 'property',
+  });
+
   let fakeSSHKeyBody: Buffer;
 
   let spyOnGetSSHKey: jasmine.Spy;
@@ -571,11 +557,9 @@ describe('', () => {
   let spyOnSSHClientEnd: jasmine.Spy;
 
   beforeEach(() => {
-    fakeSSHKeyBody = Buffer.from(fakeSSHKey);
+    fakeEvent = fakeRequest();
 
-    process.env[envNames.sshKeyS3Bucket] = fakeSSHKeyS3Bucket;
-    process.env[envNames.sshKeyS3Path] = fakeSSHKeyS3Path;
-    process.env[envNames.sshUser] = fakeSSHUser;
+    fakeSSHKeyBody = Buffer.from(fakeSSHKey);
 
     spyOnGetSSHKey = spyOn(s3, 'getObject')
       .and.returnValue(fakeResolve({ Body: fakeSSHKeyBody }));
@@ -599,8 +583,8 @@ describe('', () => {
       it('S3.getObject() once with correct parameters', (done: Callback) => {
         lambda(fakeEvent, null, () => {
           expect(spyOnGetSSHKey).toHaveBeenCalledWith({
-            Bucket: fakeSSHKeyS3Bucket,
-            Key: fakeSSHKeyS3Path,
+            Bucket: fakeSSHKeyBucket,
+            Key: fakeSSHKeyPath,
           });
           expect(spyOnGetSSHKey).toHaveBeenCalledTimes(1);
           done();
@@ -621,24 +605,15 @@ describe('', () => {
         });
       });
 
-      describe('ssh2.Client.connect() once with correct parameters if SSH_USER is', () => {
-        const testConnect = (user: string, done: Callback) => {
-          lambda(fakeEvent, null, () => {
-            expect(spyOnSSHClientConnect).toHaveBeenCalledWith({
-              host: fakeInstanceAddress,
-              username: user,
-              privateKey: fakeSSHKeyBody,
-            });
-            expect(spyOnSSHClientConnect).toHaveBeenCalledTimes(1);
-            done();
+      it('ssh2.Client.connect() once with correct parameters', (done: Callback) => {
+        lambda(fakeEvent, null, () => {
+          expect(spyOnSSHClientConnect).toHaveBeenCalledWith({
+            host: fakeInstanceAddress,
+            username: sshUser,
+            privateKey: fakeSSHKeyBody,
           });
-        };
-        it('set', (done: Callback) => {
-          testConnect(fakeSSHUser, done);
-        });
-        it('not set', (done: Callback) => {
-          delete process.env[envNames.sshUser];
-          testConnect(defaults.sshUser, done);
+          expect(spyOnSSHClientConnect).toHaveBeenCalledTimes(1);
+          done();
         });
       });
 
@@ -646,7 +621,6 @@ describe('', () => {
         afterEach((done: Callback) => {
           testError(lambda, fakeEvent, done);
         });
-
         it('S3.getObject() returns an error', () => {
           spyOnGetSSHKey.and.returnValue(
             fakeReject('S3.getObject()'));
@@ -664,6 +638,10 @@ describe('', () => {
             return this;
           });
         });
+        describe('request is', () => {
+          it('undefined', () => fakeEvent = undefined);
+          it('null', () => fakeEvent = null);
+        });
       });
     });
 
@@ -673,12 +651,11 @@ describe('', () => {
   };
 
   describe('transferInitScript()', () => {
+
     let spyOnSSHClientSftp: jasmine.Spy;
     let spyOnSSHSftpWrapper: jasmine.Spy;
 
     beforeEach(() => {
-      fakeEvent = fakeInstanceAddress;
-
       spyOnSSHClientSftp = spyOn(SSHClient.prototype, 'sftp')
         .and.callFake((callback: Callback) => callback(null, spyOnSSHSftpWrapper));
 
@@ -690,15 +667,18 @@ describe('', () => {
 
     testSSHRun(transferInitScript);
 
+    const testMethod = (callback: Callback) =>
+      transferInitScript(fakeRequest(), null, callback);
+
     describe('calls', () => {
       it('ssh2.Client.sftp() once', (done: Callback) => {
-        transferInitScript(fakeInstanceAddress, null, () => {
+        testMethod(() => {
           expect(spyOnSSHClientSftp).toHaveBeenCalledTimes(1);
           done();
         });
       });
       it('ssh2.SFTPWrapper.fastPut() once with correct parameters', (done: Callback) => {
-        transferInitScript(fakeInstanceAddress, null, () => {
+        testMethod(() => {
           expect((spyOnSSHSftpWrapper as any).fastPut).toHaveBeenCalledWith(
             initScriptFile, initScriptFile, jasmine.any(Function));
           expect((spyOnSSHSftpWrapper as any).fastPut).toHaveBeenCalledTimes(1);
@@ -708,7 +688,7 @@ describe('', () => {
 
       describe('callback with an error if', () => {
         afterEach((done: Callback) => {
-          testError(transferInitScript, fakeInstanceAddress, done);
+          testError(transferInitScript, fakeEvent, done);
         });
         it('ssh2.Client.sftp() returns an error', () => {
           spyOnSSHClientSftp.and.callFake((callback: Callback) =>
@@ -724,17 +704,11 @@ describe('', () => {
   });
 
   describe('executeInitScript()', () => {
+
     let spyOnSSHClientExec: jasmine.Spy;
     let spyOnSSHClientChannel: jasmine.Spy;
 
     beforeEach(() => {
-      fakeEvent = {
-        PrivateIpAddress: fakeInstanceAddress,
-        volumeDevices: fakeVolumeDevices,
-      };
-
-      process.env[envNames.mountPath] = fakeMountPath;
-
       spyOnSSHClientExec = spyOn(SSHClient.prototype, 'exec')
         .and.callFake((command: string, callback: Callback) =>
           callback(null, spyOnSSHClientChannel));
@@ -760,31 +734,25 @@ describe('', () => {
 
     testSSHRun(executeInitScript);
 
+    const testMethod = (callback: Callback) =>
+      executeInitScript(fakeRequest(), null, callback);
+
     describe('calls', () => {
-      describe('ssh2.Client.exec() once with', () => {
-        const testExec = (mountPath: string, done: Callback) => {
-          executeInitScript(fakeEvent, null, () => {
-            expect(spyOnSSHClientExec).toHaveBeenCalledWith(
-              'sudo sh ' + initScriptFile + ' ' +
-                 '"' + fakeVolumeDevices.join(' ') + '"' + ' ' +
-                 '"' + mountPath + '"',
-              jasmine.any(Function)
-            );
-            expect(spyOnSSHClientExec).toHaveBeenCalledTimes(1);
-            done();
-          });
-        };
-        it('correct parameters', (done: Callback) => {
-          testExec(fakeMountPath, done);
-        });
-        it('default parameters, if parameters are not set', (done: Callback) => {
-          delete process.env[envNames.mountPath];
-          testExec(defaults.mountPath, done);
+      it('ssh2.Client.exec() once with correct parameters', (done: Callback) => {
+        testMethod(() => {
+          expect(spyOnSSHClientExec).toHaveBeenCalledWith(
+            'sudo sh ' + initScriptFile + ' ' +
+               '"' + fakeVolumeDevices.join(' ') + '"' + ' ' +
+               '"' + mountPath + '"',
+            jasmine.any(Function)
+          );
+          expect(spyOnSSHClientExec).toHaveBeenCalledTimes(1);
+          done();
         });
       });
 
       it('ssh2.ClientChannel.on() with correct parameters', (done: Callback) => {
-        executeInitScript(fakeEvent, null, () => {
+        testMethod(() => {
           expect((spyOnSSHClientChannel as any).on).toHaveBeenCalledWith('close', jasmine.any(Function));
           expect((spyOnSSHClientChannel as any).on).toHaveBeenCalledWith('data', jasmine.any(Function));
           expect((spyOnSSHClientChannel as any).on).toHaveBeenCalledTimes(2);
@@ -793,7 +761,7 @@ describe('', () => {
       });
 
       it('ssh2.ClientChannel.stderr.on("data") once with correct parameters', (done: Callback) => {
-        executeInitScript(fakeEvent, null, () => {
+        testMethod(() => {
           expect((spyOnSSHClientChannel as any).stderr.on).toHaveBeenCalledWith('data', jasmine.any(Function));
           expect((spyOnSSHClientChannel as any).stderr.on).toHaveBeenCalledTimes(1);
           done();
@@ -801,7 +769,7 @@ describe('', () => {
       });
 
       it('ssh2.Client.end() once', (done: Callback) => {
-        executeInitScript(fakeEvent, null, () => {
+        testMethod(() => {
           expect(spyOnSSHClientEnd).toHaveBeenCalledTimes(1);
           done();
         });

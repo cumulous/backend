@@ -21,10 +21,6 @@ Parameters:
     Type: String
   SSHKeyGetRoleArn:
     Type: String
-  SSHKeyS3Path:
-    Type: String
-  SSHKeyName:
-    Type: AWS::EC2::KeyPair::KeyName
 
 Resources:
   LambdaBasicExecutionRole:
@@ -39,65 +35,6 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-
-  InstancesInit:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub ${BackendStack}-InstancesInit
-      Role: !GetAtt InstancesInitRole.Arn
-      Handler: aws.executeStateMachine
-      Runtime: nodejs6.10
-      Environment:
-        Variables:
-          STATE_MACHINE: !Ref InstancesInitStateMachine
-      Code:
-        S3Bucket: !Ref ArtifactsBucket
-        S3Key: !Ref LambdaPackage
-
-  InstancesInitRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: InstancesInitRolePolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action: states:StartExecution
-                Resource:
-                  - !Ref InstancesInitStateMachine
-
-  InstancesInitEventRule:
-    Type: AWS::Events::Rule
-    Properties:
-      EventPattern:
-        source:
-          - aws.ec2
-        detail-type:
-          - EC2 Instance State-change Notification
-        detail:
-          state:
-            - running
-      Targets:
-        - Arn: !GetAtt InstancesInit.Arn
-          Id: InstancesInitFunction
-
-  InstancesInitEventPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref InstancesInit
-      Action: lambda:InvokeFunction
-      Principal: events.amazonaws.com
-      SourceArn: !GetAtt InstancesInitEventRule.Arn
 
   DescribeInstance:
     Type: AWS::Lambda::Function
@@ -131,20 +68,6 @@ Resources:
               - Effect: Allow
                 Action: ec2:DescribeInstances
                 Resource: '*'
-
-  CheckSSHKeyName:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub ${BackendStack}-CheckSSHKeyName
-      Role: !GetAtt LambdaBasicExecutionRole.Arn
-      Handler: instances.checkSSHKeyName
-      Runtime: nodejs6.10
-      Environment:
-        Variables:
-          SSH_KEY_NAME: !Ref SSHKeyName
-      Code:
-        S3Bucket: !Ref ArtifactsBucket
-        S3Key: !Ref LambdaPackage
 
   CalculateVolumeSizes:
     Type: AWS::Lambda::Function
@@ -369,10 +292,6 @@ Resources:
       Handler: instances.transferInitScript
       Runtime: nodejs6.10
       Timeout: 10
-      Environment:
-        Variables:
-          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
-          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       VpcConfig:
         SecurityGroupIds:
           - !Ref SecurityGroup
@@ -389,10 +308,6 @@ Resources:
       Handler: instances.executeInitScript
       Runtime: nodejs6.10
       Timeout: 15
-      Environment:
-        Variables:
-          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
-          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       VpcConfig:
         SecurityGroupIds:
           - !Ref SecurityGroup
@@ -400,6 +315,45 @@ Resources:
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+
+  InstancesInitEventRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: InstancesInitRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref InstancesInitStateMachine
+
+  InstancesInitEventRule:
+    Type: AWS::Events::Rule
+    Properties:
+      EventPattern:
+        source:
+          - aws.ec2
+        detail-type:
+          - EC2 Instance State-change Notification
+        detail:
+          state:
+            - running
+      Targets:
+        - Id: InstancesInitEvent
+          Arn: !Ref InstancesInitStateMachine
+          RoleArn: !GetAtt InstancesInitEventRole.Arn
+          InputPath: $.detail.instance-id
 
   InstancesInitExecutionRole:
     Type: AWS::IAM::Role
@@ -420,7 +374,6 @@ Resources:
                 Action: lambda:InvokeFunction
                 Resource:
                   - !GetAtt DescribeInstance.Arn
-                  - !GetAtt CheckSSHKeyName.Arn
                   - !GetAtt CalculateVolumeSizes.Arn
                   - !GetAtt CreateVolumes.Arn
                   - !GetAtt WaitForVolumesAvailable.Arn
@@ -442,16 +395,21 @@ Resources:
           "States": {
             "DescribeInstance": {
               "Type": "Task",
-              "InputPath": "$.detail.instance-id",
               "Resource": "${DescribeInstance.Arn}",
               "Next": "CheckSSHKeyName"
             },
             "CheckSSHKeyName": {
-              "Type": "Task",
-              "InputPath": "$.KeyName",
-              "ResultPath": null,
-              "Resource": "${CheckSSHKeyName.Arn}",
-              "Next": "CalculateVolumeSizes"
+              "Type": "Choice",
+              "Choices": [{
+                  "Variable": "$.KeyName",
+                  "StringEquals": "${SSHKey.Name}",
+                  "Next": "CalculateVolumeSizes"
+              }],
+              "Default": "FailKeyName"
+            },
+            "FailKeyName": {
+              "Type": "Fail",
+              "Cause": "Instance key name mismatch"
             },
             "CalculateVolumeSizes": {
               "Type": "Task",
@@ -515,11 +473,22 @@ Resources:
                     "Type": "Task",
                     "ResultPath": null,
                     "Resource": "${DeleteVolumesOnTermination.Arn}",
+                    "Next": "PassSSHKeyBucket"
+                  },
+                  "PassSSHKeyBucket": {
+                    "Type": "Pass",
+                    "Result": "${SSHKey.Bucket}",
+                    "ResultPath": "$.bucket",
+                    "Next": "PassSSHKeyPath"
+                  },
+                  "PassSSHKeyPath": {
+                    "Type": "Pass",
+                    "Result": "${SSHKey.Path}",
+                    "ResultPath": "$.path",
                     "Next": "TransferInitScript"
                   },
                   "TransferInitScript": {
                     "Type": "Task",
-                    "InputPath": "$.PrivateIpAddress",
                     "ResultPath": null,
                     "Resource": "${TransferInitScript.Arn}",
                     "TimeoutSeconds": 5,
@@ -575,11 +544,16 @@ Resources:
           }
         }
 
-  SetupSSHKey:
+  SSHKey:
     Type: AWS::CloudFormation::CustomResource
     Properties:
       ServiceToken: !Ref SetupCustomResourceArn
       StateMachine: !Ref SetupSSHKeyStateMachine
+      Config:
+        Name: !Ref BackendStack
+        Bucket: !Ref SecretsBucket
+        Path: !Sub ssh/${BackendStack}.pem
+        EncryptionKeyId: !Ref EncryptionKeyId
 
   CreateSSHKey:
     Type: AWS::Lambda::Function
@@ -588,12 +562,6 @@ Resources:
       Role: !Ref SSHKeyPutRoleArn
       Handler: instances.createSSHKey
       Runtime: nodejs6.10
-      Environment:
-        Variables:
-          ENCRYPTION_KEY_ID: !Ref EncryptionKeyId
-          SSH_KEY_NAME: !Ref SSHKeyName
-          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
-          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
@@ -605,11 +573,6 @@ Resources:
       Role: !GetAtt DeleteSSHKeyRole.Arn
       Handler: instances.deleteSSHKey
       Runtime: nodejs6.10
-      Environment:
-        Variables:
-          SSH_KEY_NAME: !Ref SSHKeyName
-          SSH_KEY_S3_BUCKET: !Ref SecretsBucket
-          SSH_KEY_S3_PATH: !Ref SSHKeyS3Path
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
@@ -637,7 +600,7 @@ Resources:
               - Effect: Allow
                 Action: s3:DeleteObject
                 Resource:
-                  - !Sub arn:aws:s3:::${SecretsBucket}/${SSHKeyS3Path}
+                  - !Sub arn:aws:s3:::${SecretsBucket}/ssh/${BackendStack}.pem
 
   SetupSSHKeyExecutionRole:
     Type: AWS::IAM::Role
@@ -679,27 +642,37 @@ Resources:
                     "Type": "Choice",
                     "Choices": [
                       {
-                        "Or": [
-                          {
-                            "Variable": "$.RequestType",
-                            "StringEquals": "Update"
-                          },
-                          {
-                            "Variable": "$.RequestType",
-                            "StringEquals": "Delete"
-                          }
-                        ],
-                        "Next": "DeleteSSHKey"
-                      },
-                      {
                         "Variable": "$.RequestType",
                         "StringEquals": "Create",
                         "Next": "CreateSSHKey"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Update",
+                        "Next": "PassUpdateSSHKey"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "PassDeleteSSHKey"
                       }
                     ]
                   },
+                  "PassUpdateSSHKey": {
+                    "Type": "Pass",
+                    "InputPath": "$.OldResourceProperties.Config",
+                    "ResultPath": "$.DeletedConfig",
+                    "Next": "DeleteSSHKey"
+                  },
+                  "PassDeleteSSHKey": {
+                    "Type": "Pass",
+                    "InputPath": "$.ResourceProperties.Config",
+                    "ResultPath": "$.DeletedConfig",
+                    "Next": "DeleteSSHKey"
+                  },
                   "DeleteSSHKey": {
                     "Type": "Task",
+                    "InputPath": "$.DeletedConfig",
                     "ResultPath": null,
                     "Resource": "${DeleteSSHKey.Arn}",
                     "Next": "CheckCreateSSHKey"
@@ -717,8 +690,15 @@ Resources:
                   },
                   "CreateSSHKey": {
                     "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Config",
                     "ResultPath": null,
                     "Resource": "${CreateSSHKey.Arn}",
+                    "Next": "PassOutputConfig"
+                  },
+                  "PassOutputConfig": {
+                    "Type": "Pass",
+                    "InputPath": "$.ResourceProperties.Config",
+                    "ResultPath": "$.Data",
                     "Next": "Success"
                   },
                   "Success": {
@@ -760,3 +740,7 @@ Resources:
             }
           }
         }
+
+Outputs:
+  SSHKeyName:
+    Value: !GetAtt SSHKey.Name
