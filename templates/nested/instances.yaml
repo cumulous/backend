@@ -502,6 +502,10 @@ Resources:
                     "Type": "Task",
                     "Resource": "${ExecuteInitScript.Arn}",
                     "TimeoutSeconds": 10,
+                    "Retry": [{
+                        "ErrorEquals": [ "HandledError", "States.Timeout" ],
+                        "IntervalSeconds": 5, "MaxAttempts": 3
+                    }],
                     "End": true
                   }
                 }
