@@ -81,7 +81,7 @@ Resources:
         minvCpus: 0
         maxvCpus: !Ref ClusterCores
         instanceTypes: [ optimal ]
-        instanceRole: !GetAtt InstanceRole.Arn
+        instanceRole: !GetAtt InstanceProfile.Arn
         spotIamFleetRole: !GetAtt SpotFleetRole.Arn
         subnets: !Ref SubnetIds
         securityGroupIds:
@@ -103,7 +103,7 @@ Resources:
         minvCpus: 0
         maxvCpus: !Ref ClusterCores
         instanceTypes: [ optimal ]
-        instanceRole: !GetAtt InstanceRole.Arn
+        instanceRole: !GetAtt InstanceProfile.Arn
         subnets: !Ref SubnetIds
         securityGroupIds:
           - !Ref SecurityGroup
