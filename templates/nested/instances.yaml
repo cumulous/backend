@@ -291,7 +291,7 @@ Resources:
       Role: !Ref SSHKeyGetRoleArn
       Handler: instances.transferInitScript
       Runtime: nodejs6.10
-      Timeout: 10
+      Timeout: 15
       VpcConfig:
         SecurityGroupIds:
           - !Ref SecurityGroup
@@ -307,7 +307,7 @@ Resources:
       Role: !Ref SSHKeyGetRoleArn
       Handler: instances.executeInitScript
       Runtime: nodejs6.10
-      Timeout: 15
+      Timeout: 20
       VpcConfig:
         SecurityGroupIds:
           - !Ref SecurityGroup
@@ -491,7 +491,7 @@ Resources:
                     "Type": "Task",
                     "ResultPath": null,
                     "Resource": "${TransferInitScript.Arn}",
-                    "TimeoutSeconds": 5,
+                    "TimeoutSeconds": 10,
                     "Next": "ExecuteInitScript",
                     "Retry": [{
                         "ErrorEquals": [ "HandledError", "States.Timeout" ],
@@ -501,11 +501,7 @@ Resources:
                   "ExecuteInitScript": {
                     "Type": "Task",
                     "Resource": "${ExecuteInitScript.Arn}",
-                    "TimeoutSeconds": 10,
-                    "Retry": [{
-                        "ErrorEquals": [ "HandledError", "States.Timeout" ],
-                        "IntervalSeconds": 5, "MaxAttempts": 3
-                    }],
+                    "TimeoutSeconds": 15,
                     "End": true
                   }
                 }
