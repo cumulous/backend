@@ -159,8 +159,8 @@ Resources:
                 Action: iam:PassRole
                 Resource:
                   - !GetAtt BatchServiceRole.Arn
-                  - !GetAtt InstanceRole.Arn
                   - !GetAtt SpotFleetRole.Arn
+                  - !GetAtt InstanceProfile.Arn
 
   UpdateComputeEnvironment:
     Type: AWS::Lambda::Function
