@@ -587,20 +587,20 @@ Resources:
           }
         }
 
-  # JobQueue:
-  #   Type: AWS::CloudFormation::CustomResource
-  #   Properties:
-  #     ServiceToken: !Ref SetupCustomResourceArn
-  #     StateMachine: !Ref SetupJobQueueStateMachine
-  #     jobQueueName: !Sub ${BackendStack}-job-queue
-  #     priority: 1
-  #     computeEnvironmentOrder:
-  #       - order: 1
-  #         computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
-  #         version: !GetAtt SpotComputeEnvironment.Version
-  #       - order: 2
-  #         computeEnvironment: !GetAtt OnDemandComputeEnvironment.Arn
-  #         version: !GetAtt OnDemandComputeEnvironment.Version
+  JobQueue:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Ref SetupCustomResourceArn
+      StateMachine: !Ref SetupJobQueueStateMachine
+      jobQueueName: !Sub ${BackendStack}-job-queue
+      priority: 1
+      computeEnvironmentOrder:
+        - order: 1
+          computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
+          version: !GetAtt SpotComputeEnvironment.Version
+        - order: 2
+          computeEnvironment: !GetAtt OnDemandComputeEnvironment.Arn
+          version: !GetAtt OnDemandComputeEnvironment.Version
 
   CreateJobQueue:
     Type: AWS::Lambda::Function
@@ -640,7 +640,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${BackendStack}-DescribeJobQueue
-      Role: !GetAtt DescribeJobQueue.Arn
+      Role: !GetAtt DescribeJobQueueRole.Arn
       Handler: batch.describeJobQueue
       Runtime: nodejs6.10
       Timeout: 10
@@ -648,7 +648,7 @@ Resources:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
 
-  DescribeJobQueue:
+  DescribeJobQueueRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -661,7 +661,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: DescribeJobQueuePolicy
+        - PolicyName: DescribeJobQueueRolePolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
