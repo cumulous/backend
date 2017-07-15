@@ -7,10 +7,21 @@ PACKAGE_FILE="app.zip"
 TEMPLATES_DEST_PATH="templates/${STACK_NAME}"
 TEMPLATES_DEST="s3://${ARTIFACTS_BUCKET}/${TEMPLATES_DEST_PATH}/"
 
+get_version() {
+  local dir="$1"
+
+  find "$dir" -type f \( -name "*.js" -o -name "*.json" \) ! -name "package.json" \
+    -exec md5sum {} \; |
+    sort -k 2 |
+    md5sum |
+    cut -d ' ' -f1
+}
+
+PACKAGE_VERSION=$(get_version app)
+PACKAGE_PATH="lambda/${STACK_NAME}/${PACKAGE_VERSION}.zip"
+
 cd app
 zip -qr ../${PACKAGE_FILE} .
-PACKAGE_VERSION=$(find . -type f -exec md5sum {} \; | sort -k 2 | md5sum | cut -d' ' -f1)
-PACKAGE_PATH="lambda/${STACK_NAME}/${PACKAGE_VERSION}.zip"
 cd ..
 
 aws cloudformation package \
