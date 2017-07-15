@@ -587,20 +587,20 @@ Resources:
           }
         }
 
-  # JobQueue:
-  #   Type: AWS::CloudFormation::CustomResource
-  #   Properties:
-  #     ServiceToken: !Ref SetupCustomResourceArn
-  #     StateMachine: !Ref SetupJobQueueStateMachine
-  #     jobQueueName: !Sub ${BackendStack}-job-queue
-  #     priority: 1
-  #     computeEnvironmentOrder:
-  #       - order: 1
-  #         computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
-  #         version: !GetAtt SpotComputeEnvironment.Version
-  #       - order: 2
-  #         computeEnvironment: !GetAtt OnDemandComputeEnvironment.Arn
-  #         version: !GetAtt OnDemandComputeEnvironment.Version
+  JobQueue:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Ref SetupCustomResourceArn
+      StateMachine: !Ref SetupJobQueueStateMachine
+      jobQueueName: !Sub ${BackendStack}-job-queue
+      priority: 1
+      computeEnvironmentOrder:
+        - order: 1
+          computeEnvironment: !GetAtt SpotComputeEnvironment.Arn
+          version: !GetAtt SpotComputeEnvironment.Version
+        - order: 2
+          computeEnvironment: !GetAtt OnDemandComputeEnvironment.Arn
+          version: !GetAtt OnDemandComputeEnvironment.Version
 
   CreateJobQueue:
     Type: AWS::Lambda::Function
