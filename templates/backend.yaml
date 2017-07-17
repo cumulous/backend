@@ -2036,7 +2036,7 @@ Resources:
   VPC:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplateURLBase}/vpc.yaml
+      TemplateURL: !Sub https://s3.amazonaws.com/${TemplateURLBase}/vpc.yaml
       Parameters:
         BackendStack: !Ref AWS::StackName
         SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
@@ -2048,7 +2048,7 @@ Resources:
   Batch:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplateURLBase}/batch.yaml
+      TemplateURL: !Sub https://s3.amazonaws.com/${TemplateURLBase}/batch.yaml
       Parameters:
         BackendStack: !Ref AWS::StackName
         SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
@@ -2064,7 +2064,7 @@ Resources:
   Instances:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplateURLBase}/instances.yaml
+      TemplateURL: !Sub https://s3.amazonaws.com/${TemplateURLBase}/instances.yaml
       Parameters:
         BackendStack: !Ref AWS::StackName
         SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
