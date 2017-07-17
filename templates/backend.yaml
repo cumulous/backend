@@ -1511,16 +1511,202 @@ Resources:
           }
         }
 
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Latest
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: !Sub s3://${ArtifactsBucket}/templates/${AWS::StackName}/swagger.yaml
+
   ApiCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
       DomainName: !Ref APIDomain
 
+  # ApiDomainName:
+  #   Type: AWS::ApiGateway::DomainName
+  #   Properties:
+  #     CertificateArn: !Ref ApiCertificate
+  #     DomainName: !Ref APIDomain
+
   ApiDomainName:
-    Type: AWS::ApiGateway::DomainName
+    Type: AWS::CloudFormation::CustomResource
     Properties:
-      CertificateArn: !Ref ApiCertificate
-      DomainName: !Ref APIDomain
+      ServiceToken: !GetAtt SetupCustomResource.Arn
+      StateMachine: !Ref SetupApiDomainNameStateMachine
+      Domain:
+        Name: !Ref APIDomain
+        Certificate: !Ref ApiCertificate
+
+  CreateApiDomainName:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-CreateApiDomainName
+      CodeUri: ../app
+      Handler: apig.createDomainName
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: apigateway:POST
+            Resource:
+              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames
+          - Effect: Allow
+            Action: cloudfront:UpdateDistribution
+            Resource: '*'
+
+  UpdateApiDomainName:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-UpdateApiDomainName
+      CodeUri: ../app
+      Handler: apig.updateDomainName
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: apigateway:PATCH
+            Resource:
+              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${APIDomain}
+          - Effect: Allow
+            Action: cloudfront:UpdateDistribution
+            Resource: '*'
+
+  DeleteApiDomainName:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-DeleteApiDomainName
+      CodeUri: ../app
+      Handler: apig.deleteDomainName
+      Runtime: nodejs6.10
+      Timeout: 10
+      Policies:
+        Statement:
+          - Effect: Allow
+            Action: apigateway:DELETE
+            Resource:
+              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${APIDomain}
+          - Effect: Allow
+            Action: cloudfront:DeleteDistribution
+            Resource: '*'
+
+  SetupApiDomainNameStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt StatesExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupApiCertificate",
+          "States": {
+            "SetupApiCertificate": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "ChooseEventType",
+                "States": {
+                  "ChooseEventType": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Create",
+                        "Next": "CreateApiDomainName"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Update",
+                        "Next": "CheckReplaceDomainName"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "DeleteApiDomainName"
+                      }
+                    ]
+                  },
+                  "CreateApiDomainName": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Domain",
+                    "ResultPath": "$.Data.DistributionDomainName",
+                    "Resource": "${CreateApiDomainName.Arn}",
+                    "Next": "Success"
+                  },
+                  "CheckReplaceDomainName": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.OldResourceProperties.Domain.Name",
+                        "StringEquals": "${APIDomain}",
+                        "Next": "DeleteOldApiDomainName"
+                      }
+                    ],
+                    "Default": "UpdateApiDomainName"
+                  },
+                  "DeleteOldApiDomainName": {
+                    "Type": "Task",
+                    "InputPath": "$.OldResourceProperties.Domain.Name",
+                    "ResultPath": null,
+                    "Resource": "${DeleteApiDomainName.Arn}",
+                    "Next": "CreateApiDomainName"
+                  },
+                  "UpdateApiDomainName": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Domain",
+                    "ResultPath": "$.Data.DistributionDomainName",
+                    "Resource": "${UpdateApiDomainName.Arn}",
+                    "Next": "Success"
+                  },
+                  "DeleteApiDomainName": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Domain.Name",
+                    "ResultPath": null,
+                    "Resource": "${DeleteApiDomainName.Arn}",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
 
   ApiPathMapping:
     Type: AWS::ApiGateway::BasePathMapping
@@ -1560,16 +1746,6 @@ Resources:
             Path: /
             Method: GET
             RestApiId: !Ref Api
-
-  Api:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: Latest
-      DefinitionBody:
-        Fn::Transform:
-          Name: AWS::Include
-          Parameters:
-            Location: !Sub s3://${ArtifactsBucket}/templates/${AWS::StackName}/swagger.yaml
 
   CreateDataset:
     Type: AWS::Serverless::Function
