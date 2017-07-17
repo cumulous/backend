@@ -1343,6 +1343,15 @@ Resources:
             Method: GET
             RestApiId: !Ref Api
 
+  GenerateSignedCookiesPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt Web.Outputs.GenerateSignedCookiesArn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/Latest/GET/weblogin
+
   CreateDataset:
     Type: AWS::Serverless::Function
     Properties:
@@ -1701,15 +1710,6 @@ Resources:
         WebSigningKeyPutRoleArn: !Ref WebSigningKeyPutRoleArn
         WebSigningKeyGetRoleArn: !Ref WebSigningKeyGetRoleArn
         DeleteS3SecretArn: !GetAtt DeleteS3Secret.Arn
-
-  GenerateSignedCookiesPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref Web.Outputs.GenerateSignedCookiesArn
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn:
-        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/Latest/GET/weblogin
 
 Outputs:
   DatasetsTable:
