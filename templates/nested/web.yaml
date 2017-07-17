@@ -519,7 +519,6 @@ Resources:
                   - !Ref DeleteS3SecretArn
                   - !Ref SendCloudFormationResponseArn
 
-
   SetupWebSigningKeyPairStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Condition: SetupWebSigningKeyPair
@@ -604,3 +603,5 @@ Outputs:
   WebSigningKey:
     Condition: SetupWebSigningKeyPair
     Value: !GetAtt WebSigningKey.PublicKey
+  GenerateSignedCookiesArn:
+    Value: !GetAtt GenerateSignedCookies.Arn
