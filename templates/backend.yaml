@@ -1680,30 +1680,36 @@ Resources:
         SSHKeyPutRoleArn: !Ref SSHKeyPutRoleArn
         SSHKeyGetRoleArn: !Ref SSHKeyGetRoleArn
 
-  # Web:
-  #   Type: AWS::CloudFormation::Stack
-  #   DependsOn: ApiLatestStage
-  #   Properties:
-  #     TemplateURL: !Sub https://s3.amazonaws.com/${TemplateURLBase}/web.yaml
-  #     Parameters:
-  #       BackendStack: !Ref AWS::StackName
-  #       SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
-  #       SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
-  #       ArtifactsBucket: !Ref ArtifactsBucket
-  #       SecretsBucket: !Ref SecretsBucket
-  #       WebBucket: !Ref WebBucket
-  #       LambdaPackage: !Ref LambdaPackage
-  #       DomainZone: !Ref DomainZone
-  #       WebDomain: !Ref WebDomain
-  #       WebTTL: !Ref WebTTL
-  #       WebPriceClass: !Ref WebPriceClass
-  #       WebLocations: !Ref WebLocations
-  #       WebACL: !Ref WebACL
-  #       WebSigningKeyPutRoleArn: !Ref WebSigningKeyPutRoleArn
-  #       WebSigningKeyGetRoleArn: !Ref WebSigningKeyGetRoleArn
-  #       DeleteS3SecretArn: !GetAtt DeleteS3Secret.Arn
-  #       ApiId: !Ref Api
-  #       ApiStage: Latest
+  Web:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${TemplateURLBase}/web.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
+        ArtifactsBucket: !Ref ArtifactsBucket
+        SecretsBucket: !Ref SecretsBucket
+        WebBucket: !Ref WebBucket
+        LambdaPackage: !Ref LambdaPackage
+        DomainZone: !Ref DomainZone
+        WebDomain: !Ref WebDomain
+        WebTTL: !Ref WebTTL
+        WebPriceClass: !Ref WebPriceClass
+        WebLocations: !Ref WebLocations
+        WebACL: !Ref WebACL
+        WebSigningKeyPutRoleArn: !Ref WebSigningKeyPutRoleArn
+        WebSigningKeyGetRoleArn: !Ref WebSigningKeyGetRoleArn
+        DeleteS3SecretArn: !GetAtt DeleteS3Secret.Arn
+
+  GenerateSignedCookiesPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref Web.Outputs.GenerateSignedCookiesArn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/Latest/GET/weblogin
 
 Outputs:
   DatasetsTable:
