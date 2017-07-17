@@ -20,7 +20,7 @@ Parameters:
     Type: String
   DomainZone:
     Type: String
-  ApiDomain:
+  APIDomain:
     Type: String
   WebDomain:
     Type: String
@@ -223,7 +223,7 @@ Resources:
       Timeout: 10
       Environment:
         Variables:
-          API_DOMAIN: !Ref ApiDomainName
+          API_DOMAIN: !Ref APIDomain
           AUTH0_DOMAIN: !Ref Auth0Domain
 
   AuthorizerInvocationRole:
@@ -407,7 +407,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupAuth0ApiStateMachine
-      Audience: !Sub https://${ApiDomainName}
+      Audience: !Sub https://${APIDomain}
 
   ManageAuth0Resource:
     Type: AWS::Serverless::Function
@@ -483,7 +483,7 @@ Resources:
                       "method": "POST",
                       "endpoint": ["/resource-servers"],
                       "payload": {
-                        "name": "${ApiDomainName}",
+                        "name": "${APIDomain}",
                         "token_lifetime_for_web": ${Auth0UserTokenLifetime}
                       },
                       "datapath": "id"
@@ -553,7 +553,7 @@ Resources:
                           },
                           {
                             "Variable": "$.OldResourceProperties.Audience",
-                            "StringEquals": "https://${ApiDomainName}"
+                            "StringEquals": "https://${APIDomain}"
                           }
                         ],
                         "Next": "PassUpdateApi"
@@ -567,7 +567,7 @@ Resources:
                       "method": "PATCH",
                       "endpoint": ["/resource-servers", "/{id}"],
                       "payload": {
-                        "name": "${ApiDomainName}",
+                        "name": "${APIDomain}",
                         "token_lifetime_for_web": ${Auth0UserTokenLifetime}
                       },
                       "datapath": "null"
@@ -675,7 +675,7 @@ Resources:
             "https://${WebDomain}/login.html"
           ],
           "resource_servers": [{
-            "identifier": "https://${ApiDomainName}"
+            "identifier": "https://${APIDomain}"
           }]
         }
       Id:
@@ -690,10 +690,10 @@ Resources:
       StateMachine: !Ref SetupAuth0ClientStateMachine
       Payload: !Sub |-
         {
-          "name": "${ApiDomainName} - Test",
+          "name": "${APIDomain} - Test",
           "app_type": "non_interactive",
           "resource_servers": [{
-            "identifier": "https://${ApiDomainName}"
+            "identifier": "https://${APIDomain}"
           }]
         }
       Id:
@@ -1524,27 +1524,28 @@ Resources:
   ApiCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !Ref ApiDomain
+      DomainName: !Ref APIDomain
 
   ApiDomainName:
     Type: AWS::ApiGateway::DomainName
     Properties:
       CertificateArn: !Ref ApiCertificate
-      DomainName: !Ref ApiDomain
+      DomainName: !Ref APIDomain
 
   ApiPathMapping:
     Type: AWS::ApiGateway::BasePathMapping
     DependsOn:
+      - ApiDomainName
       - ApiLatestStage
     Properties:
-      DomainName: !Ref ApiDomainName
+      DomainName: !Ref APIDomain
       RestApiId: !Ref Api
       Stage: Latest
 
   ApiDnsRecord:
     Type: AWS::Route53::RecordSet
     Properties:
-      Name: !Ref ApiDomainName
+      Name: !Ref APIDomain
       Type: A
       HostedZoneId: !Ref DomainZone
       AliasTarget:

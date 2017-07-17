@@ -51,7 +51,7 @@ ARGS=" \
     ParameterKey=SSHKeyGetRoleArn,ParameterValue=${SSH_KEY_GET_ROLE_ARN} \
     ParameterKey=SSHKeyPutRoleArn,ParameterValue=${SSH_KEY_PUT_ROLE_ARN} \
     ParameterKey=DomainZone,ParameterValue=${DOMAIN_ZONE} \
-    ParameterKey=ApiDomain,ParameterValue=api.${WEB_DOMAIN} \
+    ParameterKey=APIDomain,ParameterValue=api.${WEB_DOMAIN} \
     ParameterKey=WebDomain,ParameterValue=${WEB_DOMAIN} \
     ParameterKey=WebBucket,ParameterValue=${WEB_BUCKET} \
     ParameterKey=WebTTL,ParameterValue=${WEB_TTL} \
