@@ -195,53 +195,53 @@ Resources:
             Action: s3:DeleteObject
             Resource: !Sub arn:aws:s3:::${SecretsBucket}/*
 
-  GetProjects:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-GetProjects
-      CodeUri: ../app
-      Handler: projects.get
-      Runtime: nodejs6.10
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /projects
-            Method: GET
-            RestApiId: !Ref Api
+  # GetProjects:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-GetProjects
+  #     CodeUri: ../app
+  #     Handler: projects.get
+  #     Runtime: nodejs6.10
+  #     Events:
+  #       Api:
+  #         Type: Api
+  #         Properties:
+  #           Path: /projects
+  #           Method: GET
+  #           RestApiId: !Ref Api
 
-  Authorizer:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-Authorizer
-      CodeUri: ../app
-      Handler: members.authorize
-      Runtime: nodejs6.10
-      Timeout: 10
-      Environment:
-        Variables:
-          API_DOMAIN: !Ref ApiDomain
-          AUTH0_DOMAIN: !Ref Auth0Domain
+  # Authorizer:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-Authorizer
+  #     CodeUri: ../app
+  #     Handler: members.authorize
+  #     Runtime: nodejs6.10
+  #     Timeout: 10
+  #     Environment:
+  #       Variables:
+  #         API_DOMAIN: !Ref ApiDomain
+  #         AUTH0_DOMAIN: !Ref Auth0Domain
 
-  AuthorizerInvocationRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: apigateway.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: AuthorizerInvocationPolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action: lambda:InvokeFunction
-                Resource:
-                  - !GetAtt Authorizer.Arn
+  # AuthorizerInvocationRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: apigateway.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     Policies:
+  #       - PolicyName: AuthorizerInvocationPolicy
+  #         PolicyDocument:
+  #           Version: 2012-10-17
+  #           Statement:
+  #             - Effect: Allow
+  #               Action: lambda:InvokeFunction
+  #               Resource:
+  #                 - !GetAtt Authorizer.Arn
 
   StatesExecutionRole:
     Type: AWS::IAM::Role
@@ -1107,275 +1107,280 @@ Resources:
           }
         }
 
-  Api:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: Latest
-      DefinitionBody:
-        Fn::Transform:
-          Name: AWS::Include
-          Parameters:
-            Location: !Sub s3://${TemplateURLBase}/swagger.yaml
-
-  ApiCertificate:
-    Type: AWS::CertificateManager::Certificate
-    Properties:
-      DomainName: !Ref ApiDomain
-
-  # ApiDomainName:
-  #   Type: AWS::ApiGateway::DomainName
+  # Api:
+  #   Type: AWS::Serverless::Api
   #   Properties:
-  #     CertificateArn: !Ref ApiCertificate
+  #     StageName: Latest
+  #     DefinitionBody:
+  #       Fn::Transform:
+  #         Name: AWS::Include
+  #         Parameters:
+  #           Location: !Sub s3://${TemplateURLBase}/swagger.yaml
+
+  # ApiCertificate:
+  #   Type: AWS::CertificateManager::Certificate
+  #   Properties:
   #     DomainName: !Ref ApiDomain
 
-  ApiDomainName:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupApiDomainNameStateMachine
-      Domain:
-        Name: !Ref ApiDomain
-        Certificate: !Ref ApiCertificate
+  # # ApiDomainName:
+  # #   Type: AWS::ApiGateway::DomainName
+  # #   Properties:
+  # #     CertificateArn: !Ref ApiCertificate
+  # #     DomainName: !Ref ApiDomain
 
-  CreateApiDomainName:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-CreateApiDomainName
-      CodeUri: ../app
-      Handler: apig.createDomainName
-      Runtime: nodejs6.10
-      Timeout: 10
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: apigateway:POST
-            Resource:
-              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames
-          - Effect: Allow
-            Action: cloudfront:UpdateDistribution
-            Resource: '*'
+  # ApiDomainName:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   Properties:
+  #     ServiceToken: !GetAtt SetupCustomResource.Arn
+  #     StateMachine: !Ref SetupApiDomainNameStateMachine
+  #     Domain:
+  #       Name: !Ref ApiDomain
+  #       Certificate: !Ref ApiCertificate
 
-  UpdateApiDomainName:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-UpdateApiDomainName
-      CodeUri: ../app
-      Handler: apig.updateDomainName
-      Runtime: nodejs6.10
-      Timeout: 10
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: apigateway:PATCH
-            Resource:
-              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${ApiDomain}
-          - Effect: Allow
-            Action: cloudfront:UpdateDistribution
-            Resource: '*'
+  # CreateApiDomainName:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-CreateApiDomainName
+  #     CodeUri: ../app
+  #     Handler: apig.createDomainName
+  #     Runtime: nodejs6.10
+  #     Timeout: 10
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: apigateway:POST
+  #           Resource:
+  #             - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames
+  #         - Effect: Allow
+  #           Action: cloudfront:UpdateDistribution
+  #           Resource: '*'
 
-  DeleteApiDomainName:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-DeleteApiDomainName
-      CodeUri: ../app
-      Handler: apig.deleteDomainName
-      Runtime: nodejs6.10
-      Timeout: 10
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: apigateway:DELETE
-            Resource:
-              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${ApiDomain}
-          - Effect: Allow
-            Action: cloudfront:DeleteDistribution
-            Resource: '*'
+  # UpdateApiDomainName:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-UpdateApiDomainName
+  #     CodeUri: ../app
+  #     Handler: apig.updateDomainName
+  #     Runtime: nodejs6.10
+  #     Timeout: 10
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: apigateway:PATCH
+  #           Resource:
+  #             - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${ApiDomain}
+  #         - Effect: Allow
+  #           Action: cloudfront:UpdateDistribution
+  #           Resource: '*'
 
-  SetupApiDomainNameStateMachine:
-    Type: AWS::StepFunctions::StateMachine
-    Properties:
-      RoleArn: !GetAtt StatesExecutionRole.Arn
-      DefinitionString: !Sub |-
-        {
-          "StartAt": "SetupApiCertificate",
-          "States": {
-            "SetupApiCertificate": {
-              "Type": "Parallel",
-              "Next": "Succeed",
-              "Branches": [{
-                "StartAt": "ChooseEventType",
-                "States": {
-                  "ChooseEventType": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Create",
-                        "Next": "CreateApiDomainName"
-                      },
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Update",
-                        "Next": "CheckReplaceDomainName"
-                      },
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Delete",
-                        "Next": "DeleteApiDomainName"
-                      }
-                    ]
-                  },
-                  "CreateApiDomainName": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Domain",
-                    "ResultPath": "$.Data.DistributionDomainName",
-                    "Resource": "${CreateApiDomainName.Arn}",
-                    "Next": "Success"
-                  },
-                  "CheckReplaceDomainName": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.OldResourceProperties.Domain.Name",
-                        "StringEquals": "${ApiDomain}",
-                        "Next": "DeleteOldApiDomainName"
-                      }
-                    ],
-                    "Default": "UpdateApiDomainName"
-                  },
-                  "DeleteOldApiDomainName": {
-                    "Type": "Task",
-                    "InputPath": "$.OldResourceProperties.Domain.Name",
-                    "ResultPath": null,
-                    "Resource": "${DeleteApiDomainName.Arn}",
-                    "Next": "CreateApiDomainName"
-                  },
-                  "UpdateApiDomainName": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Domain",
-                    "ResultPath": "$.Data.DistributionDomainName",
-                    "Resource": "${UpdateApiDomainName.Arn}",
-                    "Next": "Success"
-                  },
-                  "DeleteApiDomainName": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Domain.Name",
-                    "ResultPath": null,
-                    "Resource": "${DeleteApiDomainName.Arn}",
-                    "Next": "Success"
-                  },
-                  "Success": {
-                    "Type": "Pass",
-                    "ResultPath": "$.Status",
-                    "Result": "SUCCESS",
-                    "End": true
-                  }
-                }
-              }],
-              "Catch": [{
-                "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.Error",
-                "Next": "PassReason"
-              }]
-            },
-            "Succeed": {
-              "InputPath": "$.[0]",
-              "Type": "Pass",
-              "Next": "End"
-            },
-            "PassReason": {
-              "Type": "Pass",
-              "InputPath": "$.Error.Cause",
-              "ResultPath": "$.Reason",
-              "Next": "Fail"
-            },
-            "Fail": {
-              "Type": "Pass",
-              "ResultPath": "$.Status",
-              "Result": "FAILED",
-              "Next": "End"
-            },
-            "End": {
-              "Type": "Task",
-              "ResultPath": null,
-              "Resource": "${SendCloudFormationResponse.Arn}",
-              "End": true
-            }
-          }
-        }
+  # DeleteApiDomainName:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-DeleteApiDomainName
+  #     CodeUri: ../app
+  #     Handler: apig.deleteDomainName
+  #     Runtime: nodejs6.10
+  #     Timeout: 10
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: apigateway:DELETE
+  #           Resource:
+  #             - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${ApiDomain}
+  #         - Effect: Allow
+  #           Action: cloudfront:DeleteDistribution
+  #           Resource: '*'
 
-  ApiPathMapping:
-    Type: AWS::ApiGateway::BasePathMapping
-    DependsOn:
-      - ApiDomainName
-      - ApiLatestStage
-    Properties:
-      DomainName: !Ref ApiDomain
-      RestApiId: !Ref Api
-      Stage: Latest
+  # SetupApiDomainNameStateMachine:
+  #   Type: AWS::StepFunctions::StateMachine
+  #   Properties:
+  #     RoleArn: !GetAtt StatesExecutionRole.Arn
+  #     DefinitionString: !Sub |-
+  #       {
+  #         "StartAt": "SetupApiCertificate",
+  #         "States": {
+  #           "SetupApiCertificate": {
+  #             "Type": "Parallel",
+  #             "Next": "Succeed",
+  #             "Branches": [{
+  #               "StartAt": "ChooseEventType",
+  #               "States": {
+  #                 "ChooseEventType": {
+  #                   "Type": "Choice",
+  #                   "Choices": [
+  #                     {
+  #                       "Variable": "$.RequestType",
+  #                       "StringEquals": "Create",
+  #                       "Next": "CreateApiDomainName"
+  #                     },
+  #                     {
+  #                       "Variable": "$.RequestType",
+  #                       "StringEquals": "Update",
+  #                       "Next": "CheckReplaceDomainName"
+  #                     },
+  #                     {
+  #                       "Variable": "$.RequestType",
+  #                       "StringEquals": "Delete",
+  #                       "Next": "DeleteApiDomainName"
+  #                     }
+  #                   ]
+  #                 },
+  #                 "CreateApiDomainName": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.Domain",
+  #                   "ResultPath": "$.Data.DistributionDomainName",
+  #                   "Resource": "${CreateApiDomainName.Arn}",
+  #                   "Next": "Success"
+  #                 },
+  #                 "CheckReplaceDomainName": {
+  #                   "Type": "Choice",
+  #                   "Choices": [
+  #                     {
+  #                       "Variable": "$.OldResourceProperties.Domain.Name",
+  #                       "StringEquals": "${ApiDomain}",
+  #                       "Next": "DeleteOldApiDomainName"
+  #                     }
+  #                   ],
+  #                   "Default": "UpdateApiDomainName"
+  #                 },
+  #                 "DeleteOldApiDomainName": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.OldResourceProperties.Domain.Name",
+  #                   "ResultPath": null,
+  #                   "Resource": "${DeleteApiDomainName.Arn}",
+  #                   "Next": "CreateApiDomainName"
+  #                 },
+  #                 "UpdateApiDomainName": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.Domain",
+  #                   "ResultPath": "$.Data.DistributionDomainName",
+  #                   "Resource": "${UpdateApiDomainName.Arn}",
+  #                   "Next": "Success"
+  #                 },
+  #                 "DeleteApiDomainName": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.Domain.Name",
+  #                   "ResultPath": null,
+  #                   "Resource": "${DeleteApiDomainName.Arn}",
+  #                   "Next": "Success"
+  #                 },
+  #                 "Success": {
+  #                   "Type": "Pass",
+  #                   "ResultPath": "$.Status",
+  #                   "Result": "SUCCESS",
+  #                   "End": true
+  #                 }
+  #               }
+  #             }],
+  #             "Catch": [{
+  #               "ErrorEquals": [ "States.ALL" ],
+  #               "ResultPath": "$.Error",
+  #               "Next": "PassReason"
+  #             }]
+  #           },
+  #           "Succeed": {
+  #             "InputPath": "$.[0]",
+  #             "Type": "Pass",
+  #             "Next": "End"
+  #           },
+  #           "PassReason": {
+  #             "Type": "Pass",
+  #             "InputPath": "$.Error.Cause",
+  #             "ResultPath": "$.Reason",
+  #             "Next": "Fail"
+  #           },
+  #           "Fail": {
+  #             "Type": "Pass",
+  #             "ResultPath": "$.Status",
+  #             "Result": "FAILED",
+  #             "Next": "End"
+  #           },
+  #           "End": {
+  #             "Type": "Task",
+  #             "ResultPath": null,
+  #             "Resource": "${SendCloudFormationResponse.Arn}",
+  #             "End": true
+  #           }
+  #         }
+  #       }
 
-  ApiDnsRecord:
-    Type: AWS::Route53::RecordSet
-    Properties:
-      Name: !Ref ApiDomain
-      Type: A
-      HostedZoneId: !Ref DomainZone
-      AliasTarget:
-        DNSName: !GetAtt ApiDomainName.DistributionDomainName
-        HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
+  # ApiPathMapping:
+  #   Type: AWS::ApiGateway::BasePathMapping
+  #   DependsOn:
+  #     - ApiDomainName
+  #     - ApiLatestStage
+  #   Properties:
+  #     DomainName: !Ref ApiDomain
+  #     RestApiId: !Ref Api
+  #     Stage: Latest
 
-  GetApi:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-GetApi
-      CodeUri: ../app
-      Handler: apig.getSpec
-      Runtime: nodejs6.10
-      Timeout: 10
-      Environment:
-        Variables:
-          WEB_DOMAIN: !Ref WebDomain
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /
-            Method: GET
-            RestApiId: !Ref Api
+  # ApiDnsRecord:
+  #   Type: AWS::Route53::RecordSet
+  #   Properties:
+  #     Name: !Ref ApiDomain
+  #     Type: A
+  #     HostedZoneId: !Ref DomainZone
+  #     AliasTarget:
+  #       DNSName: !GetAtt ApiDomainName.DistributionDomainName
+  #       HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
 
-  GenerateSignedCookiesPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt Web.Outputs.GenerateSignedCookiesArn
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn:
-        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/Latest/GET/weblogin
+  # ApiGetSpec:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-ApiGetSpec
+  #     Role: !GetAtt LambdaBasicExecutionRole.Arn
+  #     Handler: apig.getSpec
+  #     Runtime: nodejs6.10
+  #     Timeout: 10
+  #     Environment:
+  #       Variables:
+  #         WEB_DOMAIN: !Ref WebDomain
+  #     Code:
+  #       S3Bucket: !Ref ArtifactsBucket
+  #       S3Key: !Ref LambdaPackage
 
-  CreateDataset:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-CreateDataset
-      CodeUri: ../app
-      Handler: datasets.create
-      Runtime: nodejs6.10
-      Environment:
-        Variables:
-          DATASETS_TABLE: !Ref DatasetsTable
-          WEB_DOMAIN: !Ref WebDomain
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /datasets
-            Method: POST
-            RestApiId: !Ref Api
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: dynamodb:PutItem
-            Resource:
-              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
+  # ApiGetSpecPermission:
+  #   Type: AWS::Lambda::Permission
+  #   Properties:
+  #     FunctionName: !GetAtt ApiGetSpec.Arn
+  #     Action: lambda:InvokeFunction
+  #     Principal: apigateway.amazonaws.com
+  #     SourceArn:
+  #       !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/Latest/GET/
+
+  # GenerateSignedCookiesPermission:
+  #   Type: AWS::Lambda::Permission
+  #   Properties:
+  #     FunctionName: !GetAtt Web.Outputs.GenerateSignedCookiesArn
+  #     Action: lambda:InvokeFunction
+  #     Principal: apigateway.amazonaws.com
+  #     SourceArn:
+  #       !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/Latest/GET/weblogin
+
+  # CreateDataset:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-CreateDataset
+  #     CodeUri: ../app
+  #     Handler: datasets.create
+  #     Runtime: nodejs6.10
+  #     Environment:
+  #       Variables:
+  #         DATASETS_TABLE: !Ref DatasetsTable
+  #         WEB_DOMAIN: !Ref WebDomain
+  #     Events:
+  #       Api:
+  #         Type: Api
+  #         Properties:
+  #           Path: /datasets
+  #           Method: POST
+  #           RestApiId: !Ref Api
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: dynamodb:PutItem
+  #           Resource:
+  #             - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
 
   CloudSearchUploadDocuments:
     Type: AWS::Serverless::Function
@@ -1424,80 +1429,80 @@ Resources:
       StartingPosition: TRIM_HORIZON
       BatchSize: 100
 
-  ListDatasets:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-ListDatasets
-      CodeUri: ../app
-      Handler: datasets.list
-      Runtime: nodejs6.10
-      Environment:
-        Variables:
-          SEARCH_QUERY_ENDPOINT: !GetAtt SetupSearchDomain.QueryEndpoint
-          SEARCH_STACK_SUFFIX: !FindInMap
-            - StackMap
-            - !Ref AWS::StackName
-            - SearchStackSuffix
-          WEB_DOMAIN: !Ref WebDomain
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /datasets
-            Method: GET
-            RestApiId: !Ref Api
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action:
-              - cloudsearch:search
-            Resource:
-              - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+  # ListDatasets:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-ListDatasets
+  #     CodeUri: ../app
+  #     Handler: datasets.list
+  #     Runtime: nodejs6.10
+  #     Environment:
+  #       Variables:
+  #         SEARCH_QUERY_ENDPOINT: !GetAtt SetupSearchDomain.QueryEndpoint
+  #         SEARCH_STACK_SUFFIX: !FindInMap
+  #           - StackMap
+  #           - !Ref AWS::StackName
+  #           - SearchStackSuffix
+  #         WEB_DOMAIN: !Ref WebDomain
+  #     Events:
+  #       Api:
+  #         Type: Api
+  #         Properties:
+  #           Path: /datasets
+  #           Method: GET
+  #           RestApiId: !Ref Api
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action:
+  #             - cloudsearch:search
+  #           Resource:
+  #             - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
 
-  GetDataset:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-GetDataset
-      CodeUri: ../app
-      Handler: apig.proxy
-      Runtime: nodejs6.10
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /datasets/{dataset_id}
-            Method: GET
-            RestApiId: !Ref Api
+  # GetDataset:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-GetDataset
+  #     CodeUri: ../app
+  #     Handler: apig.proxy
+  #     Runtime: nodejs6.10
+  #     Events:
+  #       Api:
+  #         Type: Api
+  #         Properties:
+  #           Path: /datasets/{dataset_id}
+  #           Method: GET
+  #           RestApiId: !Ref Api
 
-  PatchDataset:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-PatchDataset
-      CodeUri: ../app
-      Handler: apig.proxy
-      Runtime: nodejs6.10
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /datasets/{dataset_id}
-            Method: PATCH
-            RestApiId: !Ref Api
+  # PatchDataset:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-PatchDataset
+  #     CodeUri: ../app
+  #     Handler: apig.proxy
+  #     Runtime: nodejs6.10
+  #     Events:
+  #       Api:
+  #         Type: Api
+  #         Properties:
+  #           Path: /datasets/{dataset_id}
+  #           Method: PATCH
+  #           RestApiId: !Ref Api
 
-  DeleteDataset:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-DeleteDataset
-      CodeUri: ../app
-      Handler: apig.proxy
-      Runtime: nodejs6.10
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /datasets/{dataset_id}
-            Method: DELETE
-            RestApiId: !Ref Api
+  # DeleteDataset:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-DeleteDataset
+  #     CodeUri: ../app
+  #     Handler: apig.proxy
+  #     Runtime: nodejs6.10
+  #     Events:
+  #       Api:
+  #         Type: Api
+  #         Properties:
+  #           Path: /datasets/{dataset_id}
+  #           Method: DELETE
+  #           RestApiId: !Ref Api
 
   DatasetsAccessRole:
     Type: AWS::IAM::Role
@@ -1550,99 +1555,99 @@ Resources:
                 Resource:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
 
-  RequestDatasetCredentials:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-RequestDatasetCredentials
-      CodeUri: ../app
-      Handler: datasets.requestCredentials
-      Runtime: nodejs6.10
-      Environment:
-        Variables:
-          DATASETS_TABLE: !Ref DatasetsTable
-          DATASETS_BUCKET: !Ref DatasetsBucket
-          DATASETS_ROLE: !GetAtt DatasetsAccessRole.Arn
-          WEB_DOMAIN: !Ref WebDomain
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /datasets/{dataset_id}/credentials
-            Method: POST
-            RestApiId: !Ref Api
-      Role: !GetAtt RequestDatasetCredentialsRole.Arn
+  # RequestDatasetCredentials:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-RequestDatasetCredentials
+  #     CodeUri: ../app
+  #     Handler: datasets.requestCredentials
+  #     Runtime: nodejs6.10
+  #     Environment:
+  #       Variables:
+  #         DATASETS_TABLE: !Ref DatasetsTable
+  #         DATASETS_BUCKET: !Ref DatasetsBucket
+  #         DATASETS_ROLE: !GetAtt DatasetsAccessRole.Arn
+  #         WEB_DOMAIN: !Ref WebDomain
+  #     Events:
+  #       Api:
+  #         Type: Api
+  #         Properties:
+  #           Path: /datasets/{dataset_id}/credentials
+  #           Method: POST
+  #           RestApiId: !Ref Api
+  #     Role: !GetAtt RequestDatasetCredentialsRole.Arn
 
-  SetDatasetStorage:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-SetDatasetStorage
-      CodeUri: ../app
-      Handler: datasets.setStorage
-      Runtime: nodejs6.10
-      Timeout: 30
-      MemorySize: 1024
-      Environment:
-        Variables:
-          DATASETS_TABLE: !Ref DatasetsTable
-          DATASETS_BUCKET: !Ref DatasetsBucket
-          WEB_DOMAIN: !Ref WebDomain
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /datasets/{dataset_id}/storage
-            Method: PUT
-            RestApiId: !Ref Api
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action:
-              - s3:ListBucket
-            Resource:
-              - !Sub arn:aws:s3:::${DatasetsBucket}
-          - Effect: Allow
-            Action:
-              - s3:PutObjectTagging
-            Resource:
-              - !Sub arn:aws:s3:::${DatasetsBucket}/*
-          - Effect: Allow
-            Action:
-              - dynamodb:UpdateItem
-            Resource:
-              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
+  # SetDatasetStorage:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-SetDatasetStorage
+  #     CodeUri: ../app
+  #     Handler: datasets.setStorage
+  #     Runtime: nodejs6.10
+  #     Timeout: 30
+  #     MemorySize: 1024
+  #     Environment:
+  #       Variables:
+  #         DATASETS_TABLE: !Ref DatasetsTable
+  #         DATASETS_BUCKET: !Ref DatasetsBucket
+  #         WEB_DOMAIN: !Ref WebDomain
+  #     Events:
+  #       Api:
+  #         Type: Api
+  #         Properties:
+  #           Path: /datasets/{dataset_id}/storage
+  #           Method: PUT
+  #           RestApiId: !Ref Api
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action:
+  #             - s3:ListBucket
+  #           Resource:
+  #             - !Sub arn:aws:s3:::${DatasetsBucket}
+  #         - Effect: Allow
+  #           Action:
+  #             - s3:PutObjectTagging
+  #           Resource:
+  #             - !Sub arn:aws:s3:::${DatasetsBucket}/*
+  #         - Effect: Allow
+  #           Action:
+  #             - dynamodb:UpdateItem
+  #           Resource:
+  #             - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
 
-  CreateProject:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-CreateProject
-      CodeUri: ../app
-      Handler: projects.create
-      Runtime: nodejs6.10
-      Environment:
-        Variables:
-          PROJECTS_TABLE: !Ref ProjectsTable
-          DATASETS_BUCKET: !Ref DatasetsBucket
-          LOGS_BUCKET: !Sub arn:aws:s3:::${LogsBucket}
-          WEB_DOMAIN: !Ref WebDomain
-      Events:
-        Api:
-          Type: Api
-          Properties:
-            Path: /projects
-            Method: POST
-            RestApiId: !Ref Api
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action:
-              - s3:PutAnalyticsConfiguration
-            Resource:
-              - !Sub arn:aws:s3:::${DatasetsBucket}
-          - Effect: Allow
-            Action:
-              - dynamodb:PutItem
-            Resource:
-              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}
+  # CreateProject:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-CreateProject
+  #     CodeUri: ../app
+  #     Handler: projects.create
+  #     Runtime: nodejs6.10
+  #     Environment:
+  #       Variables:
+  #         PROJECTS_TABLE: !Ref ProjectsTable
+  #         DATASETS_BUCKET: !Ref DatasetsBucket
+  #         LOGS_BUCKET: !Sub arn:aws:s3:::${LogsBucket}
+  #         WEB_DOMAIN: !Ref WebDomain
+  #     Events:
+  #       Api:
+  #         Type: Api
+  #         Properties:
+  #           Path: /projects
+  #           Method: POST
+  #           RestApiId: !Ref Api
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action:
+  #             - s3:PutAnalyticsConfiguration
+  #           Resource:
+  #             - !Sub arn:aws:s3:::${DatasetsBucket}
+  #         - Effect: Allow
+  #           Action:
+  #             - dynamodb:PutItem
+  #           Resource:
+  #             - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}
 
   VPC:
     Type: AWS::CloudFormation::Stack
