@@ -223,7 +223,7 @@ Resources:
       Timeout: 10
       Environment:
         Variables:
-          API_DOMAIN: !Ref APIDomain
+          API_DOMAIN: !Ref ApiDomainName
           AUTH0_DOMAIN: !Ref Auth0Domain
 
   AuthorizerInvocationRole:
@@ -407,7 +407,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupAuth0ApiStateMachine
-      Audience: !Sub https://${APIDomain}
+      Audience: !Sub https://${ApiDomainName}
 
   ManageAuth0Resource:
     Type: AWS::Serverless::Function
@@ -483,7 +483,7 @@ Resources:
                       "method": "POST",
                       "endpoint": ["/resource-servers"],
                       "payload": {
-                        "name": "${APIDomain}",
+                        "name": "${ApiDomainName}",
                         "token_lifetime_for_web": ${Auth0UserTokenLifetime}
                       },
                       "datapath": "id"
@@ -553,7 +553,7 @@ Resources:
                           },
                           {
                             "Variable": "$.OldResourceProperties.Audience",
-                            "StringEquals": "https://${APIDomain}"
+                            "StringEquals": "https://${ApiDomainName}"
                           }
                         ],
                         "Next": "PassUpdateApi"
@@ -567,7 +567,7 @@ Resources:
                       "method": "PATCH",
                       "endpoint": ["/resource-servers", "/{id}"],
                       "payload": {
-                        "name": "${APIDomain}",
+                        "name": "${ApiDomainName}",
                         "token_lifetime_for_web": ${Auth0UserTokenLifetime}
                       },
                       "datapath": "null"
@@ -675,7 +675,7 @@ Resources:
             "https://${WebDomain}/login.html"
           ],
           "resource_servers": [{
-            "identifier": "https://${APIDomain}"
+            "identifier": "https://${ApiDomainName}"
           }]
         }
       Id:
@@ -690,10 +690,10 @@ Resources:
       StateMachine: !Ref SetupAuth0ClientStateMachine
       Payload: !Sub |-
         {
-          "name": "${APIDomain} - Test",
+          "name": "${ApiDomainName} - Test",
           "app_type": "non_interactive",
           "resource_servers": [{
-            "identifier": "https://${APIDomain}"
+            "identifier": "https://${ApiDomainName}"
           }]
         }
       Id:
