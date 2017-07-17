@@ -1511,16 +1511,6 @@ Resources:
           }
         }
 
-  Api:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: Latest
-      DefinitionBody:
-        Fn::Transform:
-          Name: AWS::Include
-          Parameters:
-            Location: !Sub s3://${ArtifactsBucket}/templates/${AWS::StackName}/swagger.yaml
-
   ApiCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
@@ -1570,6 +1560,16 @@ Resources:
             Path: /
             Method: GET
             RestApiId: !Ref Api
+
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Latest
+      DefinitionBody:
+        Fn::Transform:
+          Name: AWS::Include
+          Parameters:
+            Location: !Sub s3://${ArtifactsBucket}/templates/${AWS::StackName}/swagger.yaml
 
   CreateDataset:
     Type: AWS::Serverless::Function
