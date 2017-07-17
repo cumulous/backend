@@ -20,7 +20,7 @@ Parameters:
     Type: String
   DomainZone:
     Type: String
-  APIDomain:
+  ApiDomain:
     Type: String
   WebDomain:
     Type: String
@@ -223,7 +223,7 @@ Resources:
       Timeout: 10
       Environment:
         Variables:
-          API_DOMAIN: !Ref APIDomain
+          API_DOMAIN: !Ref ApiDomain
           AUTH0_DOMAIN: !Ref Auth0Domain
 
   AuthorizerInvocationRole:
@@ -407,7 +407,7 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupAuth0ApiStateMachine
-      Audience: !Sub https://${APIDomain}
+      Audience: !Sub https://${ApiDomain}
 
   ManageAuth0Resource:
     Type: AWS::Serverless::Function
@@ -483,7 +483,7 @@ Resources:
                       "method": "POST",
                       "endpoint": ["/resource-servers"],
                       "payload": {
-                        "name": "${APIDomain}",
+                        "name": "${ApiDomain}",
                         "token_lifetime_for_web": ${Auth0UserTokenLifetime}
                       },
                       "datapath": "id"
@@ -553,7 +553,7 @@ Resources:
                           },
                           {
                             "Variable": "$.OldResourceProperties.Audience",
-                            "StringEquals": "https://${APIDomain}"
+                            "StringEquals": "https://${ApiDomain}"
                           }
                         ],
                         "Next": "PassUpdateApi"
@@ -567,7 +567,7 @@ Resources:
                       "method": "PATCH",
                       "endpoint": ["/resource-servers", "/{id}"],
                       "payload": {
-                        "name": "${APIDomain}",
+                        "name": "${ApiDomain}",
                         "token_lifetime_for_web": ${Auth0UserTokenLifetime}
                       },
                       "datapath": "null"
@@ -675,7 +675,7 @@ Resources:
             "https://${WebDomain}/login.html"
           ],
           "resource_servers": [{
-            "identifier": "https://${APIDomain}"
+            "identifier": "https://${ApiDomain}"
           }]
         }
       Id:
@@ -690,10 +690,10 @@ Resources:
       StateMachine: !Ref SetupAuth0ClientStateMachine
       Payload: !Sub |-
         {
-          "name": "${APIDomain} - Test",
+          "name": "${ApiDomain} - Test",
           "app_type": "non_interactive",
           "resource_servers": [{
-            "identifier": "https://${APIDomain}"
+            "identifier": "https://${ApiDomain}"
           }]
         }
       Id:
@@ -1524,13 +1524,13 @@ Resources:
   ApiCertificate:
     Type: AWS::CertificateManager::Certificate
     Properties:
-      DomainName: !Ref APIDomain
+      DomainName: !Ref ApiDomain
 
   # ApiDomainName:
   #   Type: AWS::ApiGateway::DomainName
   #   Properties:
   #     CertificateArn: !Ref ApiCertificate
-  #     DomainName: !Ref APIDomain
+  #     DomainName: !Ref ApiDomain
 
   ApiDomainName:
     Type: AWS::CloudFormation::CustomResource
@@ -1538,7 +1538,7 @@ Resources:
       ServiceToken: !GetAtt SetupCustomResource.Arn
       StateMachine: !Ref SetupApiDomainNameStateMachine
       Domain:
-        Name: !Ref APIDomain
+        Name: !Ref ApiDomain
         Certificate: !Ref ApiCertificate
 
   CreateApiDomainName:
@@ -1572,7 +1572,7 @@ Resources:
           - Effect: Allow
             Action: apigateway:PATCH
             Resource:
-              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${APIDomain}
+              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${ApiDomain}
           - Effect: Allow
             Action: cloudfront:UpdateDistribution
             Resource: '*'
@@ -1590,7 +1590,7 @@ Resources:
           - Effect: Allow
             Action: apigateway:DELETE
             Resource:
-              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${APIDomain}
+              - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${ApiDomain}
           - Effect: Allow
             Action: cloudfront:DeleteDistribution
             Resource: '*'
@@ -1641,7 +1641,7 @@ Resources:
                     "Choices": [
                       {
                         "Variable": "$.OldResourceProperties.Domain.Name",
-                        "StringEquals": "${APIDomain}",
+                        "StringEquals": "${ApiDomain}",
                         "Next": "DeleteOldApiDomainName"
                       }
                     ],
@@ -1714,14 +1714,14 @@ Resources:
       - ApiDomainName
       - ApiLatestStage
     Properties:
-      DomainName: !Ref APIDomain
+      DomainName: !Ref ApiDomain
       RestApiId: !Ref Api
       Stage: Latest
 
   ApiDnsRecord:
     Type: AWS::Route53::RecordSet
     Properties:
-      Name: !Ref APIDomain
+      Name: !Ref ApiDomain
       Type: A
       HostedZoneId: !Ref DomainZone
       AliasTarget:
