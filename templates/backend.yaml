@@ -1701,6 +1701,7 @@ Resources:
         SecretsBucket: !Ref SecretsBucket
         WebBucket: !Ref WebBucket
         LambdaPackage: !Ref LambdaPackage
+        EncryptionKeyId: !Ref EncryptionKeyId
         DomainZone: !Ref DomainZone
         WebDomain: !Ref WebDomain
         WebTTL: !Ref WebTTL
