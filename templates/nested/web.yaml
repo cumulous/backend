@@ -1,0 +1,606 @@
+Parameters:
+  BackendStack:
+    Type: String
+  SetupCustomResourceArn:
+    Type: String
+  SendCloudFormationResponseArn:
+    Type: String
+  ArtifactsBucket:
+    Type: String
+  SecretsBucket:
+    Type: String
+  WebBucket:
+    Type: String
+  LambdaPackage:
+    Type: String
+  DomainZone:
+    Type: String
+  WebDomain:
+    Type: String
+  WebTTL:
+    Type: Number
+  WebPriceClass:
+    Type: String
+  WebLocations:
+    Type: CommaDelimitedList
+  WebACL:
+    Type: String
+  WebSigningKeyPutRoleArn:
+    Type: String
+  WebSigningKeyGetRoleArn:
+    Type: String
+  DeleteS3SecretArn:
+    Type: String
+  ApiId:
+    Type: String
+  ApiStage:
+    Type: String
+
+Conditions:
+  SetupWebSigningKeyPair: !Not [!Equals [!Ref WebSigningKeyPutRoleArn, '']]
+
+Resources:
+  WebCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref WebDomain
+
+  WebBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: s3:GetObject
+            Principal:
+              CanonicalUser: !GetAtt WebOriginAccessIdentity.S3CanonicalUserId
+            Resource:
+              - !Sub arn:aws:s3:::${WebBucket}/*
+          - Effect: Allow
+            Action: s3:ListBucket
+            Principal:
+              CanonicalUser: !GetAtt WebOriginAccessIdentity.S3CanonicalUserId
+            Resource:
+              - !Sub arn:aws:s3:::${WebBucket}
+
+  WebDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Aliases:
+        - !Ref WebDomain
+        Enabled: true
+        Origins:
+        - Id: web
+          DomainName: !Sub ${WebBucket}.s3.amazonaws.com
+          S3OriginConfig:
+            OriginAccessIdentity:
+              !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
+        DefaultRootObject: login.html
+        CustomErrorResponses:
+          - ErrorCachingMinTTL: !Ref WebTTL
+            ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /login.html
+          - ErrorCachingMinTTL: !Ref WebTTL
+            ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /app/index.html
+        DefaultCacheBehavior:
+          TargetOriginId: web
+          ViewerProtocolPolicy: redirect-to-https
+          ForwardedValues:
+            QueryString: false
+          MinTTL: !Ref WebTTL
+          DefaultTTL: !Ref WebTTL
+          Compress: true
+          TrustedSigners:
+            - !Ref AWS::AccountId
+        CacheBehaviors:
+        - TargetOriginId: web
+          PathPattern: login.*
+          ViewerProtocolPolicy: redirect-to-https
+          ForwardedValues:
+            QueryString: false
+          MinTTL: !Ref WebTTL
+          DefaultTTL: !Ref WebTTL
+          Compress: true
+        PriceClass: !Sub PriceClass_${WebPriceClass}
+        Restrictions:
+          GeoRestriction:
+            RestrictionType: whitelist
+            Locations: !Ref WebLocations
+        ViewerCertificate:
+          AcmCertificateArn: !Ref WebCertificate
+          SslSupportMethod: sni-only
+        WebACLId: !Ref WebACL
+
+  WebDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: !Ref WebDomain
+      Type: A
+      HostedZoneId: !Ref DomainZone
+      AliasTarget:
+        DNSName: !GetAtt WebDistribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
+
+  WebOriginAccessIdentity:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !Ref SetupCustomResourceArn
+      StateMachine: !Ref SetupOriginAccessStateMachine
+      Comment: !Ref WebDomain
+      Bucket: !Ref ArtifactsBucket
+      Path: !Sub web/${BackendStack}-origin.json
+
+  StoreOriginAccessIdentity:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-StoreOriginAccessIdentity
+      Role: !GetAtt StoreOriginAccessIdentityRole.Arn
+      Handler: web.storeOriginAccessIdentity
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  StoreOriginAccessIdentityRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: StoreOriginAccessIdentityRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: s3:PutObject
+                Resource:
+                  - !Sub arn:aws:s3:::${ArtifactsBucket}/web/${BackendStack}-origin.json
+
+  RetrieveOriginAccessIdentity:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-RetrieveOriginAccessIdentity
+      Role: !GetAtt RetrieveOriginAccessIdentityRole.Arn
+      Handler: web.retrieveOriginAccessIdentity
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  RetrieveOriginAccessIdentityRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: RetrieveOriginAccessIdentityRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: s3:GetObject
+                Resource:
+                  - !Sub arn:aws:s3:::${ArtifactsBucket}/web/${BackendStack}-origin.json
+
+  CreateOriginAccessIdentity:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CreateOriginAccessIdentity
+      Role: !GetAtt CreateOriginAccessIdentityRole.Arn
+      Handler: web.createOriginAccessIdentity
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  CreateOriginAccessIdentityRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateOriginAccessIdentityRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cloudfront:CreateCloudFrontOriginAccessIdentity
+                Resource: '*'
+
+  UpdateOriginAccessIdentity:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-UpdateOriginAccessIdentity
+      Role: !GetAtt UpdateOriginAccessIdentityRole.Arn
+      Handler: web.updateOriginAccessIdentity
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  UpdateOriginAccessIdentityRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: UpdateOriginAccessIdentityRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cloudfront:UpdateCloudFrontOriginAccessIdentity
+                Resource: '*'
+
+  DeleteOriginAccessIdentity:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-DeleteOriginAccessIdentity
+      Role: !GetAtt DeleteOriginAccessIdentityRole.Arn
+      Handler: web.deleteOriginAccessIdentity
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DeleteOriginAccessIdentityRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DeleteOriginAccessIdentityRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cloudfront:DeleteCloudFrontOriginAccessIdentity
+                Resource: '*'
+
+  SetupOriginAccessExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StatesExecutionRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CreateOriginAccessIdentity.Arn
+                  - !GetAtt StoreOriginAccessIdentity.Arn
+                  - !GetAtt RetrieveOriginAccessIdentity.Arn
+                  - !GetAtt UpdateOriginAccessIdentity.Arn
+                  - !GetAtt DeleteOriginAccessIdentity.Arn
+                  - !Ref SendCloudFormationResponseArn
+
+  SetupOriginAccessStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt SetupOriginAccessExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupOriginAccess",
+          "States": {
+            "SetupOriginAccess": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "CheckCreate",
+                "States": {
+                  "CheckCreate": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Create",
+                        "Next": "CreateOriginAccessIdentity"
+                      }
+                    ],
+                    "Default": "RetrieveOriginAccessIdentity"
+                  },
+                  "CreateOriginAccessIdentity": {
+                    "Type": "Task",
+                    "ResultPath": "$.Data",
+                    "Resource": "${CreateOriginAccessIdentity.Arn}",
+                    "Next": "StoreOriginAccessIdentity"
+                  },
+                  "StoreOriginAccessIdentity": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "${StoreOriginAccessIdentity.Arn}",
+                    "Next": "Success"
+                  },
+                  "RetrieveOriginAccessIdentity": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.Data",
+                    "Resource": "${RetrieveOriginAccessIdentity.Arn}",
+                    "Next": "CheckUpdateOrDelete"
+                  },
+                  "CheckUpdateOrDelete": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Update",
+                        "Next": "UpdateOriginAccessIdentity"
+                      },
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "DeleteOriginAccessIdentity"
+                      }
+                    ]
+                  },
+                  "UpdateOriginAccessIdentity": {
+                    "Type": "Task",
+                    "ResultPath": "$.Data",
+                    "Resource": "${UpdateOriginAccessIdentity.Arn}",
+                    "Next": "StoreOriginAccessIdentity"
+                  },
+                  "DeleteOriginAccessIdentity": {
+                    "Type": "Task",
+                    "InputPath": "$.Data",
+                    "ResultPath": null,
+                    "Resource": "${DeleteOriginAccessIdentity.Arn}",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponseArn}",
+              "End": true
+            }
+          }
+        }
+
+  WebSigningKey:
+    Type: AWS::CloudFormation::CustomResource
+    Condition: SetupWebSigningKeyPair
+    Properties:
+      ServiceToken: !Ref SetupCustomResourceArn
+      StateMachine: !Ref SetupWebSigningKeyPairStateMachine
+      Bucket: !Ref SecretsBucket
+      Path: !Sub web/signing.pem
+      EncryptionKeyId: !Ref EncryptionKeyId
+      Size: 4096
+
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  CreateAndExportWebSigningKeyPair:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CreateAndExportWebSigningKeyPair
+      Role: !If
+        - SetupWebSigningKeyPair
+        - !Ref WebSigningKeyPutRoleArn
+        - !GetAtt LambdaBasicExecutionRole.Arn
+      Handler: web.createAndExportSigningKey
+      Runtime: nodejs6.10
+      Timeout: 30
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  GenerateSignedCookies:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-GenerateSignedCookies
+      Role: !Ref WebSigningKeyGetRoleArn
+      Handler: web.generateSignedCookies
+      Runtime: nodejs6.10
+      Timeout: 10
+      Environment:
+        Variables:
+          WEB_DOMAIN: !Ref WebDomain
+          WEB_DISTRIBUTION_ID: !Ref WebDistribution
+          WEB_SIGNING_KEY_BUCKET: !Ref SecretsBucket
+          WEB_SIGNING_KEY_PATH: !Sub web/signing.pem
+
+  GenerateSignedCookiesPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GenerateSignedCookies
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/GET/weblogin
+
+  SetupWebSigningKeyPairRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StatesExecutionRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CreateAndExportWebSigningKeyPair.Arn
+                  - !Ref DeleteS3SecretArn
+                  - !Ref SendCloudFormationResponseArn
+
+
+  SetupWebSigningKeyPairStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Condition: SetupWebSigningKeyPair
+    Properties:
+      RoleArn: !GetAtt SetupWebSigningKeyPairRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupWebSigningKeyPair",
+          "States": {
+            "SetupWebSigningKeyPair": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "ChooseEventType",
+                "States": {
+                  "ChooseEventType": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "DeleteWebSigningKey"
+                      }
+                    ],
+                    "Default": "CreateAndExportWebSigningKeyPair"
+                  },
+                  "CreateAndExportWebSigningKeyPair": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.Data.PublicKey",
+                    "Resource": "${CreateAndExportWebSigningKeyPair.Arn}",
+                    "Next": "Success"
+                  },
+                  "DeleteWebSigningKey": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": null,
+                    "Resource": "${DeleteS3SecretArn}",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponseArn}",
+              "End": true
+            }
+          }
+        }
+
+Outputs:
+  WebSigningKey:
+    Condition: SetupWebSigningKeyPair
+    Value: !GetAtt WebSigningKey.PublicKey
