@@ -212,39 +212,6 @@ Resources:
   #           Method: GET
   #           RestApiId: !Ref Api
 
-  # Authorizer:
-  #   Type: AWS::Serverless::Function
-  #   Properties:
-  #     FunctionName: !Sub ${AWS::StackName}-Authorizer
-  #     CodeUri: ../app
-  #     Handler: members.authorize
-  #     Runtime: nodejs6.10
-  #     Timeout: 10
-  #     Environment:
-  #       Variables:
-  #         API_DOMAIN: !Ref ApiDomain
-  #         AUTH0_DOMAIN: !Ref Auth0Domain
-
-  # AuthorizerInvocationRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     AssumeRolePolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service: apigateway.amazonaws.com
-  #           Action: sts:AssumeRole
-  #     Policies:
-  #       - PolicyName: AuthorizerInvocationPolicy
-  #         PolicyDocument:
-  #           Version: 2012-10-17
-  #           Statement:
-  #             - Effect: Allow
-  #               Action: lambda:InvokeFunction
-  #               Resource:
-  #                 - !GetAtt Authorizer.Arn
-
   StatesExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -1416,6 +1383,17 @@ Resources:
         ApiDomain: !Ref ApiDomain
         ApiVersion: !Ref ApiVersion
         WebDomain: !Ref WebDomain
+
+  Members:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/members.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        ArtifactsBucket: !Ref ArtifactsBucket
+        LambdaPackage: !Ref LambdaPackage
+        ApiDomain: !Ref ApiDomain
+        Auth0Domain: !Ref Auth0Domain
 
   VPC:
     Type: AWS::CloudFormation::Stack
