@@ -17,6 +17,8 @@ Parameters:
     Type: String
   ApiVersion:
     Type: String
+  WebDomain:
+    Type: String
 
 Resources:
   Api:
@@ -56,19 +58,21 @@ Resources:
       IdPath: !Sub /api/${BackendStack}/deployment-id
       Version: !Ref ApiVersion
 
-  # ApiStage:
-  #   Type: AWS::ApiGateway::Stage
-  #   Properties:
-  #     RestApiId: !Ref Api
-  #     DeploymentId: !GetAtt ApiDeployment.Id
-  #     StageName: latest
+  ApiStage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId: !Ref Api
+      DeploymentId: !GetAtt ApiDeployment.Id
+      StageName: latest
+      Variables:
+        CorsOrigin: !Sub https://${WebDomain}
 
-  # ApiPathMapping:
-  #   Type: AWS::ApiGateway::BasePathMapping
-  #   Properties:
-  #     DomainName: !Ref ApiDomainName
-  #     RestApiId: !Ref Api
-  #     Stage: !Ref ApiStage
+  ApiPathMapping:
+    Type: AWS::ApiGateway::BasePathMapping
+    Properties:
+      DomainName: !Ref ApiDomainName
+      RestApiId: !Ref Api
+      Stage: !Ref ApiStage
 
   CreateApiDeployment:
     Type: AWS::Lambda::Function
@@ -314,3 +318,9 @@ Resources:
   #     Principal: apigateway.amazonaws.com
   #     SourceArn:
   #       !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/Latest/GET/
+
+Outputs:
+  ApiId:
+    Value: !Ref Api
+  ApiStage:
+    Value: !Ref ApiStage

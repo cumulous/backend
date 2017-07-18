@@ -1448,6 +1448,7 @@ Resources:
         DomainZone: !Ref DomainZone
         ApiDomain: !Ref ApiDomain
         ApiVersion: !Ref ApiVersion
+        WebDomain: !Ref WebDomain
 
   VPC:
     Type: AWS::CloudFormation::Stack
