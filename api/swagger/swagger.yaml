@@ -43,7 +43,7 @@ paths:
     get:
       summary: Retrieve the API spec
       description: Returns the current specification of this API.
-      operationId: getSpec
+      operationId: getApi
       security:
         - member_token: []
       tags:
@@ -58,7 +58,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri: ${API_LAMBDA_PREFIX}-GetApiSpec/invocations
+        uri: ${API_LAMBDA_PREFIX}-GetApi/invocations
   /weblogin:
     options:
       tags:
