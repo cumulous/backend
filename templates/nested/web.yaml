@@ -609,7 +609,7 @@ Resources:
         }
 
 Outputs:
-  WebSigningKey:
+  WebSigningPubKey:
     Condition: SetupWebSigningKeyPair
     Value:
       !Sub https://console.aws.amazon.com/s3/object/${WebSigningKey.Bucket}/${WebSigningKey.Path}?region=${AWS::Region}
