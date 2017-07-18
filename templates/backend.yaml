@@ -1484,8 +1484,8 @@ Resources:
         WebSigningKeyPutRoleArn: !Ref WebSigningKeyPutRoleArn
         WebSigningKeyGetRoleArn: !Ref WebSigningKeyGetRoleArn
         DeleteS3SecretArn: !GetAtt DeleteS3Secret.Arn
-        ApiId: !Ref Api.Outputs.ApiId
-        ApiStage: !Ref Api.Outputs.ApiStage
+        ApiId: !GetAtt Api.Outputs.ApiId
+        ApiStage: !GetAtt Api.Outputs.ApiStage
 
 Outputs:
   DatasetsTable:
