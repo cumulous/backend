@@ -474,6 +474,8 @@ Resources:
             Value: !GetAtt WebSigningKeyGetRole.Arn
           - Name: WEB_SIGNING_KEY_PUT_ROLE_ARN
             Value: !GetAtt WebSigningKeyPutRole.Arn
+          - Name: AUTHORIZER_INVOCATION_ROLE_ARN
+            Value: !GetAtt AuthorizerInvocationRole.Arn
           - Name: DATASETS_BUCKET
             Value: !Ref BetaDatasetsBucket
           - Name: CLUSTER_CORES
@@ -548,6 +550,8 @@ Resources:
             Value: !Ref WebACL
           - Name: WEB_SIGNING_KEY_GET_ROLE_ARN
             Value: !GetAtt WebSigningKeyGetRole.Arn
+          - Name: AUTHORIZER_INVOCATION_ROLE_ARN
+            Value: !GetAtt AuthorizerInvocationRole.Arn
           - Name: DATASETS_BUCKET
             Value: !If [CreateDatasetsBucket, !Ref DatasetsBucket, !Ref DatasetsBucketName]
           - Name: CLUSTER_CORES
@@ -1227,6 +1231,26 @@ Resources:
               - Effect: Allow
                 Action: cloudfront:GetDistribution
                 Resource: '*'
+
+  AuthorizerInvocationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: apigateway.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AuthorizerInvocationPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*-Authorizer
 
   AppsPipeline:
     Type: AWS::CodePipeline::Pipeline

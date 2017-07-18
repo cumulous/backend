@@ -28,9 +28,8 @@ cd ..
 
 API_LAMBDA_PREFIX="arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${STACK_NAME}"
 API_LAMBDA_PREFIX="arn:aws:apigateway:${AWS_REGION}:lambda:path/2015-03-31/functions/${API_LAMBDA_PREFIX}"
-API_ROLE_PREFIX="arn:aws:iam::${AWS_ACCOUNT_ID}:role/${STACK_NAME}"
 sed -i "s|\${API_LAMBDA_PREFIX}|${API_LAMBDA_PREFIX}|" ${SWAGGER_FILE}
-sed -i "s|\${API_ROLE_PREFIX}|${API_ROLE_PREFIX}|" ${SWAGGER_FILE}
+sed -i "s|\${AUTHORIZER_INVOCATION_ROLE_ARN}|${AUTHORIZER_INVOCATION_ROLE_ARN}|" ${SWAGGER_FILE}
 
 aws cloudformation package \
   --template-file templates/${BACKEND_TEMPLATE} \
