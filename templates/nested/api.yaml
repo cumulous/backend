@@ -150,7 +150,7 @@ Resources:
                   - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${Api}/deployments/*
               - Effect: Allow
                 Action:
-                  - ssm:GetParameters
+                  - ssm:GetParameter
                   - ssm:DeleteParameter
                 Resource:
                   - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/api/${BackendStack}/*
