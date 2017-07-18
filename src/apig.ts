@@ -235,39 +235,10 @@ export const getSpec = (request: Request, context: any, callback: Callback) => {
     .catch(err => respondWithError(callback, request, err));
 };
 
-interface DeploymentRequest {
-  ApiId: string;
-  IdPath: string;
-}
-
-export const createDeployment = (request: DeploymentRequest, context: any, callback: Callback) => {
-  Promise.resolve()
-    .then(() => apiGateway.createDeployment({
-      restApiId: request.ApiId,
-    }).promise())
-    .then(data => ssm.putParameter({
-      Name: request.IdPath,
-      Value: data.id,
-      Type: 'String',
-      Overwrite: true,
-    }).promise()
-      .then(() => callback(null, data.id))
-    )
-    .catch(callback);
-};
-
-export const deleteDeployment = (request: DeploymentRequest, context: any, callback: Callback) => {
-  Promise.resolve()
-    .then(() => ssm.getParameter({
-      Name: request.IdPath,
-    }).promise())
-    .then(data => apiGateway.deleteDeployment({
-      restApiId: request.ApiId,
-      deploymentId: data.Parameter.Value,
-    }).promise())
-    .then(() => ssm.deleteParameter({
-      Name: request.IdPath,
-    }).promise())
-    .then(() => callback())
+export const deploy = (apiId: string, context: any, callback: Callback) => {
+  apiGateway.createDeployment({
+    restApiId: apiId,
+  }).promise()
+    .then(data => callback(null, data.id))
     .catch(callback);
 };

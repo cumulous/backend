@@ -3,8 +3,8 @@ import * as uuid from 'uuid';
 import * as zlib from 'zlib';
 
 import * as apig from './apig';
-import { ajv, ApiError, validate,
-         createDeployment, deleteDeployment,
+import { deploy,
+         ajv, ApiError, validate,
          Request, respond, respondWithError, Response,
          getSpec, spec } from './apig';
 import { apiGateway, ssm } from './aws';
@@ -771,44 +771,24 @@ const fakeApiId = 'fake-api-1234';
 const fakeDeploymentId = 'fake-deployment-abcd';
 const fakeDeploymentIdPath = 'fake/deployment/id';
 
-describe('createDeployment()', () => {
-
-  const fakeRequest = () => ({
-    ApiId: fakeApiId,
-    IdPath: fakeDeploymentIdPath,
-  });
+describe('deploy()', () => {
 
   const testMethod = (callback: Callback) =>
-    createDeployment(fakeRequest(), null, callback);
+    deploy(fakeApiId, null, callback);
 
   let spyOnCreateDeployment: jasmine.Spy;
-  let spyOnPutParameter: jasmine.Spy;
 
   beforeEach(() => {
     spyOnCreateDeployment = spyOn(apiGateway, 'createDeployment')
       .and.returnValue(fakeResolve({
         id: fakeDeploymentId,
       }));
-    spyOnPutParameter = spyOn(ssm, 'putParameter')
-      .and.returnValue(fakeResolve());
   });
 
   it('calls apiGateway.createDeployment() with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnCreateDeployment).toHaveBeenCalledWith({
         restApiId: fakeApiId,
-      });
-      done();
-    });
-  });
-
-  it('calls ssm.putParameter() with correct parameters', (done: Callback) => {
-    testMethod(() => {
-      expect(spyOnPutParameter).toHaveBeenCalledWith({
-        Name: fakeDeploymentIdPath,
-        Type: 'String',
-        Value: fakeDeploymentId,
-        Overwrite: true,
       });
       done();
     });
@@ -822,152 +802,18 @@ describe('createDeployment()', () => {
     });
   });
 
-  describe('immediately calls callback with an error if', () => {
-    let request: any;
-    let after: () => void;
-    beforeEach(() => {
-      request = fakeRequest();
-    });
+  describe('calls callback with an error if apiGateway.createDeployment()', () => {
     afterEach((done: Callback) => {
-      createDeployment(request, null, (err?: Error) => {
-        expect(err).toBeTruthy();
-        after();
-        done();
-      });
+      testError(deploy, fakeApiId, done);
     });
-    describe('request is', () => {
-      afterEach(() => {
-        after = () => expect(spyOnCreateDeployment).not.toHaveBeenCalled();
-      });
-      it('undefined', () => request = undefined);
-      it('null', () => request = null);
+    it('response is undefined', () => {
+      spyOnCreateDeployment.and.returnValue(fakeResolve());
     });
-    describe('apiGateway.createDeployment() response', () => {
-      afterEach(() => {
-        after = () => expect(spyOnPutParameter).not.toHaveBeenCalled();
-      });
-      it('is undefined', () => {
-        spyOnCreateDeployment.and.returnValue(fakeResolve());
-      });
-      it('is null', () => {
-        spyOnCreateDeployment.and.returnValue(fakeResolve(null));
-      });
-      it('produces an error', () => {
-        spyOnCreateDeployment.and.returnValue(fakeReject('apiGateway.createDeployment()'));
-      });
+    it('response is null', () => {
+      spyOnCreateDeployment.and.returnValue(fakeResolve(null));
     });
-    it('ssm.putParameter() produces an error', () => {
-      spyOnPutParameter.and.returnValue(fakeReject('ssm.putParameter()'));
-      after = () => {};
-    });
-  });
-});
-
-describe('deleteDeployment()', () => {
-
-  const fakeRequest = () => ({
-    ApiId: fakeApiId,
-    IdPath: fakeDeploymentIdPath,
-    Extra: 'property',
-  });
-
-  const testMethod = (callback: Callback) =>
-    deleteDeployment(fakeRequest(), null, callback);
-
-  let spyOnGetParameter: jasmine.Spy;
-  let spyOnDeleteDeployment: jasmine.Spy;
-  let spyOnDeleteParameter: jasmine.Spy;
-
-  beforeEach(() => {
-    spyOnGetParameter = spyOn(ssm, 'getParameter')
-      .and.returnValue(fakeResolve({
-        Parameter: {
-          Value: fakeDeploymentId,
-        },
-      }));
-    spyOnDeleteDeployment = spyOn(apiGateway, 'deleteDeployment')
-      .and.returnValue(fakeResolve());
-    spyOnDeleteParameter = spyOn(ssm, 'deleteParameter')
-      .and.returnValue(fakeResolve());
-  });
-
-  it('calls ssm.getParameter() with correct parameters', (done: Callback) => {
-    testMethod(() => {
-      expect(spyOnGetParameter).toHaveBeenCalledWith({
-        Name: fakeDeploymentIdPath,
-      });
-      done();
-    });
-  });
-
-  it('calls apiGateway.deleteDeployment() with correct parameters', (done: Callback) => {
-    testMethod(() => {
-      expect(spyOnDeleteDeployment).toHaveBeenCalledWith({
-        deploymentId: fakeDeploymentId,
-        restApiId: fakeApiId,
-      });
-      done();
-    });
-  });
-
-  it('calls ssm.deleteParameter() with correct parameters', (done: Callback) => {
-    testMethod(() => {
-      expect(spyOnDeleteParameter).toHaveBeenCalledWith({
-        Name: fakeDeploymentIdPath,
-      });
-      done();
-    });
-  });
-
-  it('calls callback with correct parameters', (done: Callback) => {
-    testMethod((err?: Error, data?: any) => {
-      expect(err).toBeFalsy();
-      expect(data).toBeFalsy();
-      done();
-    });
-  });
-
-  describe('immediately calls callback with an error if', () => {
-    let request: any;
-    let after: () => void;
-    beforeEach(() => {
-      request = fakeRequest();
-    });
-    afterEach((done: Callback) => {
-      deleteDeployment(request, null, (err?: Error) => {
-        expect(err).toBeTruthy();
-        after();
-        done();
-      });
-    });
-    describe('request is', () => {
-      afterEach(() => {
-        after = () => expect(spyOnGetParameter).not.toHaveBeenCalled();
-      });
-      it('undefined', () => request = undefined);
-      it('null', () => request = null);
-    });
-    describe('ssm.getParameter() response', () => {
-      afterEach(() => {
-        after = () => expect(spyOnDeleteDeployment).not.toHaveBeenCalled();
-      });
-      it('is undefined', () => {
-        spyOnGetParameter.and.returnValue(fakeResolve());
-      });
-      it('is null', () => {
-        spyOnGetParameter.and.returnValue(fakeResolve(null));
-      });
-      it('produces an error', () => {
-        spyOnGetParameter.and.returnValue(fakeReject('ssm.getParameter()'));
-      });
-    });
-    it('apiGateway.deleteDeployment() produces an error', () => {
-      spyOnDeleteDeployment.and.returnValue(fakeReject('apiGateway.deleteDeployment()'));
-      after = () => expect(spyOnDeleteParameter).not.toHaveBeenCalled();
-    });
-    it('ssm.deleteParameter() produces an error', () => {
-      spyOnDeleteParameter.and.returnValue(fakeReject('ssm.deleteParameter()'));
-      after = () => {};
+    it('produces an error', () => {
+      spyOnCreateDeployment.and.returnValue(fakeReject('apiGateway.createDeployment()'));
     });
   });
 });

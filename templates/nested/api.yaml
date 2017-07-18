@@ -55,7 +55,6 @@ Resources:
       ServiceToken: !Ref SetupCustomResourceArn
       StateMachine: !Ref SetupApiDeploymentStateMachine
       ApiId: !Ref Api
-      IdPath: !Sub /api/${BackendStack}/deployment-id
       Version: !Ref ApiVersion
 
   ApiStage:
@@ -74,19 +73,19 @@ Resources:
       RestApiId: !Ref Api
       Stage: !Ref ApiStage
 
-  CreateApiDeployment:
+  DeployApi:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-CreateApiDeployment
-      Role: !GetAtt CreateApiDeploymentRole.Arn
-      Handler: apig.createDeployment
+      FunctionName: !Sub ${BackendStack}-DeployApi
+      Role: !GetAtt DeployApiRole.Arn
+      Handler: apig.deploy
       Runtime: nodejs6.10
       Timeout: 30
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
 
-  CreateApiDeploymentRole:
+  DeployApiRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -99,7 +98,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: CreateApiDeploymentRolePolicy
+        - PolicyName: DeployApiRolePolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -108,52 +107,6 @@ Resources:
                   - apigateway:POST
                 Resource:
                   - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${Api}/deployments
-              - Effect: Allow
-                Action:
-                  - ssm:PutParameter
-                Resource:
-                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/api/${BackendStack}/*
-
-  DeleteApiDeployment:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub ${BackendStack}-DeleteApiDeployment
-      Role: !GetAtt DeleteApiDeploymentRole.Arn
-      Handler: apig.deleteDeployment
-      Runtime: nodejs6.10
-      Timeout: 30
-      Code:
-        S3Bucket: !Ref ArtifactsBucket
-        S3Key: !Ref LambdaPackage
-
-  DeleteApiDeploymentRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: DeleteApiDeploymentRolePolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - apigateway:DELETE
-                Resource:
-                  - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${Api}/deployments/*
-              - Effect: Allow
-                Action:
-                  - ssm:GetParameter
-                  - ssm:DeleteParameter
-                Resource:
-                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/api/${BackendStack}/*
 
   SetupApiDeploymentExecutionRole:
     Type: AWS::IAM::Role
@@ -173,8 +126,7 @@ Resources:
               - Effect: Allow
                 Action: lambda:InvokeFunction
                 Resource:
-                  - !GetAtt CreateApiDeployment.Arn
-                  - !GetAtt DeleteApiDeployment.Arn
+                  - !GetAtt DeployApi.Arn
                   - !Ref SendCloudFormationResponseArn
 
   SetupApiDeploymentStateMachine:
@@ -195,52 +147,17 @@ Resources:
                     "Type": "Choice",
                     "Choices": [{
                       "Variable": "$.RequestType",
-                      "StringEquals": "Create",
-                      "Next": "CreateApiDeployment"
-                    }, {
-                      "Variable": "$.RequestType",
-                      "StringEquals": "Update",
-                      "Next": "PassReplacedProperties"
-                    }, {
-                      "Variable": "$.RequestType",
                       "StringEquals": "Delete",
-                      "Next": "PassDeletedProperties"
-                    }]
-                  },
-                  "CreateApiDeployment": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties",
-                    "ResultPath": "$.Data.Id",
-                    "Resource": "${CreateApiDeployment.Arn}",
-                    "Next": "Success"
-                  },
-                  "PassReplacedProperties": {
-                    "Type": "Pass",
-                    "InputPath": "$.OldResourceProperties",
-                    "ResultPath": "$.DeletedProperties",
-                    "Next": "DeleteApiDeployment"
-                  },
-                  "PassDeletedProperties": {
-                    "Type": "Pass",
-                    "InputPath": "$.ResourceProperties",
-                    "ResultPath": "$.DeletedProperties",
-                    "Next": "DeleteApiDeployment"
-                  },
-                  "DeleteApiDeployment": {
-                    "Type": "Task",
-                    "InputPath": "$.DeletedProperties",
-                    "ResultPath": null,
-                    "Resource": "${DeleteApiDeployment.Arn}",
-                    "Next": "CheckCreateAfterDelete"
-                  },
-                  "CheckCreateAfterDelete": {
-                    "Type": "Choice",
-                    "Choices": [{
-                      "Variable": "$.RequestType",
-                      "StringEquals": "Update",
-                      "Next": "CreateApiDeployment"
+                      "Next": "Success"
                     }],
-                    "Default": "Success"
+                    "Default": "Deploy"
+                  },
+                  "Deploy": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.ApiId",
+                    "ResultPath": "$.Data.Id",
+                    "Resource": "${DeployApi.Arn}",
+                    "Next": "Success"
                   },
                   "Success": {
                     "Type": "Pass",
