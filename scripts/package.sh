@@ -18,6 +18,7 @@ get_version() {
     cut -d ' ' -f1
 }
 
+API_VERSION=$(md5sum ${SWAGGER_FILE})
 PACKAGE_VERSION=$(get_version app)
 PACKAGE_PATH="lambda/${STACK_NAME}/${PACKAGE_VERSION}.zip"
 
@@ -59,6 +60,7 @@ ARGS=" \
     ParameterKey=SSHKeyPutRoleArn,ParameterValue=${SSH_KEY_PUT_ROLE_ARN} \
     ParameterKey=DomainZone,ParameterValue=${DOMAIN_ZONE} \
     ParameterKey=ApiDomain,ParameterValue=api.${WEB_DOMAIN} \
+    ParameterKey=ApiVersion,ParameterValue=${API_VERSION} \
     ParameterKey=WebDomain,ParameterValue=${WEB_DOMAIN} \
     ParameterKey=WebBucket,ParameterValue=${WEB_BUCKET} \
     ParameterKey=WebTTL,ParameterValue=${WEB_TTL} \

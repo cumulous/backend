@@ -775,7 +775,7 @@ describe('createDeployment()', () => {
 
   const fakeRequest = () => ({
     ApiId: fakeApiId,
-    Path: fakeDeploymentIdPath,
+    IdPath: fakeDeploymentIdPath,
   });
 
   const testMethod = (callback: Callback) =>
@@ -867,7 +867,7 @@ describe('deleteDeployment()', () => {
 
   const fakeRequest = () => ({
     ApiId: fakeApiId,
-    Path: fakeDeploymentIdPath,
+    IdPath: fakeDeploymentIdPath,
     Extra: 'property',
   });
 

@@ -22,6 +22,8 @@ Parameters:
     Type: String
   ApiDomain:
     Type: String
+  ApiVersion:
+    Type: String
   WebDomain:
     Type: String
   WebBucket:
@@ -1445,6 +1447,7 @@ Resources:
         TemplatePath: !Sub ${TemplatesPath}/swagger.yaml
         DomainZone: !Ref DomainZone
         ApiDomain: !Ref ApiDomain
+        ApiVersion: !Ref ApiVersion
 
   VPC:
     Type: AWS::CloudFormation::Stack

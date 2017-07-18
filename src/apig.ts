@@ -237,7 +237,7 @@ export const getSpec = (request: Request, context: any, callback: Callback) => {
 
 interface DeploymentRequest {
   ApiId: string;
-  Path: string;
+  IdPath: string;
 }
 
 export const createDeployment = (request: DeploymentRequest, context: any, callback: Callback) => {
@@ -246,7 +246,7 @@ export const createDeployment = (request: DeploymentRequest, context: any, callb
       restApiId: request.ApiId,
     }).promise())
     .then(data => ssm.putParameter({
-      Name: request.Path,
+      Name: request.IdPath,
       Value: data.id,
       Type: 'String',
       Overwrite: true,
@@ -259,14 +259,14 @@ export const createDeployment = (request: DeploymentRequest, context: any, callb
 export const deleteDeployment = (request: DeploymentRequest, context: any, callback: Callback) => {
   Promise.resolve()
     .then(() => ssm.getParameter({
-      Name: request.Path,
+      Name: request.IdPath,
     }).promise())
     .then(data => apiGateway.deleteDeployment({
       restApiId: request.ApiId,
       deploymentId: data.Parameter.Value,
     }).promise())
     .then(() => ssm.deleteParameter({
-      Name: request.Path,
+      Name: request.IdPath,
     }).promise())
     .then(() => callback())
     .catch(callback);
