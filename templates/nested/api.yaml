@@ -1,14 +1,14 @@
 Parameters:
-  # BackendStack:
-  #   Type: String
-  # SetupCustomResourceArn:
-  #   Type: String
-  # SendCloudFormationResponseArn:
-  #   Type: String
+  BackendStack:
+    Type: String
+  SetupCustomResourceArn:
+    Type: String
+  SendCloudFormationResponseArn:
+    Type: String
   ArtifactsBucket:
     Type: String
-  # LambdaPackage:
-  #   Type: String
+  LambdaPackage:
+    Type: String
   TemplatePath:
     Type: String
   DomainZone:
@@ -35,38 +35,246 @@ Resources:
       CertificateArn: !Ref ApiCertificate
       DomainName: !Ref ApiDomain
 
-  # ApiDomainName:
-  #   Type: AWS::CloudFormation::CustomResource
-  #   Properties:
-  #     ServiceToken: !Ref SetupCustomResourceArn
-  #     StateMachine: !Ref SetupApiDomainNameStateMachine
-  #     Domain:
-  #       Name: !Ref ApiDomain
-  #       Certificate: !Ref ApiCertificate
-
   ApiDnsRecord:
     Type: AWS::Route53::RecordSet
     Properties:
-      Name: !Ref ApiDomain
+      Name: !Ref ApiDomainName
       Type: A
       HostedZoneId: !Ref DomainZone
       AliasTarget:
         DNSName: !GetAtt ApiDomainName.DistributionDomainName
         HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
 
-  # CreateApiDomainName:
-  #   Type: AWS::Lambda::Function
+  # ApiDeployment:
+  #   Type: AWS::CloudFormation::CustomResource
   #   Properties:
-  #     FunctionName: !Sub ${BackendStack}-CreateApiDomainName
-  #     Role: !GetAtt CreateApiDomainNameRole.Arn
-  #     Handler: apig.createDomainName
-  #     Runtime: nodejs6.10
-  #     Timeout: 10
-  #     Code:
-  #       S3Bucket: !Ref ArtifactsBucket
-  #       S3Key: !Ref LambdaPackage
+  #     ServiceToken: !Ref SetupCustomResourceArn
+  #     StateMachine: !Ref SetupApiDeploymentStateMachine
+  #     ApiId: !Ref Api
+  #     ApiVersion: !Ref ApiVersion
+  #     ParameterPrefix: !Sub api/${BackendStack}
 
-  # CreateApiDomainNameRole:
+  # ApiStage:
+  #   Type: AWS::ApiGateway::Stage
+  #   Properties:
+  #     RestApiId: !Ref Api
+  #     DeploymentId: !GetAtt ApiDeployment.Id
+  #     StageName: latest
+
+  # ApiPathMapping:
+  #   Type: AWS::ApiGateway::BasePathMapping
+  #   Properties:
+  #     DomainName: !Ref ApiDomainName
+  #     RestApiId: !Ref Api
+  #     Stage: !Ref ApiStage
+
+  CreateApiDeployment:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CreateApiDeployment
+      Role: !GetAtt CreateApiDeploymentRole.Arn
+      Handler: apig.createApiDeployment
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  CreateApiDeploymentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateApiDeploymentRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - apigateway:POST
+                Resource:
+                  - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${Api}/deployments
+              - Effect: Allow
+                Action:
+                  - ssm:PutParameter
+                Resource:
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/api/${BackendStack}/DeploymentId
+
+  DeleteApiDeployment:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CreateApiDeployment
+      Role: !GetAtt DeleteApiDeploymentRole.Arn
+      Handler: apig.createApiDeployment
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+
+  DeleteApiDeploymentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DeleteApiDeploymentRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - apigateway:DELETE
+                Resource:
+                  - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${Api}/deployments/*
+              - Effect: Allow
+                Action:
+                  - ssm:GetParameters
+                  - ssm:DeleteParameter
+                Resource:
+                  - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/api/${BackendStack}/DeploymentId
+
+  SetupApiDeploymentExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StatesExecutionRolePolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CreateApiDeployment.Arn
+                  - !GetAtt DeleteApiDeployment.Arn
+                  - !Ref SendCloudFormationResponseArn
+
+  SetupApiDeploymentStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt SetupApiDeploymentExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupApiDeployment",
+          "States": {
+            "SetupApiDeployment": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "ChooseEventType",
+                "States": {
+                  "ChooseEventType": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Create",
+                      "Next": "CreateApiDeployment"
+                    }, {
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "PassReplacedProperties"
+                    }, {
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Delete",
+                      "Next": "PassDeletedProperties"
+                    }]
+                  },
+                  "CreateApiDeployment": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.Data.Id",
+                    "Resource": "${CreateApiDeployment.Arn}",
+                    "Next": "Success"
+                  },
+                  "PassReplacedProperties": {
+                    "Type": "Pass",
+                    "InputPath": "$.OldResourceProperties",
+                    "ResultPath": "$.DeletedProperties",
+                    "Next": "DeleteApiDeployment"
+                  },
+                  "PassDeletedProperties": {
+                    "Type": "Pass",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.DeletedProperties",
+                    "Next": "DeleteApiDeployment"
+                  },
+                  "DeleteApiDeployment": {
+                    "Type": "Task",
+                    "InputPath": "$.DeletedProperties",
+                    "ResultPath": null,
+                    "Resource": "${DeleteApiDeployment.Arn}",
+                    "Next": "CheckCreateAfterDelete"
+                  },
+                  "CheckCreateAfterDelete": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "CreateApiDeployment"
+                    }],
+                    "Default": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponseArn}",
+              "End": true
+            }
+          }
+        }
+
+  # LambdaBasicExecutionRole:
   #   Type: AWS::IAM::Role
   #   Properties:
   #     AssumeRolePolicyDocument:
@@ -78,205 +286,6 @@ Resources:
   #           Action: sts:AssumeRole
   #     ManagedPolicyArns:
   #       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  #     Policies:
-  #       - PolicyName: CreateApiDomainNameRolePolicy
-  #         PolicyDocument:
-  #           Version: 2012-10-17
-  #           Statement:
-  #             - Effect: Allow
-  #               Action: apigateway:POST
-  #               Resource:
-  #                 - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames
-  #             - Effect: Allow
-  #               Action: cloudfront:UpdateDistribution
-  #               Resource: '*'
-
-  # UpdateApiDomainName:
-  #   Type: AWS::Lambda::Function
-  #   Properties:
-  #     FunctionName: !Sub ${BackendStack}-UpdateApiDomainName
-  #     Role: !GetAtt UpdateApiDomainNameRole.Arn
-  #     Handler: apig.updateDomainName
-  #     Runtime: nodejs6.10
-  #     Timeout: 10
-  #     Code:
-  #       S3Bucket: !Ref ArtifactsBucket
-  #       S3Key: !Ref LambdaPackage
-
-  # UpdateApiDomainNameRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     AssumeRolePolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service: lambda.amazonaws.com
-  #           Action: sts:AssumeRole
-  #     ManagedPolicyArns:
-  #       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  #     Policies:
-  #       - PolicyName: UpdateApiDomainNameRolePolicy
-  #         PolicyDocument:
-  #           Version: 2012-10-17
-  #           Statement:
-  #             - Effect: Allow
-  #               Action: apigateway:PATCH
-  #               Resource:
-  #                 - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${ApiDomain}
-  #             - Effect: Allow
-  #               Action: cloudfront:UpdateDistribution
-  #               Resource: '*'
-
-  # DeleteApiDomainName:
-  #   Type: AWS::Lambda::Function
-  #   Properties:
-  #     FunctionName: !Sub ${BackendStack}-DeleteApiDomainName
-  #     Role: !GetAtt DeleteApiDomainNameRole.Arn
-  #     Handler: apig.deleteDomainName
-  #     Runtime: nodejs6.10
-  #     Timeout: 10
-  #     Code:
-  #       S3Bucket: !Ref ArtifactsBucket
-  #       S3Key: !Ref LambdaPackage
-
-  # DeleteApiDomainNameRole:
-  #   Type: AWS::IAM::Role
-  #   Properties:
-  #     AssumeRolePolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
-  #         - Effect: Allow
-  #           Principal:
-  #             Service: lambda.amazonaws.com
-  #           Action: sts:AssumeRole
-  #     ManagedPolicyArns:
-  #       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-  #     Policies:
-  #       - PolicyName: DeleteApiDomainNameRolePolicy
-  #         PolicyDocument:
-  #           Version: 2012-10-17
-  #           Statement:
-  #             - Effect: Allow
-  #               Action: apigateway:DELETE
-  #               Resource:
-  #                 - !Sub arn:aws:apigateway:${AWS::Region}::/domainnames/${ApiDomain}
-  #             - Effect: Allow
-  #               Action: cloudfront:DeleteDistribution
-  #               Resource: '*'
-
-  # SetupApiDomainNameStateMachine:
-  #   Type: AWS::StepFunctions::StateMachine
-  #   Properties:
-  #     RoleArn: !GetAtt StatesExecutionRole.Arn
-  #     DefinitionString: !Sub |-
-  #       {
-  #         "StartAt": "SetupApiCertificate",
-  #         "States": {
-  #           "SetupApiCertificate": {
-  #             "Type": "Parallel",
-  #             "Next": "Succeed",
-  #             "Branches": [{
-  #               "StartAt": "ChooseEventType",
-  #               "States": {
-  #                 "ChooseEventType": {
-  #                   "Type": "Choice",
-  #                   "Choices": [
-  #                     {
-  #                       "Variable": "$.RequestType",
-  #                       "StringEquals": "Create",
-  #                       "Next": "CreateApiDomainName"
-  #                     },
-  #                     {
-  #                       "Variable": "$.RequestType",
-  #                       "StringEquals": "Update",
-  #                       "Next": "CheckReplaceDomainName"
-  #                     },
-  #                     {
-  #                       "Variable": "$.RequestType",
-  #                       "StringEquals": "Delete",
-  #                       "Next": "DeleteApiDomainName"
-  #                     }
-  #                   ]
-  #                 },
-  #                 "CreateApiDomainName": {
-  #                   "Type": "Task",
-  #                   "InputPath": "$.ResourceProperties.Domain",
-  #                   "ResultPath": "$.Data.DistributionDomainName",
-  #                   "Resource": "${CreateApiDomainName.Arn}",
-  #                   "Next": "Success"
-  #                 },
-  #                 "CheckReplaceDomainName": {
-  #                   "Type": "Choice",
-  #                   "Choices": [
-  #                     {
-  #                       "Variable": "$.OldResourceProperties.Domain.Name",
-  #                       "StringEquals": "${ApiDomain}",
-  #                       "Next": "DeleteOldApiDomainName"
-  #                     }
-  #                   ],
-  #                   "Default": "UpdateApiDomainName"
-  #                 },
-  #                 "DeleteOldApiDomainName": {
-  #                   "Type": "Task",
-  #                   "InputPath": "$.OldResourceProperties.Domain.Name",
-  #                   "ResultPath": null,
-  #                   "Resource": "${DeleteApiDomainName.Arn}",
-  #                   "Next": "CreateApiDomainName"
-  #                 },
-  #                 "UpdateApiDomainName": {
-  #                   "Type": "Task",
-  #                   "InputPath": "$.ResourceProperties.Domain",
-  #                   "ResultPath": "$.Data.DistributionDomainName",
-  #                   "Resource": "${UpdateApiDomainName.Arn}",
-  #                   "Next": "Success"
-  #                 },
-  #                 "DeleteApiDomainName": {
-  #                   "Type": "Task",
-  #                   "InputPath": "$.ResourceProperties.Domain.Name",
-  #                   "ResultPath": null,
-  #                   "Resource": "${DeleteApiDomainName.Arn}",
-  #                   "Next": "Success"
-  #                 },
-  #                 "Success": {
-  #                   "Type": "Pass",
-  #                   "ResultPath": "$.Status",
-  #                   "Result": "SUCCESS",
-  #                   "End": true
-  #                 }
-  #               }
-  #             }],
-  #             "Catch": [{
-  #               "ErrorEquals": [ "States.ALL" ],
-  #               "ResultPath": "$.Error",
-  #               "Next": "PassReason"
-  #             }]
-  #           },
-  #           "Succeed": {
-  #             "InputPath": "$.[0]",
-  #             "Type": "Pass",
-  #             "Next": "End"
-  #           },
-  #           "PassReason": {
-  #             "Type": "Pass",
-  #             "InputPath": "$.Error.Cause",
-  #             "ResultPath": "$.Reason",
-  #             "Next": "Fail"
-  #           },
-  #           "Fail": {
-  #             "Type": "Pass",
-  #             "ResultPath": "$.Status",
-  #             "Result": "FAILED",
-  #             "Next": "End"
-  #           },
-  #           "End": {
-  #             "Type": "Task",
-  #             "ResultPath": null,
-  #             "Resource": "${SendCloudFormationResponse.Arn}",
-  #             "End": true
-  #           }
-  #         }
-  #       }
 
   # ApiGetSpec:
   #   Type: AWS::Lambda::Function

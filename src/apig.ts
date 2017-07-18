@@ -3,7 +3,7 @@ import * as stringify from 'json-stable-stringify';
 import * as jsonpath from 'jsonpath';
 import * as zlib from 'zlib';
 
-import { apiGateway } from './aws';
+import { apiGateway, ssm } from './aws';
 import { envNames } from './env';
 import { log } from './log';
 import { Callback, Dict, HttpMethod } from './types';
@@ -233,4 +233,41 @@ export const getSpec = (request: Request, context: any, callback: Callback) => {
   validate(request, 'GET', '/')
     .then(() => respond(callback, request, spec()))
     .catch(err => respondWithError(callback, request, err));
+};
+
+interface DeploymentRequest {
+  ApiId: string;
+  Path: string;
+}
+
+export const createDeployment = (request: DeploymentRequest, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => apiGateway.createDeployment({
+      restApiId: request.ApiId,
+    }).promise())
+    .then(data => ssm.putParameter({
+      Name: request.Path,
+      Value: data.id,
+      Type: 'String',
+      Overwrite: true,
+    }).promise()
+      .then(() => callback(null, data.id))
+    )
+    .catch(callback);
+};
+
+export const deleteDeployment = (request: DeploymentRequest, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => ssm.getParameter({
+      Name: request.Path,
+    }).promise())
+    .then(data => apiGateway.deleteDeployment({
+      restApiId: request.ApiId,
+      deploymentId: data.Parameter.Value,
+    }).promise())
+    .then(() => ssm.deleteParameter({
+      Name: request.Path,
+    }).promise())
+    .then(() => callback())
+    .catch(callback);
 };
