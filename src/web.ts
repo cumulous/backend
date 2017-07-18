@@ -1,3 +1,4 @@
+import * as assert from 'assert';
 import { Signer } from 'aws-sdk/clients/cloudfront';
 import { execSync } from 'child_process';
 import * as stringify from 'json-stable-stringify';
@@ -85,30 +86,40 @@ export const retrieveOriginAccessIdentity = (event: { Bucket: string, Path: stri
     .catch(callback);
 };
 
-export const createAndExportSigningKey = (key: {
-    Bucket: string,
-    Path: string,
-    EncryptionKeyId: string,
-    Size: number,
-  }, context: any, callback: Callback) => {
+interface KeyObject {
+  Bucket: string;
+  Path: string;
+  EncryptionKeyId?: string;
+}
 
-  Promise.resolve(key)
-    .then(key => execSync(`openssl genrsa ${key.Size}`))
-    .then(keyValue => storeSigningKey(key.Bucket, key.Path, keyValue, key.EncryptionKeyId))
-    .then(keyValue => execSync('openssl rsa -pubout', { input: keyValue }))
-    .then(pubkey => callback(null, pubkey.toString()))
+interface KeyRequest {
+  KeySize: number;
+  PrivateKey: KeyObject;
+  PublicKey: KeyObject;
+}
+
+export const createAndExportSigningKey = (request: KeyRequest, context: any, callback: Callback) => {
+
+  Promise.resolve()
+    .then(() => assert.notEqual(request.PrivateKey, null))
+    .then(() => assert.notEqual(request.PublicKey, null))
+    .then(() => execSync(`openssl genrsa ${request.KeySize}`))
+    .then(key => storeSigningKey(request.PrivateKey, key)
+      .then(() => execSync('openssl rsa -pubout', { input: key })))
+    .then(pubkey => storeSigningKey(request.PublicKey, pubkey))
+    .then(() => callback(null, request.PublicKey))
     .catch(callback);
 };
 
-const storeSigningKey = (bucket: string, path: string, value: Buffer, encryptionKeyId: string) => {
-  return s3.putObject({
-      Bucket: bucket,
-      Key: path,
+const storeSigningKey = (key: KeyObject, value: Buffer) => {
+  return s3.putObject(Object.assign({
+      Bucket: key.Bucket,
+      Key: key.Path,
       Body: value,
-      SSEKMSKeyId: encryptionKeyId,
+    }, key.EncryptionKeyId == null ? {} : {
+      SSEKMSKeyId: key.EncryptionKeyId,
       ServerSideEncryption: 'aws:kms',
-    }).promise()
-      .then(() => value);
+    })).promise();
 };
 
 export const generateSignedCookies = (event: Request, context: any, callback: Callback) => {

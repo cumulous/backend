@@ -192,10 +192,29 @@ testMethod('retrieveOriginAccessIdentity', s3, 'getObject', () => ({
 const fakeSigningKeyBucket = 'fake-secrets-bucket';
 const fakeSigningKeyPath = 'fake/key.pem';
 const fakeEncryptionKeyId = 'fake-encryption-key-1234';
+const fakeSigningPubKeyBucket = 'fake-pubkey-bucket';
+const fakeSigningPubKeyPath = 'fake/key.pub';
 
 describe('createAndExportSigningKey()', () => {
 
   const fakeKeySize = 2048;
+
+  const fakeRequest = () => ({
+    KeySize: fakeKeySize,
+    PrivateKey: {
+      Bucket: fakeSigningKeyBucket,
+      Path: fakeSigningKeyPath,
+      EncryptionKeyId: fakeEncryptionKeyId,
+    },
+    PublicKey:  {
+      Bucket: fakeSigningPubKeyBucket,
+      Path: fakeSigningPubKeyPath,
+    },
+  });
+
+  const testMethod = (callback: Callback) => {
+    createAndExportSigningKey(fakeRequest(), null, callback);
+  };
 
   let fakeSigningKey: () => Buffer;
   let fakeSigningPubKey: () => Buffer;
@@ -213,15 +232,6 @@ describe('createAndExportSigningKey()', () => {
       .and.returnValue(fakeResolve());
   });
 
-  const testMethod = (callback: Callback) => {
-    createAndExportSigningKey({
-      Bucket: fakeSigningKeyBucket,
-      Path: fakeSigningKeyPath,
-      EncryptionKeyId: fakeEncryptionKeyId,
-      Size: fakeKeySize,
-    }, null, callback);
-  };
-
   it('calls child_process.execSync() with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnExecSync).toHaveBeenCalledWith(`openssl genrsa ${fakeKeySize}`);
@@ -231,7 +241,7 @@ describe('createAndExportSigningKey()', () => {
     });
   });
 
-  it('calls s3.putObject() once with correct parameters', (done: Callback) => {
+  it('calls s3.putObject() with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnS3PutObject).toHaveBeenCalledWith({
         Bucket: fakeSigningKeyBucket,
@@ -240,31 +250,46 @@ describe('createAndExportSigningKey()', () => {
         SSEKMSKeyId: fakeEncryptionKeyId,
         ServerSideEncryption: 'aws:kms',
       });
-      expect(spyOnS3PutObject).toHaveBeenCalledTimes(1);
+      expect(spyOnS3PutObject).toHaveBeenCalledWith({
+        Bucket: fakeSigningPubKeyBucket,
+        Key: fakeSigningPubKeyPath,
+        Body: fakeSigningPubKey(),
+      });
+      expect(spyOnS3PutObject).toHaveBeenCalledTimes(2);
       done();
     });
   });
 
   it('calls callback with correct parameters', (done: Callback) => {
-    testMethod((err: Error, pubkey: string) => {
+    testMethod((err?: Error, data?: any) => {
       expect(err).toBeFalsy();
-      expect(pubkey).toEqual(fakeSigningPubKey().toString());
+      expect(data).toEqual({
+        Bucket: fakeSigningPubKeyBucket,
+        Path: fakeSigningPubKeyPath,
+      });
       done();
     });
   });
 
   describe('immediately calls callback with an error if', () => {
-    describe('event is', () => {
-      let event: any;
+    describe('', () => {
+      let request: any;
+      beforeEach(() => {
+        request = fakeRequest();
+      });
       afterEach((done: Callback) => {
-        createAndExportSigningKey(event, null, (err: Error) => {
+        createAndExportSigningKey(request, null, (err: Error) => {
           expect(err).toEqual(jasmine.any(Error));
           expect(spyOnExecSync).not.toHaveBeenCalled();
           done();
         });
       });
-      it('undefined', () => event = undefined);
-      it('null', () => event = null);
+      it('request is undefined', () => request = undefined);
+      it('request is null', () => request = null);
+      it('PrivateKey is undefined', () => request.PrivateKey = undefined);
+      it('PrivateKey is null', () => request.PrivateKey = null);
+      it('PublicKey is undefined', () => request.PublicKey = undefined);
+      it('PublicKey is null', () => request.PublicKey = null);
     });
     const testError = (last: Callback, done: Callback) => {
       testMethod((err: Error) => {

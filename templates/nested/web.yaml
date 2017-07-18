@@ -442,10 +442,14 @@ Resources:
     Properties:
       ServiceToken: !Ref SetupCustomResourceArn
       StateMachine: !Ref SetupWebSigningKeyPairStateMachine
-      Bucket: !Ref SecretsBucket
-      Path: !Sub web/signing.pem
-      EncryptionKeyId: !Ref EncryptionKeyId
-      Size: 4096
+      KeySize: 4096
+      PrivateKey:
+        Bucket: !Ref SecretsBucket
+        Path: !Sub web/signing.pem
+        EncryptionKeyId: !Ref EncryptionKeyId
+      PublicKey:
+        Bucket: !Ref ArtifactsBucket
+        Path: !Sub web/signing.pub
 
   LambdaBasicExecutionRole:
     Type: AWS::IAM::Role
@@ -553,7 +557,7 @@ Resources:
                   "CreateAndExportWebSigningKeyPair": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties",
-                    "ResultPath": "$.Data.PublicKey",
+                    "ResultPath": "$.Data",
                     "Resource": "${CreateAndExportWebSigningKeyPair.Arn}",
                     "Next": "Success"
                   },
@@ -607,4 +611,5 @@ Resources:
 Outputs:
   WebSigningKey:
     Condition: SetupWebSigningKeyPair
-    Value: !GetAtt WebSigningKey.PublicKey
+    Value:
+      !Sub https://console.aws.amazon.com/s3/object/${WebSigningKey.Bucket}/${WebSigningKey.Path}?region=${AWS::Region}

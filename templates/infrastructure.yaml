@@ -1200,7 +1200,8 @@ Resources:
               - Effect: Allow
                 Action: s3:PutObject
                 Resource:
-                  - !Sub arn:aws:s3:::${SecretsBucket}/web/signing.pem
+                  - !Sub arn:aws:s3:::${SecretsBucket}/web/*.pem
+                  - !Sub arn:aws:s3:::${BackendArtifactsBucket}/web/*.pub
 
   WebSigningKeyGetRole:
     Type: AWS::IAM::Role
