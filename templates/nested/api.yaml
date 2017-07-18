@@ -73,7 +73,7 @@ Resources:
     Properties:
       FunctionName: !Sub ${BackendStack}-CreateApiDeployment
       Role: !GetAtt CreateApiDeploymentRole.Arn
-      Handler: apig.createApiDeployment
+      Handler: apig.createDeployment
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
@@ -110,9 +110,9 @@ Resources:
   DeleteApiDeployment:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-CreateApiDeployment
+      FunctionName: !Sub ${BackendStack}-DeleteApiDeployment
       Role: !GetAtt DeleteApiDeploymentRole.Arn
-      Handler: apig.createApiDeployment
+      Handler: apig.deleteDeployment
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
