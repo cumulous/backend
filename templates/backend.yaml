@@ -4,7 +4,7 @@ Transform: AWS::Serverless-2016-10-31
 Parameters:
   ArtifactsBucket:
     Type: String
-  TemplateURLBase:
+  TemplatesPath:
     Type: String
   LambdaPackage:
     Type: String
@@ -1652,20 +1652,21 @@ Resources:
   Api:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplateURLBase}/api.yaml
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/api.yaml
       Parameters:
-        BackendStack: !Ref AWS::StackName
-        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
-        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
+        # BackendStack: !Ref AWS::StackName
+        # SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+        # SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
         ArtifactsBucket: !Ref ArtifactsBucket
-        LambdaPackage: !Ref LambdaPackage
+        # LambdaPackage: !Ref LambdaPackage
+        TemplatePath: !Sub ${TemplatesPath}/swagger.yaml
         # DomainZone: !Ref DomainZone
         # ApiDomain: !Ref ApiDomain
 
   VPC:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplateURLBase}/vpc.yaml
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/vpc.yaml
       Parameters:
         BackendStack: !Ref AWS::StackName
         SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
@@ -1677,7 +1678,7 @@ Resources:
   Batch:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplateURLBase}/batch.yaml
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/batch.yaml
       Parameters:
         BackendStack: !Ref AWS::StackName
         SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
@@ -1693,7 +1694,7 @@ Resources:
   Instances:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub ${TemplateURLBase}/instances.yaml
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/instances.yaml
       Parameters:
         BackendStack: !Ref AWS::StackName
         SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
@@ -1710,7 +1711,7 @@ Resources:
   # Web:
   #   Type: AWS::CloudFormation::Stack
   #   Properties:
-  #     TemplateURL: !Sub ${TemplateURLBase}/web.yaml
+  #     TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/web.yaml
   #     Parameters:
   #       BackendStack: !Ref AWS::StackName
   #       SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn

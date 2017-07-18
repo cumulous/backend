@@ -1,13 +1,15 @@
 Parameters:
-  BackendStack:
-    Type: String
-  SetupCustomResourceArn:
-    Type: String
-  SendCloudFormationResponseArn:
-    Type: String
+  # BackendStack:
+  #   Type: String
+  # SetupCustomResourceArn:
+  #   Type: String
+  # SendCloudFormationResponseArn:
+  #   Type: String
   ArtifactsBucket:
     Type: String
-  LambdaPackage:
+  # LambdaPackage:
+  #   Type: String
+  TemplatePath:
     Type: String
   # DomainZone:
   #   Type: String
@@ -20,7 +22,7 @@ Resources:
     Properties:
       BodyS3Location:
         Bucket: !Ref ArtifactsBucket
-        Key: !Sub templates/${BackendStack}/swagger.yaml
+        Key: !Ref TemplatePath
 
   # ApiCertificate:
   #   Type: AWS::CertificateManager::Certificate

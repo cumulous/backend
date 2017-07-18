@@ -47,7 +47,7 @@ ARGS=" \
   --capabilities CAPABILITY_IAM \
   --parameters \
     ParameterKey=ArtifactsBucket,ParameterValue=${ARTIFACTS_BUCKET} \
-    ParameterKey=TemplateURLBase,ParameterValue=https://s3.amazonaws.com/${ARTIFACTS_BUCKET}/templates/${STACK_NAME} \
+    ParameterKey=TemplatesPath,ParameterValue=${TEMPLATES_DEST_PATH} \
     ParameterKey=LambdaPackage,ParameterValue=${PACKAGE_PATH} \
     ParameterKey=VpcRange,ParameterValue=${VPC_RANGE} \
     ParameterKey=EncryptionKeyId,ParameterValue=${ENCRYPTION_KEY_ID} \
