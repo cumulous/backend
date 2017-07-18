@@ -11,10 +11,10 @@ Parameters:
   #   Type: String
   TemplatePath:
     Type: String
-  # DomainZone:
-  #   Type: String
-  # ApiDomain:
-  #   Type: String
+  DomainZone:
+    Type: String
+  ApiDomain:
+    Type: String
 
 Resources:
   Api:
@@ -24,16 +24,16 @@ Resources:
         Bucket: !Ref ArtifactsBucket
         Key: !Ref TemplatePath
 
-  # ApiCertificate:
-  #   Type: AWS::CertificateManager::Certificate
-  #   Properties:
-  #     DomainName: !Ref ApiDomain
+  ApiCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref ApiDomain
 
-  # ApiDomainName:
-  #   Type: AWS::ApiGateway::DomainName
-  #   Properties:
-  #     CertificateArn: !Ref ApiCertificate
-  #     DomainName: !Ref ApiDomain
+  ApiDomainName:
+    Type: AWS::ApiGateway::DomainName
+    Properties:
+      CertificateArn: !Ref ApiCertificate
+      DomainName: !Ref ApiDomain
 
   # ApiDomainName:
   #   Type: AWS::CloudFormation::CustomResource
@@ -44,15 +44,15 @@ Resources:
   #       Name: !Ref ApiDomain
   #       Certificate: !Ref ApiCertificate
 
-  # ApiDnsRecord:
-  #   Type: AWS::Route53::RecordSet
-  #   Properties:
-  #     Name: !Ref ApiDomain
-  #     Type: A
-  #     HostedZoneId: !Ref DomainZone
-  #     AliasTarget:
-  #       DNSName: !GetAtt ApiDomainName.DistributionDomainName
-  #       HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
+  ApiDnsRecord:
+    Type: AWS::Route53::RecordSet
+    Properties:
+      Name: !Ref ApiDomain
+      Type: A
+      HostedZoneId: !Ref DomainZone
+      AliasTarget:
+        DNSName: !GetAtt ApiDomainName.DistributionDomainName
+        HostedZoneId: Z2FDTNDATAQYW2 # fixed value, per docs
 
   # CreateApiDomainName:
   #   Type: AWS::Lambda::Function

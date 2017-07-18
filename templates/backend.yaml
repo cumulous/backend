@@ -1660,8 +1660,8 @@ Resources:
         ArtifactsBucket: !Ref ArtifactsBucket
         # LambdaPackage: !Ref LambdaPackage
         TemplatePath: !Sub ${TemplatesPath}/swagger.yaml
-        # DomainZone: !Ref DomainZone
-        # ApiDomain: !Ref ApiDomain
+        DomainZone: !Ref DomainZone
+        ApiDomain: !Ref ApiDomain
 
   VPC:
     Type: AWS::CloudFormation::Stack
