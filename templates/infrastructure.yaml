@@ -1053,6 +1053,11 @@ Resources:
                 Action:
                   - route53:GetChange
                 Resource: '*'
+              - Effect: Allow
+                Action:
+                  - waf:GetWebACL
+                Resource:
+                  - !Sub arn:aws:waf::${AWS::AccountId}:webacl/${WebACL}
 
   SSHKeyPutRole:
     Type: AWS::IAM::Role
