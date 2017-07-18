@@ -33,6 +33,10 @@ Parameters:
     Type: String
   DeleteS3SecretArn:
     Type: String
+  ApiId:
+    Type: String
+  ApiStage:
+    Type: String
 
 Conditions:
   SetupWebSigningKeyPair: !Not [!Equals [!Ref WebSigningKeyPutRoleArn, '']]
@@ -489,6 +493,15 @@ Resources:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
 
+  GenerateSignedCookiesPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt GenerateSignedCookies.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/GET/weblogin
+
   SetupWebSigningKeyPairRole:
     Type: AWS::IAM::Role
     Properties:
@@ -595,5 +608,3 @@ Outputs:
   WebSigningKey:
     Condition: SetupWebSigningKeyPair
     Value: !GetAtt WebSigningKey.PublicKey
-  GenerateSignedCookiesArn:
-    Value: !GetAtt GenerateSignedCookies.Arn
