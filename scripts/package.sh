@@ -18,7 +18,7 @@ get_version() {
     cut -d ' ' -f1
 }
 
-API_VERSION=$(md5sum ${SWAGGER_FILE})
+API_VERSION=$(md5sum ${SWAGGER_FILE} | cut -d ' ' -f1)
 PACKAGE_VERSION=$(get_version app)
 PACKAGE_PATH="lambda/${STACK_NAME}/${PACKAGE_VERSION}.zip"
 
