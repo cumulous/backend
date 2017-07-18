@@ -26,7 +26,7 @@ zip -qr ../${PACKAGE_FILE} .
 cd ..
 
 API_LAMBDA_PREFIX="arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${STACK_NAME}"
-API_LAMBDA_PREFIX="arn:aws:apigateway:${AWS_REGION}:lambda:path/2015-03-31/functions/${API_LAMBDA_PREFIX}/"
+API_LAMBDA_PREFIX="arn:aws:apigateway:${AWS_REGION}:lambda:path/2015-03-31/functions/${API_LAMBDA_PREFIX}"
 sed -i "s|\${API_LAMBDA_PREFIX}|${API_LAMBDA_PREFIX}|" ${SWAGGER_FILE}
 
 aws cloudformation package \
