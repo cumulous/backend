@@ -485,6 +485,9 @@ Resources:
           WEB_DISTRIBUTION_ID: !Ref WebDistribution
           WEB_SIGNING_KEY_BUCKET: !Ref SecretsBucket
           WEB_SIGNING_KEY_PATH: !Sub web/signing.pem
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
 
   SetupWebSigningKeyPairRole:
     Type: AWS::IAM::Role
