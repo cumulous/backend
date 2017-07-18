@@ -62,7 +62,7 @@ Resources:
     Properties:
       RestApiId: !Ref Api
       DeploymentId: !GetAtt ApiDeployment.Id
-      StageName: latest
+      StageName: current
       Variables:
         CorsOrigin: !Sub https://${WebDomain}
 
