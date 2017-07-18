@@ -878,6 +878,6 @@ securityDefinitions:
     x-amazon-apigateway-authorizer:
       type: token
       authorizerUri: ${API_LAMBDA_PREFIX}-Authorizer/invocations
-      authorizerCredentials: ${stageVariables.AuthorizerInvocationRoleArn}
+      authorizerCredentials: arn:aws:iam::${AWS_ACCOUNT_ID}:role/${stageVariables.AuthorizerInvocationRole}
       identityValidationExpression: '^[\w-]{100,200}\.[\w-]{200,400}\.[\w-]{300,600}$'
       authorizerResultTtlInSeconds: 60
