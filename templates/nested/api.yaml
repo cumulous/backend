@@ -75,6 +75,7 @@ Resources:
       Role: !GetAtt CreateApiDeploymentRole.Arn
       Handler: apig.createDeployment
       Runtime: nodejs6.10
+      Timeout: 30
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
@@ -114,6 +115,7 @@ Resources:
       Role: !GetAtt DeleteApiDeploymentRole.Arn
       Handler: apig.deleteDeployment
       Runtime: nodejs6.10
+      Timeout: 30
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
