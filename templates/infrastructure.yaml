@@ -444,7 +444,7 @@ Resources:
             Value: backend-beta
           - Name: ARTIFACTS_BUCKET
             Value: !Ref BackendArtifactsBucket
-          - Name: DEPLOYMENT_ROLE
+          - Name: DEPLOYMENT_ROLE_ARN
             Value: !GetAtt BackendDeploymentRole.Arn
           - Name: VPC_RANGE
             Value: !Ref BetaVPCRange
@@ -522,7 +522,7 @@ Resources:
             Value: backend-release
           - Name: ARTIFACTS_BUCKET
             Value: !Ref BackendArtifactsBucket
-          - Name: DEPLOYMENT_ROLE
+          - Name: DEPLOYMENT_ROLE_ARN
             Value: !GetAtt BackendDeploymentRole.Arn
           - Name: VPC_RANGE
             Value: !Ref ProductionVPCRange

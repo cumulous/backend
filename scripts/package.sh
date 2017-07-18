@@ -46,7 +46,7 @@ CHANGE_SET="--stack-name ${STACK_NAME} --change-set-name Deploy"
 ARGS=" \
   ${CHANGE_SET} \
   --template-url https://${ARTIFACTS_BUCKET}.s3.amazonaws.com/${TEMPLATES_DEST_PATH}/${BACKEND_TEMPLATE} \
-  --role-arn ${DEPLOYMENT_ROLE} \
+  --role-arn ${DEPLOYMENT_ROLE_ARN} \
   --capabilities CAPABILITY_IAM \
   --parameters \
     ParameterKey=ArtifactsBucket,ParameterValue=${ARTIFACTS_BUCKET} \
