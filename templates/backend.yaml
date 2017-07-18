@@ -1649,6 +1649,19 @@ Resources:
   #           Resource:
   #             - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}
 
+  Api:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub ${TemplateURLBase}/api.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
+        ArtifactsBucket: !Ref ArtifactsBucket
+        LambdaPackage: !Ref LambdaPackage
+        # DomainZone: !Ref DomainZone
+        # ApiDomain: !Ref ApiDomain
+
   VPC:
     Type: AWS::CloudFormation::Stack
     Properties:

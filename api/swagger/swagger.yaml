@@ -37,8 +37,7 @@ paths:
             responseParameters:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
-              method.response.header.Access-Control-Allow-Origin:
-                Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Origin: "'https://${stageVariables.WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
               method.response.header.Vary: "'Accept-Encoding'"
     get:
@@ -59,8 +58,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetApi.Arn}/invocations
+        uri: ${API_LAMBDA_PREFIX}-GetApiSpec/invocations
   /weblogin:
     options:
       tags:
@@ -88,8 +86,7 @@ paths:
             responseParameters:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
-              method.response.header.Access-Control-Allow-Origin:
-                Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Origin: "'https://${stageVariables.WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
     get:
       summary: Set website cookies
@@ -117,8 +114,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Web.Outputs.GenerateSignedCookiesArn}/invocations
+        uri: ${API_LAMBDA_PREFIX}-GenerateSignedCookies/invocations
   /projects:
     options:
       tags:
@@ -146,8 +142,7 @@ paths:
             responseParameters:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
-              method.response.header.Access-Control-Allow-Origin:
-                Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Origin: "'https://${stageVariables.WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
     post:
       summary: Create a project
@@ -169,8 +164,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateProject.Arn}/invocations
+        uri: ${API_LAMBDA_PREFIX}-CreateProject/invocations
     get:
       summary: Search projects
       description: |
@@ -203,8 +197,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetProjects.Arn}/invocations
+        uri: ${API_LAMBDA_PREFIX}-GetProjects/invocations
   /datasets:
     options:
       tags:
@@ -234,8 +227,7 @@ paths:
             responseParameters:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,GET'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
-              method.response.header.Access-Control-Allow-Origin:
-                Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Origin: "'https://${stageVariables.WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
               method.response.header.Vary: "'Accept-Encoding'"
     post:
@@ -258,8 +250,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateDataset.Arn}/invocations
+        uri: ${API_LAMBDA_PREFIX}-CreateDataset/invocations
     get:
       summary: Get a list of datasets
       description: |
@@ -286,8 +277,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ListDatasets.Arn}/invocations
+        uri: ${API_LAMBDA_PREFIX}-ListDatasets/invocations
   /datasets/{dataset_id}:
     options:
       tags:
@@ -319,8 +309,7 @@ paths:
             responseParameters:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PATCH,DELETE'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
-              method.response.header.Access-Control-Allow-Origin:
-                Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Origin: "'https://${stageVariables.WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
               method.response.header.Vary: "'Accept-Encoding'"
     get:
@@ -343,8 +332,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetDataset.Arn}/invocations
+        uri: ${API_LAMBDA_PREFIX}-GetDataset/invocations
     patch:
       summary: Modify properties of a dataset
       description: |
@@ -366,8 +354,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PatchDataset.Arn}/invocations
+        uri: ${API_LAMBDA_PREFIX}-ModifyDataset/invocations
     delete:
       summary: Delete a dataset
       description: |
@@ -390,8 +377,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteDataset.Arn}/invocations
+        uri: ${API_LAMBDA_PREFIX}-DeleteDataset/invocations
   /datasets/{dataset_id}/credentials:
     options:
       tags:
@@ -423,8 +409,7 @@ paths:
             responseParameters:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
-              method.response.header.Access-Control-Allow-Origin:
-                Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Origin: "'https://${stageVariables.WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
               method.response.header.Vary: "'Accept-Encoding'"
     post:
@@ -448,8 +433,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RequestDatasetCredentials.Arn}/invocations
+        uri: ${API_LAMBDA_PREFIX}-RequestDatasetCredentials/invocations
   /datasets/{dataset_id}/storage:
     options:
       tags:
@@ -481,8 +465,7 @@ paths:
             responseParameters:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,PUT'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
-              method.response.header.Access-Control-Allow-Origin:
-                Fn::Sub: "'https://${WebDomain}'"
+              method.response.header.Access-Control-Allow-Origin: "'https://${stageVariables.WebDomain}'"
               method.response.header.Access-Control-Allow-Credentials: "'true'"
               method.response.header.Vary: "'Accept-Encoding'"
     put:
@@ -512,8 +495,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SetDatasetStorage.Arn}/invocations
+        uri: ${API_LAMBDA_PREFIX}-SetDatasetStorage/invocations
 
 definitions:
   Spec:
@@ -895,9 +877,7 @@ securityDefinitions:
     x-amazon-apigateway-authtype: custom
     x-amazon-apigateway-authorizer:
       type: token
-      authorizerUri:
-        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${Authorizer.Arn}/invocations
-      authorizerCredentials:
-        Fn::Sub: ${AuthorizerInvocationRole.Arn}
+      authorizerUri: ${API_LAMBDA_PREFIX}-Authorizer/invocations
+      authorizerCredentials: ${stageVariables.AuthorizerInvocationRoleArn}
       identityValidationExpression: '^[\w-]{100,200}\.[\w-]{200,400}\.[\w-]{300,600}$'
       authorizerResultTtlInSeconds: 60

@@ -438,6 +438,8 @@ Resources:
         Image: aws/codebuild/nodejs:6.3.1
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
           - Name: STACK_NAME
             Value: backend-beta
           - Name: ARTIFACTS_BUCKET
@@ -512,6 +514,8 @@ Resources:
         Image: aws/codebuild/nodejs:6.3.1
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
           - Name: STACK_NAME
             Value: backend-release
           - Name: ARTIFACTS_BUCKET
