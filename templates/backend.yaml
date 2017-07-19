@@ -135,6 +135,26 @@ Resources:
         ApiDomain: !Ref ApiDomain
         Auth0Domain: !Ref Auth0Domain
 
+  Auth0:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/auth0.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        ArtifactsBucket: !Ref ArtifactsBucket
+        SecretsBucket: !Ref SecretsBucket
+        LambdaPackage: !Ref LambdaPackage
+        EncryptionKeyId: !Ref EncryptionKeyId
+        Auth0Domain: !Ref Auth0Domain
+        Auth0ManagementClientID: !Ref Auth0ManagementClientID
+        Auth0ManagementClientSecret: !Ref Auth0ManagementClientSecret
+        Auth0GetManagementSecretRoleArn: !Ref Auth0GetManagementSecretRoleArn
+        Auth0PutSecretRoleArn: !Ref Auth0PutSecretRoleArn
+        Auth0CreateClientRoleArn: !Ref Auth0CreateClientRoleArn
+        Auth0UserTokenLifetime: !Ref Auth0UserTokenLifetime
+        WebDomain: !Ref WebDomain
+        ApiDomain: !Ref ApiDomain
+
   VPC:
     Type: AWS::CloudFormation::Stack
     Properties:
