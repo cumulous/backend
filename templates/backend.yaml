@@ -197,6 +197,20 @@ Resources:
         SSHKeyGetRoleArn: !Ref SSHKeyGetRoleArn
         SSHKeyPutRoleArn: !Ref SSHKeyPutRoleArn
 
+  Batch:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/batch.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        ArtifactsBucket: !Ref ArtifactsBucket
+        LambdaPackage: !Ref LambdaPackage
+        SubnetIds: !GetAtt VPC.Outputs.SubnetIds
+        SecurityGroup: !GetAtt VPC.Outputs.DefaultSecurityGroup
+        ClusterCores: !Ref ClusterCores
+        SpotBidPercent: !Ref SpotBidPercent
+        SSHKeyName: !GetAtt Instances.Outputs.SSHKeyName
+
   LogsBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
