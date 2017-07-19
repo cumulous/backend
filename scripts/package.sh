@@ -2,7 +2,7 @@
 
 set -e
 
-BACKEND_TEMPLATE="templates/backend.yaml"
+BACKEND_TEMPLATE="backend.yaml"
 PACKAGE_FILE="app.zip"
 SWAGGER_FILE="api/swagger/swagger.yaml"
 TEMPLATES_DEST_PATH="templates/${STACK_NAME}"
@@ -32,8 +32,8 @@ sed -i "s|\${API_LAMBDA_PREFIX}|${API_LAMBDA_PREFIX}|" ${SWAGGER_FILE}
 sed -i "s|\${AUTHORIZER_INVOCATION_ROLE_ARN}|${AUTHORIZER_INVOCATION_ROLE_ARN}|" ${SWAGGER_FILE}
 
 aws s3 cp ${PACKAGE_FILE} s3://${ARTIFACTS_BUCKET}/${PACKAGE_PATH}
-aws s3 cp ${BACKEND_TEMPLATE} ${TEMPLATES_DEST}
 aws s3 cp ${SWAGGER_FILE} ${TEMPLATES_DEST}
+aws s3 cp templates/${BACKEND_TEMPLATE} ${TEMPLATES_DEST}
 aws s3 sync templates/nested/ ${TEMPLATES_DEST}
 
 CHANGE_SET="--stack-name ${STACK_NAME} --change-set-name Deploy"
