@@ -178,7 +178,7 @@ Resources:
           - Effect: Allow
             Action: s3:PutObject
             Principal:
-              Service: !Sub s3.${AWS::Region}.amazonaws.com
+              Service: s3.amazonaws.com
             Resource:
               - !Sub arn:aws:s3:::${LogsBucket}/*
             Condition:
