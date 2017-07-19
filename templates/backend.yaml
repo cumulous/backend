@@ -65,65 +65,65 @@ Parameters:
   Auth0CreateClientRoleArn:
     Type: String
 
-Mappings:
-  StackMap:
-    backend-beta:
-      DatasetsReadCapacity: 1
-      DatasetsWriteCapacity: 1
-      ProjectsReadCapacity: 1
-      ProjectsWriteCapacity: 1
-      SearchStackSuffix: 'b'
-    backend-release:
-      DatasetsReadCapacity: 5
-      DatasetsWriteCapacity: 5
-      ProjectsReadCapacity: 5
-      ProjectsWriteCapacity: 5
-      SearchStackSuffix: 'r'
+# Mappings:
+#   StackMap:
+#     backend-beta:
+#       DatasetsReadCapacity: 1
+#       DatasetsWriteCapacity: 1
+#       ProjectsReadCapacity: 1
+#       ProjectsWriteCapacity: 1
+#       SearchStackSuffix: 'b'
+#     backend-release:
+#       DatasetsReadCapacity: 5
+#       DatasetsWriteCapacity: 5
+#       ProjectsReadCapacity: 5
+#       ProjectsWriteCapacity: 5
+#       SearchStackSuffix: 'r'
 
 Resources:
-  DatasetsTable:
-    Type: AWS::DynamoDB::Table
-    DeletionPolicy: Retain
-    Properties:
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH
-      ProvisionedThroughput:
-        ReadCapacityUnits: !FindInMap
-          - StackMap
-          - !Ref AWS::StackName
-          - DatasetsReadCapacity
-        WriteCapacityUnits: !FindInMap
-          - StackMap
-          - !Ref AWS::StackName
-          - DatasetsWriteCapacity
-      StreamSpecification:
-        StreamViewType: NEW_IMAGE
+  # DatasetsTable:
+  #   Type: AWS::DynamoDB::Table
+  #   DeletionPolicy: Retain
+  #   Properties:
+  #     AttributeDefinitions:
+  #       - AttributeName: id
+  #         AttributeType: S
+  #     KeySchema:
+  #       - AttributeName: id
+  #         KeyType: HASH
+  #     ProvisionedThroughput:
+  #       ReadCapacityUnits: !FindInMap
+  #         - StackMap
+  #         - !Ref AWS::StackName
+  #         - DatasetsReadCapacity
+  #       WriteCapacityUnits: !FindInMap
+  #         - StackMap
+  #         - !Ref AWS::StackName
+  #         - DatasetsWriteCapacity
+  #     StreamSpecification:
+  #       StreamViewType: NEW_IMAGE
 
-  ProjectsTable:
-    Type: AWS::DynamoDB::Table
-    DeletionPolicy: Retain
-    Properties:
-      AttributeDefinitions:
-        - AttributeName: id
-          AttributeType: S
-      KeySchema:
-        - AttributeName: id
-          KeyType: HASH
-      ProvisionedThroughput:
-        ReadCapacityUnits: !FindInMap
-          - StackMap
-          - !Ref AWS::StackName
-          - ProjectsReadCapacity
-        WriteCapacityUnits: !FindInMap
-          - StackMap
-          - !Ref AWS::StackName
-          - ProjectsWriteCapacity
-      StreamSpecification:
-        StreamViewType: NEW_IMAGE
+  # ProjectsTable:
+  #   Type: AWS::DynamoDB::Table
+  #   DeletionPolicy: Retain
+  #   Properties:
+  #     AttributeDefinitions:
+  #       - AttributeName: id
+  #         AttributeType: S
+  #     KeySchema:
+  #       - AttributeName: id
+  #         KeyType: HASH
+  #     ProvisionedThroughput:
+  #       ReadCapacityUnits: !FindInMap
+  #         - StackMap
+  #         - !Ref AWS::StackName
+  #         - ProjectsReadCapacity
+  #       WriteCapacityUnits: !FindInMap
+  #         - StackMap
+  #         - !Ref AWS::StackName
+  #         - ProjectsWriteCapacity
+  #     StreamSpecification:
+  #       StreamViewType: NEW_IMAGE
 
   LogsBucket:
     Type: AWS::S3::Bucket
@@ -148,54 +148,54 @@ Resources:
                 'aws:SourceAccount': !Ref AWS::AccountId
                 's3:x-amz-acl': bucket-owner-full-control
 
-  SendCloudFormationResponse:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-SendCloudFormationResponse
-      CodeUri: ../app
-      Handler: aws.sendCloudFormationResponse
-      Runtime: nodejs6.10
+  # SendCloudFormationResponse:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-SendCloudFormationResponse
+  #     CodeUri: ../app
+  #     Handler: aws.sendCloudFormationResponse
+  #     Runtime: nodejs6.10
 
-  SetupCustomResource:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-SetupCustomResource
-      CodeUri: ../app
-      Handler: aws.setupCustomResource
-      Runtime: nodejs6.10
-      Timeout: 10
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: states:StartExecution
-            Resource:
-              - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Setup*
+  # SetupCustomResource:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-SetupCustomResource
+  #     CodeUri: ../app
+  #     Handler: aws.setupCustomResource
+  #     Runtime: nodejs6.10
+  #     Timeout: 10
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: states:StartExecution
+  #           Resource:
+  #             - !Sub arn:aws:states:${AWS::Region}:${AWS::AccountId}:stateMachine:Setup*
 
-  LambdaBasicExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  # LambdaBasicExecutionRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: lambda.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
-  DeleteS3Secret:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-DeleteS3Secret
-      CodeUri: ../app
-      Handler: aws.deleteS3Object
-      Runtime: nodejs6.10
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: s3:DeleteObject
-            Resource: !Sub arn:aws:s3:::${SecretsBucket}/*
+  # DeleteS3Secret:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-DeleteS3Secret
+  #     CodeUri: ../app
+  #     Handler: aws.deleteS3Object
+  #     Runtime: nodejs6.10
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: s3:DeleteObject
+  #           Resource: !Sub arn:aws:s3:::${SecretsBucket}/*
 
   # GetProjects:
   #   Type: AWS::Serverless::Function
@@ -212,869 +212,869 @@ Resources:
   #           Method: GET
   #           RestApiId: !Ref Api
 
-  StatesExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: !Sub states.${AWS::Region}.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: StatesExecutionRolePolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action: lambda:InvokeFunction
-                Resource:
-                  - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-*
+  # StatesExecutionRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: !Sub states.${AWS::Region}.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     Policies:
+  #       - PolicyName: StatesExecutionRolePolicy
+  #         PolicyDocument:
+  #           Version: 2012-10-17
+  #           Statement:
+  #             - Effect: Allow
+  #               Action: lambda:InvokeFunction
+  #               Resource:
+  #                 - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}-*
 
-  Auth0ManagementClient:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupAuth0ManagementClientStateMachine
-      Secret: !Ref Auth0ManagementClientSecret
-      Bucket: !Ref SecretsBucket
-      Path: !Sub auth0/manage.key
+  # Auth0ManagementClient:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   Properties:
+  #     ServiceToken: !GetAtt SetupCustomResource.Arn
+  #     StateMachine: !Ref SetupAuth0ManagementClientStateMachine
+  #     Secret: !Ref Auth0ManagementClientSecret
+  #     Bucket: !Ref SecretsBucket
+  #     Path: !Sub auth0/manage.key
 
-  RotateAndStoreAuth0ManagementSecret:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-RotateAndStoreAuth0ManagementSecret
-      CodeUri: ../app
-      Handler: auth0.rotateAndStoreClientSecret
-      Runtime: nodejs6.10
-      Role: !Ref Auth0PutSecretRoleArn
-      Environment:
-        Variables:
-          ENCRYPTION_KEY_ID: !Ref EncryptionKeyId
-          AUTH0_DOMAIN: !Ref Auth0Domain
-          AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
-          AUTH0_SECRET_BUCKET: !Ref SecretsBucket
-          AUTH0_SECRET_PATH: !Sub auth0/manage.key
+  # RotateAndStoreAuth0ManagementSecret:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-RotateAndStoreAuth0ManagementSecret
+  #     CodeUri: ../app
+  #     Handler: auth0.rotateAndStoreClientSecret
+  #     Runtime: nodejs6.10
+  #     Role: !Ref Auth0PutSecretRoleArn
+  #     Environment:
+  #       Variables:
+  #         ENCRYPTION_KEY_ID: !Ref EncryptionKeyId
+  #         AUTH0_DOMAIN: !Ref Auth0Domain
+  #         AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
+  #         AUTH0_SECRET_BUCKET: !Ref SecretsBucket
+  #         AUTH0_SECRET_PATH: !Sub auth0/manage.key
 
-  SetupAuth0ManagementClientStateMachine:
-    Type: AWS::StepFunctions::StateMachine
-    Properties:
-      RoleArn: !GetAtt StatesExecutionRole.Arn
-      DefinitionString: !Sub |-
-        {
-          "StartAt": "SetupAuth0",
-          "States": {
-            "SetupAuth0": {
-              "Type": "Parallel",
-              "Next": "Succeed",
-              "Branches": [{
-                "StartAt": "CheckToSkipSetup",
-                "States": {
-                  "CheckToSkipSetup": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.ResourceProperties.Secret",
-                        "StringEquals": "",
-                        "Next": "Success"
-                      }
-                    ],
-                    "Default": "ChooseEventType"
-                  },
-                  "ChooseEventType": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Create",
-                        "Next": "RotateAndStoreSecret"
-                      },
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Update",
-                        "Next": "CheckIfSecretUpdated"
-                      },
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Delete",
-                        "Next": "DeleteSecret"
-                      }
-                    ]
-                  },
-                  "CheckIfSecretUpdated": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.OldResourceProperties.Secret",
-                        "StringEquals": "${Auth0ManagementClientSecret}",
-                        "Next": "Success"
-                      }
-                    ],
-                    "Default": "RotateAndStoreSecret"
-                  },
-                  "RotateAndStoreSecret": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Secret",
-                    "ResultPath": null,
-                    "Resource": "${RotateAndStoreAuth0ManagementSecret.Arn}",
-                    "Next": "Success"
-                  },
-                  "DeleteSecret": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties",
-                    "ResultPath": null,
-                    "Resource": "${DeleteS3Secret.Arn}",
-                    "Next": "Success"
-                  },
-                  "Success": {
-                    "Type": "Pass",
-                    "ResultPath": "$.Status",
-                    "Result": "SUCCESS",
-                    "End": true
-                  }
-                }
-              }],
-              "Catch": [{
-                "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.Error",
-                "Next": "PassReason"
-              }]
-            },
-            "Succeed": {
-              "InputPath": "$.[0]",
-              "Type": "Pass",
-              "Next": "End"
-            },
-            "PassReason": {
-              "Type": "Pass",
-              "InputPath": "$.Error.Cause",
-              "ResultPath": "$.Reason",
-              "Next": "Fail"
-            },
-            "Fail": {
-              "Type": "Pass",
-              "ResultPath": "$.Status",
-              "Result": "FAILED",
-              "Next": "End"
-            },
-            "End": {
-              "Type": "Task",
-              "ResultPath": null,
-              "Resource": "${SendCloudFormationResponse.Arn}",
-              "End": true
-            }
-          }
-        }
+  # SetupAuth0ManagementClientStateMachine:
+  #   Type: AWS::StepFunctions::StateMachine
+  #   Properties:
+  #     RoleArn: !GetAtt StatesExecutionRole.Arn
+  #     DefinitionString: !Sub |-
+  #       {
+  #         "StartAt": "SetupAuth0",
+  #         "States": {
+  #           "SetupAuth0": {
+  #             "Type": "Parallel",
+  #             "Next": "Succeed",
+  #             "Branches": [{
+  #               "StartAt": "CheckToSkipSetup",
+  #               "States": {
+  #                 "CheckToSkipSetup": {
+  #                   "Type": "Choice",
+  #                   "Choices": [
+  #                     {
+  #                       "Variable": "$.ResourceProperties.Secret",
+  #                       "StringEquals": "",
+  #                       "Next": "Success"
+  #                     }
+  #                   ],
+  #                   "Default": "ChooseEventType"
+  #                 },
+  #                 "ChooseEventType": {
+  #                   "Type": "Choice",
+  #                   "Choices": [
+  #                     {
+  #                       "Variable": "$.RequestType",
+  #                       "StringEquals": "Create",
+  #                       "Next": "RotateAndStoreSecret"
+  #                     },
+  #                     {
+  #                       "Variable": "$.RequestType",
+  #                       "StringEquals": "Update",
+  #                       "Next": "CheckIfSecretUpdated"
+  #                     },
+  #                     {
+  #                       "Variable": "$.RequestType",
+  #                       "StringEquals": "Delete",
+  #                       "Next": "DeleteSecret"
+  #                     }
+  #                   ]
+  #                 },
+  #                 "CheckIfSecretUpdated": {
+  #                   "Type": "Choice",
+  #                   "Choices": [
+  #                     {
+  #                       "Variable": "$.OldResourceProperties.Secret",
+  #                       "StringEquals": "${Auth0ManagementClientSecret}",
+  #                       "Next": "Success"
+  #                     }
+  #                   ],
+  #                   "Default": "RotateAndStoreSecret"
+  #                 },
+  #                 "RotateAndStoreSecret": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.Secret",
+  #                   "ResultPath": null,
+  #                   "Resource": "${RotateAndStoreAuth0ManagementSecret.Arn}",
+  #                   "Next": "Success"
+  #                 },
+  #                 "DeleteSecret": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties",
+  #                   "ResultPath": null,
+  #                   "Resource": "${DeleteS3Secret.Arn}",
+  #                   "Next": "Success"
+  #                 },
+  #                 "Success": {
+  #                   "Type": "Pass",
+  #                   "ResultPath": "$.Status",
+  #                   "Result": "SUCCESS",
+  #                   "End": true
+  #                 }
+  #               }
+  #             }],
+  #             "Catch": [{
+  #               "ErrorEquals": [ "States.ALL" ],
+  #               "ResultPath": "$.Error",
+  #               "Next": "PassReason"
+  #             }]
+  #           },
+  #           "Succeed": {
+  #             "InputPath": "$.[0]",
+  #             "Type": "Pass",
+  #             "Next": "End"
+  #           },
+  #           "PassReason": {
+  #             "Type": "Pass",
+  #             "InputPath": "$.Error.Cause",
+  #             "ResultPath": "$.Reason",
+  #             "Next": "Fail"
+  #           },
+  #           "Fail": {
+  #             "Type": "Pass",
+  #             "ResultPath": "$.Status",
+  #             "Result": "FAILED",
+  #             "Next": "End"
+  #           },
+  #           "End": {
+  #             "Type": "Task",
+  #             "ResultPath": null,
+  #             "Resource": "${SendCloudFormationResponse.Arn}",
+  #             "End": true
+  #           }
+  #         }
+  #       }
 
-  Auth0Api:
-    Type: AWS::CloudFormation::CustomResource
-    DependsOn: Auth0ManagementClient
-    Properties:
-      ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupAuth0ApiStateMachine
-      Audience: !Sub https://${ApiDomain}
+  # Auth0Api:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   DependsOn: Auth0ManagementClient
+  #   Properties:
+  #     ServiceToken: !GetAtt SetupCustomResource.Arn
+  #     StateMachine: !Ref SetupAuth0ApiStateMachine
+  #     Audience: !Sub https://${ApiDomain}
 
-  ManageAuth0Resource:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-ManageAuth0Resource
-      CodeUri: ../app
-      Handler: auth0.manage
-      Runtime: nodejs6.10
-      Role: !Ref Auth0GetManagementSecretRoleArn
-      Environment:
-        Variables:
-          AUTH0_DOMAIN: !Ref Auth0Domain
-          AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
-          AUTH0_SECRET_BUCKET: !Ref SecretsBucket
-          AUTH0_SECRET_PATH: !Sub auth0/manage.key
+  # ManageAuth0Resource:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-ManageAuth0Resource
+  #     CodeUri: ../app
+  #     Handler: auth0.manage
+  #     Runtime: nodejs6.10
+  #     Role: !Ref Auth0GetManagementSecretRoleArn
+  #     Environment:
+  #       Variables:
+  #         AUTH0_DOMAIN: !Ref Auth0Domain
+  #         AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
+  #         AUTH0_SECRET_BUCKET: !Ref SecretsBucket
+  #         AUTH0_SECRET_PATH: !Sub auth0/manage.key
 
-  StoreAuth0Config:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-StoreAuth0Config
-      CodeUri: ../app
-      Handler: aws.putS3Object
-      Runtime: nodejs6.10
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: s3:PutObject
-            Resource:
-              - !Sub arn:aws:s3:::${ArtifactsBucket}/auth0/${AWS::StackName}-*
+  # StoreAuth0Config:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-StoreAuth0Config
+  #     CodeUri: ../app
+  #     Handler: aws.putS3Object
+  #     Runtime: nodejs6.10
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: s3:PutObject
+  #           Resource:
+  #             - !Sub arn:aws:s3:::${ArtifactsBucket}/auth0/${AWS::StackName}-*
 
-  RetrieveAuth0Config:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-RetrieveAuth0Config
-      CodeUri: ../app
-      Handler: aws.getS3Object
-      Runtime: nodejs6.10
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: s3:GetObject
-            Resource:
-              - !Sub arn:aws:s3:::${ArtifactsBucket}/auth0/${AWS::StackName}-*
+  # RetrieveAuth0Config:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-RetrieveAuth0Config
+  #     CodeUri: ../app
+  #     Handler: aws.getS3Object
+  #     Runtime: nodejs6.10
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: s3:GetObject
+  #           Resource:
+  #             - !Sub arn:aws:s3:::${ArtifactsBucket}/auth0/${AWS::StackName}-*
 
-  SetupAuth0ApiStateMachine:
-    Type: AWS::StepFunctions::StateMachine
-    Properties:
-      RoleArn: !GetAtt StatesExecutionRole.Arn
-      DefinitionString: !Sub |-
-        {
-          "StartAt": "SetupAuth0Api",
-          "States": {
-            "SetupAuth0Api": {
-              "Type": "Parallel",
-              "Next": "Succeed",
-              "Branches": [{
-                "StartAt": "CheckCreate",
-                "States": {
-                  "CheckCreate": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Create",
-                        "Next": "PassCreateApi"
-                      }
-                    ],
-                    "Default": "PassRetrieveApiId"
-                  },
-                  "PassCreateApi": {
-                    "Type": "Pass",
-                    "Result": {
-                      "method": "POST",
-                      "endpoint": ["/resource-servers"],
-                      "payload": {
-                        "name": "${ApiDomain}",
-                        "token_lifetime_for_web": ${Auth0UserTokenLifetime}
-                      },
-                      "datapath": "id"
-                    },
-                    "ResultPath": "$.ResourceProperties.Request",
-                    "Next": "PassAudienceCreateApi"
-                  },
-                  "PassAudienceCreateApi": {
-                    "Type": "Pass",
-                    "InputPath": "$.ResourceProperties.Audience",
-                    "ResultPath": "$.ResourceProperties.Request.payload.identifier",
-                    "Next": "CreateApi"
-                  },
-                  "CreateApi": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Request",
-                    "ResultPath": "$.Data.Id",
-                    "Resource": "${ManageAuth0Resource.Arn}",
-                    "Next": "PassStoreApiId"
-                  },
-                  "PassStoreApiId": {
-                    "Type": "Pass",
-                    "Result": {
-                      "Bucket": "${ArtifactsBucket}",
-                      "Path": "auth0/${AWS::StackName}-api.id"
-                    },
-                    "ResultPath": "$.ResourceProperties.Store",
-                    "Next": "PassBodyStoreApiId"
-                  },
-                  "PassBodyStoreApiId": {
-                    "Type": "Pass",
-                    "InputPath": "$.Data.Id",
-                    "ResultPath": "$.ResourceProperties.Store.Body",
-                    "Next": "StoreApiId"
-                  },
-                  "StoreApiId": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Store",
-                    "ResultPath": null,
-                    "Resource": "${StoreAuth0Config.Arn}",
-                    "Next": "Success"
-                  },
-                  "PassRetrieveApiId": {
-                    "Type": "Pass",
-                    "Result": {
-                      "Bucket": "${ArtifactsBucket}",
-                      "Path": "auth0/${AWS::StackName}-api.id"
-                    },
-                    "ResultPath": "$.ResourceProperties.Retrieve",
-                    "Next": "RetrieveApiId"
-                  },
-                  "RetrieveApiId": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Retrieve",
-                    "ResultPath": "$.Data.Id",
-                    "Resource": "${RetrieveAuth0Config.Arn}",
-                    "Next": "ChooseUpdateOrDelete"
-                  },
-                  "ChooseUpdateOrDelete": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "And": [
-                          {
-                            "Variable": "$.RequestType",
-                            "StringEquals": "Update"
-                          },
-                          {
-                            "Variable": "$.OldResourceProperties.Audience",
-                            "StringEquals": "https://${ApiDomain}"
-                          }
-                        ],
-                        "Next": "PassUpdateApi"
-                      }
-                    ],
-                    "Default": "PassDeleteApi"
-                  },
-                  "PassUpdateApi": {
-                    "Type": "Pass",
-                    "Result": {
-                      "method": "PATCH",
-                      "endpoint": ["/resource-servers", "/{id}"],
-                      "payload": {
-                        "name": "${ApiDomain}",
-                        "token_lifetime_for_web": ${Auth0UserTokenLifetime}
-                      },
-                      "datapath": "null"
-                    },
-                    "ResultPath": "$.ResourceProperties.Request",
-                    "Next": "PassEndpointUpdateApi"
-                  },
-                  "PassEndpointUpdateApi": {
-                    "Type": "Pass",
-                    "InputPath": "$.Data.Id",
-                    "ResultPath": "$.ResourceProperties.Request.endpoint[1]",
-                    "Next": "UpdateApi"
-                  },
-                  "UpdateApi": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Request",
-                    "ResultPath": null,
-                    "Resource": "${ManageAuth0Resource.Arn}",
-                    "Next": "Success"
-                  },
-                  "PassDeleteApi": {
-                    "Type": "Pass",
-                    "Result": {
-                      "method": "DELETE",
-                      "endpoint": ["/resource-servers", "/{id}"]
-                    },
-                    "ResultPath": "$.ResourceProperties.Request",
-                    "Next": "PassEndpointDeleteApi"
-                  },
-                  "PassEndpointDeleteApi": {
-                    "Type": "Pass",
-                    "InputPath": "$.Data.Id",
-                    "ResultPath": "$.ResourceProperties.Request.endpoint[1]",
-                    "Next": "DeleteApi"
-                  },
-                  "DeleteApi": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Request",
-                    "ResultPath": null,
-                    "Resource": "${ManageAuth0Resource.Arn}",
-                    "Next": "CheckCreateAfterDelete"
-                  },
-                  "CheckCreateAfterDelete": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Update",
-                        "Next": "PassCreateApi"
-                      }
-                    ],
-                    "Default": "Success"
-                  },
-                  "Success": {
-                    "Type": "Pass",
-                    "ResultPath": "$.Status",
-                    "Result": "SUCCESS",
-                    "End": true
-                  }
-                }
-              }],
-              "Catch": [{
-                "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.Error",
-                "Next": "PassReason"
-              }]
-            },
-            "Succeed": {
-              "InputPath": "$.[0]",
-              "Type": "Pass",
-              "Next": "End"
-            },
-            "PassReason": {
-              "Type": "Pass",
-              "InputPath": "$.Error.Cause",
-              "ResultPath": "$.Reason",
-              "Next": "Fail"
-            },
-            "Fail": {
-              "Type": "Pass",
-              "ResultPath": "$.Status",
-              "Result": "FAILED",
-              "Next": "End"
-            },
-            "End": {
-              "Type": "Task",
-              "ResultPath": null,
-              "Resource": "${SendCloudFormationResponse.Arn}",
-              "End": true
-            }
-          }
-        }
+  # SetupAuth0ApiStateMachine:
+  #   Type: AWS::StepFunctions::StateMachine
+  #   Properties:
+  #     RoleArn: !GetAtt StatesExecutionRole.Arn
+  #     DefinitionString: !Sub |-
+  #       {
+  #         "StartAt": "SetupAuth0Api",
+  #         "States": {
+  #           "SetupAuth0Api": {
+  #             "Type": "Parallel",
+  #             "Next": "Succeed",
+  #             "Branches": [{
+  #               "StartAt": "CheckCreate",
+  #               "States": {
+  #                 "CheckCreate": {
+  #                   "Type": "Choice",
+  #                   "Choices": [
+  #                     {
+  #                       "Variable": "$.RequestType",
+  #                       "StringEquals": "Create",
+  #                       "Next": "PassCreateApi"
+  #                     }
+  #                   ],
+  #                   "Default": "PassRetrieveApiId"
+  #                 },
+  #                 "PassCreateApi": {
+  #                   "Type": "Pass",
+  #                   "Result": {
+  #                     "method": "POST",
+  #                     "endpoint": ["/resource-servers"],
+  #                     "payload": {
+  #                       "name": "${ApiDomain}",
+  #                       "token_lifetime_for_web": ${Auth0UserTokenLifetime}
+  #                     },
+  #                     "datapath": "id"
+  #                   },
+  #                   "ResultPath": "$.ResourceProperties.Request",
+  #                   "Next": "PassAudienceCreateApi"
+  #                 },
+  #                 "PassAudienceCreateApi": {
+  #                   "Type": "Pass",
+  #                   "InputPath": "$.ResourceProperties.Audience",
+  #                   "ResultPath": "$.ResourceProperties.Request.payload.identifier",
+  #                   "Next": "CreateApi"
+  #                 },
+  #                 "CreateApi": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.Request",
+  #                   "ResultPath": "$.Data.Id",
+  #                   "Resource": "${ManageAuth0Resource.Arn}",
+  #                   "Next": "PassStoreApiId"
+  #                 },
+  #                 "PassStoreApiId": {
+  #                   "Type": "Pass",
+  #                   "Result": {
+  #                     "Bucket": "${ArtifactsBucket}",
+  #                     "Path": "auth0/${AWS::StackName}-api.id"
+  #                   },
+  #                   "ResultPath": "$.ResourceProperties.Store",
+  #                   "Next": "PassBodyStoreApiId"
+  #                 },
+  #                 "PassBodyStoreApiId": {
+  #                   "Type": "Pass",
+  #                   "InputPath": "$.Data.Id",
+  #                   "ResultPath": "$.ResourceProperties.Store.Body",
+  #                   "Next": "StoreApiId"
+  #                 },
+  #                 "StoreApiId": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.Store",
+  #                   "ResultPath": null,
+  #                   "Resource": "${StoreAuth0Config.Arn}",
+  #                   "Next": "Success"
+  #                 },
+  #                 "PassRetrieveApiId": {
+  #                   "Type": "Pass",
+  #                   "Result": {
+  #                     "Bucket": "${ArtifactsBucket}",
+  #                     "Path": "auth0/${AWS::StackName}-api.id"
+  #                   },
+  #                   "ResultPath": "$.ResourceProperties.Retrieve",
+  #                   "Next": "RetrieveApiId"
+  #                 },
+  #                 "RetrieveApiId": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.Retrieve",
+  #                   "ResultPath": "$.Data.Id",
+  #                   "Resource": "${RetrieveAuth0Config.Arn}",
+  #                   "Next": "ChooseUpdateOrDelete"
+  #                 },
+  #                 "ChooseUpdateOrDelete": {
+  #                   "Type": "Choice",
+  #                   "Choices": [
+  #                     {
+  #                       "And": [
+  #                         {
+  #                           "Variable": "$.RequestType",
+  #                           "StringEquals": "Update"
+  #                         },
+  #                         {
+  #                           "Variable": "$.OldResourceProperties.Audience",
+  #                           "StringEquals": "https://${ApiDomain}"
+  #                         }
+  #                       ],
+  #                       "Next": "PassUpdateApi"
+  #                     }
+  #                   ],
+  #                   "Default": "PassDeleteApi"
+  #                 },
+  #                 "PassUpdateApi": {
+  #                   "Type": "Pass",
+  #                   "Result": {
+  #                     "method": "PATCH",
+  #                     "endpoint": ["/resource-servers", "/{id}"],
+  #                     "payload": {
+  #                       "name": "${ApiDomain}",
+  #                       "token_lifetime_for_web": ${Auth0UserTokenLifetime}
+  #                     },
+  #                     "datapath": "null"
+  #                   },
+  #                   "ResultPath": "$.ResourceProperties.Request",
+  #                   "Next": "PassEndpointUpdateApi"
+  #                 },
+  #                 "PassEndpointUpdateApi": {
+  #                   "Type": "Pass",
+  #                   "InputPath": "$.Data.Id",
+  #                   "ResultPath": "$.ResourceProperties.Request.endpoint[1]",
+  #                   "Next": "UpdateApi"
+  #                 },
+  #                 "UpdateApi": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.Request",
+  #                   "ResultPath": null,
+  #                   "Resource": "${ManageAuth0Resource.Arn}",
+  #                   "Next": "Success"
+  #                 },
+  #                 "PassDeleteApi": {
+  #                   "Type": "Pass",
+  #                   "Result": {
+  #                     "method": "DELETE",
+  #                     "endpoint": ["/resource-servers", "/{id}"]
+  #                   },
+  #                   "ResultPath": "$.ResourceProperties.Request",
+  #                   "Next": "PassEndpointDeleteApi"
+  #                 },
+  #                 "PassEndpointDeleteApi": {
+  #                   "Type": "Pass",
+  #                   "InputPath": "$.Data.Id",
+  #                   "ResultPath": "$.ResourceProperties.Request.endpoint[1]",
+  #                   "Next": "DeleteApi"
+  #                 },
+  #                 "DeleteApi": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.Request",
+  #                   "ResultPath": null,
+  #                   "Resource": "${ManageAuth0Resource.Arn}",
+  #                   "Next": "CheckCreateAfterDelete"
+  #                 },
+  #                 "CheckCreateAfterDelete": {
+  #                   "Type": "Choice",
+  #                   "Choices": [
+  #                     {
+  #                       "Variable": "$.RequestType",
+  #                       "StringEquals": "Update",
+  #                       "Next": "PassCreateApi"
+  #                     }
+  #                   ],
+  #                   "Default": "Success"
+  #                 },
+  #                 "Success": {
+  #                   "Type": "Pass",
+  #                   "ResultPath": "$.Status",
+  #                   "Result": "SUCCESS",
+  #                   "End": true
+  #                 }
+  #               }
+  #             }],
+  #             "Catch": [{
+  #               "ErrorEquals": [ "States.ALL" ],
+  #               "ResultPath": "$.Error",
+  #               "Next": "PassReason"
+  #             }]
+  #           },
+  #           "Succeed": {
+  #             "InputPath": "$.[0]",
+  #             "Type": "Pass",
+  #             "Next": "End"
+  #           },
+  #           "PassReason": {
+  #             "Type": "Pass",
+  #             "InputPath": "$.Error.Cause",
+  #             "ResultPath": "$.Reason",
+  #             "Next": "Fail"
+  #           },
+  #           "Fail": {
+  #             "Type": "Pass",
+  #             "ResultPath": "$.Status",
+  #             "Result": "FAILED",
+  #             "Next": "End"
+  #           },
+  #           "End": {
+  #             "Type": "Task",
+  #             "ResultPath": null,
+  #             "Resource": "${SendCloudFormationResponse.Arn}",
+  #             "End": true
+  #           }
+  #         }
+  #       }
 
-  Auth0SPA:
-    Type: AWS::CloudFormation::CustomResource
-    DependsOn: Auth0ManagementClient
-    Properties:
-      ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupAuth0ClientStateMachine
-      Payload: !Sub |-
-        {
-          "name": "${WebDomain}",
-          "app_type": "spa",
-          "callbacks": [
-            "https://${WebDomain}/login.html"
-          ],
-          "resource_servers": [{
-            "identifier": "https://${ApiDomain}"
-          }]
-        }
-      Id:
-        Bucket: !Ref ArtifactsBucket
-        Path: !Sub auth0/${AWS::StackName}-spa.id
+  # Auth0SPA:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   DependsOn: Auth0ManagementClient
+  #   Properties:
+  #     ServiceToken: !GetAtt SetupCustomResource.Arn
+  #     StateMachine: !Ref SetupAuth0ClientStateMachine
+  #     Payload: !Sub |-
+  #       {
+  #         "name": "${WebDomain}",
+  #         "app_type": "spa",
+  #         "callbacks": [
+  #           "https://${WebDomain}/login.html"
+  #         ],
+  #         "resource_servers": [{
+  #           "identifier": "https://${ApiDomain}"
+  #         }]
+  #       }
+  #     Id:
+  #       Bucket: !Ref ArtifactsBucket
+  #       Path: !Sub auth0/${AWS::StackName}-spa.id
 
-  Auth0ApiTestClient:
-    Type: AWS::CloudFormation::CustomResource
-    DependsOn: Auth0ManagementClient
-    Properties:
-      ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupAuth0ClientStateMachine
-      Payload: !Sub |-
-        {
-          "name": "${ApiDomain} - Test",
-          "app_type": "non_interactive",
-          "resource_servers": [{
-            "identifier": "https://${ApiDomain}"
-          }]
-        }
-      Id:
-        Bucket: !Ref ArtifactsBucket
-        Path: !Sub auth0/${AWS::StackName}-api-test-client.id
-      Secret:
-        Bucket: !Ref SecretsBucket
-        Path: !Sub auth0/${AWS::StackName}-api-test-client.key
-        EncryptionKeyId: !Ref EncryptionKeyId
+  # Auth0ApiTestClient:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   DependsOn: Auth0ManagementClient
+  #   Properties:
+  #     ServiceToken: !GetAtt SetupCustomResource.Arn
+  #     StateMachine: !Ref SetupAuth0ClientStateMachine
+  #     Payload: !Sub |-
+  #       {
+  #         "name": "${ApiDomain} - Test",
+  #         "app_type": "non_interactive",
+  #         "resource_servers": [{
+  #           "identifier": "https://${ApiDomain}"
+  #         }]
+  #       }
+  #     Id:
+  #       Bucket: !Ref ArtifactsBucket
+  #       Path: !Sub auth0/${AWS::StackName}-api-test-client.id
+  #     Secret:
+  #       Bucket: !Ref SecretsBucket
+  #       Path: !Sub auth0/${AWS::StackName}-api-test-client.key
+  #       EncryptionKeyId: !Ref EncryptionKeyId
 
-  CreateAuth0Client:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-CreateAuth0Client
-      CodeUri: ../app
-      Handler: auth0.createClient
-      Runtime: nodejs6.10
-      Role: !Ref Auth0CreateClientRoleArn
-      Environment:
-        Variables:
-          AUTH0_DOMAIN: !Ref Auth0Domain
-          AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
-          AUTH0_SECRET_BUCKET: !Ref SecretsBucket
-          AUTH0_SECRET_PATH: !Sub auth0/manage.key
+  # CreateAuth0Client:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-CreateAuth0Client
+  #     CodeUri: ../app
+  #     Handler: auth0.createClient
+  #     Runtime: nodejs6.10
+  #     Role: !Ref Auth0CreateClientRoleArn
+  #     Environment:
+  #       Variables:
+  #         AUTH0_DOMAIN: !Ref Auth0Domain
+  #         AUTH0_CLIENT_ID: !Ref Auth0ManagementClientID
+  #         AUTH0_SECRET_BUCKET: !Ref SecretsBucket
+  #         AUTH0_SECRET_PATH: !Sub auth0/manage.key
 
-  SetupAuth0ClientStateMachine:
-    Type: AWS::StepFunctions::StateMachine
-    Properties:
-      RoleArn: !GetAtt StatesExecutionRole.Arn
-      DefinitionString: !Sub |-
-        {
-          "StartAt": "SetupAuth0ClientWithSecret",
-          "States": {
-            "SetupAuth0ClientWithSecret": {
-              "Type": "Parallel",
-              "Next": "Succeed",
-              "Branches": [{
-                "StartAt": "CheckCreate",
-                "States": {
-                  "CheckCreate": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Create",
-                        "Next": "CreateClient"
-                      }
-                    ],
-                    "Default": "RetrieveClientId"
-                  },
-                  "CreateClient": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties",
-                    "Resource": "${CreateAuth0Client.Arn}",
-                    "ResultPath": "$.Data.Id",
-                    "Next": "PassBodyStoreId"
-                  },
-                  "PassBodyStoreId": {
-                    "Type": "Pass",
-                    "InputPath": "$.Data.Id",
-                    "ResultPath": "$.ResourceProperties.Id.Body",
-                    "Next": "StoreId"
-                  },
-                  "StoreId": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Id",
-                    "ResultPath": null,
-                    "Resource": "${StoreAuth0Config.Arn}",
-                    "Next": "Success"
-                  },
-                  "RetrieveClientId": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Id",
-                    "ResultPath": "$.Data.Id",
-                    "Resource": "${RetrieveAuth0Config.Arn}",
-                    "Next": "CheckUpdateOrDelete"
-                  },
-                  "CheckUpdateOrDelete": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Update",
-                        "Next": "PassUpdateClient"
-                      },
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Delete",
-                        "Next": "PassDeleteClient"
-                      }
-                    ]
-                  },
-                  "PassUpdateClient": {
-                    "Type": "Pass",
-                    "Result": {
-                      "method": "PATCH",
-                      "endpoint": ["/clients", "{id}"],
-                      "datapath": "client_id"
-                    },
-                    "ResultPath": "$.ResourceProperties.Request",
-                    "Next": "PassUpdatePayload"
-                  },
-                  "PassUpdatePayload": {
-                    "Type": "Pass",
-                    "InputPath": "$.ResourceProperties.Payload",
-                    "ResultPath": "$.ResourceProperties.Request.payload",
-                    "Next": "PassEndpointUpdateOrDeleteClient"
-                  },
-                  "PassDeleteClient": {
-                    "Type": "Pass",
-                    "Result": {
-                      "method": "DELETE",
-                      "endpoint": ["/clients", "{id}"]
-                    },
-                    "ResultPath": "$.ResourceProperties.Request",
-                    "Next": "PassEndpointUpdateOrDeleteClient"
-                  },
-                  "PassEndpointUpdateOrDeleteClient": {
-                    "Type": "Pass",
-                    "InputPath": "$.Data.Id",
-                    "ResultPath": "$.ResourceProperties.Request.endpoint[1]",
-                    "Next": "UpdateOrDeleteClient"
-                  },
-                  "UpdateOrDeleteClient": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.Request",
-                    "Resource": "${ManageAuth0Resource.Arn}",
-                    "ResultPath": null,
-                    "Next": "Success"
-                  },
-                  "Success": {
-                    "Type": "Pass",
-                    "ResultPath": "$.Status",
-                    "Result": "SUCCESS",
-                    "End": true
-                  }
-                }
-              }],
-              "Catch": [{
-                "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.Error",
-                "Next": "PassReason"
-              }]
-            },
-            "Succeed": {
-              "InputPath": "$.[0]",
-              "Type": "Pass",
-              "Next": "End"
-            },
-            "PassReason": {
-              "Type": "Pass",
-              "InputPath": "$.Error.Cause",
-              "ResultPath": "$.Reason",
-              "Next": "Fail"
-            },
-            "Fail": {
-              "Type": "Pass",
-              "ResultPath": "$.Status",
-              "Result": "FAILED",
-              "Next": "End"
-            },
-            "End": {
-              "Type": "Task",
-              "ResultPath": null,
-              "Resource": "${SendCloudFormationResponse.Arn}",
-              "End": true
-            }
-          }
-        }
+  # SetupAuth0ClientStateMachine:
+  #   Type: AWS::StepFunctions::StateMachine
+  #   Properties:
+  #     RoleArn: !GetAtt StatesExecutionRole.Arn
+  #     DefinitionString: !Sub |-
+  #       {
+  #         "StartAt": "SetupAuth0ClientWithSecret",
+  #         "States": {
+  #           "SetupAuth0ClientWithSecret": {
+  #             "Type": "Parallel",
+  #             "Next": "Succeed",
+  #             "Branches": [{
+  #               "StartAt": "CheckCreate",
+  #               "States": {
+  #                 "CheckCreate": {
+  #                   "Type": "Choice",
+  #                   "Choices": [
+  #                     {
+  #                       "Variable": "$.RequestType",
+  #                       "StringEquals": "Create",
+  #                       "Next": "CreateClient"
+  #                     }
+  #                   ],
+  #                   "Default": "RetrieveClientId"
+  #                 },
+  #                 "CreateClient": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties",
+  #                   "Resource": "${CreateAuth0Client.Arn}",
+  #                   "ResultPath": "$.Data.Id",
+  #                   "Next": "PassBodyStoreId"
+  #                 },
+  #                 "PassBodyStoreId": {
+  #                   "Type": "Pass",
+  #                   "InputPath": "$.Data.Id",
+  #                   "ResultPath": "$.ResourceProperties.Id.Body",
+  #                   "Next": "StoreId"
+  #                 },
+  #                 "StoreId": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.Id",
+  #                   "ResultPath": null,
+  #                   "Resource": "${StoreAuth0Config.Arn}",
+  #                   "Next": "Success"
+  #                 },
+  #                 "RetrieveClientId": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.Id",
+  #                   "ResultPath": "$.Data.Id",
+  #                   "Resource": "${RetrieveAuth0Config.Arn}",
+  #                   "Next": "CheckUpdateOrDelete"
+  #                 },
+  #                 "CheckUpdateOrDelete": {
+  #                   "Type": "Choice",
+  #                   "Choices": [
+  #                     {
+  #                       "Variable": "$.RequestType",
+  #                       "StringEquals": "Update",
+  #                       "Next": "PassUpdateClient"
+  #                     },
+  #                     {
+  #                       "Variable": "$.RequestType",
+  #                       "StringEquals": "Delete",
+  #                       "Next": "PassDeleteClient"
+  #                     }
+  #                   ]
+  #                 },
+  #                 "PassUpdateClient": {
+  #                   "Type": "Pass",
+  #                   "Result": {
+  #                     "method": "PATCH",
+  #                     "endpoint": ["/clients", "{id}"],
+  #                     "datapath": "client_id"
+  #                   },
+  #                   "ResultPath": "$.ResourceProperties.Request",
+  #                   "Next": "PassUpdatePayload"
+  #                 },
+  #                 "PassUpdatePayload": {
+  #                   "Type": "Pass",
+  #                   "InputPath": "$.ResourceProperties.Payload",
+  #                   "ResultPath": "$.ResourceProperties.Request.payload",
+  #                   "Next": "PassEndpointUpdateOrDeleteClient"
+  #                 },
+  #                 "PassDeleteClient": {
+  #                   "Type": "Pass",
+  #                   "Result": {
+  #                     "method": "DELETE",
+  #                     "endpoint": ["/clients", "{id}"]
+  #                   },
+  #                   "ResultPath": "$.ResourceProperties.Request",
+  #                   "Next": "PassEndpointUpdateOrDeleteClient"
+  #                 },
+  #                 "PassEndpointUpdateOrDeleteClient": {
+  #                   "Type": "Pass",
+  #                   "InputPath": "$.Data.Id",
+  #                   "ResultPath": "$.ResourceProperties.Request.endpoint[1]",
+  #                   "Next": "UpdateOrDeleteClient"
+  #                 },
+  #                 "UpdateOrDeleteClient": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.Request",
+  #                   "Resource": "${ManageAuth0Resource.Arn}",
+  #                   "ResultPath": null,
+  #                   "Next": "Success"
+  #                 },
+  #                 "Success": {
+  #                   "Type": "Pass",
+  #                   "ResultPath": "$.Status",
+  #                   "Result": "SUCCESS",
+  #                   "End": true
+  #                 }
+  #               }
+  #             }],
+  #             "Catch": [{
+  #               "ErrorEquals": [ "States.ALL" ],
+  #               "ResultPath": "$.Error",
+  #               "Next": "PassReason"
+  #             }]
+  #           },
+  #           "Succeed": {
+  #             "InputPath": "$.[0]",
+  #             "Type": "Pass",
+  #             "Next": "End"
+  #           },
+  #           "PassReason": {
+  #             "Type": "Pass",
+  #             "InputPath": "$.Error.Cause",
+  #             "ResultPath": "$.Reason",
+  #             "Next": "Fail"
+  #           },
+  #           "Fail": {
+  #             "Type": "Pass",
+  #             "ResultPath": "$.Status",
+  #             "Result": "FAILED",
+  #             "Next": "End"
+  #           },
+  #           "End": {
+  #             "Type": "Task",
+  #             "ResultPath": null,
+  #             "Resource": "${SendCloudFormationResponse.Arn}",
+  #             "End": true
+  #           }
+  #         }
+  #       }
 
-  SetupSearchDomain:
-    Type: AWS::CloudFormation::CustomResource
-    Properties:
-      ServiceToken: !GetAtt SetupCustomResource.Arn
-      StateMachine: !Ref SetupSearchDomainStateMachine
-      SearchDomain: !Ref SearchDomain
-      Fields: !Sub |-
-        [
-          {
-            "IndexFieldName": "table",
-            "IndexFieldType": "literal",
-            "LiteralOptions": {
-              "FacetEnabled": false,
-              "SortEnabled": false,
-              "ReturnEnabled": false
-            }
-          },
-          {
-            "IndexFieldName": "project_id",
-            "IndexFieldType": "literal",
-            "LiteralOptions": {
-              "FacetEnabled": false,
-              "SortEnabled": false
-            }
-          },
-          {
-            "IndexFieldName": "created_at",
-            "IndexFieldType": "date",
-            "DateOptions": {
-              "FacetEnabled": false
-            }
-          },
-          {
-            "IndexFieldName": "creator_id",
-            "IndexFieldType": "literal",
-            "LiteralOptions": {
-              "FacetEnabled": false,
-              "SortEnabled": false
-            }
-          },
-          {
-            "IndexFieldName": "name",
-            "IndexFieldType": "text",
-            "TextOptions": {
-              "SortEnabled": false,
-              "HighlightEnabled": false
-            }
-          },
-          {
-            "IndexFieldName": "description",
-            "IndexFieldType": "text",
-            "TextOptions": {
-              "SortEnabled": false,
-              "HighlightEnabled": false
-            }
-          },
-          {
-            "IndexFieldName": "status",
-            "IndexFieldType": "literal",
-            "LiteralOptions": {
-              "FacetEnabled": false,
-              "SortEnabled": false
-            }
-          },
-          {
-            "IndexFieldName": "bucket",
-            "IndexFieldType": "literal",
-            "LiteralOptions": {
-              "FacetEnabled": false,
-              "SortEnabled": false
-            }
-          },
-          {
-            "IndexFieldName": "irb_id",
-            "IndexFieldType": "literal",
-            "LiteralOptions": {
-              "FacetEnabled": false,
-              "SortEnabled": false
-            }
-          }
-        ]
+  # SetupSearchDomain:
+  #   Type: AWS::CloudFormation::CustomResource
+  #   Properties:
+  #     ServiceToken: !GetAtt SetupCustomResource.Arn
+  #     StateMachine: !Ref SetupSearchDomainStateMachine
+  #     SearchDomain: !Ref SearchDomain
+  #     Fields: !Sub |-
+  #       [
+  #         {
+  #           "IndexFieldName": "table",
+  #           "IndexFieldType": "literal",
+  #           "LiteralOptions": {
+  #             "FacetEnabled": false,
+  #             "SortEnabled": false,
+  #             "ReturnEnabled": false
+  #           }
+  #         },
+  #         {
+  #           "IndexFieldName": "project_id",
+  #           "IndexFieldType": "literal",
+  #           "LiteralOptions": {
+  #             "FacetEnabled": false,
+  #             "SortEnabled": false
+  #           }
+  #         },
+  #         {
+  #           "IndexFieldName": "created_at",
+  #           "IndexFieldType": "date",
+  #           "DateOptions": {
+  #             "FacetEnabled": false
+  #           }
+  #         },
+  #         {
+  #           "IndexFieldName": "creator_id",
+  #           "IndexFieldType": "literal",
+  #           "LiteralOptions": {
+  #             "FacetEnabled": false,
+  #             "SortEnabled": false
+  #           }
+  #         },
+  #         {
+  #           "IndexFieldName": "name",
+  #           "IndexFieldType": "text",
+  #           "TextOptions": {
+  #             "SortEnabled": false,
+  #             "HighlightEnabled": false
+  #           }
+  #         },
+  #         {
+  #           "IndexFieldName": "description",
+  #           "IndexFieldType": "text",
+  #           "TextOptions": {
+  #             "SortEnabled": false,
+  #             "HighlightEnabled": false
+  #           }
+  #         },
+  #         {
+  #           "IndexFieldName": "status",
+  #           "IndexFieldType": "literal",
+  #           "LiteralOptions": {
+  #             "FacetEnabled": false,
+  #             "SortEnabled": false
+  #           }
+  #         },
+  #         {
+  #           "IndexFieldName": "bucket",
+  #           "IndexFieldType": "literal",
+  #           "LiteralOptions": {
+  #             "FacetEnabled": false,
+  #             "SortEnabled": false
+  #           }
+  #         },
+  #         {
+  #           "IndexFieldName": "irb_id",
+  #           "IndexFieldType": "literal",
+  #           "LiteralOptions": {
+  #             "FacetEnabled": false,
+  #             "SortEnabled": false
+  #           }
+  #         }
+  #       ]
 
-  CloudSearchDefineIndexFields:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-CloudSearchDefineIndexFields
-      CodeUri: ../app
-      Handler: search.defineIndexFields
-      Runtime: nodejs6.10
-      Timeout: 20
-      Environment:
-        Variables:
-          SEARCH_STACK_SUFFIX: !FindInMap
-            - StackMap
-            - !Ref AWS::StackName
-            - SearchStackSuffix
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: cloudsearch:DefineIndexField
-            Resource:
-              - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+  # CloudSearchDefineIndexFields:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-CloudSearchDefineIndexFields
+  #     CodeUri: ../app
+  #     Handler: search.defineIndexFields
+  #     Runtime: nodejs6.10
+  #     Timeout: 20
+  #     Environment:
+  #       Variables:
+  #         SEARCH_STACK_SUFFIX: !FindInMap
+  #           - StackMap
+  #           - !Ref AWS::StackName
+  #           - SearchStackSuffix
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: cloudsearch:DefineIndexField
+  #           Resource:
+  #             - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
 
-  CloudSearchIndexDocuments:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-CloudSearchIndexDocuments
-      CodeUri: ../app
-      Handler: search.indexDocuments
-      Runtime: nodejs6.10
-      Timeout: 20
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: cloudsearch:IndexDocuments
-            Resource:
-              - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+  # CloudSearchIndexDocuments:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-CloudSearchIndexDocuments
+  #     CodeUri: ../app
+  #     Handler: search.indexDocuments
+  #     Runtime: nodejs6.10
+  #     Timeout: 20
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: cloudsearch:IndexDocuments
+  #           Resource:
+  #             - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
 
-  CloudSearchDescribeDomain:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-CloudSearchDescribeDomain
-      CodeUri: ../app
-      Handler: search.describeDomain
-      Runtime: nodejs6.10
-      Timeout: 20
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action: cloudsearch:DescribeDomains
-            Resource:
-              - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+  # CloudSearchDescribeDomain:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-CloudSearchDescribeDomain
+  #     CodeUri: ../app
+  #     Handler: search.describeDomain
+  #     Runtime: nodejs6.10
+  #     Timeout: 20
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action: cloudsearch:DescribeDomains
+  #           Resource:
+  #             - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
 
-  SetupSearchDomainStateMachine:
-    Type: AWS::StepFunctions::StateMachine
-    Properties:
-      RoleArn: !GetAtt StatesExecutionRole.Arn
-      DefinitionString: !Sub |-
-        {
-          "StartAt": "SetupSearchDomain",
-          "States": {
-            "SetupSearchDomain": {
-              "Type": "Parallel",
-              "Next": "Succeed",
-              "Branches": [{
-                "StartAt": "ChooseEventType",
-                "States": {
-                  "ChooseEventType": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.RequestType",
-                        "StringEquals": "Delete",
-                        "Next": "Success"
-                      }
-                    ],
-                    "Default": "DefineIndexFields"
-                  },
-                  "DefineIndexFields": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties",
-                    "ResultPath": "$.Data.State",
-                    "Resource": "${CloudSearchDefineIndexFields.Arn}",
-                    "Next": "CheckReindexDocuments"
-                  },
-                  "CheckReindexDocuments": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.Data.State",
-                        "StringEquals": "RequiresIndexDocuments",
-                        "Next": "IndexDocuments"
-                      }
-                    ],
-                    "Default": "CheckActiveState"
-                  },
-                  "IndexDocuments": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.SearchDomain",
-                    "ResultPath": null,
-                    "Resource": "${CloudSearchIndexDocuments.Arn}",
-                    "Next": "CheckActiveState"
-                  },
-                  "CheckActiveState": {
-                    "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.Data.State",
-                        "StringEquals": "Active",
-                        "Next": "Success"
-                      }
-                    ],
-                    "Default": "Wait"
-                  },
-                  "Wait" : {
-                    "Type": "Wait",
-                    "Seconds": 15,
-                    "Next": "DescribeDomain"
-                  },
-                  "DescribeDomain": {
-                    "Type": "Task",
-                    "InputPath": "$.ResourceProperties.SearchDomain",
-                    "ResultPath": "$.Data",
-                    "Resource": "${CloudSearchDescribeDomain.Arn}",
-                    "Next": "CheckActiveState"
-                  },
-                  "Success": {
-                    "Type": "Pass",
-                    "ResultPath": "$.Status",
-                    "Result": "SUCCESS",
-                    "End": true
-                  }
-                }
-              }],
-              "Catch": [{
-                "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.Error",
-                "Next": "PassReason"
-              }]
-            },
-            "Succeed": {
-              "InputPath": "$.[0]",
-              "Type": "Pass",
-              "Next": "End"
-            },
-            "PassReason": {
-              "Type": "Pass",
-              "InputPath": "$.Error.Cause",
-              "ResultPath": "$.Reason",
-              "Next": "Fail"
-            },
-            "Fail": {
-              "Type": "Pass",
-              "ResultPath": "$.Status",
-              "Result": "FAILED",
-              "Next": "End"
-            },
-            "End": {
-              "Type": "Task",
-              "ResultPath": null,
-              "Resource": "${SendCloudFormationResponse.Arn}",
-              "End": true
-            }
-          }
-        }
+  # SetupSearchDomainStateMachine:
+  #   Type: AWS::StepFunctions::StateMachine
+  #   Properties:
+  #     RoleArn: !GetAtt StatesExecutionRole.Arn
+  #     DefinitionString: !Sub |-
+  #       {
+  #         "StartAt": "SetupSearchDomain",
+  #         "States": {
+  #           "SetupSearchDomain": {
+  #             "Type": "Parallel",
+  #             "Next": "Succeed",
+  #             "Branches": [{
+  #               "StartAt": "ChooseEventType",
+  #               "States": {
+  #                 "ChooseEventType": {
+  #                   "Type": "Choice",
+  #                   "Choices": [
+  #                     {
+  #                       "Variable": "$.RequestType",
+  #                       "StringEquals": "Delete",
+  #                       "Next": "Success"
+  #                     }
+  #                   ],
+  #                   "Default": "DefineIndexFields"
+  #                 },
+  #                 "DefineIndexFields": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties",
+  #                   "ResultPath": "$.Data.State",
+  #                   "Resource": "${CloudSearchDefineIndexFields.Arn}",
+  #                   "Next": "CheckReindexDocuments"
+  #                 },
+  #                 "CheckReindexDocuments": {
+  #                   "Type": "Choice",
+  #                   "Choices": [
+  #                     {
+  #                       "Variable": "$.Data.State",
+  #                       "StringEquals": "RequiresIndexDocuments",
+  #                       "Next": "IndexDocuments"
+  #                     }
+  #                   ],
+  #                   "Default": "CheckActiveState"
+  #                 },
+  #                 "IndexDocuments": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.SearchDomain",
+  #                   "ResultPath": null,
+  #                   "Resource": "${CloudSearchIndexDocuments.Arn}",
+  #                   "Next": "CheckActiveState"
+  #                 },
+  #                 "CheckActiveState": {
+  #                   "Type": "Choice",
+  #                   "Choices": [
+  #                     {
+  #                       "Variable": "$.Data.State",
+  #                       "StringEquals": "Active",
+  #                       "Next": "Success"
+  #                     }
+  #                   ],
+  #                   "Default": "Wait"
+  #                 },
+  #                 "Wait" : {
+  #                   "Type": "Wait",
+  #                   "Seconds": 15,
+  #                   "Next": "DescribeDomain"
+  #                 },
+  #                 "DescribeDomain": {
+  #                   "Type": "Task",
+  #                   "InputPath": "$.ResourceProperties.SearchDomain",
+  #                   "ResultPath": "$.Data",
+  #                   "Resource": "${CloudSearchDescribeDomain.Arn}",
+  #                   "Next": "CheckActiveState"
+  #                 },
+  #                 "Success": {
+  #                   "Type": "Pass",
+  #                   "ResultPath": "$.Status",
+  #                   "Result": "SUCCESS",
+  #                   "End": true
+  #                 }
+  #               }
+  #             }],
+  #             "Catch": [{
+  #               "ErrorEquals": [ "States.ALL" ],
+  #               "ResultPath": "$.Error",
+  #               "Next": "PassReason"
+  #             }]
+  #           },
+  #           "Succeed": {
+  #             "InputPath": "$.[0]",
+  #             "Type": "Pass",
+  #             "Next": "End"
+  #           },
+  #           "PassReason": {
+  #             "Type": "Pass",
+  #             "InputPath": "$.Error.Cause",
+  #             "ResultPath": "$.Reason",
+  #             "Next": "Fail"
+  #           },
+  #           "Fail": {
+  #             "Type": "Pass",
+  #             "ResultPath": "$.Status",
+  #             "Result": "FAILED",
+  #             "Next": "End"
+  #           },
+  #           "End": {
+  #             "Type": "Task",
+  #             "ResultPath": null,
+  #             "Resource": "${SendCloudFormationResponse.Arn}",
+  #             "End": true
+  #           }
+  #         }
+  #       }
 
   # CreateDataset:
   #   Type: AWS::Serverless::Function
@@ -1101,52 +1101,52 @@ Resources:
   #           Resource:
   #             - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
 
-  CloudSearchUploadDocuments:
-    Type: AWS::Serverless::Function
-    Properties:
-      FunctionName: !Sub ${AWS::StackName}-CloudSearchUploadDocuments
-      CodeUri: ../app
-      Handler: search.uploadDocuments
-      Runtime: nodejs6.10
-      Timeout: 30
-      Environment:
-        Variables:
-          SEARCH_DOC_ENDPOINT: !GetAtt SetupSearchDomain.DocEndpoint
-          SEARCH_STACK_SUFFIX: !FindInMap
-            - StackMap
-            - !Ref AWS::StackName
-            - SearchStackSuffix
-      Policies:
-        Statement:
-          - Effect: Allow
-            Action:
-              - dynamodb:ListStreams
-              - dynamodb:DescribeStream
-              - dynamodb:GetShardIterator
-              - dynamodb:GetRecords
-            Resource:
-              - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AWS::StackName}-*/stream/*
-          - Effect: Allow
-            Action:
-              - cloudsearch:document
-            Resource:
-              - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+  # CloudSearchUploadDocuments:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     FunctionName: !Sub ${AWS::StackName}-CloudSearchUploadDocuments
+  #     CodeUri: ../app
+  #     Handler: search.uploadDocuments
+  #     Runtime: nodejs6.10
+  #     Timeout: 30
+  #     Environment:
+  #       Variables:
+  #         SEARCH_DOC_ENDPOINT: !GetAtt SetupSearchDomain.DocEndpoint
+  #         SEARCH_STACK_SUFFIX: !FindInMap
+  #           - StackMap
+  #           - !Ref AWS::StackName
+  #           - SearchStackSuffix
+  #     Policies:
+  #       Statement:
+  #         - Effect: Allow
+  #           Action:
+  #             - dynamodb:ListStreams
+  #             - dynamodb:DescribeStream
+  #             - dynamodb:GetShardIterator
+  #             - dynamodb:GetRecords
+  #           Resource:
+  #             - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AWS::StackName}-*/stream/*
+  #         - Effect: Allow
+  #           Action:
+  #             - cloudsearch:document
+  #           Resource:
+  #             - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
 
-  DatasetsTableStreamMapping:
-    Type: AWS::Lambda::EventSourceMapping
-    Properties:
-      EventSourceArn: !GetAtt DatasetsTable.StreamArn
-      FunctionName: !Ref CloudSearchUploadDocuments
-      StartingPosition: TRIM_HORIZON
-      BatchSize: 100
+  # DatasetsTableStreamMapping:
+  #   Type: AWS::Lambda::EventSourceMapping
+  #   Properties:
+  #     EventSourceArn: !GetAtt DatasetsTable.StreamArn
+  #     FunctionName: !Ref CloudSearchUploadDocuments
+  #     StartingPosition: TRIM_HORIZON
+  #     BatchSize: 100
 
-  ProjectsTableStreamMapping:
-    Type: AWS::Lambda::EventSourceMapping
-    Properties:
-      EventSourceArn: !GetAtt ProjectsTable.StreamArn
-      FunctionName: !Ref CloudSearchUploadDocuments
-      StartingPosition: TRIM_HORIZON
-      BatchSize: 100
+  # ProjectsTableStreamMapping:
+  #   Type: AWS::Lambda::EventSourceMapping
+  #   Properties:
+  #     EventSourceArn: !GetAtt ProjectsTable.StreamArn
+  #     FunctionName: !Ref CloudSearchUploadDocuments
+  #     StartingPosition: TRIM_HORIZON
+  #     BatchSize: 100
 
   # ListDatasets:
   #   Type: AWS::Serverless::Function
@@ -1223,56 +1223,56 @@ Resources:
   #           Method: DELETE
   #           RestApiId: !Ref Api
 
-  DatasetsAccessRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              AWS: !GetAtt RequestDatasetCredentialsRole.Arn
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: DatasetsAccessRolePolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:ListBucket
-                Resource:
-                  - !Sub arn:aws:s3:::${DatasetsBucket}
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:PutObject
-                  - s3:DeleteObject
-                Resource:
-                  - !Sub arn:aws:s3:::${DatasetsBucket}/*
+  # DatasetsAccessRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             AWS: !GetAtt RequestDatasetCredentialsRole.Arn
+  #           Action: sts:AssumeRole
+  #     Policies:
+  #       - PolicyName: DatasetsAccessRolePolicy
+  #         PolicyDocument:
+  #           Version: 2012-10-17
+  #           Statement:
+  #             - Effect: Allow
+  #               Action:
+  #                 - s3:ListBucket
+  #               Resource:
+  #                 - !Sub arn:aws:s3:::${DatasetsBucket}
+  #             - Effect: Allow
+  #               Action:
+  #                 - s3:GetObject
+  #                 - s3:PutObject
+  #                 - s3:DeleteObject
+  #               Resource:
+  #                 - !Sub arn:aws:s3:::${DatasetsBucket}/*
 
-  RequestDatasetCredentialsRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: RequestDatasetCredentialsRolePolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:UpdateItem
-                Resource:
-                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
+  # RequestDatasetCredentialsRole:
+  #   Type: AWS::IAM::Role
+  #   Properties:
+  #     AssumeRolePolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             Service: lambda.amazonaws.com
+  #           Action: sts:AssumeRole
+  #     ManagedPolicyArns:
+  #       - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  #     Policies:
+  #       - PolicyName: RequestDatasetCredentialsRolePolicy
+  #         PolicyDocument:
+  #           Version: 2012-10-17
+  #           Statement:
+  #             - Effect: Allow
+  #               Action:
+  #                 - dynamodb:UpdateItem
+  #               Resource:
+  #                 - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
 
   # RequestDatasetCredentials:
   #   Type: AWS::Serverless::Function
@@ -1395,50 +1395,50 @@ Resources:
   #       ApiDomain: !Ref ApiDomain
   #       Auth0Domain: !Ref Auth0Domain
 
-  VPC:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/vpc.yaml
-      Parameters:
-        BackendStack: !Ref AWS::StackName
-        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
-        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
-        ArtifactsBucket: !Ref ArtifactsBucket
-        LambdaPackage: !Ref LambdaPackage
-        VpcRange: !Ref VpcRange
+  # VPC:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/vpc.yaml
+  #     Parameters:
+  #       BackendStack: !Ref AWS::StackName
+  #       SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+  #       SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
+  #       ArtifactsBucket: !Ref ArtifactsBucket
+  #       LambdaPackage: !Ref LambdaPackage
+  #       VpcRange: !Ref VpcRange
 
-  Batch:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/batch.yaml
-      Parameters:
-        BackendStack: !Ref AWS::StackName
-        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
-        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
-        ArtifactsBucket: !Ref ArtifactsBucket
-        LambdaPackage: !Ref LambdaPackage
-        SubnetIds: !GetAtt VPC.Outputs.SubnetIds
-        SecurityGroup: !GetAtt VPC.Outputs.DefaultSecurityGroup
-        ClusterCores: !Ref ClusterCores
-        SpotBidPercent: !Ref SpotBidPercent
-        SSHKeyName: !GetAtt Instances.Outputs.SSHKeyName
+  # Batch:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/batch.yaml
+  #     Parameters:
+  #       BackendStack: !Ref AWS::StackName
+  #       SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+  #       SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
+  #       ArtifactsBucket: !Ref ArtifactsBucket
+  #       LambdaPackage: !Ref LambdaPackage
+  #       SubnetIds: !GetAtt VPC.Outputs.SubnetIds
+  #       SecurityGroup: !GetAtt VPC.Outputs.DefaultSecurityGroup
+  #       ClusterCores: !Ref ClusterCores
+  #       SpotBidPercent: !Ref SpotBidPercent
+  #       SSHKeyName: !GetAtt Instances.Outputs.SSHKeyName
 
-  Instances:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/instances.yaml
-      Parameters:
-        BackendStack: !Ref AWS::StackName
-        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
-        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
-        ArtifactsBucket: !Ref ArtifactsBucket
-        SecretsBucket: !Ref SecretsBucket
-        LambdaPackage: !Ref LambdaPackage
-        SubnetIds: !GetAtt VPC.Outputs.SubnetIds
-        SecurityGroup: !GetAtt VPC.Outputs.DefaultSecurityGroup
-        EncryptionKeyId: !Ref EncryptionKeyId
-        SSHKeyPutRoleArn: !Ref SSHKeyPutRoleArn
-        SSHKeyGetRoleArn: !Ref SSHKeyGetRoleArn
+  # Instances:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/instances.yaml
+  #     Parameters:
+  #       BackendStack: !Ref AWS::StackName
+  #       SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+  #       SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
+  #       ArtifactsBucket: !Ref ArtifactsBucket
+  #       SecretsBucket: !Ref SecretsBucket
+  #       LambdaPackage: !Ref LambdaPackage
+  #       SubnetIds: !GetAtt VPC.Outputs.SubnetIds
+  #       SecurityGroup: !GetAtt VPC.Outputs.DefaultSecurityGroup
+  #       EncryptionKeyId: !Ref EncryptionKeyId
+  #       SSHKeyPutRoleArn: !Ref SSHKeyPutRoleArn
+  #       SSHKeyGetRoleArn: !Ref SSHKeyGetRoleArn
 
   # Web:
   #   Type: AWS::CloudFormation::Stack
@@ -1465,6 +1465,6 @@ Resources:
   #       ApiId: !GetAtt Api.Outputs.ApiId
   #       ApiStage: !GetAtt Api.Outputs.ApiStage
 
-Outputs:
-  DatasetsTable:
-    Value: !Ref DatasetsTable
+# Outputs:
+#   DatasetsTable:
+#     Value: !Ref DatasetsTable
