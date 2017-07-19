@@ -891,6 +891,7 @@ Resources:
                   - !GetAtt Auth0CreateClientRole.Arn
                   - !GetAtt WebSigningKeyPutRole.Arn
                   - !GetAtt WebSigningKeyGetRole.Arn
+                  - !GetAtt AuthorizerInvocationRole.Arn
               - Effect: Allow
                 Action:
                   - iam:AttachRolePolicy
