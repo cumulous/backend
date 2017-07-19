@@ -63,16 +63,6 @@ Parameters:
     Type: String
 
 Resources:
-  VPC:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/vpc.yaml
-      Parameters:
-        BackendStack: !Ref AWS::StackName
-        ArtifactsBucket: !Ref ArtifactsBucket
-        LambdaPackage: !Ref LambdaPackage
-        VpcRange: !Ref VpcRange
-
   Api:
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -86,6 +76,16 @@ Resources:
         ApiDomain: !Ref ApiDomain
         ApiVersion: !Ref ApiVersion
         WebDomain: !Ref WebDomain
+
+  VPC:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/vpc.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        ArtifactsBucket: !Ref ArtifactsBucket
+        LambdaPackage: !Ref LambdaPackage
+        VpcRange: !Ref VpcRange
 
   LogsBucket:
     Type: AWS::S3::Bucket
