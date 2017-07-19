@@ -1368,32 +1368,32 @@ Resources:
   #           Resource:
   #             - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}
 
-  Api:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/api.yaml
-      Parameters:
-        BackendStack: !Ref AWS::StackName
-        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
-        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
-        ArtifactsBucket: !Ref ArtifactsBucket
-        LambdaPackage: !Ref LambdaPackage
-        TemplatePath: !Sub ${TemplatesPath}/swagger.yaml
-        DomainZone: !Ref DomainZone
-        ApiDomain: !Ref ApiDomain
-        ApiVersion: !Ref ApiVersion
-        WebDomain: !Ref WebDomain
+  # Api:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/api.yaml
+  #     Parameters:
+  #       BackendStack: !Ref AWS::StackName
+  #       SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+  #       SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
+  #       ArtifactsBucket: !Ref ArtifactsBucket
+  #       LambdaPackage: !Ref LambdaPackage
+  #       TemplatePath: !Sub ${TemplatesPath}/swagger.yaml
+  #       DomainZone: !Ref DomainZone
+  #       ApiDomain: !Ref ApiDomain
+  #       ApiVersion: !Ref ApiVersion
+  #       WebDomain: !Ref WebDomain
 
-  Members:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/members.yaml
-      Parameters:
-        BackendStack: !Ref AWS::StackName
-        ArtifactsBucket: !Ref ArtifactsBucket
-        LambdaPackage: !Ref LambdaPackage
-        ApiDomain: !Ref ApiDomain
-        Auth0Domain: !Ref Auth0Domain
+  # Members:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/members.yaml
+  #     Parameters:
+  #       BackendStack: !Ref AWS::StackName
+  #       ArtifactsBucket: !Ref ArtifactsBucket
+  #       LambdaPackage: !Ref LambdaPackage
+  #       ApiDomain: !Ref ApiDomain
+  #       Auth0Domain: !Ref Auth0Domain
 
   VPC:
     Type: AWS::CloudFormation::Stack
@@ -1440,30 +1440,30 @@ Resources:
         SSHKeyPutRoleArn: !Ref SSHKeyPutRoleArn
         SSHKeyGetRoleArn: !Ref SSHKeyGetRoleArn
 
-  Web:
-    Type: AWS::CloudFormation::Stack
-    Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/web.yaml
-      Parameters:
-        BackendStack: !Ref AWS::StackName
-        SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
-        SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
-        ArtifactsBucket: !Ref ArtifactsBucket
-        SecretsBucket: !Ref SecretsBucket
-        WebBucket: !Ref WebBucket
-        LambdaPackage: !Ref LambdaPackage
-        EncryptionKeyId: !Ref EncryptionKeyId
-        DomainZone: !Ref DomainZone
-        WebDomain: !Ref WebDomain
-        WebTTL: !Ref WebTTL
-        WebPriceClass: !Ref WebPriceClass
-        WebLocations: !Ref WebLocations
-        WebACL: !Ref WebACL
-        WebSigningKeyPutRoleArn: !Ref WebSigningKeyPutRoleArn
-        WebSigningKeyGetRoleArn: !Ref WebSigningKeyGetRoleArn
-        DeleteS3SecretArn: !GetAtt DeleteS3Secret.Arn
-        ApiId: !GetAtt Api.Outputs.ApiId
-        ApiStage: !GetAtt Api.Outputs.ApiStage
+  # Web:
+  #   Type: AWS::CloudFormation::Stack
+  #   Properties:
+  #     TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/web.yaml
+  #     Parameters:
+  #       BackendStack: !Ref AWS::StackName
+  #       SetupCustomResourceArn: !GetAtt SetupCustomResource.Arn
+  #       SendCloudFormationResponseArn: !GetAtt SendCloudFormationResponse.Arn
+  #       ArtifactsBucket: !Ref ArtifactsBucket
+  #       SecretsBucket: !Ref SecretsBucket
+  #       WebBucket: !Ref WebBucket
+  #       LambdaPackage: !Ref LambdaPackage
+  #       EncryptionKeyId: !Ref EncryptionKeyId
+  #       DomainZone: !Ref DomainZone
+  #       WebDomain: !Ref WebDomain
+  #       WebTTL: !Ref WebTTL
+  #       WebPriceClass: !Ref WebPriceClass
+  #       WebLocations: !Ref WebLocations
+  #       WebACL: !Ref WebACL
+  #       WebSigningKeyPutRoleArn: !Ref WebSigningKeyPutRoleArn
+  #       WebSigningKeyGetRoleArn: !Ref WebSigningKeyGetRoleArn
+  #       DeleteS3SecretArn: !GetAtt DeleteS3Secret.Arn
+  #       ApiId: !GetAtt Api.Outputs.ApiId
+  #       ApiStage: !GetAtt Api.Outputs.ApiStage
 
 Outputs:
   DatasetsTable:
