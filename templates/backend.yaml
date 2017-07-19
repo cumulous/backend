@@ -71,7 +71,7 @@ Resources:
         BackendStack: !Ref AWS::StackName
         ArtifactsBucket: !Ref ArtifactsBucket
         LambdaPackage: !Ref LambdaPackage
-        TemplatePath: !Sub ${TemplatesPath}/swagger.yaml
+        TemplatePath: !Sub ${TemplatesPath}/swagger/${ApiVersion}.yaml
         DomainZone: !Ref DomainZone
         ApiDomain: !Ref ApiDomain
         ApiVersion: !Ref ApiVersion
