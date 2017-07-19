@@ -116,7 +116,7 @@ Resources:
       Parameters:
         BackendStack: !Ref AWS::StackName
         ArtifactsBucket: !Ref ArtifactsBucket
-        LogsBucket: !Ref LogsBucket
+        LogsBucket: !GetAtt Logs.Outputs.Bucket
         DatasetsBucket: !Ref DatasetsBucket
         LambdaPackage: !Ref LambdaPackage
         WebDomain: !Ref WebDomain
@@ -211,25 +211,9 @@ Resources:
         SpotBidPercent: !Ref SpotBidPercent
         SSHKeyName: !GetAtt Instances.Outputs.SSHKeyName
 
-  LogsBucket:
-    Type: AWS::S3::Bucket
-    DeletionPolicy: Retain
-
-  LogsBucketPolicy:
-    Type: AWS::S3::BucketPolicy
+  Logs:
+    Type: AWS::CloudFormation::Stack
     Properties:
-      Bucket: !Ref LogsBucket
-      PolicyDocument:
-        Statement:
-          - Effect: Allow
-            Action: s3:PutObject
-            Principal:
-              Service: s3.amazonaws.com
-            Resource:
-              - !Sub arn:aws:s3:::${LogsBucket}/*
-            Condition:
-              ArnLike:
-                'aws:SourceArn': !Sub arn:aws:s3:::${DatasetsBucket}
-              StringEquals:
-                'aws:SourceAccount': !Ref AWS::AccountId
-                's3:x-amz-acl': bucket-owner-full-control
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/logs.yaml
+      Parameters:
+        DatasetsBucket: !Ref DatasetsBucket

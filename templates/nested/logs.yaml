@@ -1,0 +1,31 @@
+Parameters:
+  DatasetsBucket:
+    Type: String
+
+Resources:
+  LogsBucket:
+    Type: AWS::S3::Bucket
+    DeletionPolicy: Retain
+
+  LogsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref LogsBucket
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: s3:PutObject
+            Principal:
+              Service: s3.amazonaws.com
+            Resource:
+              - !Sub arn:aws:s3:::${LogsBucket}/*
+            Condition:
+              ArnLike:
+                'aws:SourceArn': !Sub arn:aws:s3:::${DatasetsBucket}
+              StringEquals:
+                'aws:SourceAccount': !Ref AWS::AccountId
+                's3:x-amz-acl': bucket-owner-full-control
+
+Outputs:
+  Bucket:
+    Value: !Ref LogsBucket
