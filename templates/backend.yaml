@@ -182,6 +182,21 @@ Resources:
         LambdaPackage: !Ref LambdaPackage
         VpcRange: !Ref VpcRange
 
+  Instances:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/instances.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        ArtifactsBucket: !Ref ArtifactsBucket
+        SecretsBucket: !Ref SecretsBucket
+        LambdaPackage: !Ref LambdaPackage
+        SubnetIds: !GetAtt VPC.Outputs.SubnetIds
+        SecurityGroup: !GetAtt VPC.Outputs.DefaultSecurityGroup
+        EncryptionKeyId: !Ref EncryptionKeyId
+        SSHKeyGetRoleArn: !Ref SSHKeyGetRoleArn
+        SSHKeyPutRoleArn: !Ref SSHKeyPutRoleArn
+
   LogsBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain

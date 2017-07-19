@@ -1,10 +1,6 @@
 Parameters:
   BackendStack:
     Type: String
-  SetupCustomResourceArn:
-    Type: String
-  SendCloudFormationResponseArn:
-    Type: String
   ArtifactsBucket:
     Type: String
   SecretsBucket:
@@ -17,36 +13,22 @@ Parameters:
     Type: AWS::EC2::SecurityGroup::Id
   EncryptionKeyId:
     Type: String
-  SSHKeyPutRoleArn:
-    Type: String
   SSHKeyGetRoleArn:
+    Type: String
+  SSHKeyPutRoleArn:
     Type: String
 
 Resources:
-  LambdaBasicExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-
   DescribeInstance:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-DescribeInstance
-      Role: !GetAtt DescribeInstanceRole.Arn
       Handler: instances.describeInstance
-      Runtime: nodejs6.10
       Timeout: 5
+      Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt DescribeInstanceRole.Arn
 
   DescribeInstanceRole:
     Type: AWS::IAM::Role
@@ -61,7 +43,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: DescribeInstanceRolePolicy
+        - PolicyName: DescribeInstanceRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -72,24 +54,35 @@ Resources:
   CalculateVolumeSizes:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-CalculateVolumeSizes
-      Role: !GetAtt LambdaBasicExecutionRole.Arn
       Handler: instances.calculateVolumeSizes
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   CreateVolumes:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-CreateVolumes
-      Role: !GetAtt CreateVolumesRole.Arn
       Handler: instances.createVolumes
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt CreateVolumesRole.Arn
 
   CreateVolumesRole:
     Type: AWS::IAM::Role
@@ -104,7 +97,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: CreateVolumesRolePolicy
+        - PolicyName: CreateVolumesRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -115,14 +108,13 @@ Resources:
   WaitForVolumesAvailable:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-WaitForVolumesAvailable
-      Role: !GetAtt WaitForVolumesAvailableRole.Arn
       Handler: instances.waitForVolumesAvailable
-      Runtime: nodejs6.10
       Timeout: 20
+      Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt WaitForVolumesAvailableRole.Arn
 
   WaitForVolumesAvailableRole:
     Type: AWS::IAM::Role
@@ -137,7 +129,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: WaitForVolumesAvailableRolePolicy
+        - PolicyName: WaitForVolumesAvailableRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -148,24 +140,22 @@ Resources:
   CalculateVolumeDevices:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-CalculateVolumeDevices
-      Role: !GetAtt LambdaBasicExecutionRole.Arn
       Handler: instances.calculateVolumeDevices
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
 
   AttachVolumes:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-AttachVolumes
-      Role: !GetAtt AttachVolumesRole.Arn
       Handler: instances.attachVolumes
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt AttachVolumesRole.Arn
 
   AttachVolumesRole:
     Type: AWS::IAM::Role
@@ -180,7 +170,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: AttachVolumesRolePolicy
+        - PolicyName: AttachVolumesRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -191,13 +181,12 @@ Resources:
   DetachVolumes:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-DetachVolumes
-      Role: !GetAtt DetachVolumesRole.Arn
       Handler: instances.detachVolumes
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt DetachVolumesRole.Arn
 
   DetachVolumesRole:
     Type: AWS::IAM::Role
@@ -212,7 +201,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: DetachVolumesRolePolicy
+        - PolicyName: DetachVolumesRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -223,13 +212,12 @@ Resources:
   DeleteVolumes:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-DeleteVolumes
-      Role: !GetAtt DeleteVolumesRole.Arn
       Handler: instances.deleteVolumes
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt DeleteVolumesRole.Arn
 
   DeleteVolumesRole:
     Type: AWS::IAM::Role
@@ -244,7 +232,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: DeleteVolumesRolePolicy
+        - PolicyName: DeleteVolumesRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -255,13 +243,12 @@ Resources:
   DeleteVolumesOnTermination:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-DeleteVolumesOnTermination
-      Role: !GetAtt DeleteVolumesOnTerminationRole.Arn
       Handler: instances.deleteVolumesOnTermination
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt DeleteVolumesOnTerminationRole.Arn
 
   DeleteVolumesOnTerminationRole:
     Type: AWS::IAM::Role
@@ -276,7 +263,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: DeleteVolumesOnTerminationRolePolicy
+        - PolicyName: DeleteVolumesOnTerminationRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -287,34 +274,32 @@ Resources:
   TransferInitScript:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-TransferInitScript
-      Role: !Ref SSHKeyGetRoleArn
       Handler: instances.transferInitScript
-      Runtime: nodejs6.10
       Timeout: 15
       VpcConfig:
         SecurityGroupIds:
           - !Ref SecurityGroup
         SubnetIds: !Ref SubnetIds
+      Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !Ref SSHKeyGetRoleArn
 
   ExecuteInitScript:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-ExecuteInitScript
-      Role: !Ref SSHKeyGetRoleArn
       Handler: instances.executeInitScript
-      Runtime: nodejs6.10
       Timeout: 20
       VpcConfig:
         SecurityGroupIds:
           - !Ref SecurityGroup
         SubnetIds: !Ref SubnetIds
+      Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !Ref SSHKeyGetRoleArn
 
   InstancesInitEventRole:
     Type: AWS::IAM::Role
@@ -326,10 +311,8 @@ Resources:
             Principal:
               Service: events.amazonaws.com
             Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: InstancesInitRolePolicy
+        - PolicyName: InstancesInitRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -366,7 +349,7 @@ Resources:
               Service: !Sub states.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: StatesExecutionRolePolicy
+        - PolicyName: StatesExecutionRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -547,7 +530,7 @@ Resources:
   SSHKey:
     Type: AWS::CloudFormation::CustomResource
     Properties:
-      ServiceToken: !Ref SetupCustomResourceArn
+      ServiceToken: !GetAtt SetupSSHKey.Arn
       StateMachine: !Ref SetupSSHKeyStateMachine
       Config:
         Name: !Ref BackendStack
@@ -555,27 +538,58 @@ Resources:
         Path: !Sub ssh/${BackendStack}.pem
         EncryptionKeyId: !Ref EncryptionKeyId
 
+  SetupSSHKey:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.setupCustomResource
+      Timeout: 10
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt SetupSSHKeyRole.Arn
+
+  SetupSSHKeyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SetupSSHKeyRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref SetupSSHKeyStateMachine
+
   CreateSSHKey:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-CreateSSHKey
-      Role: !Ref SSHKeyPutRoleArn
       Handler: instances.createSSHKey
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !Ref SSHKeyPutRoleArn
 
   DeleteSSHKey:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-DeleteSSHKey
-      Role: !GetAtt DeleteSSHKeyRole.Arn
       Handler: instances.deleteSSHKey
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt DeleteSSHKeyRole.Arn
 
   DeleteSSHKeyRole:
     Type: AWS::IAM::Role
@@ -590,7 +604,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: DeleteSSHKeyRolePolicy
+        - PolicyName: DeleteSSHKeyRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -601,6 +615,16 @@ Resources:
                 Action: s3:DeleteObject
                 Resource:
                   - !Sub arn:aws:s3:::${SecretsBucket}/ssh/${BackendStack}.pem
+
+  SendCloudFormationResponse:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.sendCloudFormationResponse
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
 
   SetupSSHKeyExecutionRole:
     Type: AWS::IAM::Role
@@ -613,7 +637,7 @@ Resources:
               Service: !Sub states.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: StatesExecutionRolePolicy
+        - PolicyName: StatesExecutionRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -622,7 +646,7 @@ Resources:
                 Resource:
                   - !GetAtt CreateSSHKey.Arn
                   - !GetAtt DeleteSSHKey.Arn
-                  - !Ref SendCloudFormationResponseArn
+                  - !GetAtt SendCloudFormationResponse.Arn
 
   SetupSSHKeyStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -735,7 +759,7 @@ Resources:
             "End": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": "${SendCloudFormationResponseArn}",
+              "Resource": "${SendCloudFormationResponse.Arn}",
               "End": true
             }
           }
