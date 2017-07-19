@@ -89,7 +89,7 @@ Parameters:
   SpotBidPercent:
     Description: "Maximum spot bid percentage for compute clusters"
     Type: Number
-    MaxValue: 1
+    MinValue: 1
     MaxValue: 100
     Default: 25
   Auth0Domain:
