@@ -6,7 +6,7 @@ BACKEND_TEMPLATE="backend.yaml"
 PACKAGE_FILE="app.zip"
 SWAGGER_FILE="api/swagger/swagger.yaml"
 TEMPLATES_DEST_PATH="templates/${STACK_NAME}"
-TEMPLATES_DEST="s3://${ARTIFACTS_BUCKET}/${TEMPLATES_DEST_PATH}/"
+TEMPLATES_DEST="s3://${ARTIFACTS_BUCKET}/${TEMPLATES_DEST_PATH}"
 
 validate_template() {
   aws cloudformation validate-template --template-body file://$1 > /dev/null
@@ -42,8 +42,8 @@ sed -i "s|\${AUTHORIZER_INVOCATION_ROLE_ARN}|${AUTHORIZER_INVOCATION_ROLE_ARN}|"
 
 aws s3 cp ${PACKAGE_FILE} s3://${ARTIFACTS_BUCKET}/${PACKAGE_PATH}
 aws s3 cp ${SWAGGER_FILE} ${TEMPLATES_DEST}/swagger/${API_VERSION}.yaml
-aws s3 cp templates/${BACKEND_TEMPLATE} ${TEMPLATES_DEST}
-aws s3 sync templates/nested/ ${TEMPLATES_DEST}
+aws s3 cp templates/${BACKEND_TEMPLATE} ${TEMPLATES_DEST}/
+aws s3 sync templates/nested/ ${TEMPLATES_DEST}/
 
 CHANGE_SET="--stack-name ${STACK_NAME} --change-set-name Deploy"
 ARGS=" \
