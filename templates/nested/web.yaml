@@ -1,10 +1,6 @@
 Parameters:
   BackendStack:
     Type: String
-  SetupCustomResourceArn:
-    Type: String
-  SendCloudFormationResponseArn:
-    Type: String
   ArtifactsBucket:
     Type: String
   SecretsBucket:
@@ -30,8 +26,6 @@ Parameters:
   WebSigningKeyPutRoleArn:
     Type: String
   WebSigningKeyGetRoleArn:
-    Type: String
-  DeleteS3SecretArn:
     Type: String
   ApiId:
     Type: String
@@ -131,22 +125,52 @@ Resources:
   WebOriginAccessIdentity:
     Type: AWS::CloudFormation::CustomResource
     Properties:
-      ServiceToken: !Ref SetupCustomResourceArn
+      ServiceToken: !GetAtt SetupOriginAccess.Arn
       StateMachine: !Ref SetupOriginAccessStateMachine
       Comment: !Ref WebDomain
       Bucket: !Ref ArtifactsBucket
       Path: !Sub web/${BackendStack}-origin.json
 
+  SetupOriginAccess:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.setupCustomResource
+      Timeout: 10
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt SetupOriginAccessRole.Arn
+
+  SetupOriginAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SetupOriginAccessRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref SetupOriginAccessStateMachine
+
   StoreOriginAccessIdentity:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-StoreOriginAccessIdentity
-      Role: !GetAtt StoreOriginAccessIdentityRole.Arn
       Handler: web.storeOriginAccessIdentity
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt StoreOriginAccessIdentityRole.Arn
 
   StoreOriginAccessIdentityRole:
     Type: AWS::IAM::Role
@@ -161,7 +185,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: StoreOriginAccessIdentityRolePolicy
+        - PolicyName: StoreOriginAccessIdentityRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -173,13 +197,12 @@ Resources:
   RetrieveOriginAccessIdentity:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-RetrieveOriginAccessIdentity
-      Role: !GetAtt RetrieveOriginAccessIdentityRole.Arn
       Handler: web.retrieveOriginAccessIdentity
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt RetrieveOriginAccessIdentityRole.Arn
 
   RetrieveOriginAccessIdentityRole:
     Type: AWS::IAM::Role
@@ -194,7 +217,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: RetrieveOriginAccessIdentityRolePolicy
+        - PolicyName: RetrieveOriginAccessIdentityRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -206,13 +229,12 @@ Resources:
   CreateOriginAccessIdentity:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-CreateOriginAccessIdentity
-      Role: !GetAtt CreateOriginAccessIdentityRole.Arn
       Handler: web.createOriginAccessIdentity
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt CreateOriginAccessIdentityRole.Arn
 
   CreateOriginAccessIdentityRole:
     Type: AWS::IAM::Role
@@ -227,7 +249,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: CreateOriginAccessIdentityRolePolicy
+        - PolicyName: CreateOriginAccessIdentityRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -238,13 +260,12 @@ Resources:
   UpdateOriginAccessIdentity:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-UpdateOriginAccessIdentity
-      Role: !GetAtt UpdateOriginAccessIdentityRole.Arn
       Handler: web.updateOriginAccessIdentity
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt UpdateOriginAccessIdentityRole.Arn
 
   UpdateOriginAccessIdentityRole:
     Type: AWS::IAM::Role
@@ -259,7 +280,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: UpdateOriginAccessIdentityRolePolicy
+        - PolicyName: UpdateOriginAccessIdentityRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -270,13 +291,12 @@ Resources:
   DeleteOriginAccessIdentity:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-DeleteOriginAccessIdentity
-      Role: !GetAtt DeleteOriginAccessIdentityRole.Arn
       Handler: web.deleteOriginAccessIdentity
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt DeleteOriginAccessIdentityRole.Arn
 
   DeleteOriginAccessIdentityRole:
     Type: AWS::IAM::Role
@@ -291,13 +311,36 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: DeleteOriginAccessIdentityRolePolicy
+        - PolicyName: DeleteOriginAccessIdentityRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
               - Effect: Allow
                 Action: cloudfront:DeleteCloudFrontOriginAccessIdentity
                 Resource: '*'
+
+  SendCloudFormationResponse:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.sendCloudFormationResponse
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   SetupOriginAccessExecutionRole:
     Type: AWS::IAM::Role
@@ -310,7 +353,7 @@ Resources:
               Service: !Sub states.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: StatesExecutionRolePolicy
+        - PolicyName: SetupOriginAccessExecutionRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -322,7 +365,7 @@ Resources:
                   - !GetAtt RetrieveOriginAccessIdentity.Arn
                   - !GetAtt UpdateOriginAccessIdentity.Arn
                   - !GetAtt DeleteOriginAccessIdentity.Arn
-                  - !Ref SendCloudFormationResponseArn
+                  - !GetAtt SendCloudFormationResponse.Arn
 
   SetupOriginAccessStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -430,7 +473,7 @@ Resources:
             "End": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": "${SendCloudFormationResponseArn}",
+              "Resource": "${SendCloudFormationResponse.Arn}",
               "End": true
             }
           }
@@ -440,7 +483,7 @@ Resources:
     Type: AWS::CloudFormation::CustomResource
     Condition: SetupWebSigningKeyPair
     Properties:
-      ServiceToken: !Ref SetupCustomResourceArn
+      ServiceToken: !GetAtt SetupWebSigningKeyPair.Arn
       StateMachine: !Ref SetupWebSigningKeyPairStateMachine
       KeySize: 4096
       PrivateKey:
@@ -451,7 +494,18 @@ Resources:
         Bucket: !Ref ArtifactsBucket
         Path: !Sub web/signing.pub
 
-  LambdaBasicExecutionRole:
+  SetupWebSigningKeyPair:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.setupCustomResource
+      Timeout: 10
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt SetupWebSigningKeyPairRole.Arn
+
+  SetupWebSigningKeyPairRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -461,52 +515,60 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SetupWebSigningKeyPairRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref SetupWebSigningKeyPairStateMachine
 
   CreateAndExportWebSigningKeyPair:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-CreateAndExportWebSigningKeyPair
+      Handler: web.createAndExportSigningKey
+      Timeout: 30
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
       Role: !If
         - SetupWebSigningKeyPair
         - !Ref WebSigningKeyPutRoleArn
         - !GetAtt LambdaBasicExecutionRole.Arn
-      Handler: web.createAndExportSigningKey
-      Runtime: nodejs6.10
-      Timeout: 30
-      Code:
-        S3Bucket: !Ref ArtifactsBucket
-        S3Key: !Ref LambdaPackage
 
-  GenerateSignedCookies:
+  DeleteWebSigningKey:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-GenerateSignedCookies
-      Role: !Ref WebSigningKeyGetRoleArn
-      Handler: web.generateSignedCookies
+      Handler: aws.deleteS3Object
       Runtime: nodejs6.10
-      Timeout: 10
-      Environment:
-        Variables:
-          WEB_DOMAIN: !Ref WebDomain
-          WEB_DISTRIBUTION_ID: !Ref WebDistribution
-          WEB_SIGNING_KEY_BUCKET: !Ref SecretsBucket
-          WEB_SIGNING_KEY_PATH: !Sub web/signing.pem
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt DeleteWebSigningKeyRole.Arn
 
-  GenerateSignedCookiesPermission:
-    Type: AWS::Lambda::Permission
+  DeleteWebSigningKeyRole:
+    Type: AWS::IAM::Role
     Properties:
-      FunctionName: !GetAtt GenerateSignedCookies.Arn
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn:
-        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/GET/weblogin
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: DeleteWebSigningKeyRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: s3:DeleteObject
+                Resource: !Sub arn:aws:s3:::${SecretsBucket}/auth0/*
 
-  SetupWebSigningKeyPairRole:
+  SetupWebSigningKeyPairExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -517,7 +579,7 @@ Resources:
               Service: !Sub states.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: StatesExecutionRolePolicy
+        - PolicyName: SetupWebSigningKeyPairExecutionRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -525,14 +587,14 @@ Resources:
                 Action: lambda:InvokeFunction
                 Resource:
                   - !GetAtt CreateAndExportWebSigningKeyPair.Arn
-                  - !Ref DeleteS3SecretArn
-                  - !Ref SendCloudFormationResponseArn
+                  - !GetAtt DeleteWebSigningKey.Arn
+                  - !GetAtt SendCloudFormationResponse.Arn
 
   SetupWebSigningKeyPairStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Condition: SetupWebSigningKeyPair
     Properties:
-      RoleArn: !GetAtt SetupWebSigningKeyPairRole.Arn
+      RoleArn: !GetAtt SetupWebSigningKeyPairExecutionRole.Arn
       DefinitionString: !Sub |-
         {
           "StartAt": "SetupWebSigningKeyPair",
@@ -565,7 +627,7 @@ Resources:
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties",
                     "ResultPath": null,
-                    "Resource": "${DeleteS3SecretArn}",
+                    "Resource": "${DeleteWebSigningKey.Arn}",
                     "Next": "Success"
                   },
                   "Success": {
@@ -602,11 +664,38 @@ Resources:
             "End": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": "${SendCloudFormationResponseArn}",
+              "Resource": "${SendCloudFormationResponse.Arn}",
               "End": true
             }
           }
         }
+
+  GenerateSignedCookies:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-GenerateSignedCookies
+      Handler: web.generateSignedCookies
+      Timeout: 10
+      Environment:
+        Variables:
+          WEB_DOMAIN: !Ref WebDomain
+          WEB_DISTRIBUTION_ID: !Ref WebDistribution
+          WEB_SIGNING_KEY_BUCKET: !Ref SecretsBucket
+          WEB_SIGNING_KEY_PATH: !Sub web/signing.pem
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !Ref WebSigningKeyGetRoleArn
+
+  GenerateSignedCookiesPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GenerateSignedCookies
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/GET/weblogin
 
 Outputs:
   WebSigningPubKey:

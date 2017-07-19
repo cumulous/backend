@@ -77,6 +77,28 @@ Resources:
         ApiVersion: !Ref ApiVersion
         WebDomain: !Ref WebDomain
 
+  Web:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/web.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        ArtifactsBucket: !Ref ArtifactsBucket
+        SecretsBucket: !Ref SecretsBucket
+        WebBucket: !Ref WebBucket
+        LambdaPackage: !Ref LambdaPackage
+        EncryptionKeyId: !Ref EncryptionKeyId
+        DomainZone: !Ref DomainZone
+        WebDomain: !Ref WebDomain
+        WebTTL: !Ref WebTTL
+        WebPriceClass: !Ref WebPriceClass
+        WebLocations: !Ref WebLocations
+        WebACL: !Ref WebACL
+        WebSigningKeyPutRoleArn: !Ref WebSigningKeyPutRoleArn
+        WebSigningKeyGetRoleArn: !Ref WebSigningKeyGetRoleArn
+        ApiId: !GetAtt Api.Outputs.ApiId
+        ApiStage: !GetAtt Api.Outputs.ApiStage
+
   VPC:
     Type: AWS::CloudFormation::Stack
     Properties:
