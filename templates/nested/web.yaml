@@ -498,6 +498,7 @@ Resources:
 
   SetupWebSigningKeyPair:
     Type: AWS::Lambda::Function
+    Condition: SetupWebSigningKeyPair
     Properties:
       Handler: aws.setupCustomResource
       Timeout: 10
@@ -509,6 +510,7 @@ Resources:
 
   SetupWebSigningKeyPairRole:
     Type: AWS::IAM::Role
+    Condition: SetupWebSigningKeyPair
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -531,6 +533,7 @@ Resources:
 
   CreateAndExportWebSigningKeyPair:
     Type: AWS::Lambda::Function
+    Condition: SetupWebSigningKeyPair
     Properties:
       Handler: web.createAndExportSigningKey
       Timeout: 30
@@ -538,13 +541,11 @@ Resources:
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
-      Role: !If
-        - SetupWebSigningKeyPair
-        - !Ref WebSigningKeyPutRoleArn
-        - !GetAtt LambdaBasicExecutionRole.Arn
+      Role: !Ref WebSigningKeyPutRoleArn
 
   DeleteWebSigningKey:
     Type: AWS::Lambda::Function
+    Condition: SetupWebSigningKeyPair
     Properties:
       Handler: aws.deleteS3Object
       Runtime: nodejs6.10
@@ -555,6 +556,7 @@ Resources:
 
   DeleteWebSigningKeyRole:
     Type: AWS::IAM::Role
+    Condition: SetupWebSigningKeyPair
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -576,6 +578,7 @@ Resources:
 
   SetupWebSigningKeyPairExecutionRole:
     Type: AWS::IAM::Role
+    Condition: SetupWebSigningKeyPair
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
