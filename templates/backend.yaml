@@ -99,6 +99,16 @@ Resources:
         ApiId: !GetAtt Api.Outputs.ApiId
         ApiStage: !GetAtt Api.Outputs.ApiStage
 
+  Search:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/search.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        ArtifactsBucket: !Ref ArtifactsBucket
+        LambdaPackage: !Ref LambdaPackage
+        SearchDomain: !Ref SearchDomain
+
   VPC:
     Type: AWS::CloudFormation::Stack
     Properties:

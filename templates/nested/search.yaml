@@ -1,0 +1,456 @@
+Parameters:
+  BackendStack:
+    Type: String
+  ArtifactsBucket:
+    Type: String
+  LambdaPackage:
+    Type: String
+  SearchDomain:
+    Type: String
+
+Mappings:
+  StackMap:
+    backend-beta:
+      SearchStackSuffix: 'b'
+    backend-release:
+      SearchStackSuffix: 'r'
+
+Resources:
+  SearchDomainResource:
+    Type: AWS::CloudFormation::CustomResource
+    Properties:
+      ServiceToken: !GetAtt SetupSearchDomain.Arn
+      StateMachine: !Ref SetupSearchDomainStateMachine
+      SearchDomain: !Ref SearchDomain
+      Fields: !Sub |-
+        [
+          {
+            "IndexFieldName": "table",
+            "IndexFieldType": "literal",
+            "LiteralOptions": {
+              "FacetEnabled": false,
+              "SortEnabled": false,
+              "ReturnEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "project_id",
+            "IndexFieldType": "literal",
+            "LiteralOptions": {
+              "FacetEnabled": false,
+              "SortEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "created_at",
+            "IndexFieldType": "date",
+            "DateOptions": {
+              "FacetEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "creator_id",
+            "IndexFieldType": "literal",
+            "LiteralOptions": {
+              "FacetEnabled": false,
+              "SortEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "name",
+            "IndexFieldType": "text",
+            "TextOptions": {
+              "SortEnabled": false,
+              "HighlightEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "description",
+            "IndexFieldType": "text",
+            "TextOptions": {
+              "SortEnabled": false,
+              "HighlightEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "status",
+            "IndexFieldType": "literal",
+            "LiteralOptions": {
+              "FacetEnabled": false,
+              "SortEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "bucket",
+            "IndexFieldType": "literal",
+            "LiteralOptions": {
+              "FacetEnabled": false,
+              "SortEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "irb_id",
+            "IndexFieldType": "literal",
+            "LiteralOptions": {
+              "FacetEnabled": false,
+              "SortEnabled": false
+            }
+          }
+        ]
+
+  SetupSearchDomain:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.setupCustomResource
+      Timeout: 10
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt SetupSearchDomainRole.Arn
+
+  SetupSearchDomainRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SetupSearchDomainRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref SetupSearchDomainStateMachine
+
+  SendCloudFormationResponse:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.sendCloudFormationResponse
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  CloudSearchDefineIndexFields:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: search.defineIndexFields
+      Timeout: 20
+      Environment:
+        Variables:
+          SEARCH_STACK_SUFFIX: !FindInMap
+            - StackMap
+            - !Ref BackendStack
+            - SearchStackSuffix
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CloudSearchDefineIndexFieldsRole.Arn
+
+  CloudSearchDefineIndexFieldsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CloudSearchDefineIndexFieldsRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cloudsearch:DefineIndexField
+                Resource:
+                  - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+
+  CloudSearchIndexDocuments:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: search.indexDocuments
+      Timeout: 20
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CloudSearchIndexDocumentsRole.Arn
+
+  CloudSearchIndexDocumentsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CloudSearchIndexDocumentsRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cloudsearch:IndexDocuments
+                Resource:
+                  - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+
+  CloudSearchDescribeDomain:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: search.describeDomain
+      Timeout: 20
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CloudSearchDescribeDomainRole.Arn
+
+  CloudSearchDescribeDomainRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CloudSearchDescribeDomainRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cloudsearch:DescribeDomains
+                Resource:
+                  - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+
+  SetupSearchDomainExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SetupSearchDomainExecutionRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CloudSearchDefineIndexFields.Arn
+                  - !GetAtt CloudSearchIndexDocuments.Arn
+                  - !GetAtt CloudSearchDescribeDomain.Arn
+                  - !GetAtt SendCloudFormationResponse.Arn
+
+  SetupSearchDomainStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt SetupSearchDomainExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupSearchDomain",
+          "States": {
+            "SetupSearchDomain": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "ChooseEventType",
+                "States": {
+                  "ChooseEventType": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.RequestType",
+                        "StringEquals": "Delete",
+                        "Next": "Success"
+                      }
+                    ],
+                    "Default": "DefineIndexFields"
+                  },
+                  "DefineIndexFields": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties",
+                    "ResultPath": "$.Data.State",
+                    "Resource": "${CloudSearchDefineIndexFields.Arn}",
+                    "Next": "CheckReindexDocuments"
+                  },
+                  "CheckReindexDocuments": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.Data.State",
+                        "StringEquals": "RequiresIndexDocuments",
+                        "Next": "IndexDocuments"
+                      }
+                    ],
+                    "Default": "CheckActiveState"
+                  },
+                  "IndexDocuments": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.SearchDomain",
+                    "ResultPath": null,
+                    "Resource": "${CloudSearchIndexDocuments.Arn}",
+                    "Next": "CheckActiveState"
+                  },
+                  "CheckActiveState": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.Data.State",
+                        "StringEquals": "Active",
+                        "Next": "Success"
+                      }
+                    ],
+                    "Default": "Wait"
+                  },
+                  "Wait" : {
+                    "Type": "Wait",
+                    "Seconds": 15,
+                    "Next": "DescribeDomain"
+                  },
+                  "DescribeDomain": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.SearchDomain",
+                    "ResultPath": "$.Data",
+                    "Resource": "${CloudSearchDescribeDomain.Arn}",
+                    "Next": "CheckActiveState"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
+
+  CloudSearchUploadDocuments:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: search.uploadDocuments
+      Timeout: 30
+      Environment:
+        Variables:
+          SEARCH_DOC_ENDPOINT: !GetAtt SearchDomainResource.DocEndpoint
+          SEARCH_STACK_SUFFIX: !FindInMap
+            - StackMap
+            - !Ref BackendStack
+            - SearchStackSuffix
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CloudSearchUploadDocumentsRole.Arn
+
+  CloudSearchUploadDocumentsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CloudSearchUploadDocumentsRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:ListStreams
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetShardIterator
+                  - dynamodb:GetRecords
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${BackendStack}-*/stream/*
+              - Effect: Allow
+                Action:
+                  - cloudsearch:document
+                Resource:
+                  - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+
+Outputs:
+  UploadDocumentsFunction:
+    Value: !Ref CloudSearchUploadDocuments
+  StackSuffix:
+    Value: !FindInMap
+      - StackMap
+      - !Ref BackendStack
+      - SearchStackSuffix
+  QueryEndpoint:
+    Value: !GetAtt SearchDomainResource.QueryEndpoint
