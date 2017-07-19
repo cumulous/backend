@@ -833,6 +833,10 @@ Resources:
                   - !Sub arn:aws:s3:::${BackendArtifactsBucket}/templates/*
               - Effect: Allow
                 Action:
+                  - cloudformation:ValidateTemplate
+                Resource: '*'
+              - Effect: Allow
+                Action:
                   - cloudformation:CreateChangeSet
                   - cloudformation:DescribeChangeSet
                   - cloudformation:DeleteChangeSet

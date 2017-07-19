@@ -8,6 +8,15 @@ SWAGGER_FILE="api/swagger/swagger.yaml"
 TEMPLATES_DEST_PATH="templates/${STACK_NAME}"
 TEMPLATES_DEST="s3://${ARTIFACTS_BUCKET}/${TEMPLATES_DEST_PATH}/"
 
+validate_template() {
+  aws cloudformation validate-template --template-body file://$1 > /dev/null
+}
+
+validate_template templates/${BACKEND_TEMPLATE}
+find templates/nested/ -name "*.yaml" | while read file; do
+  validate_template $file
+done
+
 get_version() {
   local dir="$1"
 
