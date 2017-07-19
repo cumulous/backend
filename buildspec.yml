@@ -3,10 +3,11 @@ phases:
   install:
     commands:
       - npm install
-      - pip install --upgrade awscli
+      - pip install --upgrade awscli yamllint
       - chmod -R +x scripts
   pre_build:
     commands:
+      - npm run lint:templates
       - npm run test:unit:once
   build:
     commands:

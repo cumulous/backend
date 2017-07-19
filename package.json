@@ -9,6 +9,7 @@
     "build:modules": "npm i --prod --prefix app/",
     "clean:app": "rimraf app/*.spec.js app/package.json app/fixtures",
     "copy:configs": "copyfiles -f package.json bin/swagger.json src/*.sh templates/*.json app/",
+    "lint:templates": "yamllint api/ templates/",
     "package": "./scripts/package.sh",
     "rm": "rimraf",
     "server": "lite-server",
