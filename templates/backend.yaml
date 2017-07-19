@@ -73,6 +73,20 @@ Resources:
         LambdaPackage: !Ref LambdaPackage
         VpcRange: !Ref VpcRange
 
+  Api:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/api.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        ArtifactsBucket: !Ref ArtifactsBucket
+        LambdaPackage: !Ref LambdaPackage
+        TemplatePath: !Sub ${TemplatesPath}/swagger.yaml
+        DomainZone: !Ref DomainZone
+        ApiDomain: !Ref ApiDomain
+        ApiVersion: !Ref ApiVersion
+        WebDomain: !Ref WebDomain
+
   LogsBucket:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain

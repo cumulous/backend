@@ -1,10 +1,6 @@
 Parameters:
   BackendStack:
     Type: String
-  SetupCustomResourceArn:
-    Type: String
-  SendCloudFormationResponseArn:
-    Type: String
   ArtifactsBucket:
     Type: String
   LambdaPackage:
@@ -52,7 +48,7 @@ Resources:
   ApiDeployment:
     Type: AWS::CloudFormation::CustomResource
     Properties:
-      ServiceToken: !Ref SetupCustomResourceArn
+      ServiceToken: !GetAtt SetupApiDeployment.Arn
       StateMachine: !Ref SetupApiDeploymentStateMachine
       ApiId: !Ref Api
       Version: !Ref ApiVersion
@@ -76,14 +72,13 @@ Resources:
   DeployApi:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-DeployApi
-      Role: !GetAtt DeployApiRole.Arn
       Handler: apig.deploy
-      Runtime: nodejs6.10
       Timeout: 30
+      Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt DeployApiRole.Arn
 
   DeployApiRole:
     Type: AWS::IAM::Role
@@ -98,7 +93,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: DeployApiRolePolicy
+        - PolicyName: DeployApiRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -107,6 +102,60 @@ Resources:
                   - apigateway:POST
                 Resource:
                   - !Sub arn:aws:apigateway:${AWS::Region}::/restapis/${Api}/deployments
+
+  SetupApiDeployment:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.setupCustomResource
+      Timeout: 10
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt SetupApiDeploymentRole.Arn
+
+  SetupApiDeploymentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SetupApiDeploymentRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref SetupApiDeploymentStateMachine
+
+  SendCloudFormationResponse:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.sendCloudFormationResponse
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   SetupApiDeploymentExecutionRole:
     Type: AWS::IAM::Role
@@ -119,7 +168,7 @@ Resources:
               Service: !Sub states.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: StatesExecutionRolePolicy
+        - PolicyName: SetupApiDeploymentExecutionRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -127,7 +176,7 @@ Resources:
                 Action: lambda:InvokeFunction
                 Resource:
                   - !GetAtt DeployApi.Arn
-                  - !Ref SendCloudFormationResponseArn
+                  - !GetAtt SendCloudFormationResponse.Arn
 
   SetupApiDeploymentStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -193,44 +242,30 @@ Resources:
             "End": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": "${SendCloudFormationResponseArn}",
+              "Resource": "${SendCloudFormationResponse.Arn}",
               "End": true
             }
           }
         }
 
-  LambdaBasicExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-
   GetApi:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-GetApi
-      Role: !GetAtt LambdaBasicExecutionRole.Arn
       Handler: apig.getSpec
-      Runtime: nodejs6.10
       Timeout: 10
       Environment:
         Variables:
           WEB_DOMAIN: !Ref WebDomain
+      Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
 
   GetApiPermission:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !GetAtt GetApi.Arn
+      FunctionName: !Ref GetApi
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceArn:
