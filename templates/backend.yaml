@@ -109,6 +109,21 @@ Resources:
         LambdaPackage: !Ref LambdaPackage
         SearchDomain: !Ref SearchDomain
 
+  Projects:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/projects.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        ArtifactsBucket: !Ref ArtifactsBucket
+        LogsBucket: !Ref LogsBucket
+        DatasetsBucket: !Ref DatasetsBucket
+        LambdaPackage: !Ref LambdaPackage
+        WebDomain: !Ref WebDomain
+        ApiId: !GetAtt Api.Outputs.ApiId
+        ApiStage: !GetAtt Api.Outputs.ApiStage
+        SearchUploadDocumentsFunction: !GetAtt Search.Outputs.UploadDocumentsFunction
+
   VPC:
     Type: AWS::CloudFormation::Stack
     Properties:

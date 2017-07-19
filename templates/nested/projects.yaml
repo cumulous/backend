@@ -1,0 +1,117 @@
+Parameters:
+  BackendStack:
+    Type: String
+  ArtifactsBucket:
+    Type: String
+  DatasetsBucket:
+    Type: String
+  LogsBucket:
+    Type: String
+  LambdaPackage:
+    Type: String
+  WebDomain:
+    Type: String
+  ApiId:
+    Type: String
+  ApiStage:
+    Type: String
+  SearchUploadDocumentsFunction:
+    Type: String
+
+Mappings:
+  StackMap:
+    backend-beta:
+      ProjectsReadCapacity: 1
+      ProjectsWriteCapacity: 1
+    backend-release:
+      ProjectsReadCapacity: 5
+      ProjectsWriteCapacity: 5
+
+Resources:
+  ProjectsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: !FindInMap
+          - StackMap
+          - !Ref BackendStack
+          - ProjectsReadCapacity
+        WriteCapacityUnits: !FindInMap
+          - StackMap
+          - !Ref BackendStack
+          - ProjectsWriteCapacity
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+
+  ProjectsTableStreamMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt ProjectsTable.StreamArn
+      FunctionName: !Ref SearchUploadDocumentsFunction
+      StartingPosition: TRIM_HORIZON
+      BatchSize: 100
+
+  CreateProject:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CreateProject
+      Handler: projects.create
+      Environment:
+        Variables:
+          PROJECTS_TABLE: !Ref ProjectsTable
+          DATASETS_BUCKET: !Ref DatasetsBucket
+          LOGS_BUCKET: !Sub arn:aws:s3:::${LogsBucket}
+          WEB_DOMAIN: !Ref WebDomain
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CreateProjectRole.Arn
+
+  CreateProjectRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub lambda.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateProjectRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:PutAnalyticsConfiguration
+                Resource:
+                  - !Sub arn:aws:s3:::${DatasetsBucket}
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${ProjectsTable}
+
+  CreateProjectPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CreateProject
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/POST/projects
+
+Outputs:
+  ProjectsTable:
+    Value: !Ref ProjectsTable
