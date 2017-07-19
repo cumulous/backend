@@ -1,10 +1,6 @@
 Parameters:
   BackendStack:
     Type: String
-  SetupCustomResourceArn:
-    Type: String
-  SendCloudFormationResponseArn:
-    Type: String
   ArtifactsBucket:
     Type: String
   LambdaPackage:
@@ -61,12 +57,43 @@ Resources:
   Subnets:
     Type: AWS::CloudFormation::CustomResource
     Properties:
-      ServiceToken: !Ref SetupCustomResourceArn
+      ServiceToken: !GetAtt SetupSubnets.Arn
       StateMachine: !Ref SetupSubnetsStateMachine
       VpcId: !Ref VPC
       VpcRange: !Ref VpcRange
       AvailabilityZones: !GetAZs
         Ref: AWS::Region
+
+  SetupSubnets:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.setupCustomResource
+      Runtime: nodejs6.10
+      Timeout: 10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt SetupSubnetsRole.Arn
+
+  SetupSubnetsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub lambda.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SetupSubnetsRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref SetupSubnetsStateMachine
 
   LambdaBasicExecutionRole:
     Type: AWS::IAM::Role
@@ -260,6 +287,16 @@ Resources:
                   - ec2:DeleteSubnet
                 Resource: '*'
 
+  SendCloudFormationResponse:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.sendCloudFormationResponse
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+
   SetupSubnetsExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -271,7 +308,7 @@ Resources:
               Service: !Sub states.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: StatesExecutionRolePolicy
+        - PolicyName: SetupSubnetsExecutionRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -284,7 +321,7 @@ Resources:
                   - !GetAtt RouteSubnets.Arn
                   - !GetAtt DescribeSubnets.Arn
                   - !GetAtt DeleteSubnets.Arn
-                  - !Ref SendCloudFormationResponseArn
+                  - !GetAtt SendCloudFormationResponse.Arn
 
   SetupSubnetsStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -400,7 +437,7 @@ Resources:
             "End": {
               "Type": "Task",
               "ResultPath": null,
-              "Resource": "${SendCloudFormationResponseArn}",
+              "Resource": "${SendCloudFormationResponse.Arn}",
               "End": true
             }
           }
