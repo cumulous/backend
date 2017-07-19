@@ -83,7 +83,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: !Sub lambda.${AWS::Region}.amazonaws.com
+              Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       Policies:
         - PolicyName: SetupSubnetsRole
@@ -103,7 +103,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: !Sub lambda.${AWS::Region}.amazonaws.com
+              Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -136,7 +136,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: !Sub lambda.${AWS::Region}.amazonaws.com
+              Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -168,7 +168,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: !Sub lambda.${AWS::Region}.amazonaws.com
+              Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -203,7 +203,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: !Sub lambda.${AWS::Region}.amazonaws.com
+              Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -235,7 +235,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: !Sub lambda.${AWS::Region}.amazonaws.com
+              Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -267,7 +267,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: !Sub lambda.${AWS::Region}.amazonaws.com
+              Service: lambda.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -299,7 +299,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: !Sub states.${AWS::Region}.amazonaws.com
+              Service: states.amazonaws.com
             Action: sts:AssumeRole
       Policies:
         - PolicyName: SetupSubnetsExecutionRole
