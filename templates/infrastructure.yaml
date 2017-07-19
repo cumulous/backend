@@ -1003,9 +1003,6 @@ Resources:
                   - ec2:DeleteRouteTable
                   - ec2:DeleteRoute
                   - ec2:DeleteInternetGateway
-                Condition:
-                  StringLike:
-                    'ec2:ResourceTag/Name': !Sub backend-*
                 Resource:
                   - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:route-table/*
                   - !Sub arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:internet-gateway/*
