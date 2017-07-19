@@ -1,0 +1,301 @@
+Parameters:
+  BackendStack:
+    Type: String
+  ArtifactsBucket:
+    Type: String
+  DatasetsBucket:
+    Type: String
+  LambdaPackage:
+    Type: String
+  WebDomain:
+    Type: String
+  ApiId:
+    Type: String
+  ApiStage:
+    Type: String
+  SearchDomain:
+    Type: String
+  SearchUploadDocumentsFunction:
+    Type: String
+  SearchQueryEndpoint:
+    Type: String
+  SearchStackSuffix:
+    Type: String
+
+Mappings:
+  StackMap:
+    backend-beta:
+      DatasetsReadCapacity: 1
+      DatasetsWriteCapacity: 1
+    backend-release:
+      DatasetsReadCapacity: 5
+      DatasetsWriteCapacity: 5
+
+Resources:
+  DatasetsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: !FindInMap
+          - StackMap
+          - !Ref BackendStack
+          - DatasetsReadCapacity
+        WriteCapacityUnits: !FindInMap
+          - StackMap
+          - !Ref BackendStack
+          - DatasetsWriteCapacity
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+
+  DatasetsTableStreamMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt DatasetsTable.StreamArn
+      FunctionName: !Ref SearchUploadDocumentsFunction
+      StartingPosition: TRIM_HORIZON
+      BatchSize: 100
+
+  CreateDataset:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CreateDataset
+      Handler: datasets.create
+      Timeout: 20
+      Environment:
+        Variables:
+          DATASETS_TABLE: !Ref DatasetsTable
+          WEB_DOMAIN: !Ref WebDomain
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CreateDatasetRole.Arn
+
+  CreateDatasetRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateDatasetRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: dynamodb:PutItem
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
+
+  CreateDatasetPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CreateDataset
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/POST/datasets
+
+  ListDatasets:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-ListDatasets
+      Handler: datasets.list
+      Timeout: 30
+      Environment:
+        Variables:
+          SEARCH_QUERY_ENDPOINT: !Ref SearchQueryEndpoint
+          SEARCH_STACK_SUFFIX: !Ref SearchStackSuffix
+          WEB_DOMAIN: !Ref WebDomain
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt ListDatasetsRole.Arn
+
+  ListDatasetsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ListDatasetsRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudsearch:search
+                Resource:
+                  - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+
+  ListDatasetsPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ListDatasets
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/GET/datasets
+
+  RequestDatasetCredentials:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-RequestDatasetCredentials
+      Handler: datasets.requestCredentials
+      Timeout: 20
+      Environment:
+        Variables:
+          DATASETS_TABLE: !Ref DatasetsTable
+          DATASETS_BUCKET: !Ref DatasetsBucket
+          DATASETS_ROLE: !GetAtt DatasetsAccessRole.Arn
+          WEB_DOMAIN: !Ref WebDomain
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt RequestDatasetCredentialsRole.Arn
+
+  RequestDatasetCredentialsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: RequestDatasetCredentialsRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
+
+  DatasetsAccessRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !GetAtt RequestDatasetCredentialsRole.Arn
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: DatasetsAccessRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${DatasetsBucket}
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:DeleteObject
+                Resource:
+                  - !Sub arn:aws:s3:::${DatasetsBucket}/*
+
+  RequestDatasetCredentialsPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref RequestDatasetCredentials
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/POST/datasets/{dataset_id}/credentials
+
+  SetDatasetStorage:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-SetDatasetStorage
+      Handler: datasets.setStorage
+      Timeout: 30
+      MemorySize: 1024
+      Environment:
+        Variables:
+          DATASETS_TABLE: !Ref DatasetsTable
+          DATASETS_BUCKET: !Ref DatasetsBucket
+          WEB_DOMAIN: !Ref WebDomain
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt SetDatasetStorageRole.Arn
+
+  SetDatasetStorageRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SetDatasetStorageRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${DatasetsBucket}
+              - Effect: Allow
+                Action:
+                  - s3:PutObjectTagging
+                Resource:
+                  - !Sub arn:aws:s3:::${DatasetsBucket}/*
+              - Effect: Allow
+                Action:
+                  - dynamodb:UpdateItem
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
+
+  SetDatasetStoragePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref SetDatasetStorage
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/PUT/datasets/{dataset_id}/storage
+
+Outputs:
+  DatasetsTable:
+    Value: !Ref DatasetsTable
