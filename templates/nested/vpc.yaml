@@ -103,7 +103,7 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: lambda.amazonaws.com
+              Service: !Sub lambda.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -111,24 +111,22 @@ Resources:
   CalculateSubnets:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-CalculateSubnets
-      Role: !GetAtt LambdaBasicExecutionRole.Arn
       Handler: vpc.calculateSubnets
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
 
   CreateSubnets:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-CreateSubnets
-      Role: !GetAtt CreateSubnetsRole.Arn
       Handler: vpc.createSubnets
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt CreateSubnetsRole.Arn
 
   CreateSubnetsRole:
     Type: AWS::IAM::Role
@@ -138,12 +136,12 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: lambda.amazonaws.com
+              Service: !Sub lambda.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: CreateSubnetsRolePolicy
+        - PolicyName: CreateSubnetsRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -155,13 +153,12 @@ Resources:
   ModifySubnets:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-ModifySubnets
-      Role: !GetAtt ModifySubnetsRole.Arn
       Handler: vpc.modifySubnets
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt ModifySubnetsRole.Arn
 
   ModifySubnetsRole:
     Type: AWS::IAM::Role
@@ -171,12 +168,12 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: lambda.amazonaws.com
+              Service: !Sub lambda.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: ModifySubnetsRolePolicy
+        - PolicyName: ModifySubnetsRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -188,16 +185,15 @@ Resources:
   RouteSubnets:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-RouteSubnets
-      Role: !GetAtt RouteSubnetsRole.Arn
       Handler: vpc.routeSubnets
-      Runtime: nodejs6.10
       Environment:
         Variables:
           ROUTE_TABLE: !Ref RouteTable
+      Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt RouteSubnetsRole.Arn
 
   RouteSubnetsRole:
     Type: AWS::IAM::Role
@@ -207,12 +203,12 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: lambda.amazonaws.com
+              Service: !Sub lambda.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: RouteSubnetsRolePolicy
+        - PolicyName: RouteSubnetsRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -224,13 +220,12 @@ Resources:
   DescribeSubnets:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-DescribeSubnets
-      Role: !GetAtt DescribeSubnetsRole.Arn
       Handler: vpc.describeSubnets
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt DescribeSubnetsRole.Arn
 
   DescribeSubnetsRole:
     Type: AWS::IAM::Role
@@ -240,12 +235,12 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: lambda.amazonaws.com
+              Service: !Sub lambda.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: DescribeSubnetsRolePolicy
+        - PolicyName: DescribeSubnetsRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -257,13 +252,12 @@ Resources:
   DeleteSubnets:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-DeleteSubnets
-      Role: !GetAtt DeleteSubnetsRole.Arn
       Handler: vpc.deleteSubnets
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
+      Role: !GetAtt DeleteSubnetsRole.Arn
 
   DeleteSubnetsRole:
     Type: AWS::IAM::Role
@@ -273,12 +267,12 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: lambda.amazonaws.com
+              Service: !Sub lambda.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: DeleteSubnetsRolePolicy
+        - PolicyName: DeleteSubnetsRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
