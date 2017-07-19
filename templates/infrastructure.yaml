@@ -861,12 +861,6 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - cloudformation:CreateChangeSet
-                Resource:
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31
-                  - !Sub arn:aws:cloudformation:${AWS::Region}:aws:transform/Include
-              - Effect: Allow
-                Action:
                   - iam:GetRole
                   - iam:CreateRole
                   - iam:PutRolePolicy

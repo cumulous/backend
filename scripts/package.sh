@@ -2,7 +2,7 @@
 
 set -e
 
-BACKEND_TEMPLATE="backend.yaml"
+BACKEND_TEMPLATE="templates/backend.yaml"
 PACKAGE_FILE="app.zip"
 SWAGGER_FILE="api/swagger/swagger.yaml"
 TEMPLATES_DEST_PATH="templates/${STACK_NAME}"
@@ -30,12 +30,6 @@ API_LAMBDA_PREFIX="arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:${STA
 API_LAMBDA_PREFIX="arn:aws:apigateway:${AWS_REGION}:lambda:path/2015-03-31/functions/${API_LAMBDA_PREFIX}"
 sed -i "s|\${API_LAMBDA_PREFIX}|${API_LAMBDA_PREFIX}|" ${SWAGGER_FILE}
 sed -i "s|\${AUTHORIZER_INVOCATION_ROLE_ARN}|${AUTHORIZER_INVOCATION_ROLE_ARN}|" ${SWAGGER_FILE}
-
-aws cloudformation package \
-  --template-file templates/${BACKEND_TEMPLATE} \
-  --output-template-file ${BACKEND_TEMPLATE} \
-  --s3-bucket ${ARTIFACTS_BUCKET} \
-  --s3-prefix lambda/${STACK_NAME}
 
 aws s3 cp ${PACKAGE_FILE} s3://${ARTIFACTS_BUCKET}/${PACKAGE_PATH}
 aws s3 cp ${BACKEND_TEMPLATE} ${TEMPLATES_DEST}
