@@ -251,6 +251,7 @@ Resources:
   GetApi:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub ${BackendStack}-GetApi
       Handler: apig.getSpec
       Timeout: 10
       Environment:
