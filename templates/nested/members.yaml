@@ -11,6 +11,22 @@ Parameters:
     Type: String
 
 Resources:
+  Authorizer:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-Authorizer
+      Handler: members.authorize
+      Timeout: 10
+      Environment:
+        Variables:
+          API_DOMAIN: !Ref ApiDomain
+          AUTH0_DOMAIN: !Ref Auth0Domain
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+
   LambdaBasicExecutionRole:
     Type: AWS::IAM::Role
     Properties:
@@ -23,19 +39,3 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-
-  Authorizer:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub ${BackendStack}-Authorizer
-      Role: !GetAtt LambdaBasicExecutionRole.Arn
-      Handler: members.authorize
-      Runtime: nodejs6.10
-      Timeout: 10
-      Environment:
-        Variables:
-          API_DOMAIN: !Ref ApiDomain
-          AUTH0_DOMAIN: !Ref Auth0Domain
-      Code:
-        S3Bucket: !Ref ArtifactsBucket
-        S3Key: !Ref LambdaPackage
