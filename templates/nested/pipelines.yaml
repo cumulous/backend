@@ -1,0 +1,96 @@
+Parameters:
+  BackendStack:
+    Type: String
+  ArtifactsBucket:
+    Type: String
+  LambdaPackage:
+    Type: String
+  WebDomain:
+    Type: String
+  ApiId:
+    Type: String
+  ApiStage:
+    Type: String
+
+Mappings:
+  StackMap:
+    backend-beta:
+      PipelinesReadCapacity: 1
+      PipelinesWriteCapacity: 1
+    backend-release:
+      PipelinesReadCapacity: 5
+      PipelinesWriteCapacity: 5
+
+Resources:
+  PipelinesTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: !FindInMap
+          - StackMap
+          - !Ref BackendStack
+          - PipelinesReadCapacity
+        WriteCapacityUnits: !FindInMap
+          - StackMap
+          - !Ref BackendStack
+          - PipelinesWriteCapacity
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+
+  CreatePipeline:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CreatePipeline
+      Handler: pipelines.create
+      Timeout: 20
+      Environment:
+        Variables:
+          PIPELINES_TABLE: !Ref PipelinesTable
+          WEB_DOMAIN: !Ref WebDomain
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CreatePipelineRole.Arn
+
+  CreatePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreatePipelineRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: dynamodb:PutItem
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${PipelinesTable}
+
+  CreatePipelinePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CreatePipeline
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/POST/pipelines
+
+Outputs:
+  PipelinesTable:
+    Value: !Ref PipelinesTable
