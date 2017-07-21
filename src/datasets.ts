@@ -9,26 +9,25 @@ import { query } from './search';
 import { Callback } from './types';
 
 export const create = (request: Request, context: any, callback: Callback) => {
-  const date = new Date().toISOString();
-  const id = uuid();
-  const item = () => ({
-    id: id,
-    project_id: request.body.project_id,
-    creator_id: request.requestContext.authorizer.principalId,
-    created_at: date,
-    description: request.body.description,
-    status: 'created',
-  });
-
   validate(request, 'POST', '/datasets')
-    .then(() => dynamodb.put({
+    .then(() => generateDataset(request))
+    .then(dataset => dynamodb.put({
       TableName: process.env[envNames.datasetsTable],
-      Item: item(),
+      Item: dataset,
       ConditionExpression: 'attribute_not_exists(id)',
-    }).promise())
-    .then(() => respond(callback, request, item()))
+    }).promise()
+      .then(() => respond(callback, request, dataset)))
     .catch(err => respondWithError(callback, request, err));
 };
+
+const generateDataset = (request: Request) => ({
+  id: uuid(),
+  project_id: request.body.project_id,
+  description: request.body.description,
+  creator_id: request.requestContext.authorizer.principalId,
+  created_at: new Date().toISOString(),
+  status: 'created',
+});
 
 export const list = (request: Request, context: any, callback: Callback) => {
   query(request, '/datasets', ['project_id', 'status'], callback);
