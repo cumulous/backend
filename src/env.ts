@@ -9,6 +9,7 @@ export const envNames = {
   webSigningKeyPath: 'WEB_SIGNING_KEY_PATH',
   datasetsTable: 'DATASETS_TABLE',
   projectsTable: 'PROJECTS_TABLE',
+  pipelinesTable: 'PIPELINES_TABLE',
   searchStackSuffix: 'SEARCH_STACK_SUFFIX',
   searchDocEndpoint: 'SEARCH_DOC_ENDPOINT',
   searchQueryEndpoint: 'SEARCH_QUERY_ENDPOINT',
