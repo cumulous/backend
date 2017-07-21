@@ -132,6 +132,7 @@ describe('getPolicy()', () => {
               fakeBaseArn + '/POST/datasets/*/credentials',
               fakeBaseArn + '/PUT/datasets/*/storage',
               fakeBaseArn + '/POST/projects',
+              fakeBaseArn + '/POST/pipelines',
             ],
           }],
         },
