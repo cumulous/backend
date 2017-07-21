@@ -217,6 +217,23 @@ describe('search.uploadDocuments()', () => {
     fake_key: {
       S: fakeDocumentValue,
     },
+    fake_map: {
+      M: {
+        fake_key: {S: fakeDocumentValue}
+      },
+    },
+    fake_list: {
+      L: [{
+        M: {
+          fake_key: {S: fakeDocumentValue}
+        },
+      }],
+    },
+    fake_list_string: {
+      L: [{
+        S: fakeDocumentValue,
+      }],
+    },
   });
 
   const fakeRecord = (eventName: string, id: string) => ({
@@ -276,9 +293,18 @@ describe('search.uploadDocuments()', () => {
       (done: Callback) => {
     uploadDocuments(fakeEvent(), null, (err: Error) => {
       const idSuffix = fakeTableName.toLowerCase() + '_' + fakeStackSuffix;
-      const fakeFields: any = {};
+      const fakeFields: Dict<any> = {};
 
       fakeFields[`fake_key_${fakeStackSuffix}`] = fakeDocumentValue;
+      fakeFields[`fake_map_${fakeStackSuffix}`] = stringify({
+        fake_key: fakeDocumentValue,
+      });
+      fakeFields[`fake_list_${fakeStackSuffix}`] = [
+        stringify({
+          fake_key: fakeDocumentValue,
+        }),
+      ];
+      fakeFields[`fake_list_string_${fakeStackSuffix}`] = [ fakeDocumentValue ];
       fakeFields[`table_${fakeStackSuffix}`] = fakeTableName.toLowerCase();
 
       expect(spyOnUploadDocuments).toHaveBeenCalledWith({

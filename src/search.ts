@@ -90,7 +90,13 @@ const recordToDoc = (record: StreamRecord) => {
     fields[`table_${stackSuffix()}`] = table;
     Object.keys(item).forEach(key => {
       if (key === 'id') return;
-      fields[`${key}_${stackSuffix()}`] = DynamoDB.Converter.output(item[key]);
+      let value = DynamoDB.Converter.output(item[key]);
+      if (Array.isArray(value)) {
+        value = value.map(v => typeof v == 'object' ? stringify(v) : v);
+      } else if (typeof value == 'object') {
+        value = stringify(value);
+      }
+      fields[`${key}_${stackSuffix()}`] = value;
     });
     return {
       type: 'add',
