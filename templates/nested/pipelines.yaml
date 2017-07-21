@@ -11,6 +11,8 @@ Parameters:
     Type: String
   ApiStage:
     Type: String
+  SearchUploadDocumentsFunction:
+    Type: String
 
 Mappings:
   StackMap:
@@ -43,6 +45,14 @@ Resources:
           - PipelinesWriteCapacity
       StreamSpecification:
         StreamViewType: NEW_IMAGE
+
+  DatasetsTableStreamMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt PipelinesTable.StreamArn
+      FunctionName: !Ref SearchUploadDocumentsFunction
+      StartingPosition: TRIM_HORIZON
+      BatchSize: 100
 
   CreatePipeline:
     Type: AWS::Lambda::Function

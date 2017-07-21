@@ -183,6 +183,7 @@ Resources:
         WebDomain: !Ref WebDomain
         ApiId: !GetAtt Api.Outputs.ApiId
         ApiStage: !GetAtt Api.Outputs.ApiStage
+        SearchUploadDocumentsFunction: !GetAtt Search.Outputs.UploadDocumentsFunction
 
   VPC:
     Type: AWS::CloudFormation::Stack

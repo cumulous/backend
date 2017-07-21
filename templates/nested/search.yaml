@@ -95,6 +95,21 @@ Resources:
               "FacetEnabled": false,
               "SortEnabled": false
             }
+          },
+          {
+            "IndexFieldName": "datasets",
+            "IndexFieldType": "literal-array",
+            "LiteralArrayOptions": {
+              "FacetEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "steps",
+            "IndexFieldType": "text-array",
+            "TextArrayOptions": {
+              "HighlightEnabled": false,
+              "ReturnEnabled": false
+            }
           }
         ]
 
