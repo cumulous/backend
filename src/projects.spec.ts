@@ -46,7 +46,7 @@ describe('projects.create()', () => {
     name: fakeProjectName,
     description: fakeProjectDescription,
     created_at: fakeDate,
-    creator_id: fakeMemberId,
+    created_by: fakeMemberId,
     irb_id: fakeIRBId,
     status: 'active',
   });

@@ -24,7 +24,7 @@ const generateDataset = (request: Request) => ({
   id: uuid(),
   project_id: request.body.project_id,
   description: request.body.description,
-  creator_id: request.requestContext.authorizer.principalId,
+  created_by: request.requestContext.authorizer.principalId,
   created_at: new Date().toISOString(),
   status: 'created',
 });

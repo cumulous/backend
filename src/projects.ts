@@ -26,7 +26,7 @@ const generateProject = (request: Request) => ({
   name: request.body.name,
   description: request.body.description,
   irb_id: request.body.irb_id,
-  creator_id: request.requestContext.authorizer.principalId,
+  created_by: request.requestContext.authorizer.principalId,
   created_at: new Date().toISOString(),
   status: 'active',
 });

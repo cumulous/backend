@@ -49,7 +49,7 @@ Resources:
             }
           },
           {
-            "IndexFieldName": "creator_id",
+            "IndexFieldName": "created_by",
             "IndexFieldType": "literal",
             "LiteralOptions": {
               "FacetEnabled": false,

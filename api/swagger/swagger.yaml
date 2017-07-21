@@ -505,7 +505,7 @@ definitions:
       - id
       - name
       - created_at
-      - creator_id
+      - created_by
       - status
     properties:
       id:
@@ -516,7 +516,7 @@ definitions:
         $ref: '#/definitions/ProjectDescription'
       created_at:
         $ref: '#/definitions/Date'
-      creator_id:
+      created_by:
         $ref: '#/definitions/ProjectMemberId'
       status:
         $ref: '#/definitions/ProjectStatus'
@@ -562,7 +562,7 @@ definitions:
       - id
       - project_id
       - created_at
-      - creator_id
+      - created_by
       - status
     properties:
       id:
@@ -571,7 +571,7 @@ definitions:
         $ref: '#/definitions/ProjectId'
       created_at:
         $ref: '#/definitions/Date'
-      creator_id:
+      created_by:
         $ref: '#/definitions/ProjectMemberId'
       description:
         $ref: '#/definitions/DatasetDescription'

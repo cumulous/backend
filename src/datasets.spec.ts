@@ -37,7 +37,7 @@ describe('datasets.create()', () => {
   const fakeItem = () => ({
     id: fakeDatasetId,
     project_id: fakeProjectId,
-    creator_id: fakeMemberId,
+    created_by: fakeMemberId,
     created_at: fakeDate,
     description: fakeDescription,
     status: 'created',
