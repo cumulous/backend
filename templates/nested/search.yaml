@@ -81,22 +81,6 @@ Resources:
             }
           },
           {
-            "IndexFieldName": "bucket",
-            "IndexFieldType": "literal",
-            "LiteralOptions": {
-              "FacetEnabled": false,
-              "SortEnabled": false
-            }
-          },
-          {
-            "IndexFieldName": "irb_id",
-            "IndexFieldType": "literal",
-            "LiteralOptions": {
-              "FacetEnabled": false,
-              "SortEnabled": false
-            }
-          },
-          {
             "IndexFieldName": "datasets",
             "IndexFieldType": "literal-array",
             "LiteralArrayOptions": {

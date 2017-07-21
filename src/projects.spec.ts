@@ -16,7 +16,6 @@ const fakeMemberId = uuid();
 const fakeProjectId = uuid();
 const fakeProjectName = 'Fake project';
 const fakeProjectDescription = 'This is a fake project for unit testing';
-const fakeIRBId = '1234ABCD';
 const fakeDate = new Date().toISOString();
 const fakeProjectsTable = 'projects-table';
 const fakeDatasetsBucket = 'fake-datasets-bucket';
@@ -26,7 +25,6 @@ describe('projects.create()', () => {
   const fakeBody = () => ({
     name: fakeProjectName,
     description: fakeProjectDescription,
-    irb_id: fakeIRBId,
   });
 
   const fakeContext = () => ({
@@ -47,7 +45,6 @@ describe('projects.create()', () => {
     description: fakeProjectDescription,
     created_at: fakeDate,
     created_by: fakeMemberId,
-    irb_id: fakeIRBId,
     status: 'active',
   });
 

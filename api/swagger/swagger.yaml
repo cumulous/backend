@@ -573,8 +573,6 @@ definitions:
         $ref: '#/definitions/ProjectMemberId'
       status:
         $ref: '#/definitions/ProjectStatus'
-      irb_id:
-        $ref: '#/definitions/ProjectIRB'
   ProjectId:
     description: Unique identifier for a project
     type: string
@@ -593,10 +591,6 @@ definitions:
     enum:
       - active
       - removed
-  ProjectIRB:
-    description: project IRB identifier
-    type: string
-    pattern: ^[\w-.]{1,100}$
   ListOfProjects:
     type: object
     properties:
@@ -884,8 +878,6 @@ parameters:
           $ref: '#/definitions/ProjectName'
         description:
           $ref: '#/definitions/ProjectDescription'
-        irb_id:
-          $ref: '#/definitions/ProjectIRB'
   DatasetCreationRequest:
     in: body
     name: DatasetCreationRequest
