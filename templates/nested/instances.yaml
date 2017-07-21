@@ -290,7 +290,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: instances.executeInitScript
-      Timeout: 20
+      Timeout: 60
       VpcConfig:
         SecurityGroupIds:
           - !Ref SecurityGroup
@@ -474,7 +474,7 @@ Resources:
                     "Type": "Task",
                     "ResultPath": null,
                     "Resource": "${TransferInitScript.Arn}",
-                    "TimeoutSeconds": 10,
+                    "TimeoutSeconds": 15,
                     "Next": "ExecuteInitScript",
                     "Retry": [{
                         "ErrorEquals": [ "HandledError", "States.Timeout" ],
@@ -484,7 +484,6 @@ Resources:
                   "ExecuteInitScript": {
                     "Type": "Task",
                     "Resource": "${ExecuteInitScript.Arn}",
-                    "TimeoutSeconds": 15,
                     "End": true
                   }
                 }
