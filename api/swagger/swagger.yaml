@@ -496,6 +496,59 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-SetDatasetStorage/invocations
+  /pipelines:
+    options:
+      tags:
+        - Pipelines
+      responses:
+        200:
+          description: HTTP options
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+            Vary:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
+              method.response.header.Vary: "'Accept-Encoding'"
+    post:
+      summary: Create a pipeline
+      description: |
+        Defines a new computational pipeline or a new version of a pipeline.
+      operationId: createPipeline
+      security:
+        - member_token: []
+      tags:
+        - Pipelines
+      parameters:
+        - $ref: '#/parameters/PipelineCreationRequest'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Properties of the submitted pipeline
+          schema:
+            $ref: '#/definitions/Pipeline'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-CreatePipeline/invocations
 
 definitions:
   Spec:
@@ -673,6 +726,86 @@ definitions:
         $ref: '#/definitions/DatasetId'
       type:
         $ref: '#/definitions/DatasetStorageType'
+  Pipeline:
+    required:
+      - id
+      - name
+      - datasets
+      - steps
+      - status
+      - created_at
+      - created_by
+    properties:
+      id:
+        $ref: '#/definitions/PipelineId'
+      name:
+        $ref: '#/definitions/PipelineName'
+      datasets:
+        $ref: '#/definitions/PipelineDatasets'
+      steps:
+        $ref: '#/definitions/PipelineSteps'
+      status:
+        $ref: '#/definitions/PipelineStatus'
+      created_at:
+        $ref: '#/definitions/Date'
+      created_by:
+        $ref: '#/definitions/ProjectMemberId'
+      description:
+        $ref: '#/definitions/PipelineDescription'
+  PipelineId:
+    description: Unique identifier for a pipeline
+    type: string
+    format: uuid
+  PipelineName:
+    description: Pipeline name
+    type: string
+    pattern: ^[\w-. ]{1,100}$
+  PipelineDescription:
+    description: Pipeline description
+    type: string
+    pattern: ^[\w-.,;?! ]{1,1000}$
+  PipelineDatasets:
+    description: Map of datasets used in the pipeline
+    type: object
+    additionalProperties:
+       $ref: '#/definitions/PipelineDataset'
+  PipelineDataset:
+    description: Dataset ID used in the pipeline (if any)
+    type: string
+    pattern: ^([0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}|)$
+  PipelineSteps:
+    description: List of steps comprising the pipeline
+    type: array
+    minItems: 1
+    maxItems: 100
+    items:
+       $ref: '#/definitions/PipelineStep'
+  PipelineStep:
+    description: Step of the pipeline
+    required:
+      - app
+      - args
+    properties:
+      app:
+        $ref: '#/definitions/AppName'
+      args:
+        $ref: '#/definitions/AppArgs'
+  AppName:
+    description: Name and optionally version of an app executed in a pipeline
+    type: string
+    pattern: ^[a-z0-9]+(:[0-9][.0-9a-z]*)?$
+    maxLength: 50
+  AppArgs:
+    description: Arguments for an app executed in a pipeline
+    type: string
+    pattern: ^(?=((\[\/\w+(\/\w[\w-. ]*)*\]:[di]|\[\w[\w-. ]*(\/\w[\w-. ]*)*\]:[dio]|[\w-. :=]+)+))\1$
+    maxLength: 1000
+  PipelineStatus:
+    description: Pipeline status
+    type: string
+    enum:
+      - active
+      - deprecated
   AwsCredentials:
     required:
       - access_key_id
@@ -845,6 +978,26 @@ parameters:
       properties:
         type:
           $ref: '#/definitions/DatasetStorageType'
+  PipelineCreationRequest:
+    in: body
+    name: PipelineCreationRequest
+    description: Properties of the pipeline to be created
+    required: true
+    schema:
+      required:
+        - name
+        - datasets
+        - steps
+      additionalProperties: false
+      properties:
+        name:
+          $ref: '#/definitions/PipelineName'
+        datasets:
+          $ref: '#/definitions/PipelineDatasets'
+        steps:
+          $ref: '#/definitions/PipelineSteps'
+        description:
+          $ref: '#/definitions/PipelineDescription'
   QueryPaginationOffset:
     in: query
     name: offset
