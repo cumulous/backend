@@ -185,7 +185,6 @@ paths:
         - $ref: '#/parameters/ProjectsQueryIsMember'
         - $ref: '#/parameters/ProjectsQueryIsHidden'
         - $ref: '#/parameters/ProjectsQueryStatus'
-        - $ref: '#/parameters/ProjectsQueryIRB'
         - $ref: '#/parameters/QueryPaginationOffset'
         - $ref: '#/parameters/QueryPaginationLimit'
         - $ref: '#/parameters/CompressionRequest'
@@ -853,17 +852,6 @@ parameters:
     enum:
       - active
       - removed
-  ProjectsQueryIRB:
-    in: query
-    name: irb
-    description: |
-      project IRB (might not be unique)
-
-      **requires scope:
-      *projects:describe_details*
-      **
-    type: string
-    pattern: ^[\w-.]{1,100}$
   ProjectCreationRequest:
     in: body
     name: ProjectCreationRequest
