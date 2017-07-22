@@ -565,7 +565,7 @@ definitions:
       name:
         $ref: '#/definitions/ProjectName'
       description:
-        $ref: '#/definitions/ProjectDescription'
+        $ref: '#/definitions/Description'
       created_at:
         $ref: '#/definitions/Date'
       created_by:
@@ -580,10 +580,6 @@ definitions:
     description: Project name
     type: string
     pattern: ^[\w-., ]{1,100}$
-  ProjectDescription:
-    description: Project description
-    type: string
-    maxLength: 1000
   ProjectStatus:
     description: Project status
     type: string
@@ -620,7 +616,7 @@ definitions:
       created_by:
         $ref: '#/definitions/ProjectMemberId'
       description:
-        $ref: '#/definitions/DatasetDescription'
+        $ref: '#/definitions/Description'
       status:
         $ref: '#/definitions/DatasetStatus'
       metadata:
@@ -629,10 +625,6 @@ definitions:
     description: Unique identifier for a dataset
     type: string
     format: uuid
-  DatasetDescription:
-    description: Dataset description
-    type: string
-    maxLength: 1000
   DatasetStatus:
     description: Project status
     type: string
@@ -744,7 +736,7 @@ definitions:
       created_by:
         $ref: '#/definitions/ProjectMemberId'
       description:
-        $ref: '#/definitions/PipelineDescription'
+        $ref: '#/definitions/Description'
   PipelineId:
     description: Unique identifier for a pipeline
     type: string
@@ -753,10 +745,6 @@ definitions:
     description: Pipeline name
     type: string
     pattern: ^[\w-. ]{1,100}$
-  PipelineDescription:
-    description: Pipeline description
-    type: string
-    pattern: ^[\w-.,;?! ]{1,1000}$
   PipelineDatasets:
     description: Map of datasets used in the pipeline
     type: object
@@ -799,6 +787,9 @@ definitions:
     enum:
       - active
       - deprecated
+  Description:
+    type: string
+    pattern: ^[\w-.,;?! ]{1,1000}$
   AwsCredentials:
     required:
       - access_key_id
@@ -865,7 +856,7 @@ parameters:
         name:
           $ref: '#/definitions/ProjectName'
         description:
-          $ref: '#/definitions/ProjectDescription'
+          $ref: '#/definitions/Description'
   DatasetCreationRequest:
     in: body
     name: DatasetCreationRequest
@@ -879,7 +870,7 @@ parameters:
         project_id:
           $ref: '#/definitions/ProjectId'
         description:
-          $ref: '#/definitions/DatasetDescription'
+          $ref: '#/definitions/Description'
         metadata:
           $ref: '#/definitions/DatasetMetadata'
   DatasetsQueryProjectId:
@@ -931,7 +922,7 @@ parameters:
       additionalProperties: false
       properties:
         description:
-          $ref: '#/definitions/DatasetDescription'
+          $ref: '#/definitions/Description'
         metadata:
           $ref: '#/definitions/DatasetMetadata'
   DatasetCredentialsRequest:
@@ -977,7 +968,7 @@ parameters:
         steps:
           $ref: '#/definitions/PipelineSteps'
         description:
-          $ref: '#/definitions/PipelineDescription'
+          $ref: '#/definitions/Description'
   QueryPaginationOffset:
     in: query
     name: offset
