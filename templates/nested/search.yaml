@@ -82,8 +82,9 @@ Resources:
           },
           {
             "IndexFieldName": "datasets",
-            "IndexFieldType": "text-array",
-            "TextArrayOptions": {
+            "IndexFieldType": "text",
+            "TextOptions": {
+              "SortEnabled": false,
               "HighlightEnabled": false,
               "ReturnEnabled": false
             }
