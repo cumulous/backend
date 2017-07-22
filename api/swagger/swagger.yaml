@@ -766,6 +766,7 @@ definitions:
     required:
       - app
       - args
+    additionalProperties: false
     properties:
       app:
         $ref: '#/definitions/AppName'

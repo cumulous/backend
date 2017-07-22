@@ -26,27 +26,33 @@ describe('pipelines.create()', () => {
     'Dataset_X': fakeDatasetIdX,
   });
 
-  const fakeSteps = () => [{
-    app: 'app',
-    args: '-i [file_i.txt]:i -d [file_d.txt]:d -o [file_o.txt]:o',
-  }, {
-    app: 'app1:1.0.1a',
-    args: '-i [/Dataset_1/file_i.txt]:i -d [/Dataset_1/file_d.txt]:d -o [file_o.txt]:o',
-  }, {
-    app: 'app2',
-    args: '-d [/Dataset_2]:d -o [file o.txt]:o',
-  }, {
-    app: 'app3',
-    args: '-i [/Dataset_3/file_i.txt]:i -d [/Dataset_3/file_d.txt]:d -o [file_o.txt]:o',
-  }, {
-    app: 'app4',
-    args: '-i [/Dataset_4/file_i.txt]:i -d [/Dataset_4/file_d.txt]:d -o [file_o.txt]:o',
-  }];
+  const fakeSteps = (extraProperty?: boolean) => {
+    const steps: any[] = [{
+      app: 'app',
+      args: '-i [file_i.txt]:i -d [file_d.txt]:d -o [file_o.txt]:o',
+    }, {
+      app: 'app1:1.0.1a',
+      args: '-i [/Dataset_1/file_i.txt]:i -d [/Dataset_1/file_d.txt]:d -o [file_o.txt]:o',
+    }, {
+      app: 'app2',
+      args: '-d [/Dataset_2]:d -o [file o.txt]:o',
+    }, {
+      app: 'app3',
+      args: '-i [/Dataset_3/file_i.txt]:i -d [/Dataset_3/file_d.txt]:d -o [file_o.txt]:o',
+    }, {
+      app: 'app4',
+      args: '-i [/Dataset_4/file_i.txt]:i -d [/Dataset_4/file_d.txt]:d -o [file_o.txt]:o',
+    }];
+    if (extraProperty) {
+      steps.forEach(step => step.extra = 'property');
+    }
+    return steps;
+  };
 
-  const fakePipeline = () => ({
+  const fakePipelineRequest = (extraProperty?: boolean) => ({
     name: fakePipelineName,
     datasets: fakeDatasets(),
-    steps: fakeSteps(),
+    steps: fakeSteps(extraProperty),
   });
 
   const fakeContext = () => ({
@@ -56,11 +62,11 @@ describe('pipelines.create()', () => {
   });
 
   const fakeRequest = (validated = true) => ({
-    body: validated ? fakePipeline() : stringify(fakePipeline()),
+    body: validated ? fakePipelineRequest() : stringify(fakePipelineRequest(true)),
     requestContext: fakeContext(),
   });
 
-  const fakeItem = () => ({
+  const fakeResponse = () => ({
     id: fakePipelineId,
     name: fakePipelineName,
     datasets: {
@@ -110,7 +116,7 @@ describe('pipelines.create()', () => {
     testMethod(() => {
       expect(spyOnDynamoDbPut).toHaveBeenCalledWith({
         TableName: fakePipelinesTable,
-        Item: fakeItem(),
+        Item: fakeResponse(),
         ConditionExpression: 'attribute_not_exists(id)',
       });
       expect(spyOnDynamoDbPut).toHaveBeenCalledTimes(1);
@@ -120,8 +126,8 @@ describe('pipelines.create()', () => {
 
   it('calls apig.respond() once with correct parameters', (done: Callback) => {
     const callback = () => {
-      expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(), fakeItem());
-      expect(ajv.validate('spec#/definitions/Pipeline', fakeItem())).toBe(true);
+      expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(), fakeResponse());
+      expect(ajv.validate('spec#/definitions/Pipeline', fakeResponse())).toBe(true);
       expect(spyOnRespond).toHaveBeenCalledTimes(1);
       done();
     };
