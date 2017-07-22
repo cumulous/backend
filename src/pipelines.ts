@@ -4,6 +4,7 @@ import { Request, respond, respondWithError, validate } from './apig';
 import { dynamodb } from './aws';
 import { envNames } from './env';
 import { Callback, Dict } from './types';
+import { uuidNil } from './util';
 
 interface PipelineCreationRequest {
   name: string;
@@ -52,7 +53,7 @@ const parseDatasets = (request: PipelineCreationRequest) => {
   });
   const datasets: Dict<string> = {};
   for (let label of labels) {
-    datasets[label] = request.datasets[label] || '';
+    datasets[label] = request.datasets[label] || uuidNil;
   }
   return datasets;
 };

@@ -753,7 +753,7 @@ definitions:
   PipelineDataset:
     description: Dataset ID used in the pipeline (if any)
     type: string
-    pattern: ^([0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12}|)$
+    format: uuid
   PipelineSteps:
     description: List of steps comprising the pipeline
     type: array

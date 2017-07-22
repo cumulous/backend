@@ -8,6 +8,7 @@ import { envNames } from './env';
 import { create } from './pipelines';
 import { fakeReject, fakeResolve } from './fixtures/support';
 import { Callback, Dict } from './types';
+import { uuidNil } from './util';
 
 describe('pipelines.create()', () => {
   const fakePipelinesTable = 'fake-pipelines-table';
@@ -22,7 +23,7 @@ describe('pipelines.create()', () => {
   const fakeDatasets = (): Dict<string> => ({
     'Dataset_1': fakeDatasetId1,
     'Dataset_2': fakeDatasetId2,
-    'Dataset_3': '',
+    'Dataset_3': uuidNil,
     'Dataset_X': fakeDatasetIdX,
   });
 
@@ -72,8 +73,8 @@ describe('pipelines.create()', () => {
     datasets: {
       'Dataset_1': fakeDatasetId1,
       'Dataset_2': fakeDatasetId2,
-      'Dataset_3': '',
-      'Dataset_4': '',
+      'Dataset_3': uuidNil,
+      'Dataset_4': uuidNil,
     } as Dict<string>,
     steps: fakeSteps(),
     created_at: fakeDate,

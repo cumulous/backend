@@ -18,3 +18,5 @@ export function promise2<Arg1, Arg2, Data>
     func(arg1, arg2, (err: Error, data: Data) =>
       err ? reject(err) : resolve(data)));
 };
+
+export const uuidNil = '00000000-0000-0000-0000-000000000000';
