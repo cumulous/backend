@@ -54,6 +54,8 @@ export const getPolicy = (principalId: string, expiresAt: number, methodArn: str
               'PUT  /datasets/*/storage',
               'POST /projects',
               'POST /pipelines',
+              'POST /analyses',
+              'POST /analyses/*/execution',
             ].map(endpoint =>
               `${baseArn}/${endpoint.replace(/ /g, '')}`
             ),
