@@ -548,6 +548,64 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-CreatePipeline/invocations
+  /analyses:
+    options:
+      tags:
+        - Analyses
+      responses:
+        200:
+          description: HTTP options
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+            Vary:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
+              method.response.header.Vary: "'Accept-Encoding'"
+    post:
+      summary: Create an analysis
+      description: |
+        Creates a new analysis. This action doesn't schedule any
+        computational pipelines. It only allocates storage space to run
+        one or more pipelines, and stores general information about
+        the purpose of analyzing the data.
+
+        Use [POST /analyses/{analysis_id}/execution](#submitExecution) to schedule a pipeline.
+      operationId: createAnalysis
+      security:
+        - member_token: []
+      tags:
+        - Analyses
+      parameters:
+        - $ref: '#/parameters/AnalysisCreationRequest'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Properties of the created analysis
+          schema:
+            $ref: '#/definitions/Analysis'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-CreateAnalysis/invocations
 
 definitions:
   Spec:
@@ -788,6 +846,41 @@ definitions:
     enum:
       - active
       - deprecated
+  Analysis:
+    required:
+      - id
+      - status
+      - created_at
+      - created_by
+    properties:
+      id:
+        $ref: '#/definitions/AnalysisId'
+      description:
+        $ref: '#/definitions/Description'
+      status:
+        $ref: '#/definitions/AnalysisStatus'
+      created_at:
+        $ref: '#/definitions/Date'
+      created_by:
+        $ref: '#/definitions/ProjectMemberId'
+  AnalysisId:
+    description: Unique identifier of an analysis
+    type: string
+    format: uuid
+  AnalysisStatus:
+    description: Analysis status
+    type: string
+    enum:
+      - created
+      - started
+      - running
+      - failed
+      - finished
+      - archiving
+      - archived
+      - removing
+      - removed
+      - deleting
   Description:
     type: string
     pattern: ^[\w-.,;?! ]{1,1000}$
@@ -968,6 +1061,16 @@ parameters:
           $ref: '#/definitions/PipelineDatasets'
         steps:
           $ref: '#/definitions/PipelineSteps'
+        description:
+          $ref: '#/definitions/Description'
+  AnalysisCreationRequest:
+    in: body
+    name: AnalysisCreationRequest
+    description: Properties of the analysis to be created
+    required: true
+    schema:
+      additionalProperties: false
+      properties:
         description:
           $ref: '#/definitions/Description'
   QueryPaginationOffset:
