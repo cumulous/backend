@@ -50,7 +50,7 @@ gulp.task('compile', () => {
     .src(paths.api)
     .pipe(yaml({
       replacer: (key: string, value: any) =>
-        key.startsWith('x-amazon') ? undefined : value,
+        key.startsWith('x-amazon') || key === 'options' ? undefined : value,
     }))
     .pipe(gulp.dest(paths.bin));
   return tsProject.src()
