@@ -55,6 +55,10 @@ describe('validate()', () => {
 
   let spyOnSpec: jasmine.Spy;
 
+  beforeAll(() => {
+    ajv.removeSchema('spec');
+  });
+
   beforeEach(() => {
     spyOnSpec = spyOn(apig, 'spec').and.callFake(fakeSpec);
   });

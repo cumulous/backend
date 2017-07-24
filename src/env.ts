@@ -10,6 +10,7 @@ export const envNames = {
   datasetsTable: 'DATASETS_TABLE',
   projectsTable: 'PROJECTS_TABLE',
   pipelinesTable: 'PIPELINES_TABLE',
+  analysesTable: 'ANALYSES_TABLE',
   searchStackSuffix: 'SEARCH_STACK_SUFFIX',
   searchDocEndpoint: 'SEARCH_DOC_ENDPOINT',
   searchQueryEndpoint: 'SEARCH_QUERY_ENDPOINT',
