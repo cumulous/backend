@@ -185,6 +185,19 @@ Resources:
         ApiStage: !GetAtt Api.Outputs.ApiStage
         SearchUploadDocumentsFunction: !GetAtt Search.Outputs.UploadDocumentsFunction
 
+  Analyses:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/analyses.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        ArtifactsBucket: !Ref ArtifactsBucket
+        LambdaPackage: !Ref LambdaPackage
+        WebDomain: !Ref WebDomain
+        ApiId: !GetAtt Api.Outputs.ApiId
+        ApiStage: !GetAtt Api.Outputs.ApiStage
+        SearchUploadDocumentsFunction: !GetAtt Search.Outputs.UploadDocumentsFunction
+
   VPC:
     Type: AWS::CloudFormation::Stack
     Properties:

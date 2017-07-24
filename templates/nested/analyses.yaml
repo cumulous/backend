@@ -1,0 +1,106 @@
+Parameters:
+  BackendStack:
+    Type: String
+  ArtifactsBucket:
+    Type: String
+  LambdaPackage:
+    Type: String
+  WebDomain:
+    Type: String
+  ApiId:
+    Type: String
+  ApiStage:
+    Type: String
+  SearchUploadDocumentsFunction:
+    Type: String
+
+Mappings:
+  StackMap:
+    backend-beta:
+      AnalysesReadCapacity: 1
+      AnalysesWriteCapacity: 1
+    backend-release:
+      AnalysesReadCapacity: 5
+      AnalysesWriteCapacity: 5
+
+Resources:
+  AnalysesTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    Properties:
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: !FindInMap
+          - StackMap
+          - !Ref BackendStack
+          - AnalysesReadCapacity
+        WriteCapacityUnits: !FindInMap
+          - StackMap
+          - !Ref BackendStack
+          - AnalysesWriteCapacity
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+
+  DatasetsTableStreamMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt AnalysesTable.StreamArn
+      FunctionName: !Ref SearchUploadDocumentsFunction
+      StartingPosition: TRIM_HORIZON
+      BatchSize: 100
+
+  CreateAnalysis:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-CreateAnalysis
+      Handler: analyses.create
+      Timeout: 20
+      Environment:
+        Variables:
+          ANALYSES_TABLE: !Ref AnalysesTable
+          WEB_DOMAIN: !Ref WebDomain
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CreateAnalysisRole.Arn
+
+  CreateAnalysisRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateAnalysisRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: dynamodb:PutItem
+                Resource:
+                  - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AnalysesTable}
+
+  CreateAnalysisPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref CreateAnalysis
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/POST/analyses
+
+Outputs:
+  AnalysesTable:
+    Value: !Ref AnalysesTable
