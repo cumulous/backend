@@ -541,7 +541,7 @@ paths:
         - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
-          description: Properties of the submitted pipeline
+          description: Properties of the created pipeline
           schema:
             $ref: '#/definitions/Pipeline'
       x-amazon-apigateway-integration:
@@ -588,7 +588,7 @@ paths:
         one or more pipelines, and stores general information about
         the purpose of analyzing the data.
 
-        Use [POST /analyses/{analysis_id}/execution](#submitExecution) to schedule a pipeline.
+        Use [POST /analyses/{analysis_id}/execution](#executeAnalysis) to schedule a pipeline.
       operationId: createAnalysis
       security:
         - member_token: []
@@ -606,6 +606,67 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-CreateAnalysis/invocations
+  /analyses/{analysis_id}/execution:
+    options:
+      tags:
+        - Analyses
+      parameters:
+        - $ref: '#/parameters/AnalysisId'
+      responses:
+        200:
+          description: HTTP options
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+            Vary:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
+              method.response.header.Vary: "'Accept-Encoding'"
+    post:
+      summary: Execute analysis
+      description: |
+        Schedules execution of a computational pipeline for the given analysis.
+        Only one pipeline may be run at a time, but several different (or identical)
+        pipelines may be executed in succession.
+
+        The data generated in one execution is available to all of the subsequent
+        executions, unless they overwrite it.
+      operationId: executeAnalysis
+      security:
+        - member_token: []
+      tags:
+        - Analyses
+      parameters:
+        - $ref: '#/parameters/AnalysisId'
+        - $ref: '#/parameters/AnalysisExecutionRequest'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Properties of the submitted execution
+          schema:
+            $ref: '#/definitions/AnalysisExecution'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-ExecuteAnalysis/invocations
 
 definitions:
   Spec:
@@ -872,15 +933,24 @@ definitions:
     type: string
     enum:
       - created
-      - started
+      - submitted
       - running
       - failed
-      - finished
+      - succeeded
       - archiving
       - archived
       - removing
       - removed
       - deleting
+  AnalysisExecution:
+    required:
+      - pipeline_id
+      - datasets
+    properties:
+      pipeline_id:
+        $ref: '#/definitions/PipelineId'
+      datasets:
+        $ref: '#/definitions/PipelineDatasets'
   Description:
     type: string
     pattern: ^[\w-.,;?! ]{1,1000}$
@@ -1073,6 +1143,28 @@ parameters:
       properties:
         description:
           $ref: '#/definitions/Description'
+  AnalysisId:
+    in: path
+    name: analysis_id
+    description: Unique identifier for an analysis
+    required: true
+    type: string
+    format: uuid
+  AnalysisExecutionRequest:
+    in: body
+    name: AnalysisExecutionRequest
+    description: Parameters for execution of an analysis
+    required: true
+    schema:
+      required:
+        - pipeline_id
+        - datasets
+      additionalProperties: false
+      properties:
+        pipeline_id:
+          $ref: '#/definitions/PipelineId'
+        datasets:
+          $ref: '#/definitions/PipelineDatasets'
   QueryPaginationOffset:
     in: query
     name: offset
