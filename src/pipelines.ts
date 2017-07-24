@@ -29,17 +29,15 @@ export const create = (request: Request, context: any, callback: Callback) => {
     .catch(err => respondWithError(callback, request, err));
 };
 
-const generatePipeline = (request: PipelineCreationRequest, principalId: string) => {
-  return {
-    id: uuid(),
-    name: request.name,
-    datasets: parseDatasets(request),
-    steps: request.steps,
-    created_at: new Date().toISOString(),
-    created_by: principalId,
-    status: 'active',
-  };
-};
+const generatePipeline = (request: PipelineCreationRequest, principalId: string) => ({
+  id: uuid(),
+  name: request.name,
+  datasets: parseDatasets(request),
+  steps: request.steps,
+  created_at: new Date().toISOString(),
+  created_by: principalId,
+  status: 'active',
+});
 
 const datasetMatcher = /\[\/(\w+)\/?/g;
 
