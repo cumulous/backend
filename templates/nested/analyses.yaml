@@ -13,6 +13,8 @@ Parameters:
     Type: String
   SearchUploadDocumentsFunction:
     Type: String
+  PipelinesTable:
+    Type: String
 
 Mappings:
   StackMap:
@@ -46,7 +48,7 @@ Resources:
       StreamSpecification:
         StreamViewType: NEW_IMAGE
 
-  DatasetsTableStreamMapping:
+  AnalysesTableStreamMapping:
     Type: AWS::Lambda::EventSourceMapping
     Properties:
       EventSourceArn: !GetAtt AnalysesTable.StreamArn
@@ -110,6 +112,7 @@ Resources:
       Environment:
         Variables:
           ANALYSES_TABLE: !Ref AnalysesTable
+          PIPELINES_TABLE: !Ref PipelinesTable
           WEB_DOMAIN: !Ref WebDomain
       Runtime: nodejs6.10
       Code:
@@ -135,9 +138,13 @@ Resources:
             Version: 2012-10-17
             Statement:
               - Effect: Allow
-                Action: dynamodb:PutItem
+                Action: dynamodb:UpdateItem
                 Resource:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AnalysesTable}
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref SubmitExecutionStateMachine
 
   ExecuteAnalysisPermission:
     Type: AWS::Lambda::Permission
@@ -149,5 +156,5 @@ Resources:
         !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/POST/analyses/{analysis_id}/execution
 
 Outputs:
-  AnalysesTable:
+  Table:
     Value: !Ref AnalysesTable

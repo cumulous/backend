@@ -212,6 +212,7 @@ describe('analyses.submitExecution()', () => {
 
   beforeEach(() => {
     process.env[envNames.analysesTable] = fakeAnalysesTable;
+    process.env[envNames.pipelinesTable] = fakePipelinesTable;
     process.env[envNames.stateMachine] = fakeExecutionStateMachine;
 
     spyOnValidate = spyOn(apig, 'validate')
