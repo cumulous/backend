@@ -87,10 +87,10 @@ const credentialsPolicy = (id: string, action: CredentialsAction) => stringify({
   Statement: [{
     Effect: 'Allow',
     Action: 's3:ListBucket',
-    Resource: `arn:aws:s3:::${process.env[envNames.datasetsBucket]}`,
+    Resource: `arn:aws:s3:::${process.env[envNames.dataBucket]}`,
     Condition: {
       StringLike: {
-        's3:prefix': `${id}/*`,
+        's3:prefix': `${id}-d/*`,
       },
     },
   }, {
@@ -102,7 +102,7 @@ const credentialsPolicy = (id: string, action: CredentialsAction) => stringify({
     ] : [
       's3:GetObject',
     ],
-    Resource: `arn:aws:s3:::${process.env[envNames.datasetsBucket]}/${id}/*`,
+    Resource: `arn:aws:s3:::${process.env[envNames.dataBucket]}/${id}-d/*`,
   }],
 });
 
@@ -115,7 +115,8 @@ const credentialsResponse = (id: string, action: CredentialsAction, creds: Crede
     session_token: creds.SessionToken,
   },
   expires_at: creds.Expiration,
-  bucket: process.env[envNames.datasetsBucket],
+  bucket: process.env[envNames.dataBucket],
+  prefix: `${id}-d/`,
 });
 
 export type StorageType = 'available' | 'archived';
@@ -166,8 +167,8 @@ const setStorageType = (id: string, type: StorageType) => {
 
 const listObjects = (id: string, token?: string): Promise<string[]> => {
   return s3.listObjectsV2(Object.assign({
-    Bucket: process.env[envNames.datasetsBucket],
-    Prefix: `${id}/`,
+    Bucket: process.env[envNames.dataBucket],
+    Prefix: `${id}-d/`,
   }, token == null ? {} : {
     ContinuationToken: token,
   })).promise()
@@ -204,7 +205,7 @@ const checkEmptyObjectList = (keys: string[], id: string) => {
 
 const tagObjects = (keys: string[], project_id: string) => {
   return Promise.all(keys.map(key => s3.putObjectTagging({
-    Bucket: process.env[envNames.datasetsBucket],
+    Bucket: process.env[envNames.dataBucket],
     Key: key,
     Tagging: {
       TagSet: [{

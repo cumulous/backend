@@ -39,7 +39,7 @@ Parameters:
     Type: String
   SearchDomain:
     Type: String
-  DatasetsBucket:
+  DataBucket:
     Type: String
   ClusterCores:
     Type: Number
@@ -117,7 +117,7 @@ Resources:
         BackendStack: !Ref AWS::StackName
         ArtifactsBucket: !Ref ArtifactsBucket
         LogsBucket: !GetAtt Logs.Outputs.Bucket
-        DatasetsBucket: !Ref DatasetsBucket
+        DataBucket: !Ref DataBucket
         LambdaPackage: !Ref LambdaPackage
         WebDomain: !Ref WebDomain
         ApiId: !GetAtt Api.Outputs.ApiId
@@ -162,7 +162,7 @@ Resources:
       Parameters:
         BackendStack: !Ref AWS::StackName
         ArtifactsBucket: !Ref ArtifactsBucket
-        DatasetsBucket: !Ref DatasetsBucket
+        DataBucket: !Ref DataBucket
         LambdaPackage: !Ref LambdaPackage
         WebDomain: !Ref WebDomain
         ApiId: !GetAtt Api.Outputs.ApiId
@@ -242,4 +242,4 @@ Resources:
     Properties:
       TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/logs.yaml
       Parameters:
-        DatasetsBucket: !Ref DatasetsBucket
+        DataBucket: !Ref DataBucket

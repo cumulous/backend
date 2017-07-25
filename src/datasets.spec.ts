@@ -18,7 +18,7 @@ const fakeProjectId = uuid();
 const fakeDescription = 'Fake dataset';
 const fakeDate = new Date().toISOString();
 const fakeExpiresAt = String(new Date().getTime());
-const fakeDatasetsBucket = 'fake-datasets-bucket';
+const fakeDataBucket = 'fake-data-bucket';
 
 describe('datasets.create()', () => {
   const fakeBody = () => ({
@@ -186,10 +186,10 @@ describe('datasets.requestCredentials()', () => {
       {
         Effect: 'Allow',
         Action: 's3:ListBucket',
-        Resource: 'arn:aws:s3:::' + fakeDatasetsBucket,
+        Resource: 'arn:aws:s3:::' + fakeDataBucket,
         Condition: {
           StringLike: {
-            's3:prefix': fakeDatasetId + '/*',
+            's3:prefix': fakeDatasetId + '-d/*',
           },
         },
       },
@@ -202,7 +202,7 @@ describe('datasets.requestCredentials()', () => {
         ] : [
           's3:GetObject',
         ],
-        Resource: 'arn:aws:s3:::' + fakeDatasetsBucket + '/' + fakeDatasetId + '/*',
+        Resource: 'arn:aws:s3:::' + fakeDataBucket + '/' + fakeDatasetId + '-d/*',
       },
     ],
   });
@@ -223,7 +223,8 @@ describe('datasets.requestCredentials()', () => {
       session_token: fakeSessionToken,
     },
     expires_at: fakeDate,
-    bucket: fakeDatasetsBucket,
+    bucket: fakeDataBucket,
+    prefix: fakeDatasetId + '-d/',
   });
 
   const testMethod = (action: CredentialsAction, callback: Callback) =>
@@ -237,7 +238,7 @@ describe('datasets.requestCredentials()', () => {
 
   beforeEach(() => {
     process.env[envNames.datasetsTable] = fakeDatasetsTable;
-    process.env[envNames.datasetsBucket] = fakeDatasetsBucket;
+    process.env[envNames.dataBucket] = fakeDataBucket;
     process.env[envNames.datasetsRole] = fakeDatasetsRoleArn;
 
     spyOnValidate = spyOn(apig, 'validate')
@@ -452,7 +453,7 @@ describe('datasets.setStorage()', () => {
 
   beforeEach(() => {
     process.env[envNames.datasetsTable] = fakeDatasetsTable;
-    process.env[envNames.datasetsBucket] = fakeDatasetsBucket;
+    process.env[envNames.dataBucket] = fakeDataBucket;
 
     spyOnValidate = spyOn(apig, 'validate')
       .and.callThrough();
@@ -512,13 +513,13 @@ describe('datasets.setStorage()', () => {
       (done: Callback) => {
     testMethod('available', () => {
       expect(spyOnListObjects).toHaveBeenCalledWith({
-        Bucket: fakeDatasetsBucket,
-        Prefix: fakeDatasetId + '/',
+        Bucket: fakeDataBucket,
+        Prefix: fakeDatasetId + '-d/',
         ContinuationToken: fakeContinuationToken,
       });
       expect(spyOnListObjects).toHaveBeenCalledWith({
-        Bucket: fakeDatasetsBucket,
-        Prefix: fakeDatasetId + '/',
+        Bucket: fakeDataBucket,
+        Prefix: fakeDatasetId + '-d/',
       });
       expect(spyOnListObjects).toHaveBeenCalledTimes(2);
       done();
@@ -529,7 +530,7 @@ describe('datasets.setStorage()', () => {
     testMethod('available', () => {
       fakeObjects(1).concat(fakeObjects(2)).map(obj => {
         expect(spyOnPutObjectTagging).toHaveBeenCalledWith({
-          Bucket: fakeDatasetsBucket,
+          Bucket: fakeDataBucket,
           Key: obj.Key,
           Tagging: {
             TagSet: [{

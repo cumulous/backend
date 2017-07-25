@@ -804,6 +804,8 @@ definitions:
       - credentials
       - expires_at
       - bucket
+      - prefix
+    additionalProperties: false
     properties:
       id:
         $ref: '#/definitions/DatasetId'
@@ -815,6 +817,12 @@ definitions:
         $ref: '#/definitions/Date'
       bucket:
         $ref: '#/definitions/Bucket'
+      prefix:
+        $ref: '#/definitions/DatasetPrefix'
+  DatasetPrefix:
+    description: Prefix for storing a dataset
+    type: string
+    pattern: ^[\w-/]{1,64}$
   DatasetStorageType:
     description: Dataset storage type
     type: string

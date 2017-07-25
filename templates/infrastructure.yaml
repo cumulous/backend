@@ -75,8 +75,8 @@ Parameters:
     Type: String
     AllowedPattern: ^([a-z][a-z\d-]{2,27})?$
     Default: ''
-  DatasetsBucketName:
-    Description: "The name of the datasets bucket to reuse when re-creating this template"
+  DataBucketName:
+    Description: "The name of the data bucket to reuse when re-creating this template"
     Type: String
     AllowedPattern: ^([a-z0-9][a-z0-9-]*[a-z0-9](\.[a-z0-9][a-z0-9-]*[a-z0-9])*)?$
     MaxLength: 63
@@ -159,7 +159,7 @@ Metadata:
         Label:
           default: "Data"
         Parameters:
-          - DatasetsBucketName
+          - DataBucketName
       -
         Label:
           default: "Compute"
@@ -180,7 +180,7 @@ Conditions:
   CreateNotification: !Not [!Equals [!Ref NotificationEmail, '']]
   CreateHostedZone: !Equals [!Ref HostedZone, '']
   CreateSearchDomain: !Equals [!Ref SearchDomainName, '']
-  CreateDatasetsBucket: !Equals [!Ref DatasetsBucketName, '']
+  CreateDataBucket: !Equals [!Ref DataBucketName, '']
 
 Resources:
   BackendArtifactsBucket:
@@ -202,15 +202,15 @@ Resources:
     Type: AWS::S3::Bucket
     DeletionPolicy: Retain
 
-  BetaDatasetsBucket:
+  BetaDataBucket:
     Type: AWS::S3::Bucket
 
-  DatasetsBucket:
+  DataBucket:
     Type: AWS::S3::Bucket
-    Condition: CreateDatasetsBucket
+    Condition: CreateDataBucket
     DeletionPolicy: Retain
     Properties:
-      BucketName: !Sub datasets.${Domain}
+      BucketName: !Sub data.${Domain}
 
   DomainZone:
     Type: AWS::Route53::HostedZone
@@ -476,8 +476,8 @@ Resources:
             Value: !GetAtt WebSigningKeyPutRole.Arn
           - Name: AUTHORIZER_INVOCATION_ROLE_ARN
             Value: !GetAtt AuthorizerInvocationRole.Arn
-          - Name: DATASETS_BUCKET
-            Value: !Ref BetaDatasetsBucket
+          - Name: DATA_BUCKET
+            Value: !Ref BetaDataBucket
           - Name: CLUSTER_CORES
             Value: !Ref ClusterCores
           - Name: SPOT_BID_PERCENT
@@ -552,8 +552,8 @@ Resources:
             Value: !GetAtt WebSigningKeyGetRole.Arn
           - Name: AUTHORIZER_INVOCATION_ROLE_ARN
             Value: !GetAtt AuthorizerInvocationRole.Arn
-          - Name: DATASETS_BUCKET
-            Value: !If [CreateDatasetsBucket, !Ref DatasetsBucket, !Ref DatasetsBucketName]
+          - Name: DATA_BUCKET
+            Value: !If [CreateDataBucket, !Ref DataBucket, !Ref DataBucketName]
           - Name: CLUSTER_CORES
             Value: !Ref ClusterCores
           - Name: SPOT_BID_PERCENT
@@ -1872,8 +1872,8 @@ Outputs:
       - CreateSearchDomain
       - !GetAtt SearchDomain.Name
       - !Ref SearchDomainName
-  DatasetsBucket:
+  DataBucket:
     Value: !If
-      - CreateDatasetsBucket
-      - !Ref DatasetsBucket
-      - !Ref DatasetsBucketName
+      - CreateDataBucket
+      - !Ref DataBucket
+      - !Ref DataBucketName

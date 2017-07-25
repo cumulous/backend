@@ -18,7 +18,7 @@ const fakeProjectName = 'Fake project';
 const fakeProjectDescription = 'This is a fake project for unit testing';
 const fakeDate = new Date().toISOString();
 const fakeProjectsTable = 'projects-table';
-const fakeDatasetsBucket = 'fake-datasets-bucket';
+const fakeDataBucket = 'fake-data-bucket';
 const fakeLogsBucketArn = 'arn:aws:s3:::fake-logs-bucket';
 
 describe('projects.create()', () => {
@@ -61,7 +61,7 @@ describe('projects.create()', () => {
     process.env.AWS_REGION = fakeRegion;
     process.env[envNames.webDomain] = fakeDomain;
     process.env[envNames.projectsTable] = fakeProjectsTable;
-    process.env[envNames.datasetsBucket] = fakeDatasetsBucket;
+    process.env[envNames.dataBucket] = fakeDataBucket;
     process.env[envNames.logsBucket] = fakeLogsBucketArn;
 
     spyOnValidate = spyOn(apig, 'validate')
@@ -92,7 +92,7 @@ describe('projects.create()', () => {
     testMethod(() => {
       expect(spyOnS3PutAnalyticsConfig).toHaveBeenCalledWith({
         Id: fakeProjectId,
-        Bucket: fakeDatasetsBucket,
+        Bucket: fakeDataBucket,
         AnalyticsConfiguration: {
           Id: fakeProjectId,
           Filter: {
@@ -108,7 +108,7 @@ describe('projects.create()', () => {
                 S3BucketDestination: {
                   Bucket: fakeLogsBucketArn,
                   BucketAccountId: fakeAccountId,
-                  Prefix: fakeDatasetsBucket + '/',
+                  Prefix: fakeDataBucket + '/',
                   Format: 'CSV',
                 },
               },

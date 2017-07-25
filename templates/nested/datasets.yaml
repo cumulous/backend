@@ -3,7 +3,7 @@ Parameters:
     Type: String
   ArtifactsBucket:
     Type: String
-  DatasetsBucket:
+  DataBucket:
     Type: String
   LambdaPackage:
     Type: String
@@ -167,7 +167,7 @@ Resources:
       Environment:
         Variables:
           DATASETS_TABLE: !Ref DatasetsTable
-          DATASETS_BUCKET: !Ref DatasetsBucket
+          DATA_BUCKET: !Ref DataBucket
           DATASETS_ROLE: !GetAtt DatasetsAccessRole.Arn
           WEB_DOMAIN: !Ref WebDomain
       Runtime: nodejs6.10
@@ -218,14 +218,14 @@ Resources:
                 Action:
                   - s3:ListBucket
                 Resource:
-                  - !Sub arn:aws:s3:::${DatasetsBucket}
+                  - !Sub arn:aws:s3:::${DataBucket}
               - Effect: Allow
                 Action:
                   - s3:GetObject
                   - s3:PutObject
                   - s3:DeleteObject
                 Resource:
-                  - !Sub arn:aws:s3:::${DatasetsBucket}/*
+                  - !Sub arn:aws:s3:::${DataBucket}/*-d/*
 
   RequestDatasetCredentialsPermission:
     Type: AWS::Lambda::Permission
@@ -246,7 +246,7 @@ Resources:
       Environment:
         Variables:
           DATASETS_TABLE: !Ref DatasetsTable
-          DATASETS_BUCKET: !Ref DatasetsBucket
+          DATA_BUCKET: !Ref DataBucket
           WEB_DOMAIN: !Ref WebDomain
       Runtime: nodejs6.10
       Code:
@@ -275,12 +275,12 @@ Resources:
                 Action:
                   - s3:ListBucket
                 Resource:
-                  - !Sub arn:aws:s3:::${DatasetsBucket}
+                  - !Sub arn:aws:s3:::${DataBucket}
               - Effect: Allow
                 Action:
                   - s3:PutObjectTagging
                 Resource:
-                  - !Sub arn:aws:s3:::${DatasetsBucket}/*
+                  - !Sub arn:aws:s3:::${DataBucket}/*-d/*
               - Effect: Allow
                 Action:
                   - dynamodb:UpdateItem

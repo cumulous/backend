@@ -72,7 +72,7 @@ ARGS=" \
     ParameterKey=WebSigningKeyGetRoleArn,ParameterValue=${WEB_SIGNING_KEY_GET_ROLE_ARN} \
     ParameterKey=WebSigningKeyPutRoleArn,ParameterValue=${WEB_SIGNING_KEY_PUT_ROLE_ARN} \
     ParameterKey=SearchDomain,ParameterValue=${SEARCH_DOMAIN} \
-    ParameterKey=DatasetsBucket,ParameterValue=${DATASETS_BUCKET} \
+    ParameterKey=DataBucket,ParameterValue=${DATA_BUCKET} \
     ParameterKey=ClusterCores,ParameterValue=${CLUSTER_CORES} \
     ParameterKey=SpotBidPercent,ParameterValue=${SPOT_BID_PERCENT} \
     ParameterKey=Auth0Domain,ParameterValue=${AUTH0_DOMAIN} \

@@ -1,5 +1,5 @@
 Parameters:
-  DatasetsBucket:
+  DataBucket:
     Type: String
 
 Resources:
@@ -21,7 +21,7 @@ Resources:
               - !Sub arn:aws:s3:::${LogsBucket}/*
             Condition:
               ArnLike:
-                'aws:SourceArn': !Sub arn:aws:s3:::${DatasetsBucket}
+                'aws:SourceArn': !Sub arn:aws:s3:::${DataBucket}
               StringEquals:
                 'aws:SourceAccount': !Ref AWS::AccountId
                 's3:x-amz-acl': bucket-owner-full-control

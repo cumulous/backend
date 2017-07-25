@@ -10,7 +10,7 @@ export const create = (request: Request, context: any, callback: Callback) => {
     .then(() => generateProject(request))
     .then(project => setAnalyticsConfig(
       request.requestContext.accountId,
-      process.env[envNames.datasetsBucket],
+      process.env[envNames.dataBucket],
       project.id,
     ).then(() => dynamodb.put({
       TableName: process.env[envNames.projectsTable],
