@@ -113,6 +113,7 @@ Resources:
         Variables:
           ANALYSES_TABLE: !Ref AnalysesTable
           PIPELINES_TABLE: !Ref PipelinesTable
+          # STATE_MACHINE: !Ref SubmitExecutionStateMachine
           WEB_DOMAIN: !Ref WebDomain
       Runtime: nodejs6.10
       Code:
@@ -141,10 +142,10 @@ Resources:
                 Action: dynamodb:UpdateItem
                 Resource:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AnalysesTable}
-              - Effect: Allow
-                Action: states:StartExecution
-                Resource:
-                  - !Ref SubmitExecutionStateMachine
+              # - Effect: Allow
+              #   Action: states:StartExecution
+              #   Resource:
+              #     - !Ref SubmitExecutionStateMachine
 
   ExecuteAnalysisPermission:
     Type: AWS::Lambda::Permission
