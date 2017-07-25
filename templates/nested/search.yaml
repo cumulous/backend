@@ -96,6 +96,14 @@ Resources:
               "HighlightEnabled": false,
               "ReturnEnabled": false
             }
+          },
+          {
+            "IndexFieldName": "pipeline_id",
+            "IndexFieldType": "literal",
+            "LiteralOptions": {
+              "FacetEnabled": false,
+              "SortEnabled": false
+            }
           }
         ]
 
