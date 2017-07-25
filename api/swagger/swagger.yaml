@@ -944,13 +944,20 @@ definitions:
       - deleting
   AnalysisExecution:
     required:
+      - analysis_id
       - pipeline_id
       - datasets
+      - status
+    additionalProperties: false
     properties:
+      analysis_id:
+        $ref: '#/definitions/AnalysisId'
       pipeline_id:
         $ref: '#/definitions/PipelineId'
       datasets:
         $ref: '#/definitions/PipelineDatasets'
+      status:
+        $ref: '#/definitions/AnalysisStatus'
   Description:
     type: string
     pattern: ^[\w-.,;?! ]{1,1000}$

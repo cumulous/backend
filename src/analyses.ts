@@ -116,5 +116,6 @@ const startExecution = (analysis_id: string, pipeline: Pipeline) => {
       analysis_id,
       pipeline_id: pipeline.id,
       datasets: pipeline.datasets,
+      status: 'submitted',
     }));
 };

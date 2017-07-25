@@ -197,6 +197,7 @@ describe('analyses.submitExecution()', () => {
     analysis_id: fakeAnalysisId,
     pipeline_id: fakePipelineId,
     datasets: fakeDatasetsResponse(),
+    status: 'submitted',
   });
 
   const testMethod = (callback: Callback) =>
