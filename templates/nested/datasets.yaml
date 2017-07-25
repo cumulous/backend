@@ -297,5 +297,5 @@ Resources:
         !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/PUT/datasets/{dataset_id}/storage
 
 Outputs:
-  DatasetsTable:
+  Table:
     Value: !Ref DatasetsTable
