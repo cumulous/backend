@@ -4,7 +4,9 @@ import { v4 as uuid } from 'uuid';
 import { ApiError, Request, respond, respondWithError, validate } from './apig';
 import { dynamodb, stepFunctions } from './aws';
 import { envNames } from './env';
+import { Pipeline } from './pipelines';
 import { Callback, Dict } from './types';
+import { uuidNil } from './util';
 
 interface AnalysisCreationRequest {
   description: string;
@@ -32,28 +34,63 @@ const generateAnalysis = (request: AnalysisCreationRequest, principalId: string)
 
 export const submitExecution = (request: Request, context: any, callback: Callback) => {
   validate(request, 'POST', '/analyses/{analysis_id}/execution')
-    .then(() => setExecutionSubmittedStatus(request.pathParameters.analysis_id))
-    .then(() => startExecution(request.pathParameters.analysis_id, request.body))
+    .then(() => request.pathParameters.analysis_id)
+    .then(analysis_id => getPipeline(request.body)
+      .then(pipeline => setExecutionStatus(analysis_id, pipeline.id)
+        .then(() => startExecution(analysis_id, pipeline))))
     .then(execution => respond(callback, request, execution))
     .catch(err => respondWithError(callback, request, err));
 };
 
-const setExecutionSubmittedStatus = (id: string) => {
+interface PipelineRequest {
+  pipeline_id: string;
+  datasets: Dict<string>;
+}
+
+const getPipeline = (request: PipelineRequest) => {
+  return dynamodb.get({
+    TableName: process.env[envNames.pipelinesTable],
+    Key: {
+      id: request.pipeline_id,
+    },
+  }).promise()
+    .then(data => {
+      if (data.Item === undefined) {
+        throw new ApiError('Invalid request', ['Pipeline not found'], 400);
+      }
+      return data.Item;
+    })
+    .then(pipeline => {
+      Object.keys(pipeline.datasets).forEach(key => {
+        if (request.datasets.hasOwnProperty(key)) {
+          pipeline.datasets[key] = request.datasets[key];
+        }
+        if (pipeline.datasets[key] === uuidNil) {
+          throw new ApiError('Invalid request', [`Dataset '${key}' must be defined`], 400);
+        }
+      });
+      return pipeline as Pipeline;
+    });
+}
+
+const setExecutionStatus = (analysis_id: string, pipeline_id: string) => {
   return dynamodb.update({
     TableName: process.env[envNames.analysesTable],
     Key: {
-      id,
+      id: analysis_id,
     },
-    UpdateExpression: 'set #s = :sub',
+    UpdateExpression: 'set #s = :sub, #p = :p',
     ConditionExpression: '(#s = :c) or (#s = :f) or (#s = :suc)',
     ExpressionAttributeNames: {
       '#s': 'status',
+      '#p': 'pipeline_id',
     },
     ExpressionAttributeValues: {
       ':c': 'created',
       ':sub': 'submitted',
       ':f': 'failed',
       ':suc': 'succeeded',
+      ':p': pipeline_id,
     },
   }).promise()
     .catch(err => {
@@ -65,21 +102,19 @@ const setExecutionSubmittedStatus = (id: string) => {
     });
 };
 
-interface ExecutionParameters {
-  pipeline_id: string;
-  datasets: Dict<string>;
-}
-
-const startExecution = (analysis_id: string, params: ExecutionParameters) => {
-  return Promise.resolve()
+const startExecution = (analysis_id: string, pipeline: Pipeline) => {
+  return stepFunctions.startExecution({
+    stateMachineArn: process.env[envNames.stateMachine],
+    input: stringify({
+      analysis_id,
+      pipeline_id: pipeline.id,
+      datasets: pipeline.datasets,
+      steps: pipeline.steps,
+    }),
+  }).promise()
     .then(() => ({
       analysis_id,
-      pipeline_id: params.pipeline_id,
-      datasets: params.datasets,
-    }))
-    .then(execution => stepFunctions.startExecution({
-      stateMachineArn: process.env[envNames.stateMachine],
-      input: stringify(execution),
-    }).promise()
-      .then(() => execution));
+      pipeline_id: pipeline.id,
+      datasets: pipeline.datasets,
+    }));
 };

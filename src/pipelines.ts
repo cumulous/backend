@@ -17,6 +17,10 @@ interface PipelineStep {
   args: string;
 }
 
+export type Pipeline = PipelineCreationRequest & {
+  id: string;
+}
+
 export const create = (request: Request, context: any, callback: Callback) => {
   validate(request, 'POST', '/pipelines')
     .then(() => generatePipeline(request.body, request.requestContext.authorizer.principalId))
