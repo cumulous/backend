@@ -197,7 +197,7 @@ Resources:
         ApiId: !GetAtt Api.Outputs.ApiId
         ApiStage: !GetAtt Api.Outputs.ApiStage
         SearchUploadDocumentsFunction: !GetAtt Search.Outputs.UploadDocumentsFunction
-        PipelinesTable: !GetAtt Pipelines.Out.Table
+        PipelinesTable: !GetAtt Pipelines.Outputs.Table
 
   VPC:
     Type: AWS::CloudFormation::Stack
