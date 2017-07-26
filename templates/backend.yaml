@@ -192,6 +192,7 @@ Resources:
       Parameters:
         BackendStack: !Ref AWS::StackName
         ArtifactsBucket: !Ref ArtifactsBucket
+        DataBucket: !Ref DataBucket
         LambdaPackage: !Ref LambdaPackage
         WebDomain: !Ref WebDomain
         ApiId: !GetAtt Api.Outputs.ApiId

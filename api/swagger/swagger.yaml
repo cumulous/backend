@@ -907,7 +907,7 @@ definitions:
   AppArgs:
     description: Arguments for an app executed in a pipeline
     type: string
-    pattern: ^(?=((\[\/\w+(\/\w[\w-. ]*)*\]:[di]|\[\w[\w-. ]*(\/\w[\w-. ]*)*\]:[dio]|[\w-. :=]+)+))\1$
+    pattern: ^(?=((\[\/\w{1,50}(\/\w[\w-. ]*)*\]:[di]|\[\w[\w-. ]*(\/\w[\w-. ]*)*\]:[dio]|[\w-. :=]+)+))\1$
     maxLength: 1000
   PipelineStatus:
     description: Pipeline status

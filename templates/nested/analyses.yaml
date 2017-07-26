@@ -3,6 +3,8 @@ Parameters:
     Type: String
   ArtifactsBucket:
     Type: String
+  DataBucket:
+    Type: String
   LambdaPackage:
     Type: String
   WebDomain:
@@ -155,6 +157,115 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn:
         !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/POST/analyses/{analysis_id}/execution
+
+  CreateRoleForAnalysis:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: analyses.createRole
+      Timeout: 20
+      Environment:
+        Variables:
+          STACK_NAME: !Ref BackendStack
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CreateRoleForAnalysisRole.Arn
+
+  CreateRoleForAnalysisRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateRoleForAnalysisRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: iam:CreateRole
+                Resource:
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/analyses/${BackendStack}/*
+
+  SetRolePolicy:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: analyses.setRolePolicy
+      Timeout: 20
+      Environment:
+        Variables:
+          STACK_NAME: !Ref BackendStack
+          DATA_BUCKET: !Ref DataBucket
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt SetRolePolicyRole.Arn
+
+  SetRolePolicyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SetRolePolicyRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: iam:PutRolePolicy
+                Resource:
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/analyses/${BackendStack}/*
+
+  DeleteRoleForAnalysis:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: analyses.setRolePolicy
+      Timeout: 20
+      Environment:
+        Variables:
+          STACK_NAME: !Ref BackendStack
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt DeleteRoleForAnalysisRole.Arn
+
+  DeleteRoleForAnalysisRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DeleteRoleForAnalysisRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: iam:DeleteRole
+                Resource:
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/analyses/${BackendStack}/*
 
 Outputs:
   Table:

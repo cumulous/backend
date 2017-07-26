@@ -1,8 +1,8 @@
 import * as stringify from 'json-stable-stringify';
 import { v4 as uuid } from 'uuid';
 
-import { ApiError, Request, respond, respondWithError, validate } from './apig';
-import { dynamodb, stepFunctions } from './aws';
+import { ajv, ApiError, Request, respond, respondWithError, validate } from './apig';
+import { dynamodb, iam, stepFunctions } from './aws';
 import { envNames } from './env';
 import { Pipeline } from './pipelines';
 import { Callback, Dict } from './types';
@@ -118,4 +118,132 @@ const startExecution = (analysis_id: string, pipeline: Pipeline) => {
       datasets: pipeline.datasets,
       status: 'submitted',
     }));
+};
+
+export const createRole = (analysis_id: string, context: any, callback: Callback) => {
+  iam.createRole({
+    Path: `/analyses/${process.env[envNames.stackName]}/`,
+    RoleName: analysis_id,
+    AssumeRolePolicyDocument: stringify({
+      Version: '2012-10-17',
+      Statement: [{
+        Effect: 'Allow',
+        Principal: {
+          Service: 'lambda.amazonaws.com',
+        },
+        Action: 'sts:AssumeRole',
+      }],
+    }),
+  }).promise()
+    .then(() => callback())
+    .catch(callback);
+};
+
+interface RolePolicyRequest {
+  analysis_id: string;
+  datasets: Dict<string>;
+}
+
+export const setRolePolicy = (request: RolePolicyRequest, context: any, callback: Callback) => {
+  validatePolicyRequest(request)
+    .then(() => getDatasetIds(request.datasets))
+    .then(dataset_ids => putRolePolicy(request.analysis_id, dataset_ids))
+    .then(() => callback())
+    .catch(callback);
+};
+
+const validatePolicyRequest = (request: RolePolicyRequest) => {
+  return Promise.resolve()
+    .then(() => ajv.compile({
+      id: 'analysisPolicyRequest',
+      type: 'object',
+      required: [
+        'analysis_id',
+        'datasets',
+      ],
+      additionalProperties: false,
+      properties: {
+        analysis_id: {
+          type: 'string',
+          format: 'uuid',
+        },
+        datasets: {
+          type: 'object',
+          propertyNames: {
+            type: 'string',
+            pattern: '^\\w{1,50}$',
+          },
+          additionalProperties: {
+            type: 'string',
+            format: 'uuid',
+          },
+          minProperties: 1,
+          maxProperties: 10,
+        },
+      },
+    }))
+    .then(() => {
+      if (!ajv.validate('analysisPolicyRequest', request)) {
+        throw new Error(stringify(ajv.errors));
+      }
+    });
+}
+
+const getDatasetIds = (datasets: Dict<string>) => {
+  return Object.keys(datasets).map(key => datasets[key]);
+};
+
+const putRolePolicy = (analysis_id: string, dataset_ids: string[]) => {
+  const bucket = process.env[envNames.dataBucket];
+  return iam.putRolePolicy({
+    RoleName: `/analyses/${process.env[envNames.stackName]}/${analysis_id}`,
+    PolicyName: analysis_id,
+    PolicyDocument: stringify({
+      Version: '2012-10-17',
+      Statement: [{
+        Effect: 'Allow',
+        Action: [
+          's3:ListBucket',
+        ],
+        Resource: [
+          `arn:aws:s3:::${bucket}`,
+        ],
+        Condition: {
+          StringLike: {
+            's3:prefix': [
+              `${analysis_id}-a/*`,
+            ].concat(dataset_ids.map(dataset_id =>
+              `${dataset_id}-d/*`
+            )),
+          },
+        },
+      }, {
+        Effect: 'Allow',
+        Action: [
+          's3:GetObject',
+          's3:PutObject',
+          's3:DeleteObject',
+        ],
+        Resource: [
+          `arn:aws:s3:::${bucket}/${analysis_id}-a/*`,
+        ],
+      }, {
+        Effect: 'Allow',
+        Action: [
+          's3:GetObject',
+        ],
+        Resource: dataset_ids.map(dataset_id =>
+          `arn:aws:s3:::${bucket}/${dataset_id}-d/*`
+        ),
+      }],
+    }),
+  }).promise();
+};
+
+export const deleteRole = (analysis_id: string, context: any, callback: Callback) => {
+  iam.deleteRole({
+    RoleName: `/analyses/${process.env[envNames.stackName]}/${analysis_id}`,
+  }).promise()
+    .then(() => callback())
+    .catch(callback);
 };

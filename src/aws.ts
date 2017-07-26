@@ -1,5 +1,5 @@
 import { APIGateway, Batch, CloudFront, CloudSearch,
-         DynamoDB, EC2, S3, SSM, StepFunctions, STS } from 'aws-sdk';
+         DynamoDB, EC2, IAM, S3, SSM, StepFunctions, STS } from 'aws-sdk';
 import * as stringify from 'json-stable-stringify';
 import { put } from 'request-promise-native';
 
@@ -13,6 +13,7 @@ export const cloudFront = new CloudFront();
 export const cloudSearch = new CloudSearch();
 export const dynamodb = new DynamoDB.DocumentClient();
 export const ec2 = new EC2();
+export const iam = new IAM();
 export const s3 = new S3({ signatureVersion: 'v4' });
 export const ssm = new SSM();
 export const stepFunctions = new StepFunctions();

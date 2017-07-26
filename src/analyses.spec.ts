@@ -3,9 +3,9 @@ import * as uuid from 'uuid';
 
 import * as apig from './apig';
 import { ajv, ApiError } from './apig';
-import { dynamodb, stepFunctions } from './aws';
+import { dynamodb, iam, stepFunctions } from './aws';
 import { envNames } from './env';
-import { create, submitExecution } from './analyses';
+import { create, createRole, deleteRole, setRolePolicy, submitExecution } from './analyses';
 import { fakeReject, fakeResolve } from './fixtures/support';
 import { Callback, Dict } from './types';
 import { uuidNil } from './util';
@@ -374,6 +374,267 @@ describe('analyses.submitExecution()', () => {
       err = Error('apig.respond()');
       spyOnRespond.and.throwError(err.message);
       testError(() => {}, done);
+    });
+  });
+});
+
+describe('analyses.createRole', () => {
+  const fakeStackName = 'fake-stack';
+
+  const testMethod = (callback: Callback) =>
+    createRole(fakeAnalysisId, null, callback);
+
+  let spyOnCreateRole: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.stackName] = fakeStackName;
+
+    spyOnCreateRole = spyOn(iam, 'createRole')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls iam.createRole() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnCreateRole).toHaveBeenCalledWith({
+        Path: '/analyses/' + fakeStackName + '/',
+        RoleName: fakeAnalysisId,
+        AssumeRolePolicyDocument: stringify({
+          Version: '2012-10-17',
+          Statement: [{
+            Effect: 'Allow',
+            Principal: {
+              Service: 'lambda.amazonaws.com',
+            },
+            Action: 'sts:AssumeRole',
+          }],
+        }),
+      });
+      expect(spyOnCreateRole).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback without an error upon successful request', (done: Callback) => {
+    testMethod((err?: Error) => {
+      expect(err).toBeFalsy();
+      done();
+    });
+  });
+
+  it('calls callback with an error if iam.createRole() produces an error', (done: Callback) => {
+    spyOnCreateRole.and.returnValue(fakeReject('iam.createRole()'));
+    testMethod((err?: Error) => {
+      expect(err).toBeTruthy();
+      done();
+    });
+  });
+});
+
+describe('analyses.setRolePolicy', () => {
+  const fakeStackName = 'fake-stack';
+  const fakeDataBucket = 'fake-data-bucket';
+  const fakeDatasetId1 = uuid();
+  const fakeDatasetId2 = uuid();
+
+  const fakeRequest = () => ({
+    analysis_id: fakeAnalysisId,
+    datasets: {
+      'Dataset_1': fakeDatasetId1,
+      'Dataset_2': fakeDatasetId2,
+    },
+  });
+
+  const testMethod = (callback: Callback) =>
+    setRolePolicy(fakeRequest(), null, callback);
+
+  let spyOnAjvCompile: jasmine.Spy;
+  let spyOnAjvValidate: jasmine.Spy;
+  let spyOnPutRolePolicy: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.stackName] = fakeStackName;
+    process.env[envNames.dataBucket] = fakeDataBucket;
+
+    spyOnAjvCompile = spyOn(ajv, 'compile').and.callThrough();
+    spyOnAjvValidate = spyOn(ajv, 'validate').and.callThrough();
+    spyOnPutRolePolicy = spyOn(iam, 'putRolePolicy')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('compiles correct schema once', (done: Callback) => {
+    // const spyOnAjvCompile = spyOn(ajv, 'compile').and.callThrough();
+    testMethod(() => {
+      expect(spyOnAjvCompile).toHaveBeenCalledWith({
+        id: 'analysisPolicyRequest',
+        type: 'object',
+        required: [
+          'analysis_id',
+          'datasets',
+        ],
+        additionalProperties: false,
+        properties: {
+          analysis_id: {
+            type: 'string',
+            format: 'uuid',
+          },
+          datasets: {
+            type: 'object',
+            propertyNames: {
+              type: 'string',
+              pattern: '^\\w{1,50}$',
+            },
+            additionalProperties: {
+              type: 'string',
+              format: 'uuid',
+            },
+            minProperties: 1,
+            maxProperties: 10,
+          },
+        },
+      });
+      expect(spyOnAjvCompile).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls ajv.validate() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnAjvValidate).toHaveBeenCalledWith('analysisPolicyRequest', fakeRequest());
+      expect(spyOnAjvValidate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls iam.putRolePolicy() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnPutRolePolicy).toHaveBeenCalledWith({
+        RoleName: '/analyses/' + fakeStackName + '/' + fakeAnalysisId,
+        PolicyName: fakeAnalysisId,
+        PolicyDocument: stringify({
+          Version: '2012-10-17',
+          Statement: [{
+            Effect: 'Allow',
+            Action: [
+              's3:ListBucket',
+            ],
+            Resource: [
+              'arn:aws:s3:::' + fakeDataBucket,
+            ],
+            Condition: {
+              StringLike: {
+                's3:prefix': [
+                  fakeAnalysisId + '-a/*',
+                  fakeDatasetId1 + '-d/*',
+                  fakeDatasetId2 + '-d/*',
+                ],
+              },
+            },
+          }, {
+            Effect: 'Allow',
+            Action: [
+              's3:GetObject',
+              's3:PutObject',
+              's3:DeleteObject',
+            ],
+            Resource: [
+              'arn:aws:s3:::' + fakeDataBucket + '/' + fakeAnalysisId + '-a/*',
+            ],
+          }, {
+            Effect: 'Allow',
+            Action: [
+              's3:GetObject',
+            ],
+            Resource: [
+              'arn:aws:s3:::' + fakeDataBucket + '/' + fakeDatasetId1 + '-d/*',
+              'arn:aws:s3:::' + fakeDataBucket + '/' + fakeDatasetId2 + '-d/*',
+            ],
+          }],
+        }),
+      });
+      expect(spyOnPutRolePolicy).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback without an error upon successful request', (done: Callback) => {
+    testMethod((err?: Error) => {
+      expect(err).toBeFalsy();
+      done();
+    });
+  });
+
+  describe('immediately calls callback with an error if', () => {
+    let after: () => void;
+    afterEach((done: Callback) => {
+      testMethod((err?: Error) => {
+        expect(err).toBeTruthy();
+        after();
+        done();
+      });
+    });
+    it('ajv.compile() throws an error', () => {
+      spyOnAjvCompile.and.throwError('ajv.compile()');
+      after = () => {
+        expect(spyOnAjvValidate).not.toHaveBeenCalled();
+        expect(spyOnPutRolePolicy).not.toHaveBeenCalled();
+      };
+    });
+    it('ajv.validate() throws an error', () => {
+      spyOnAjvValidate.and.throwError('ajv.validate()');
+      after = () => {
+        expect(spyOnPutRolePolicy).not.toHaveBeenCalled();
+      };
+    });
+    it('ajv.validate() returns "false"', () => {
+      spyOnAjvValidate.and.returnValue(false);
+      after = () => {
+        expect(spyOnPutRolePolicy).not.toHaveBeenCalled();
+      };
+    });
+    it('iam.putRolePolicy() produces an error', () => {
+      spyOnPutRolePolicy.and.returnValue(fakeReject('iam.putRolePolicy()'));
+      after = () => {};
+    });
+  });
+});
+
+describe('analyses.deleteRole', () => {
+  const fakeStackName = 'fake-stack';
+
+  const testMethod = (callback: Callback) =>
+    deleteRole(fakeAnalysisId, null, callback);
+
+  let spyOnDeleteRole: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.stackName] = fakeStackName;
+
+    spyOnDeleteRole = spyOn(iam, 'deleteRole')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls iam.deleteRole() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnDeleteRole).toHaveBeenCalledWith({
+        RoleName: '/analyses/' + fakeStackName + '/' + fakeAnalysisId,
+      });
+      expect(spyOnDeleteRole).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback without an error upon successful request', (done: Callback) => {
+    testMethod((err?: Error) => {
+      expect(err).toBeFalsy();
+      done();
+    });
+  });
+
+  it('calls callback with an error if iam.deleteRole() produces an error', (done: Callback) => {
+    spyOnDeleteRole.and.returnValue(fakeReject('iam.deleteRole()'));
+    testMethod((err?: Error) => {
+      expect(err).toBeTruthy();
+      done();
     });
   });
 });
