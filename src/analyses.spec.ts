@@ -381,7 +381,7 @@ describe('analyses.submitExecution()', () => {
   });
 });
 
-describe('analyses.createRole', () => {
+describe('analyses.createRole()', () => {
   const fakeStackName = 'fake-stack';
 
   const testMethod = (callback: Callback) =>
@@ -432,7 +432,7 @@ describe('analyses.createRole', () => {
   });
 });
 
-describe('analyses.setRolePolicy', () => {
+describe('analyses.setRolePolicy()', () => {
   const fakeStackName = 'fake-stack';
   const fakeDataBucket = 'fake-data-bucket';
   const fakeDatasetId1 = uuid();
@@ -599,7 +599,7 @@ describe('analyses.setRolePolicy', () => {
   });
 });
 
-describe('analyses.deleteRole', () => {
+describe('analyses.deleteRole()', () => {
   const fakeStackName = 'fake-stack';
 
   const testMethod = (callback: Callback) =>
@@ -640,7 +640,7 @@ describe('analyses.deleteRole', () => {
   });
 });
 
-describe('analyses.defineJobs', () => {
+describe('analyses.defineJobs()', () => {
   const fakeAccountId = '012345678910';
   const fakeRegion = 'us-west-1';
   const fakeStackName = 'fake-stack';
@@ -792,7 +792,7 @@ describe('analyses.defineJobs', () => {
   });
 });
 
-describe('analyses.submitJobs', () => {
+describe('analyses.submitJobs()', () => {
   const fakeJobQueue = 'fake-job-queue';
   const fakeJobDefinition1 = 'fake-job-1:5';
   const fakeJobDefinition2 = 'fake-job-2:10';
