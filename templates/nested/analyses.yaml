@@ -345,6 +345,10 @@ Resources:
                 Action: batch:RegisterJobDefinition
                 Resource:
                   - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/registerjobdefinition
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/analysis-${BackendStack}-*
 
   SubmitJobs:
     Type: AWS::Lambda::Function
