@@ -442,6 +442,7 @@ describe('analyses.setRolePolicy', () => {
       'Dataset_1': fakeDatasetId1,
       'Dataset_2': fakeDatasetId2,
     },
+    extra: 'property',
   });
 
   const testMethod = (callback: Callback) =>
@@ -471,7 +472,6 @@ describe('analyses.setRolePolicy', () => {
           'analysis_id',
           'datasets',
         ],
-        additionalProperties: false,
         properties: {
           analysis_id: {
             type: 'string',

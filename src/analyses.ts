@@ -161,7 +161,6 @@ const validatePolicyRequest = (request: RolePolicyRequest) => {
         'analysis_id',
         'datasets',
       ],
-      additionalProperties: false,
       properties: {
         analysis_id: {
           type: 'string',
