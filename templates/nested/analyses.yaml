@@ -308,7 +308,7 @@ Resources:
               - Effect: Allow
                 Action: batch:RegisterJobDefinition
                 Resource:
-                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/registerjobdefinition
+                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/registerjobdefinition
 
   SubmitJobs:
     Type: AWS::Lambda::Function
