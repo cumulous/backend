@@ -964,7 +964,7 @@ Resources:
                     "Choices": [{
                       "Variable": "$.ResourceProperties.status",
                       "StringEquals": "VALID",
-                      "Next": "Success"
+                      "Next": "PassJobQueueName"
                     }],
                     "Default": "WaitWhileUpdating"
                   },
@@ -1059,7 +1059,13 @@ Resources:
                       "StringEquals": "Update",
                       "Next": "CreateJobQueue"
                     }],
-                    "Default": "Success"
+                    "Default": "PassJobQueueName"
+                  },
+                  "PassJobQueueName": {
+                    "Type": "Pass",
+                    "InputPath": "$.ResourceProperties.jobQueueName",
+                    "ResultPath": "$.Data.Name",
+                    "Next": "Success"
                   },
                   "Success": {
                     "Type": "Pass",
@@ -1103,4 +1109,4 @@ Resources:
 
 Outputs:
   JobQueue:
-    Value: !Ref JobQueue
+    Value: !GetAtt JobQueue.Name
