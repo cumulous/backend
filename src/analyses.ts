@@ -121,9 +121,11 @@ const startExecution = (analysis_id: string, pipeline: Pipeline) => {
     }));
 };
 
+const rolePath = () => `/analyses/${process.env[envNames.stackName]}/`;
+
 export const createRole = (analysis_id: string, context: any, callback: Callback) => {
   iam.createRole({
-    Path: `/analyses/${process.env[envNames.stackName]}/`,
+    Path: rolePath(),
     RoleName: analysis_id,
     AssumeRolePolicyDocument: stringify({
       Version: '2012-10-17',
@@ -196,7 +198,7 @@ const getDatasetIds = (datasets: Dict<string>) => {
 const putRolePolicy = (analysis_id: string, dataset_ids: string[]) => {
   const bucket = process.env[envNames.dataBucket];
   return iam.putRolePolicy({
-    RoleName: `/analyses/${process.env[envNames.stackName]}/${analysis_id}`,
+    RoleName: rolePath() + analysis_id,
     PolicyName: analysis_id,
     PolicyDocument: stringify({
       Version: '2012-10-17',
@@ -242,7 +244,7 @@ const putRolePolicy = (analysis_id: string, dataset_ids: string[]) => {
 
 export const deleteRole = (analysis_id: string, context: any, callback: Callback) => {
   iam.deleteRole({
-    RoleName: `/analyses/${process.env[envNames.stackName]}/${analysis_id}`,
+    RoleName: rolePath() + analysis_id,
   }).promise()
     .then(() => callback())
     .catch(callback);
