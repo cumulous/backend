@@ -250,6 +250,15 @@ const rolePolicy = (analysis_id: string, dataset_ids: string[]) => {
   };
 };
 
+export const deleteRolePolicy = (analysis_id: string, context: any, callback: Callback) => {
+  iam.deleteRolePolicy({
+    RoleName: roleName(analysis_id),
+    PolicyName: analysis_id,
+  }).promise()
+    .then(() => callback())
+    .catch(callback);
+};
+
 export const deleteRole = (analysis_id: string, context: any, callback: Callback) => {
   iam.deleteRole({
     RoleName: roleName(analysis_id),

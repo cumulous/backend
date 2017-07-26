@@ -1,7 +1,7 @@
 import * as stringify from 'json-stable-stringify';
 import * as uuid from 'uuid';
 
-import { create, createRole, deleteRole, setRolePolicy,
+import { create, createRole, deleteRole, deleteRolePolicy, setRolePolicy,
          defaultMemory, volumeName, volumePath,
          defineJobs, submitJobs, submitExecution } from './analyses';
 import * as apig from './apig';
@@ -595,6 +595,48 @@ describe('analyses.setRolePolicy()', () => {
     it('iam.putRolePolicy() produces an error', () => {
       spyOnPutRolePolicy.and.returnValue(fakeReject('iam.putRolePolicy()'));
       after = () => {};
+    });
+  });
+});
+
+describe('analyses.deleteRolePolicy()', () => {
+  const fakeStackName = 'fake-stack';
+
+  const testMethod = (callback: Callback) =>
+    deleteRolePolicy(fakeAnalysisId, null, callback);
+
+  let spyOnDeleteRolePolicy: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.stackName] = fakeStackName;
+
+    spyOnDeleteRolePolicy = spyOn(iam, 'deleteRolePolicy')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls iam.deleteRolePolicy() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnDeleteRolePolicy).toHaveBeenCalledWith({
+        RoleName: 'analysis-' + fakeStackName + '-' + fakeAnalysisId,
+        PolicyName: fakeAnalysisId,
+      });
+      expect(spyOnDeleteRolePolicy).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback without an error upon successful request', (done: Callback) => {
+    testMethod((err?: Error) => {
+      expect(err).toBeFalsy();
+      done();
+    });
+  });
+
+  it('calls callback with an error if iam.deleteRolePolicy() produces an error', (done: Callback) => {
+    spyOnDeleteRolePolicy.and.returnValue(fakeReject('iam.deleteRolePolicy()'));
+    testMethod((err?: Error) => {
+      expect(err).toBeTruthy();
+      done();
     });
   });
 });

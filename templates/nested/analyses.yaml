@@ -237,6 +237,42 @@ Resources:
                 Resource:
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/analysis-${BackendStack}-*
 
+  DeleteRolePolicy:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: analyses.deleteRole
+      Timeout: 20
+      Environment:
+        Variables:
+          STACK_NAME: !Ref BackendStack
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt DeleteRolePolicyRole.Arn
+
+  DeleteRolePolicyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DeleteRolePolicyRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: iam:DeleteRolePolicy
+                Resource:
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/analysis-${BackendStack}-*
+
   DeleteRoleForAnalysis:
     Type: AWS::Lambda::Function
     Properties:
@@ -363,6 +399,7 @@ Resources:
                 Resource:
                   - !GetAtt CreateRoleForAnalysis.Arn
                   - !GetAtt SetRolePolicy.Arn
+                  - !GetAtt DeleteRolePolicy.Arn
                   - !GetAtt DeleteRoleForAnalysis.Arn
                   - !GetAtt DefineJobs.Arn
                   - !GetAtt SubmitJobs.Arn
@@ -380,20 +417,25 @@ Resources:
               "InputPath": "$.analysis_id",
               "ResultPath": null,
               "Resource": "${CreateRoleForAnalysis.Arn}",
-              "Next": "ScheduleJobs"
+              "Next": "SetRolePolicy"
+            },
+            "SetRolePolicy": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SetRolePolicy.Arn}",
+              "Next": "ScheduleJobs",
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "DeleteRole"
+              }]
             },
             "ScheduleJobs": {
               "Type": "Parallel",
               "End": true,
               "Branches": [{
-                "StartAt": "SetRolePolicy",
+                "StartAt": "DefineJobs",
                 "States": {
-                  "SetRolePolicy": {
-                    "Type": "Task",
-                    "ResultPath": null,
-                    "Resource": "${SetRolePolicy.Arn}",
-                    "Next": "DefineJobs"
-                  },
                   "DefineJobs": {
                     "Type": "Task",
                     "ResultPath": "$.jobDefinitions",
@@ -417,8 +459,15 @@ Resources:
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
                 "ResultPath": "$.Error",
-                "Next": "DeleteRole"
+                "Next": "DeleteRolePolicy"
               }]
+            },
+            "DeleteRolePolicy": {
+              "Type": "Task",
+              "InputPath": "$.analysis_id",
+              "ResultPath": null,
+              "Resource": "${DeleteRolePolicy.Arn}",
+              "Next": "DeleteRole"
             },
             "DeleteRole": {
               "Type": "Task",
