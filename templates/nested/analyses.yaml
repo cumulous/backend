@@ -474,6 +474,11 @@ Resources:
               "InputPath": "$.analysis_id",
               "ResultPath": null,
               "Resource": "${DeleteRoleForAnalysis.Arn}",
+              "Next": "PassError"
+            },
+            "PassError": {
+              "Type": "Pass",
+              "InputPath": "$.Error",
               "Next": "Fail"
             },
             "Fail": {
