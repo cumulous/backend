@@ -1,12 +1,15 @@
 import * as stringify from 'json-stable-stringify';
 import * as uuid from 'uuid';
 
+import { create, createRole, deleteRole, setRolePolicy,
+         defaultMemory, defineJobs, volumeName, volumePath,
+         submitExecution } from './analyses';
 import * as apig from './apig';
 import { ajv, ApiError } from './apig';
-import { dynamodb, iam, stepFunctions } from './aws';
+import { batch, dynamodb, iam, stepFunctions } from './aws';
 import { envNames } from './env';
-import { create, createRole, deleteRole, setRolePolicy, submitExecution } from './analyses';
 import { fakeReject, fakeResolve } from './fixtures/support';
+import { mountPath }  from './instances';
 import { Callback, Dict } from './types';
 import { uuidNil } from './util';
 
@@ -439,8 +442,8 @@ describe('analyses.setRolePolicy', () => {
   const fakeRequest = () => ({
     analysis_id: fakeAnalysisId,
     datasets: {
-      'Dataset_1': fakeDatasetId1,
-      'Dataset_2': fakeDatasetId2,
+      Dataset_1: fakeDatasetId1,
+      Dataset_2: fakeDatasetId2,
     },
     extra: 'property',
   });
@@ -463,7 +466,6 @@ describe('analyses.setRolePolicy', () => {
   });
 
   it('compiles correct schema once', (done: Callback) => {
-    // const spyOnAjvCompile = spyOn(ajv, 'compile').and.callThrough();
     testMethod(() => {
       expect(spyOnAjvCompile).toHaveBeenCalledWith({
         id: 'analysisPolicyRequest',
@@ -635,6 +637,152 @@ describe('analyses.deleteRole', () => {
     testMethod((err?: Error) => {
       expect(err).toBeTruthy();
       done();
+    });
+  });
+});
+
+describe('analyses.defineJobs', () => {
+  const fakeAccountId = '012345678910';
+  const fakeRegion = 'us-west-1';
+  const fakeStackName = 'fake-stack';
+  const fakePipelineId = uuid();
+  const fakeApp1 = 'app1:1.0';
+  const fakeApp2 = 'app2';
+  const fakeDatasetId1 = uuid();
+  const fakeDatasetId2 = uuid();
+
+
+  const fakeSteps = () => [{
+    app: fakeApp1,
+    args: '-i1 [/Dataset_1/file_i.txt]:i -i2 [/Dataset_2/file_i.txt]:i ' +
+          '-i3 [file i.txt]:i -i4 [files/i.txt]:i' +
+          '-d1 [/Dataset_1]:d -d2 [/Dataset_2]:d ' +
+          '-o1 [file1_o.txt]:o -o2 [file2_o.txt]:o',
+  }, {
+    app: fakeApp2,
+    args: '-i [/Dataset_12/file_i.txt]:i -o [Dataset_12/file_o.txt]:o',
+  }];
+
+  const fakeRequest = () => ({
+    analysis_id: fakeAnalysisId,
+    pipeline_id: fakePipelineId,
+    datasets: {
+      Dataset_1: fakeDatasetId1,
+      Dataset_2: fakeDatasetId2,
+    },
+    steps: fakeSteps(),
+  });
+
+  const fakeJobResponse = (index: number) => ({
+    jobDefinitionName: fakePipelineId + '-' + index,
+    revision: index * 10,
+  });
+
+  const testMethod = (callback: Callback) =>
+    defineJobs(fakeRequest(), null, callback);
+
+  let spyOnRegisterJobDefinition: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.stackName] = fakeStackName;
+    process.env[envNames.accountId] = fakeAccountId;
+    process.env['AWS_REGION'] = fakeRegion;
+
+    spyOnRegisterJobDefinition = spyOn(batch, 'registerJobDefinition')
+      .and.returnValues(fakeResolve(fakeJobResponse(0)), fakeResolve(fakeJobResponse(1)));
+  });
+
+  it('calls batch.registerJobDefinition() with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      const fakeRegistry = fakeAccountId + '.dkr.ecr.' + fakeRegion + '.amazonaws.com';
+      const fakeRoleArn = 'arn:aws:iam::' + fakeAccountId + ':role' +
+        '/analyses/' + fakeStackName + '/' + fakeAnalysisId;
+      const fakeJobDefinition = (name: string, app: string, command: string) => ({
+        type: 'container',
+        jobDefinitionName: name,
+        containerProperties: {
+          image: fakeRegistry + '/apps/' + app,
+          jobRoleArn: fakeRoleArn,
+          command: [command],
+          vcpus: 1,
+          memory: defaultMemory,
+          volumes: [{
+            name: volumeName,
+            host: {
+              sourcePath: mountPath + '/' + fakeAnalysisId,
+            },
+          }],
+          mountPoints: [{
+            sourceVolume: volumeName,
+            containerPath: volumePath,
+          }],
+        },
+      });
+      expect(spyOnRegisterJobDefinition).toHaveBeenCalledWith(
+        fakeJobDefinition(fakePipelineId + '-0', fakeApp1,
+          '-i1 [/' + fakeDatasetId1 + '-d/file_i.txt]:i -i2 [/' + fakeDatasetId2 + '-d/file_i.txt]:i ' +
+          '-i3 [/' + fakeAnalysisId + '-a/file i.txt]:i -i4 [/' + fakeAnalysisId + '-a/files/i.txt]:i' +
+          '-d1 [/' + fakeDatasetId1 + '-d]:d -d2 [/' + fakeDatasetId2 + '-d]:d ' +
+          '-o1 [/' + fakeAnalysisId + '-a/file1_o.txt]:o -o2 [/' + fakeAnalysisId + '-a/file2_o.txt]:o',
+        )
+      );
+      expect(spyOnRegisterJobDefinition).toHaveBeenCalledWith(
+        fakeJobDefinition(fakePipelineId + '-1', fakeApp2,
+          '-i [/Dataset_12/file_i.txt]:i -o [/' + fakeAnalysisId + '-a/Dataset_12/file_o.txt]:o',
+        )
+      );
+      expect(spyOnRegisterJobDefinition).toHaveBeenCalledTimes(2);
+      done();
+    });
+  });
+
+  it('calls callback with correct parameters upon successful request', (done: Callback) => {
+    testMethod((err?: Error, data?: any) => {
+      expect(err).toBeFalsy();
+      expect(data).toEqual({
+        jobDefinitions: [
+          fakePipelineId + '-0:0',
+          fakePipelineId + '-1:10',
+        ],
+      });
+      done();
+    });
+  });
+
+  describe('calls callback with an error if', () => {
+    let request: any;
+    beforeEach(() => {
+      request = fakeRequest();
+    });
+    afterEach((done: Callback) => {
+      defineJobs(request, null, (err?: Error) => {
+        expect(err).toBeTruthy();
+        done();
+      });
+    });
+    describe('request', () => {
+      it('is undefined', () => request = undefined);
+      it('is null', () => request = null);
+      it('steps are undefined', () => request.steps = undefined);
+      it('steps are null', () => request.steps = null);
+      it('steps are not an array', () => request.steps = {});
+      it('steps are empty', () => request.steps = []);
+      it('datasets are undefined', () => request.datasets = undefined);
+      it('datasets are null', () => request.datasets = null);
+      it('datasets are empty', () => request.datasets = {});
+      it('has a dataset with an invalid name', () => request.datasets = {
+        'Dataset_1.*': fakeDatasetId1,
+      });
+    });
+    describe('batch.registerJobDefinition() produces', () => {
+      let response: any;
+      afterEach(() => {
+        spyOnRegisterJobDefinition.and.returnValue(response);
+      });
+      it('an error', () => response = fakeReject('batch.registerJobDefinition()'));
+      it('an undefined response', () => response = fakeResolve(undefined));
+      it('a null response', () => response = fakeResolve(null));
+      it('an empty response', () => response = fakeResolve({}));
     });
   });
 });

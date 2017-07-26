@@ -1,4 +1,5 @@
 export const envNames = {
+  accountId: 'ACCOUNT_ID',
   stackName: 'STACK_NAME',
   encryptionKeyId: 'ENCRYPTION_KEY_ID',
   stateMachine: 'STATE_MACHINE',

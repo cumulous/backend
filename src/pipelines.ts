@@ -12,7 +12,7 @@ interface PipelineCreationRequest {
   steps: PipelineStep[];
 }
 
-interface PipelineStep {
+export interface PipelineStep {
   app: string;
   args: string;
 }

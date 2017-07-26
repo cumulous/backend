@@ -267,6 +267,43 @@ Resources:
                 Resource:
                   - !Sub arn:aws:iam::${AWS::AccountId}:role/analyses/${BackendStack}/*
 
+  DefineJobs:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: analyses.defineJobs
+      Timeout: 60
+      Environment:
+        Variables:
+          ACCOUNT_ID: !Ref AWS::AccountId
+          STACK_NAME: !Ref BackendStack
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt DefineJobsRole.Arn
+
+  DefineJobsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DefineJobsRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: batch:RegisterJobDefinition
+                Resource:
+                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/registerjobdefinition
+
 Outputs:
   Table:
     Value: !Ref AnalysesTable

@@ -2,9 +2,10 @@ import * as stringify from 'json-stable-stringify';
 import { v4 as uuid } from 'uuid';
 
 import { ajv, ApiError, Request, respond, respondWithError, validate } from './apig';
-import { dynamodb, iam, stepFunctions } from './aws';
+import { batch, dynamodb, iam, stepFunctions } from './aws';
 import { envNames } from './env';
-import { Pipeline } from './pipelines';
+import { mountPath } from './instances';
+import { Pipeline, PipelineStep } from './pipelines';
 import { Callback, Dict } from './types';
 import { uuidNil } from './util';
 
@@ -110,7 +111,7 @@ const startExecution = (analysis_id: string, pipeline: Pipeline) => {
       pipeline_id: pipeline.id,
       datasets: pipeline.datasets,
       steps: pipeline.steps,
-    }),
+    } as PipelineExecution),
   }).promise()
     .then(() => ({
       analysis_id,
@@ -183,7 +184,7 @@ const validatePolicyRequest = (request: RolePolicyRequest) => {
     }))
     .then(() => {
       if (!ajv.validate('analysisPolicyRequest', request)) {
-        throw new Error(stringify(ajv.errors));
+        throw Error(stringify(ajv.errors));
       }
     });
 }
@@ -245,4 +246,85 @@ export const deleteRole = (analysis_id: string, context: any, callback: Callback
   }).promise()
     .then(() => callback())
     .catch(callback);
+};
+
+interface PipelineExecution {
+  analysis_id: string;
+  pipeline_id: string;
+  datasets: Dict<string>;
+  steps: PipelineStep[];
+}
+
+export const volumeName = 'data';
+export const volumePath = '/data';
+export const defaultMemory = 2048;
+
+export const defineJobs = (request: PipelineExecution, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => parseJobDefinitions(request))
+    .then(jobDefinitions => callback(null, { jobDefinitions }))
+    .catch(callback);
+};
+
+const parseJobDefinitions = (request: PipelineExecution) => {
+  if (!Array.isArray(request.steps) || request.steps.length < 1) {
+    throw Error('request.steps must be a non-empty array');
+  }
+  return Promise.all(request.steps.map((step: PipelineStep, index: number) =>
+    defineJob(index, step, request)));
+};
+
+const defineJob = (index: number, step: PipelineStep, request: PipelineExecution) => {
+
+  const jobRoleArn = 'arn:aws:iam::' + process.env[envNames.accountId] + ':role/analyses/' +
+    process.env[envNames.stackName] + '/' + request.analysis_id;
+
+  const registry = process.env[envNames.accountId] + '.dkr.ecr.' +
+    process.env['AWS_REGION'] + '.amazonaws.com';
+
+  return batch.registerJobDefinition({
+    type: 'container',
+    jobDefinitionName: `${request.pipeline_id}-${index}`,
+    containerProperties: {
+      image: `${registry}/apps/${step.app}`,
+      jobRoleArn,
+      command: getCommand(request.analysis_id, request.datasets, step.args),
+      vcpus: 1,
+      memory: defaultMemory,
+      volumes: [{
+        name: volumeName,
+        host: {
+          sourcePath: `${mountPath}/${request.analysis_id}`,
+        },
+      }],
+      mountPoints: [{
+        sourceVolume: volumeName,
+        containerPath: volumePath,
+      }],
+    },
+  }).promise()
+    .then(data => {
+      if (data.jobDefinitionName == null || data.revision == null) {
+        throw Error('Cannot determine job definition from ' + stringify(data));
+      }
+      return `${data.jobDefinitionName}:${data.revision}`;
+    });
+};
+
+const getCommand = (analysis_id: string, datasets: Dict<string>, args: string) => {
+  let command = args;
+  const keys = Object.keys(datasets);
+  if (keys.length < 1) {
+    throw Error('Datasets must not be empty');
+  }
+  Object.keys(datasets).forEach(key => {
+    const reKey = /^\w{1,50}$/;
+    if (!reKey.test(key)) {
+      throw Error(`Dataset '${key}' must satisfy pattern ${reKey}`);
+    }
+    const reValue = new RegExp('\\[\\/' + key + '(\\/[^\\]]*)?\\]', 'g');
+    command = command.replace(reValue, `[/${datasets[key]}-d$1]`);
+  });
+  command = command.replace(/\[(\w[^\]]*)\]/g, `[/${analysis_id}-a/$1]`);
+  return [command];
 };
