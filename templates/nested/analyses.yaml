@@ -304,6 +304,39 @@ Resources:
                 Resource:
                   - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/registerjobdefinition
 
+  SubmitJobs:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: analyses.submitJobs
+      Timeout: 60
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt SubmitJobsRole.Arn
+
+  SubmitJobsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SubmitJobsRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: batch:SubmitJob
+                Resource:
+                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/submitjob
+
 Outputs:
   Table:
     Value: !Ref AnalysesTable

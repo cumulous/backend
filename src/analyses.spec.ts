@@ -2,8 +2,8 @@ import * as stringify from 'json-stable-stringify';
 import * as uuid from 'uuid';
 
 import { create, createRole, deleteRole, setRolePolicy,
-         defaultMemory, defineJobs, volumeName, volumePath,
-         submitExecution } from './analyses';
+         defaultMemory, volumeName, volumePath,
+         defineJobs, submitJobs, submitExecution } from './analyses';
 import * as apig from './apig';
 import { ajv, ApiError } from './apig';
 import { batch, dynamodb, iam, stepFunctions } from './aws';
@@ -749,18 +749,26 @@ describe('analyses.defineJobs', () => {
     });
   });
 
-  describe('calls callback with an error if', () => {
+  describe('calls callback immediately with an error if', () => {
     let request: any;
+    let after: () => void;
     beforeEach(() => {
       request = fakeRequest();
+      after = () => {};
     });
     afterEach((done: Callback) => {
       defineJobs(request, null, (err?: Error) => {
         expect(err).toBeTruthy();
+        after();
         done();
       });
     });
     describe('request', () => {
+      afterEach(() => {
+        after = () => {
+          expect(spyOnRegisterJobDefinition).not.toHaveBeenCalled();
+        };
+      });
       it('is undefined', () => request = undefined);
       it('is null', () => request = null);
       it('steps are undefined', () => request.steps = undefined);
@@ -780,6 +788,120 @@ describe('analyses.defineJobs', () => {
         spyOnRegisterJobDefinition.and.returnValue(response);
       });
       it('an error', () => response = fakeReject('batch.registerJobDefinition()'));
+      it('an undefined response', () => response = fakeResolve(undefined));
+      it('a null response', () => response = fakeResolve(null));
+      it('an empty response', () => response = fakeResolve({}));
+    });
+  });
+});
+
+describe('analyses.submitJobs', () => {
+  const fakeJobQueue = 'fake-job-queue';
+  const fakeJobDefinition1 = 'fake-job-1:5';
+  const fakeJobDefinition2 = 'fake-job-2:10';
+  const fakeJobDefinition3 = 'fake-job-3:15';
+  const fakeJobId1 = uuid();
+  const fakeJobId2 = uuid();
+  const fakeJobId3 = uuid();
+
+  const fakeRequest = () => ({
+    jobDefinitions: [
+      fakeJobDefinition1,
+      fakeJobDefinition2,
+      fakeJobDefinition3,
+    ],
+    jobQueue: fakeJobQueue,
+  });
+
+  const testMethod = (callback: Callback) =>
+    submitJobs(fakeRequest(), null, callback);
+
+  let spyOnSubmitJob: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnSubmitJob = spyOn(batch, 'submitJob')
+      .and.returnValues(
+        fakeResolve({ jobId: fakeJobId1 }),
+        fakeResolve({ jobId: fakeJobId2 }),
+        fakeResolve({ jobId: fakeJobId3 }),
+      );
+  });
+
+  it('calls batch.submitJob() with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnSubmitJob).toHaveBeenCalledWith({
+        jobDefinition: fakeJobDefinition1,
+        jobName: fakeJobDefinition1,
+        jobQueue: fakeJobQueue,
+      });
+      expect(spyOnSubmitJob).toHaveBeenCalledWith({
+        jobDefinition: fakeJobDefinition2,
+        jobName: fakeJobDefinition2,
+        jobQueue: fakeJobQueue,
+        dependsOn: [{
+          jobId: fakeJobId1,
+        }],
+      });
+      expect(spyOnSubmitJob).toHaveBeenCalledWith({
+        jobDefinition: fakeJobDefinition3,
+        jobName: fakeJobDefinition3,
+        jobQueue: fakeJobQueue,
+        dependsOn: [{
+          jobId: fakeJobId2,
+        }],
+      });
+      expect(spyOnSubmitJob).toHaveBeenCalledTimes(3);
+      done();
+    });
+  });
+
+  it('calls callback with correct parameters upon successful request', (done: Callback) => {
+    testMethod((err?: Error, data?: any) => {
+      expect(err).toBeFalsy();
+      expect(data).toEqual({
+        jobIds: [
+          fakeJobId1,
+          fakeJobId2,
+          fakeJobId3,
+        ],
+      });
+      done();
+    });
+  });
+
+  describe('calls callback with an error if', () => {
+    let request: any;
+    let after: () => void;
+    beforeEach(() => {
+      request = fakeRequest();
+      after = () => {};
+    });
+    afterEach((done: Callback) => {
+      submitJobs(request, null, (err?: Error) => {
+        expect(err).toBeTruthy();
+        after();
+        done();
+      });
+    });
+    describe('request', () => {
+      afterEach(() => {
+        after = () => {
+          expect(spyOnSubmitJob).not.toHaveBeenCalled();
+        };
+      });
+      it('is undefined', () => request = undefined);
+      it('is null', () => request = null);
+      it('jobDefinitions are undefined', () => request.jobDefinitions = undefined);
+      it('jobDefinitions are null', () => request.jobDefinitions = null);
+      it('jobDefinitions are not an array', () => request.jobDefinitions = {});
+      it('jobDefinitions are empty', () => request.jobDefinitions = []);
+    });
+    describe('batch.submitJob() produces', () => {
+      let response: any;
+      afterEach(() => {
+        spyOnSubmitJob.and.returnValue(response);
+      });
+      it('an error', () => response = fakeReject('batch.submitJob()'));
       it('an undefined response', () => response = fakeResolve(undefined));
       it('a null response', () => response = fakeResolve(null));
       it('an empty response', () => response = fakeResolve({}));

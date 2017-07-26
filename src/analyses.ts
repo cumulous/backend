@@ -328,3 +328,42 @@ const getCommand = (analysis_id: string, datasets: Dict<string>, args: string) =
   command = command.replace(/\[(\w[^\]]*)\]/g, `[/${analysis_id}-a/$1]`);
   return [command];
 };
+
+interface JobsSubmissionRequest {
+  jobDefinitions: string[];
+  jobQueue: string;
+}
+
+export const submitJobs = (request: JobsSubmissionRequest, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => batchSubmitJobs(request, []))
+    .then(jobIds => callback(null, { jobIds }))
+    .catch(callback);
+};
+
+const batchSubmitJobs = (request: JobsSubmissionRequest, jobIds: string[]): Promise<string[]> => {
+  const index = jobIds.length;
+  if (!Array.isArray(request.jobDefinitions) || request.jobDefinitions.length < 1) {
+    throw Error('request.jobDefinitions must be a non-empty array');
+  }
+  if (index >= request.jobDefinitions.length) {
+    return Promise.resolve(jobIds);
+  }
+  return batch.submitJob(Object.assign({
+      jobDefinition: request.jobDefinitions[index],
+      jobName: request.jobDefinitions[index],
+      jobQueue: request.jobQueue,
+    }, index > 0 ? {
+      dependsOn: [{
+        jobId: jobIds[index - 1],
+      }],
+    } : {}
+  )).promise()
+    .then(data => {
+      if (data.jobId == null) {
+        throw Error('Cannot determine job id from ' + stringify(data));
+      }
+      jobIds.push(data.jobId);
+    })
+    .then(() => batchSubmitJobs(request, jobIds));
+};
