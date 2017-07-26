@@ -10,7 +10,8 @@ import { Callback, Dict } from './types';
 import { uuidNil } from './util';
 
 interface AnalysisCreationRequest {
-  description: string;
+  project_id: string;
+  description?: string;
 }
 
 export const create = (request: Request, context: any, callback: Callback) => {
@@ -27,6 +28,7 @@ export const create = (request: Request, context: any, callback: Callback) => {
 
 const generateAnalysis = (request: AnalysisCreationRequest, principalId: string) => ({
   id: uuid(),
+  project_id: request.project_id,
   description: request.description,
   created_at: new Date().toISOString(),
   created_by: principalId,

@@ -918,12 +918,15 @@ definitions:
   Analysis:
     required:
       - id
+      - project_id
       - status
       - created_at
       - created_by
     properties:
       id:
         $ref: '#/definitions/AnalysisId'
+      project_id:
+        $ref: '#/definitions/ProjectId'
       description:
         $ref: '#/definitions/Description'
       status:
@@ -1154,8 +1157,12 @@ parameters:
     description: Properties of the analysis to be created
     required: true
     schema:
+      required:
+        - project_id
       additionalProperties: false
       properties:
+        project_id:
+          $ref: '#/definitions/ProjectId'
         description:
           $ref: '#/definitions/Description'
   AnalysisId:

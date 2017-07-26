@@ -18,10 +18,12 @@ const fakeAnalysesTable = 'fake-analyses-table';
 
 describe('analyses.create()', () => {
   const fakeAnalysisDescription = 'Fake analysis';
+  const fakeProjectId = uuid();
   const fakePrincipalId = uuid();
   const fakeDate = new Date().toISOString();
 
   const fakeAnalysisRequest = () => ({
+    project_id: fakeProjectId,
     description: fakeAnalysisDescription,
   });
 
@@ -38,6 +40,7 @@ describe('analyses.create()', () => {
 
   const fakeAnalysisItem = () => ({
     id: fakeAnalysisId,
+    project_id: fakeProjectId,
     description: fakeAnalysisDescription,
     created_by: fakePrincipalId,
     created_at: fakeDate,
