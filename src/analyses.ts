@@ -127,20 +127,22 @@ const roleName = (analysis_id: string) =>
 export const createRole = (analysis_id: string, context: any, callback: Callback) => {
   iam.createRole({
     RoleName: roleName(analysis_id),
-    AssumeRolePolicyDocument: stringify({
-      Version: '2012-10-17',
-      Statement: [{
-        Effect: 'Allow',
-        Principal: {
-          Service: 'lambda.amazonaws.com',
-        },
-        Action: 'sts:AssumeRole',
-      }],
-    }),
+    AssumeRolePolicyDocument: stringify(roleTrustPolicy()),
   }).promise()
     .then(() => callback())
     .catch(callback);
 };
+
+const roleTrustPolicy = () => ({
+  Version: '2012-10-17',
+  Statement: [{
+    Effect: 'Allow',
+    Principal: {
+      Service: 'lambda.amazonaws.com',
+    },
+    Action: 'sts:AssumeRole',
+  }],
+});
 
 interface RolePolicyRequest {
   analysis_id: string;
@@ -157,33 +159,7 @@ export const setRolePolicy = (request: RolePolicyRequest, context: any, callback
 
 const validatePolicyRequest = (request: RolePolicyRequest) => {
   return Promise.resolve()
-    .then(() => ajv.compile({
-      id: 'analysisPolicyRequest',
-      type: 'object',
-      required: [
-        'analysis_id',
-        'datasets',
-      ],
-      properties: {
-        analysis_id: {
-          type: 'string',
-          format: 'uuid',
-        },
-        datasets: {
-          type: 'object',
-          propertyNames: {
-            type: 'string',
-            pattern: '^\\w{1,50}$',
-          },
-          additionalProperties: {
-            type: 'string',
-            format: 'uuid',
-          },
-          minProperties: 1,
-          maxProperties: 10,
-        },
-      },
-    }))
+    .then(() => ajv.compile(analysisPolicyRequestSchema()))
     .then(() => {
       if (!ajv.validate('analysisPolicyRequest', request)) {
         throw Error(stringify(ajv.errors));
@@ -191,55 +167,87 @@ const validatePolicyRequest = (request: RolePolicyRequest) => {
     });
 }
 
+const analysisPolicyRequestSchema = () => ({
+  id: 'analysisPolicyRequest',
+  type: 'object',
+  required: [
+    'analysis_id',
+    'datasets',
+  ],
+  properties: {
+    analysis_id: {
+      type: 'string',
+      format: 'uuid',
+    },
+    datasets: {
+      type: 'object',
+      propertyNames: {
+        type: 'string',
+        pattern: '^\\w{1,50}$',
+      },
+      additionalProperties: {
+        type: 'string',
+        format: 'uuid',
+      },
+      minProperties: 1,
+      maxProperties: 10,
+    },
+  },
+});
+
 const getDatasetIds = (datasets: Dict<string>) => {
   return Object.keys(datasets).map(key => datasets[key]);
 };
 
 const putRolePolicy = (analysis_id: string, dataset_ids: string[]) => {
-  const bucket = process.env[envNames.dataBucket];
   return iam.putRolePolicy({
     RoleName: roleName(analysis_id),
     PolicyName: analysis_id,
-    PolicyDocument: stringify({
-      Version: '2012-10-17',
-      Statement: [{
-        Effect: 'Allow',
-        Action: [
-          's3:ListBucket',
-        ],
-        Resource: [
-          `arn:aws:s3:::${bucket}`,
-        ],
-        Condition: {
-          StringLike: {
-            's3:prefix': [
-              `${analysis_id}-a/*`,
-            ].concat(dataset_ids.map(dataset_id =>
-              `${dataset_id}-d/*`
-            )),
-          },
-        },
-      }, {
-        Effect: 'Allow',
-        Action: [
-          's3:GetObject',
-          's3:PutObject',
-          's3:DeleteObject',
-        ],
-        Resource: [
-          `arn:aws:s3:::${bucket}/${analysis_id}-a/*`,
-        ],
-      }, {
-        Effect: 'Allow',
-        Action: [
-          's3:GetObject',
-        ],
-        Resource: dataset_ids.map(dataset_id =>
-          `arn:aws:s3:::${bucket}/${dataset_id}-d/*`
-        ),
-      }],
-    }),
+    PolicyDocument: stringify(rolePolicy(analysis_id, dataset_ids)),
   }).promise();
+};
+
+const rolePolicy = (analysis_id: string, dataset_ids: string[]) => {
+  const bucket = process.env[envNames.dataBucket];
+  return {
+    Version: '2012-10-17',
+    Statement: [{
+      Effect: 'Allow',
+      Action: [
+        's3:ListBucket',
+      ],
+      Resource: [
+        `arn:aws:s3:::${bucket}`,
+      ],
+      Condition: {
+        StringLike: {
+          's3:prefix': [
+            `${analysis_id}-a/*`,
+          ].concat(dataset_ids.map(dataset_id =>
+            `${dataset_id}-d/*`
+          )),
+        },
+      },
+    }, {
+      Effect: 'Allow',
+      Action: [
+        's3:GetObject',
+        's3:PutObject',
+        's3:DeleteObject',
+      ],
+      Resource: [
+        `arn:aws:s3:::${bucket}/${analysis_id}-a/*`,
+      ],
+    }, {
+      Effect: 'Allow',
+      Action: [
+        's3:GetObject',
+      ],
+      Resource: dataset_ids.map(dataset_id =>
+        `arn:aws:s3:::${bucket}/${dataset_id}-d/*`
+      ),
+    }],
+  };
 };
 
 export const deleteRole = (analysis_id: string, context: any, callback: Callback) => {
@@ -277,33 +285,10 @@ const parseJobDefinitions = (request: PipelineExecution) => {
 };
 
 const defineJob = (index: number, step: PipelineStep, request: PipelineExecution) => {
-
-  const jobRoleArn = 'arn:aws:iam::' + process.env[envNames.accountId] + ':role/' +
-    roleName(request.analysis_id);
-
-  const registry = process.env[envNames.accountId] + '.dkr.ecr.' +
-    process.env['AWS_REGION'] + '.amazonaws.com';
-
   return batch.registerJobDefinition({
     type: 'container',
     jobDefinitionName: `${request.pipeline_id}-${index}`,
-    containerProperties: {
-      image: `${registry}/apps/${step.app}`,
-      jobRoleArn,
-      command: getCommand(request.analysis_id, request.datasets, step.args),
-      vcpus: 1,
-      memory: defaultMemory,
-      volumes: [{
-        name: volumeName,
-        host: {
-          sourcePath: `${mountPath}/${request.analysis_id}`,
-        },
-      }],
-      mountPoints: [{
-        sourceVolume: volumeName,
-        containerPath: volumePath,
-      }],
-    },
+    containerProperties: containerProperties(step, request),
   }).promise()
     .then(data => {
       if (data.jobDefinitionName == null || data.revision == null) {
@@ -311,6 +296,32 @@ const defineJob = (index: number, step: PipelineStep, request: PipelineExecution
       }
       return `${data.jobDefinitionName}:${data.revision}`;
     });
+};
+
+const containerProperties = (step: PipelineStep, request: PipelineExecution) => {
+  const registry = process.env[envNames.accountId] + '.dkr.ecr.' +
+    process.env['AWS_REGION'] + '.amazonaws.com';
+
+  const jobRoleArn = 'arn:aws:iam::' + process.env[envNames.accountId] + ':role/' +
+    roleName(request.analysis_id);
+
+  return {
+    image: `${registry}/apps/${step.app}`,
+    jobRoleArn,
+    command: getCommand(request.analysis_id, request.datasets, step.args),
+    vcpus: 1,
+    memory: defaultMemory,
+    volumes: [{
+      name: volumeName,
+      host: {
+        sourcePath: `${mountPath}/${request.analysis_id}`,
+      },
+    }],
+    mountPoints: [{
+      sourceVolume: volumeName,
+      containerPath: volumePath,
+    }],
+  };
 };
 
 const getCommand = (analysis_id: string, datasets: Dict<string>, args: string) => {
