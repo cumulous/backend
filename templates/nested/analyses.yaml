@@ -483,10 +483,7 @@ Resources:
             "PassError": {
               "Type": "Pass",
               "InputPath": "$.Error",
-              "Next": "Fail"
-            },
-            "Fail": {
-              "Type": "Fail"
+              "End": true
             }
           }
         }
