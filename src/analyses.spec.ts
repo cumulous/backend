@@ -399,8 +399,7 @@ describe('analyses.createRole', () => {
   it('calls iam.createRole() once with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnCreateRole).toHaveBeenCalledWith({
-        Path: '/analyses/' + fakeStackName + '/',
-        RoleName: fakeAnalysisId,
+        RoleName: 'analysis-' + fakeStackName + '-' + fakeAnalysisId,
         AssumeRolePolicyDocument: stringify({
           Version: '2012-10-17',
           Statement: [{
@@ -510,7 +509,7 @@ describe('analyses.setRolePolicy', () => {
   it('calls iam.putRolePolicy() once with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnPutRolePolicy).toHaveBeenCalledWith({
-        RoleName: '/analyses/' + fakeStackName + '/' + fakeAnalysisId,
+        RoleName: 'analysis-' + fakeStackName + '-' + fakeAnalysisId,
         PolicyName: fakeAnalysisId,
         PolicyDocument: stringify({
           Version: '2012-10-17',
@@ -618,7 +617,7 @@ describe('analyses.deleteRole', () => {
   it('calls iam.deleteRole() once with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnDeleteRole).toHaveBeenCalledWith({
-        RoleName: '/analyses/' + fakeStackName + '/' + fakeAnalysisId,
+        RoleName: 'analysis-' + fakeStackName + '-' + fakeAnalysisId,
       });
       expect(spyOnDeleteRole).toHaveBeenCalledTimes(1);
       done();
@@ -695,8 +694,8 @@ describe('analyses.defineJobs', () => {
   it('calls batch.registerJobDefinition() with correct parameters', (done: Callback) => {
     testMethod(() => {
       const fakeRegistry = fakeAccountId + '.dkr.ecr.' + fakeRegion + '.amazonaws.com';
-      const fakeRoleArn = 'arn:aws:iam::' + fakeAccountId + ':role' +
-        '/analyses/' + fakeStackName + '/' + fakeAnalysisId;
+      const fakeRoleArn = 'arn:aws:iam::' + fakeAccountId + ':role/' +
+        'analysis-' + fakeStackName + '-' + fakeAnalysisId;
       const fakeJobDefinition = (name: string, app: string, command: string) => ({
         type: 'container',
         jobDefinitionName: name,

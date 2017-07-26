@@ -121,12 +121,12 @@ const startExecution = (analysis_id: string, pipeline: Pipeline) => {
     }));
 };
 
-const rolePath = () => `/analyses/${process.env[envNames.stackName]}/`;
+const roleName = (analysis_id: string) =>
+  `analysis-${process.env[envNames.stackName]}-${analysis_id}`;
 
 export const createRole = (analysis_id: string, context: any, callback: Callback) => {
   iam.createRole({
-    Path: rolePath(),
-    RoleName: analysis_id,
+    RoleName: roleName(analysis_id),
     AssumeRolePolicyDocument: stringify({
       Version: '2012-10-17',
       Statement: [{
@@ -198,7 +198,7 @@ const getDatasetIds = (datasets: Dict<string>) => {
 const putRolePolicy = (analysis_id: string, dataset_ids: string[]) => {
   const bucket = process.env[envNames.dataBucket];
   return iam.putRolePolicy({
-    RoleName: rolePath() + analysis_id,
+    RoleName: roleName(analysis_id),
     PolicyName: analysis_id,
     PolicyDocument: stringify({
       Version: '2012-10-17',
@@ -244,7 +244,7 @@ const putRolePolicy = (analysis_id: string, dataset_ids: string[]) => {
 
 export const deleteRole = (analysis_id: string, context: any, callback: Callback) => {
   iam.deleteRole({
-    RoleName: rolePath() + analysis_id,
+    RoleName: roleName(analysis_id),
   }).promise()
     .then(() => callback())
     .catch(callback);
@@ -278,8 +278,8 @@ const parseJobDefinitions = (request: PipelineExecution) => {
 
 const defineJob = (index: number, step: PipelineStep, request: PipelineExecution) => {
 
-  const jobRoleArn = 'arn:aws:iam::' + process.env[envNames.accountId] + ':role' +
-    rolePath() + request.analysis_id;
+  const jobRoleArn = 'arn:aws:iam::' + process.env[envNames.accountId] + ':role/' +
+    roleName(request.analysis_id);
 
   const registry = process.env[envNames.accountId] + '.dkr.ecr.' +
     process.env['AWS_REGION'] + '.amazonaws.com';

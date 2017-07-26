@@ -198,7 +198,7 @@ Resources:
               - Effect: Allow
                 Action: iam:CreateRole
                 Resource:
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/analyses/${BackendStack}/*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/analysis-${BackendStack}-*
 
   SetRolePolicy:
     Type: AWS::Lambda::Function
@@ -235,7 +235,7 @@ Resources:
               - Effect: Allow
                 Action: iam:PutRolePolicy
                 Resource:
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/analyses/${BackendStack}/*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/analysis-${BackendStack}-*
 
   DeleteRoleForAnalysis:
     Type: AWS::Lambda::Function
@@ -271,7 +271,7 @@ Resources:
               - Effect: Allow
                 Action: iam:DeleteRole
                 Resource:
-                  - !Sub arn:aws:iam::${AWS::AccountId}:role/analyses/${BackendStack}/*
+                  - !Sub arn:aws:iam::${AWS::AccountId}:role/analysis-${BackendStack}-*
 
   DefineJobs:
     Type: AWS::Lambda::Function
