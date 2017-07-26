@@ -739,12 +739,10 @@ describe('analyses.defineJobs', () => {
   it('calls callback with correct parameters upon successful request', (done: Callback) => {
     testMethod((err?: Error, data?: any) => {
       expect(err).toBeFalsy();
-      expect(data).toEqual({
-        jobDefinitions: [
-          fakePipelineId + '-0:0',
-          fakePipelineId + '-1:10',
-        ],
-      });
+      expect(data).toEqual([
+        fakePipelineId + '-0:0',
+        fakePipelineId + '-1:10',
+      ]);
       done();
     });
   });
@@ -858,13 +856,11 @@ describe('analyses.submitJobs', () => {
   it('calls callback with correct parameters upon successful request', (done: Callback) => {
     testMethod((err?: Error, data?: any) => {
       expect(err).toBeFalsy();
-      expect(data).toEqual({
-        jobIds: [
-          fakeJobId1,
-          fakeJobId2,
-          fakeJobId3,
-        ],
-      });
+      expect(data).toEqual([
+        fakeJobId1,
+        fakeJobId2,
+        fakeJobId3,
+      ]);
       done();
     });
   });

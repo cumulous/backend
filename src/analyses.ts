@@ -262,7 +262,7 @@ export const defaultMemory = 2048;
 export const defineJobs = (request: PipelineExecution, context: any, callback: Callback) => {
   Promise.resolve()
     .then(() => parseJobDefinitions(request))
-    .then(jobDefinitions => callback(null, { jobDefinitions }))
+    .then(jobDefinitions => callback(null, jobDefinitions))
     .catch(callback);
 };
 
@@ -337,7 +337,7 @@ interface JobsSubmissionRequest {
 export const submitJobs = (request: JobsSubmissionRequest, context: any, callback: Callback) => {
   Promise.resolve()
     .then(() => batchSubmitJobs(request, []))
-    .then(jobIds => callback(null, { jobIds }))
+    .then(jobIds => callback(null, jobIds))
     .catch(callback);
 };
 

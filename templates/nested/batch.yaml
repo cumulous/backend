@@ -1100,3 +1100,7 @@ Resources:
             }
           }
         }
+
+Outputs:
+  JobQueue:
+    Value: !Ref JobQueue

@@ -17,6 +17,8 @@ Parameters:
     Type: String
   PipelinesTable:
     Type: String
+  JobQueue:
+    Type: String
 
 Mappings:
   StackMap:
@@ -115,7 +117,7 @@ Resources:
         Variables:
           ANALYSES_TABLE: !Ref AnalysesTable
           PIPELINES_TABLE: !Ref PipelinesTable
-          # STATE_MACHINE: !Ref SubmitExecutionStateMachine
+          STATE_MACHINE: !Ref SubmitExecutionStateMachine
           WEB_DOMAIN: !Ref WebDomain
       Runtime: nodejs6.10
       Code:
@@ -144,10 +146,10 @@ Resources:
                 Action: dynamodb:UpdateItem
                 Resource:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AnalysesTable}
-              # - Effect: Allow
-              #   Action: states:StartExecution
-              #   Resource:
-              #     - !Ref SubmitExecutionStateMachine
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref SubmitExecutionStateMachine
 
   ExecuteAnalysisPermission:
     Type: AWS::Lambda::Permission
@@ -234,7 +236,7 @@ Resources:
   DeleteRoleForAnalysis:
     Type: AWS::Lambda::Function
     Properties:
-      Handler: analyses.setRolePolicy
+      Handler: analyses.deleteRole
       Timeout: 20
       Environment:
         Variables:
@@ -336,6 +338,96 @@ Resources:
                 Action: batch:SubmitJob
                 Resource:
                   - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/submitjob
+
+  SubmitExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: SubmitExecutionRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CreateRoleForAnalysis.Arn
+                  - !GetAtt SetRolePolicy.Arn
+                  - !GetAtt DeleteRoleForAnalysis.Arn
+                  - !GetAtt DefineJobs.Arn
+                  - !GetAtt SubmitJobs.Arn
+
+  SubmitExecutionStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt SubmitExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "CreateRoleForAnalysis",
+          "States": {
+            "CreateRoleForAnalysis": {
+              "Type": "Task",
+              "InputPath": "$.analysis_id",
+              "ResultPath": null,
+              "Resource": "${CreateRoleForAnalysis.Arn}",
+              "Next": "ScheduleJobs"
+            },
+            "ScheduleJobs": {
+              "Type": "Parallel",
+              "End": true,
+              "Branches": [{
+                "StartAt": "SetRolePolicy",
+                "States": {
+                  "SetRolePolicy": {
+                    "Type": "Task",
+                    "ResultPath": null,
+                    "Resource": "${SetRolePolicy.Arn}",
+                    "Next": "DefineJobs"
+                  },
+                  "DefineJobs": {
+                    "Type": "Task",
+                    "ResultPath": "$.jobDefinitions",
+                    "Resource": "${DefineJobs.Arn}",
+                    "Next": "PassJobQueue"
+                  },
+                  "PassJobQueue": {
+                    "Type": "Pass",
+                    "Result": "${JobQueue}",
+                    "ResultPath": "$.jobQueue",
+                    "Next": "SubmitJobs"
+                  },
+                  "SubmitJobs": {
+                    "Type": "Task",
+                    "ResultPath": "$.jobIds",
+                    "Resource": "${SubmitJobs.Arn}",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "DeleteRole"
+              }]
+            },
+            "DeleteRole": {
+              "Type": "Task",
+              "InputPath": "$.analysis_id",
+              "ResultPath": null,
+              "Resource": "${DeleteRole.Arn}",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Fail"
+            }
+          }
+        }
 
 Outputs:
   Table:
