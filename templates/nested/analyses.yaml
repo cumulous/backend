@@ -117,7 +117,7 @@ Resources:
         Variables:
           ANALYSES_TABLE: !Ref AnalysesTable
           PIPELINES_TABLE: !Ref PipelinesTable
-          STATE_MACHINE: !Ref SubmitExecutionStateMachine
+          STATE_MACHINE: !Ref StartAnalysisStateMachine
           WEB_DOMAIN: !Ref WebDomain
       Runtime: nodejs6.10
       Code:
@@ -153,7 +153,7 @@ Resources:
               - Effect: Allow
                 Action: states:StartExecution
                 Resource:
-                  - !Ref SubmitExecutionStateMachine
+                  - !Ref StartAnalysisStateMachine
 
   ExecuteAnalysisPermission:
     Type: AWS::Lambda::Permission
@@ -343,7 +343,7 @@ Resources:
                 Resource:
                   - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/submitjob
 
-  SubmitExecutionRole:
+  StartAnalysisRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -354,7 +354,7 @@ Resources:
               Service: !Sub states.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
       Policies:
-        - PolicyName: SubmitExecutionRole
+        - PolicyName: StartAnalysisRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -367,10 +367,10 @@ Resources:
                   - !GetAtt DefineJobs.Arn
                   - !GetAtt SubmitJobs.Arn
 
-  SubmitExecutionStateMachine:
+  StartAnalysisStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      RoleArn: !GetAtt SubmitExecutionRole.Arn
+      RoleArn: !GetAtt StartAnalysisRole.Arn
       DefinitionString: !Sub |-
         {
           "StartAt": "CreateRoleForAnalysis",

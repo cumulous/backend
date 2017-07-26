@@ -278,8 +278,8 @@ const parseJobDefinitions = (request: PipelineExecution) => {
 
 const defineJob = (index: number, step: PipelineStep, request: PipelineExecution) => {
 
-  const jobRoleArn = 'arn:aws:iam::' + process.env[envNames.accountId] + ':role/analyses/' +
-    process.env[envNames.stackName] + '/' + request.analysis_id;
+  const jobRoleArn = 'arn:aws:iam::' + process.env[envNames.accountId] + ':role' +
+    rolePath() + request.analysis_id;
 
   const registry = process.env[envNames.accountId] + '.dkr.ecr.' +
     process.env['AWS_REGION'] + '.amazonaws.com';
