@@ -420,7 +420,7 @@ Resources:
               "Type": "Task",
               "InputPath": "$.analysis_id",
               "ResultPath": null,
-              "Resource": "${DeleteRole.Arn}",
+              "Resource": "${DeleteRoleForAnalysis.Arn}",
               "Next": "Fail"
             },
             "Fail": {
