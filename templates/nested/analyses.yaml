@@ -240,7 +240,7 @@ Resources:
   DeleteRolePolicy:
     Type: AWS::Lambda::Function
     Properties:
-      Handler: analyses.deleteRole
+      Handler: analyses.deleteRolePolicy
       Timeout: 20
       Environment:
         Variables:
