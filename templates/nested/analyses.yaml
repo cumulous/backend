@@ -48,13 +48,13 @@ Resources:
       StreamSpecification:
         StreamViewType: NEW_IMAGE
 
-  # AnalysesTableStreamMapping:
-  #   Type: AWS::Lambda::EventSourceMapping
-  #   Properties:
-  #     EventSourceArn: !GetAtt AnalysesTable.StreamArn
-  #     FunctionName: !Ref SearchUploadDocumentsFunction
-  #     StartingPosition: TRIM_HORIZON
-  #     BatchSize: 100
+  AnalysesTableStreamMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !GetAtt AnalysesTable.StreamArn
+      FunctionName: !Ref SearchUploadDocumentsFunction
+      StartingPosition: TRIM_HORIZON
+      BatchSize: 100
 
   CreateAnalysis:
     Type: AWS::Lambda::Function
