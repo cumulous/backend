@@ -855,6 +855,9 @@ describe('analyses.submitJobs()', () => {
     jobQueue: fakeJobQueue,
   });
 
+  const fakeJobName = (jobDefinition: string) =>
+    jobDefinition.replace(':', '_');
+
   const testMethod = (callback: Callback) =>
     submitJobs(fakeRequest(), null, callback);
 
@@ -873,12 +876,12 @@ describe('analyses.submitJobs()', () => {
     testMethod(() => {
       expect(spyOnSubmitJob).toHaveBeenCalledWith({
         jobDefinition: fakeJobDefinition1,
-        jobName: fakeJobDefinition1,
+        jobName: fakeJobName(fakeJobDefinition1),
         jobQueue: fakeJobQueue,
       });
       expect(spyOnSubmitJob).toHaveBeenCalledWith({
         jobDefinition: fakeJobDefinition2,
-        jobName: fakeJobDefinition2,
+        jobName: fakeJobName(fakeJobDefinition2),
         jobQueue: fakeJobQueue,
         dependsOn: [{
           jobId: fakeJobId1,
@@ -886,7 +889,7 @@ describe('analyses.submitJobs()', () => {
       });
       expect(spyOnSubmitJob).toHaveBeenCalledWith({
         jobDefinition: fakeJobDefinition3,
-        jobName: fakeJobDefinition3,
+        jobName: fakeJobName(fakeJobDefinition3),
         jobQueue: fakeJobQueue,
         dependsOn: [{
           jobId: fakeJobId2,

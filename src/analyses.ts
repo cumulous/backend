@@ -375,7 +375,7 @@ const batchSubmitJobs = (request: JobsSubmissionRequest, jobIds: string[]): Prom
   }
   return batch.submitJob(Object.assign({
       jobDefinition: request.jobDefinitions[index],
-      jobName: request.jobDefinitions[index],
+      jobName: request.jobDefinitions[index].replace(':', '_'),
       jobQueue: request.jobQueue,
     }, index > 0 ? {
       dependsOn: [{
