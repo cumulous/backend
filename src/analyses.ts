@@ -322,6 +322,13 @@ const containerProperties = (step: PipelineStep, request: PipelineExecution) => 
     command: getCommand(request.analysis_id, request.datasets, step.args),
     vcpus: 1,
     memory: defaultMemory,
+    environment: [{
+      name: 'DATA_BUCKET',
+      value: process.env[envNames.dataBucket],
+    }, {
+      name: 'DATA_PATH',
+      value: volumePath,
+    }],
     volumes: [{
       name: volumeName,
       host: {

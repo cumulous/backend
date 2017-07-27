@@ -689,12 +689,12 @@ describe('analyses.defineJobs()', () => {
   const fakeAccountId = '012345678910';
   const fakeRegion = 'us-west-1';
   const fakeStackName = 'fake-stack';
+  const fakeDataBucket = 'fake-define-jobs-data-bucket';
   const fakePipelineId = uuid();
   const fakeApp1 = 'app1:1.0';
   const fakeApp2 = 'app2';
   const fakeDatasetId1 = uuid();
   const fakeDatasetId2 = uuid();
-
 
   const fakeSteps = () => [{
     app: fakeApp1,
@@ -728,9 +728,10 @@ describe('analyses.defineJobs()', () => {
   let spyOnRegisterJobDefinition: jasmine.Spy;
 
   beforeEach(() => {
-    process.env[envNames.stackName] = fakeStackName;
     process.env[envNames.accountId] = fakeAccountId;
     process.env['AWS_REGION'] = fakeRegion;
+    process.env[envNames.stackName] = fakeStackName;
+    process.env[envNames.dataBucket] = fakeDataBucket;
 
     spyOnRegisterJobDefinition = spyOn(batch, 'registerJobDefinition')
       .and.returnValues(fakeResolve(fakeJobResponse(0)), fakeResolve(fakeJobResponse(1)));
@@ -750,6 +751,13 @@ describe('analyses.defineJobs()', () => {
           command: [command],
           vcpus: 1,
           memory: defaultMemory,
+          environment: [{
+            name: 'DATA_BUCKET',
+            value: fakeDataBucket,
+          }, {
+            name: 'DATA_PATH',
+            value: volumePath,
+          }],
           volumes: [{
             name: volumeName,
             host: {

@@ -318,6 +318,7 @@ Resources:
         Variables:
           ACCOUNT_ID: !Ref AWS::AccountId
           STACK_NAME: !Ref BackendStack
+          DATA_BUCKET: !Ref DataBucket
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
