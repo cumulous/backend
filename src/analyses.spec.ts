@@ -746,7 +746,7 @@ describe('analyses.defineJobs()', () => {
         type: 'container',
         jobDefinitionName: name,
         containerProperties: {
-          image: fakeRegistry + '/apps/' + app,
+          image: fakeRegistry + '/' + fakeStackName + '/apps/' + app,
           jobRoleArn: fakeRoleArn,
           command: [command],
           vcpus: 1,

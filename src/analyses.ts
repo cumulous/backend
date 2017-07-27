@@ -310,14 +310,13 @@ export const volumePath = '/data';
 export const defaultMemory = 2048;
 
 const containerProperties = (step: PipelineStep, request: PipelineExecution) => {
-  const registry = process.env[envNames.accountId] + '.dkr.ecr.' +
-    process.env['AWS_REGION'] + '.amazonaws.com';
-
-  const jobRoleArn = 'arn:aws:iam::' + process.env[envNames.accountId] + ':role/' +
-    roleName(request.analysis_id);
-
+  const image = process.env[envNames.accountId] + '.dkr.ecr.' +
+                process.env['AWS_REGION'] + '.amazonaws.com/' +
+                process.env[envNames.stackName] + '/apps/' + step.app;
+  const jobRoleArn = 'arn:aws:iam::' + process.env[envNames.accountId] +
+                     ':role/' + roleName(request.analysis_id);
   return {
-    image: `${registry}/apps/${step.app}`,
+    image,
     jobRoleArn,
     command: getCommand(request.analysis_id, request.datasets, step.args),
     vcpus: 1,
