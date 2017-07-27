@@ -1330,8 +1330,8 @@ Resources:
         Image: aws/codebuild/docker:1.12.1
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
-          - Name: REPO_BASE
-            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+          - Name: STACK_NAME
+            Value: backend-beta
       ServiceRole: !Ref AppsBuildRole
 
   AppsReleaseBuildProject:
@@ -1347,8 +1347,8 @@ Resources:
         Image: aws/codebuild/docker:1.12.1
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
-          - Name: REPO_BASE
-            Value: !Sub ${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com
+          - Name: STACK_NAME
+            Value: backend-release
       ServiceRole: !Ref AppsBuildRole
 
   AppsPipelineRole:
