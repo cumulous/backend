@@ -1397,7 +1397,6 @@ Resources:
                     - !Ref PipelineNotification
                 - !Ref AWS::NoValue
 
-
   AppsBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -1435,6 +1434,10 @@ Resources:
                 Resource: '*'
               - Effect: Allow
                 Action:
+                  - ecr:CreateRepository
+                Resource: '*'
+              - Effect: Allow
+                Action:
                   - ecr:GetDownloadUrlForLayer
                   - ecr:BatchGetImage
                   - ecr:BatchCheckLayerAvailability
@@ -1443,7 +1446,7 @@ Resources:
                   - ecr:UploadLayerPart
                   - ecr:CompleteLayerUpload
                 Resource:
-                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/apps/*
+                  - !Sub arn:aws:ecr:${AWS::Region}:${AWS::AccountId}:repository/backend-*
 
   FrontendPipeline:
     Type: AWS::CodePipeline::Pipeline
