@@ -124,7 +124,7 @@ const startExecution = (analysis_id: string, pipeline: Pipeline) => {
 };
 
 const roleName = (analysis_id: string) =>
-  `analysis-${process.env[envNames.stackName]}-${analysis_id}`;
+  `${process.env[envNames.stackName]}-analysis-${analysis_id}`;
 
 export const createRole = (analysis_id: string, context: any, callback: Callback) => {
   iam.createRole({
@@ -276,10 +276,6 @@ interface PipelineExecution {
   steps: PipelineStep[];
 }
 
-export const volumeName = 'data';
-export const volumePath = '/data';
-export const defaultMemory = 2048;
-
 export const defineJobs = (request: PipelineExecution, context: any, callback: Callback) => {
   Promise.resolve()
     .then(() => parseJobDefinitions(request))
@@ -308,6 +304,10 @@ const defineJob = (index: number, step: PipelineStep, request: PipelineExecution
       return `${data.jobDefinitionName}:${data.revision}`;
     });
 };
+
+export const volumeName = 'data';
+export const volumePath = '/data';
+export const defaultMemory = 2048;
 
 const containerProperties = (step: PipelineStep, request: PipelineExecution) => {
   const registry = process.env[envNames.accountId] + '.dkr.ecr.' +

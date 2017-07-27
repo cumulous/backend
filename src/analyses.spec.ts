@@ -402,7 +402,7 @@ describe('analyses.createRole()', () => {
   it('calls iam.createRole() once with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnCreateRole).toHaveBeenCalledWith({
-        RoleName: 'analysis-' + fakeStackName + '-' + fakeAnalysisId,
+        RoleName: fakeStackName + '-analysis-' + fakeAnalysisId,
         AssumeRolePolicyDocument: stringify({
           Version: '2012-10-17',
           Statement: [{
@@ -512,7 +512,7 @@ describe('analyses.setRolePolicy()', () => {
   it('calls iam.putRolePolicy() once with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnPutRolePolicy).toHaveBeenCalledWith({
-        RoleName: 'analysis-' + fakeStackName + '-' + fakeAnalysisId,
+        RoleName: fakeStackName + '-analysis-' + fakeAnalysisId,
         PolicyName: fakeAnalysisId,
         PolicyDocument: stringify({
           Version: '2012-10-17',
@@ -620,7 +620,7 @@ describe('analyses.deleteRolePolicy()', () => {
   it('calls iam.deleteRolePolicy() once with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnDeleteRolePolicy).toHaveBeenCalledWith({
-        RoleName: 'analysis-' + fakeStackName + '-' + fakeAnalysisId,
+        RoleName: fakeStackName + '-analysis-' + fakeAnalysisId,
         PolicyName: fakeAnalysisId,
       });
       expect(spyOnDeleteRolePolicy).toHaveBeenCalledTimes(1);
@@ -662,7 +662,7 @@ describe('analyses.deleteRole()', () => {
   it('calls iam.deleteRole() once with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnDeleteRole).toHaveBeenCalledWith({
-        RoleName: 'analysis-' + fakeStackName + '-' + fakeAnalysisId,
+        RoleName: fakeStackName + '-analysis-' + fakeAnalysisId,
       });
       expect(spyOnDeleteRole).toHaveBeenCalledTimes(1);
       done();
@@ -741,7 +741,7 @@ describe('analyses.defineJobs()', () => {
     testMethod(() => {
       const fakeRegistry = fakeAccountId + '.dkr.ecr.' + fakeRegion + '.amazonaws.com';
       const fakeRoleArn = 'arn:aws:iam::' + fakeAccountId + ':role/' +
-        'analysis-' + fakeStackName + '-' + fakeAnalysisId;
+        fakeStackName + '-analysis-' + fakeAnalysisId;
       const fakeJobDefinition = (name: string, app: string, command: string) => ({
         type: 'container',
         jobDefinitionName: name,
