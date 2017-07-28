@@ -3,8 +3,6 @@
 DEVICES="$1"
 MOUNT="$2"
 
-USER_ID=100
-
 set -e
 
 d=0
@@ -26,8 +24,7 @@ fi
 mkfs.ext4 ${drive}
 mkdir -p ${MOUNT}
 mount ${drive} ${MOUNT}
-chown ${USER_ID}:root ${MOUNT}
-chmod 660 ${MOUNT}
+chmod 667 ${MOUNT}
 
 service docker restart || true
 start ecs || true
