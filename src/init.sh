@@ -24,7 +24,6 @@ fi
 mkfs.ext4 ${drive}
 mkdir -p ${MOUNT}
 mount ${drive} ${MOUNT}
-chmod 667 ${MOUNT}
 
 service docker restart || true
 start ecs || true
