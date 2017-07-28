@@ -20,7 +20,7 @@ done
 get_version() {
   local dir="$1"
 
-  find "$dir" -type f \( -name "*.js" -o -name "*.json" \) ! -name "package.json" \
+  find "$dir" -type f \( -name "*.js" -o -name "*.json" -name "*.sh" \) ! -name "package.json" \
     -exec md5sum {} \; |
     sort -k 2 |
     md5sum |
