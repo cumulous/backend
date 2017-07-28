@@ -864,7 +864,7 @@ describe('analyses.submitJobs()', () => {
   });
 
   const fakeJobName = (jobDefinition: string) =>
-    jobDefinition.replace(':', '_');
+    jobDefinition.replace(':', '-');
 
   const testMethod = (callback: Callback) =>
     submitJobs(fakeRequest(), null, callback);
