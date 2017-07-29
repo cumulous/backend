@@ -698,13 +698,18 @@ describe('analyses.defineJobs()', () => {
 
   const fakeSteps = () => [{
     app: fakeApp1,
-    args: '-i1 [/Dataset_1/file_i.txt]:i -i2 [/Dataset_2/file_i.txt]:i ' +
-          '-i3 [file i.txt]:i -i4 [files/i.txt]:i' +
-          '-d1 [/Dataset_1]:d -d2 [/Dataset_2]:d ' +
-          '-o1 [file1_o.txt]:o -o2 [file2_o.txt]:o',
+    args: '-d [d:/Dataset_1/] ' +
+          '-d [d:/Dataset_2/path/to/file] ' +
+          '-d [d:/Dataset_2/path/to/files/] ' +
+          '-d [d:path/to/file] ' +
+          '-d [d:path/to/files/] ' +
+          '-i [i:/Dataset_1/path/to/file] ' +
+          '-i [i:path/to/file] ' +
+          '-o [o:path/to/file]',
   }, {
     app: fakeApp2,
-    args: '-i [/Dataset_12/file_i.txt]:i -o [Dataset_12/file_o.txt]:o',
+    args: '-i [i:/Dataset_12/file_i.txt] ' +
+          '-o [o:Dataset_12/file_o.txt]',
   }];
 
   const fakeRequest = () => ({
@@ -772,15 +777,20 @@ describe('analyses.defineJobs()', () => {
       });
       expect(spyOnRegisterJobDefinition).toHaveBeenCalledWith(
         fakeJobDefinition(fakePipelineId + '-0', fakeApp1,
-          '-i1 [/' + fakeDatasetId1 + '-d/file_i.txt]:i -i2 [/' + fakeDatasetId2 + '-d/file_i.txt]:i ' +
-          '-i3 [/' + fakeAnalysisId + '-a/file i.txt]:i -i4 [/' + fakeAnalysisId + '-a/files/i.txt]:i' +
-          '-d1 [/' + fakeDatasetId1 + '-d]:d -d2 [/' + fakeDatasetId2 + '-d]:d ' +
-          '-o1 [/' + fakeAnalysisId + '-a/file1_o.txt]:o -o2 [/' + fakeAnalysisId + '-a/file2_o.txt]:o',
+          '-d [d:/' + fakeDatasetId1 + '-d/] ' +
+          '-d [d:/' + fakeDatasetId2 + '-d/path/to/file] ' +
+          '-d [d:/' + fakeDatasetId2 + '-d/path/to/files/] ' +
+          '-d [d:/' + fakeAnalysisId + '-a/path/to/file] ' +
+          '-d [d:/' + fakeAnalysisId + '-a/path/to/files/] ' +
+          '-i [i:/' + fakeDatasetId1 + '-d/path/to/file] ' +
+          '-i [i:/' + fakeAnalysisId + '-a/path/to/file] ' +
+          '-o [o:/' + fakeAnalysisId + '-a/path/to/file]',
         )
       );
       expect(spyOnRegisterJobDefinition).toHaveBeenCalledWith(
         fakeJobDefinition(fakePipelineId + '-1', fakeApp2,
-          '-i [/Dataset_12/file_i.txt]:i -o [/' + fakeAnalysisId + '-a/Dataset_12/file_o.txt]:o',
+          '-i [i:/Dataset_12/file_i.txt] ' +
+          '-o [o:/' + fakeAnalysisId + '-a/Dataset_12/file_o.txt]',
         )
       );
       expect(spyOnRegisterJobDefinition).toHaveBeenCalledTimes(2);

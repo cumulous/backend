@@ -352,10 +352,10 @@ const getCommand = (analysis_id: string, datasets: Dict<string>, args: string) =
     if (!reKey.test(key)) {
       throw Error(`Dataset '${key}' must satisfy pattern ${reKey}`);
     }
-    const reValue = new RegExp('\\[\\/' + key + '(\\/[^\\]]*)?\\]', 'g');
-    command = command.replace(reValue, `[/${datasets[key]}-d$1]`);
+    const reValue = new RegExp('\\[([di]):\\/' + key + '\\/([^\\]]*)\\]', 'g');
+    command = command.replace(reValue, `[$1:/${datasets[key]}-d/$2]`);
   });
-  command = command.replace(/\[(\w[^\]]*)\]/g, `[/${analysis_id}-a/$1]`);
+  command = command.replace(/\[([dio]):(\w[^\]]*)\]/g, `[$1:/${analysis_id}-a/$2]`);
   return [command];
 };
 

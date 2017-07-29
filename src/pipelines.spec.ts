@@ -29,20 +29,23 @@ describe('pipelines.create()', () => {
 
   const fakeSteps = (extraProperty?: boolean) => {
     const steps: any[] = [{
-      app: 'app',
-      args: '-i [file_i.txt]:i -d [file_d.txt]:d -o [file_o.txt]:o',
+      app: 'app1',
+      args: '-i [i:file_i.txt] -d [d:file_d.txt] -o [o:file_o.txt]',
     }, {
-      app: 'app1:1.0.1a',
-      args: '-i [/Dataset_1/file_i.txt]:i -d [/Dataset_1/file_d.txt]:d -o [file_o.txt]:o',
+      app: 'app:1.0.1a',
+      args: '-i [i:files/file_i.txt] -d [d:files/file_d.txt] -o [o:files/file_o.txt]',
+    }, {
+      app: 'app1',
+      args: '-i [i:/Dataset_1/file_i.txt] -d [d:/Dataset_1/file_d.txt]',
     }, {
       app: 'app2',
-      args: '-d [/Dataset_2]:d -o [file o.txt]:o',
+      args: '-d [d:/Dataset_2/] -d [d:/Dataset_2/files/]',
     }, {
       app: 'app3',
-      args: '-i [/Dataset_3/file_i.txt]:i -d [/Dataset_3/file_d.txt]:d -o [file_o.txt]:o',
+      args: '-i [i:/Dataset_3/files/file_i.txt] -d [d:/Dataset_3/files/file_d.txt]',
     }, {
       app: 'app4',
-      args: '-i [/Dataset_4/file_i.txt]:i -d [/Dataset_4/file_d.txt]:d -o [file_o.txt]:o',
+      args: '-i [i:/Dataset_4/file_i.txt] -d [d:/Dataset_4/file_d.txt]',
     }];
     if (extraProperty) {
       steps.forEach(step => step.extra = 'property');

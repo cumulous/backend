@@ -43,7 +43,7 @@ const generatePipeline = (request: PipelineCreationRequest, principalId: string)
   status: 'active',
 });
 
-const datasetMatcher = /\[\/(\w+)\/?/g;
+const datasetMatcher = /\[[di]:\/(\w+)\/?/g;
 
 const parseDatasets = (request: PipelineCreationRequest) => {
   const labels = new Set<string>();
