@@ -2,8 +2,7 @@ import * as stringify from 'json-stable-stringify';
 import * as uuid from 'uuid';
 
 import { create, createRole, deleteRole, deleteRolePolicy, setRolePolicy,
-         defaultMemory, volumeName, volumePath,
-         defineJobs, submitJobs, submitExecution } from './analyses';
+         defineJobs, submitJobs, submitExecution, volumeName, volumePath } from './analyses';
 import * as apig from './apig';
 import { ajv, ApiError } from './apig';
 import { batch, dynamodb, iam, stepFunctions } from './aws';
@@ -714,6 +713,8 @@ describe('analyses.defineJobs()', () => {
     app: fakeApp2,
     args: '-i [i:/Dataset_12/file_i.txt] ' +
           '-o [o:Dataset_12/file_o.txt]',
+    cores: fakeCores * 2,
+    memory: fakeMemory * 2,
   }];
 
   const fakeRequest = () => ({
@@ -752,8 +753,7 @@ describe('analyses.defineJobs()', () => {
       const fakeRoleArn = 'arn:aws:iam::' + fakeAccountId + ':role/' +
         fakeStackName + '-analysis-' + fakeAnalysisId;
       const fakeJobDefinition = (
-          name: string, app: string, command: string,
-          cores = 1, memory = defaultMemory) => ({
+          name: string, app: string, command: string, cores: number, memory: number) => ({
         type: 'container',
         jobDefinitionName: name,
         containerProperties: {
@@ -801,6 +801,7 @@ describe('analyses.defineJobs()', () => {
         fakeJobDefinition(fakePipelineId + '-1', fakeApp2,
           '-i [i:/Dataset_12/file_i.txt] ' +
           '-o [o:/' + fakeAnalysisId + '-a/Dataset_12/file_o.txt]',
+          fakeCores * 2, fakeMemory * 2,
         )
       );
       expect(spyOnRegisterJobDefinition).toHaveBeenCalledTimes(2);

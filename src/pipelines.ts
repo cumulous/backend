@@ -35,11 +35,16 @@ export const create = (request: Request, context: any, callback: Callback) => {
     .catch(err => respondWithError(callback, request, err));
 };
 
+export const defaultMemory = 1;
+
 const generatePipeline = (request: PipelineCreationRequest, principalId: string) => ({
   id: uuid(),
   name: request.name,
   datasets: parseDatasets(request),
-  steps: request.steps,
+  steps: request.steps.map(step => Object.assign({
+    cores: 1,
+    memory: defaultMemory,
+  }, step)),
   created_at: new Date().toISOString(),
   created_by: principalId,
   status: 'active',

@@ -5,7 +5,7 @@ import * as apig from './apig';
 import { ajv, ApiError } from './apig';
 import { dynamodb } from './aws';
 import { envNames } from './env';
-import { create } from './pipelines';
+import { create, defaultMemory } from './pipelines';
 import { fakeReject, fakeResolve } from './fixtures/support';
 import { Callback, Dict } from './types';
 import { uuidNil } from './util';
@@ -29,7 +29,7 @@ describe('pipelines.create()', () => {
     'Dataset_X': fakeDatasetIdX,
   });
 
-  const fakeSteps = (extraProperty?: boolean) => {
+  const fakeSteps = (processed?: boolean, extraProperty?: boolean) => {
     const steps: any[] = [{
       app: 'app1',
       args: '-i [i:file_i.txt] -d [d:file_d.txt] -o [o:file_o.txt]',
@@ -51,6 +51,12 @@ describe('pipelines.create()', () => {
       app: 'app4',
       args: '-i [i:/Dataset_4/file_i.txt] -d [d:/Dataset_4/file_d.txt]',
     }];
+    if (processed) {
+      steps.forEach(step => {
+        step.cores = step.cores || 1;
+        step.memory = step.memory || defaultMemory;
+      });
+    }
     if (extraProperty) {
       steps.forEach(step => step.extra = 'property');
     }
@@ -60,7 +66,7 @@ describe('pipelines.create()', () => {
   const fakePipelineRequest = (extraProperty?: boolean) => ({
     name: fakePipelineName,
     datasets: fakeDatasets(),
-    steps: fakeSteps(extraProperty),
+    steps: fakeSteps(false, extraProperty),
   });
 
   const fakeContext = () => ({
@@ -83,7 +89,7 @@ describe('pipelines.create()', () => {
       'Dataset_3': uuidNil,
       'Dataset_4': uuidNil,
     } as Dict<string>,
-    steps: fakeSteps(),
+    steps: fakeSteps(true),
     created_at: fakeDate,
     created_by: fakePrincipalId,
     status: 'active',

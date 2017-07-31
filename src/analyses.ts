@@ -307,7 +307,6 @@ const defineJob = (index: number, step: PipelineStep, request: PipelineExecution
 
 export const volumeName = 'data';
 export const volumePath = '/data';
-export const defaultMemory = 2;
 
 const containerProperties = (request: PipelineExecution, step: PipelineStep, index: number) => {
   const image = process.env[envNames.accountId] + '.dkr.ecr.' +
@@ -320,7 +319,7 @@ const containerProperties = (request: PipelineExecution, step: PipelineStep, ind
     jobRoleArn,
     command: getCommand(request.analysis_id, request.datasets, step.args),
     vcpus: step.cores || 1,
-    memory: Math.round((step.memory || defaultMemory) * 1000),
+    memory: Math.round(step.memory * 1000),
     environment: [{
       name: 'DATA_BUCKET',
       value: process.env[envNames.dataBucket],
