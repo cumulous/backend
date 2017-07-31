@@ -19,6 +19,8 @@ describe('pipelines.create()', () => {
   const fakeDatasetIdX = uuid();
   const fakePrincipalId = uuid();
   const fakeDate = new Date().toISOString();
+  const fakeCores = 24;
+  const fakeMemory = 65536;
 
   const fakeDatasets = (): Dict<string> => ({
     'Dataset_1': fakeDatasetId1,
@@ -34,6 +36,8 @@ describe('pipelines.create()', () => {
     }, {
       app: 'app:1.0.1a',
       args: '-i [i:files/file_i.txt] -d [d:files/file_d.txt] -o [o:files/file_o.txt]',
+      cores: fakeCores,
+      memory: fakeMemory,
     }, {
       app: 'app1',
       args: '-i [i:/Dataset_1/file_i.txt] -d [d:/Dataset_1/file_d.txt]',

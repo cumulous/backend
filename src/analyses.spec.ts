@@ -695,6 +695,8 @@ describe('analyses.defineJobs()', () => {
   const fakeApp2 = 'app2';
   const fakeDatasetId1 = uuid();
   const fakeDatasetId2 = uuid();
+  const fakeCores = 16;
+  const fakeMemory = 16384;
 
   const fakeSteps = () => [{
     app: fakeApp1,
@@ -706,6 +708,8 @@ describe('analyses.defineJobs()', () => {
           '-i [i:/Dataset_1/path/to/file] ' +
           '-i [i:path/to/file] ' +
           '-o [o:path/to/file]',
+    cores: fakeCores,
+    memory: fakeMemory,
   }, {
     app: fakeApp2,
     args: '-i [i:/Dataset_12/file_i.txt] ' +
@@ -747,15 +751,17 @@ describe('analyses.defineJobs()', () => {
       const fakeRegistry = fakeAccountId + '.dkr.ecr.' + fakeRegion + '.amazonaws.com';
       const fakeRoleArn = 'arn:aws:iam::' + fakeAccountId + ':role/' +
         fakeStackName + '-analysis-' + fakeAnalysisId;
-      const fakeJobDefinition = (name: string, app: string, command: string) => ({
+      const fakeJobDefinition = (
+          name: string, app: string, command: string,
+          cores = 1, memory = defaultMemory) => ({
         type: 'container',
         jobDefinitionName: name,
         containerProperties: {
           image: fakeRegistry + '/' + fakeStackName + '/apps/' + app,
           jobRoleArn: fakeRoleArn,
           command: [command],
-          vcpus: 1,
-          memory: defaultMemory,
+          vcpus: cores,
+          memory,
           environment: [{
             name: 'DATA_BUCKET',
             value: fakeDataBucket,
@@ -785,6 +791,7 @@ describe('analyses.defineJobs()', () => {
           '-i [i:/' + fakeDatasetId1 + '-d/path/to/file] ' +
           '-i [i:/' + fakeAnalysisId + '-a/path/to/file] ' +
           '-o [o:/' + fakeAnalysisId + '-a/path/to/file]',
+          fakeCores, fakeMemory,
         )
       );
       expect(spyOnRegisterJobDefinition).toHaveBeenCalledWith(

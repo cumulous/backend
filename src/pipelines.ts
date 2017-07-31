@@ -15,6 +15,8 @@ interface PipelineCreationRequest {
 export interface PipelineStep {
   app: string;
   args: string;
+  cores?: number;
+  memory?: number;
 }
 
 export type Pipeline = PipelineCreationRequest & {

@@ -899,6 +899,10 @@ definitions:
         $ref: '#/definitions/AppName'
       args:
         $ref: '#/definitions/AppArgs'
+      cores:
+        $ref: '#/definitions/StepCores'
+      memory:
+        $ref: '#/definitions/StepMemory'
   AppName:
     description: Name and optionally version of an app executed in a pipeline
     type: string
@@ -909,6 +913,18 @@ definitions:
     type: string
     pattern: ^(?=((\[d:\/\w{1,50}\/\]|\[d:(\/\w{1,50}\/)?\w[\w-. ]*(\/\w[\w-. ]*)*\/?\]|\[i:(\/\w{1,50}\/)?\w[\w-. ]*(\/\w[\w-. ]*)*\]|\[o:\w[\w-. ]*(\/\w[\w-. ]*)*\]|[\w-. :=]+)+))\1$
     maxLength: 1000
+  StepCores:
+    description: Minimum number of virtual cores required by a step in a pipeline
+    type: integer
+    minimum: 1
+    default: 1
+    maximum: 36
+  StepMemory:
+    description: Maximum amount of memory (MB) consumed by a step in a pipeline
+    type: integer
+    minimum: 128
+    default: 2048
+    maximum: 499712
   PipelineStatus:
     description: Pipeline status
     type: string
