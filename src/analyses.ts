@@ -295,7 +295,7 @@ const defineJob = (index: number, step: PipelineStep, request: PipelineExecution
   return batch.registerJobDefinition({
     type: 'container',
     jobDefinitionName: `${request.pipeline_id}-${index}`,
-    containerProperties: containerProperties(step, request),
+    containerProperties: containerProperties(request, step, index),
   }).promise()
     .then(data => {
       if (data.jobDefinitionName == null || data.revision == null) {
@@ -309,7 +309,7 @@ export const volumeName = 'data';
 export const volumePath = '/data';
 export const defaultMemory = 2048;
 
-const containerProperties = (step: PipelineStep, request: PipelineExecution) => {
+const containerProperties = (request: PipelineExecution, step: PipelineStep, index: number) => {
   const image = process.env[envNames.accountId] + '.dkr.ecr.' +
                 process.env['AWS_REGION'] + '.amazonaws.com/' +
                 process.env[envNames.stackName] + '/apps/' + step.app;
@@ -327,6 +327,9 @@ const containerProperties = (step: PipelineStep, request: PipelineExecution) => 
     }, {
       name: 'DATA_PATH',
       value: volumePath,
+    }, {
+      name: 'LOG_DEST',
+      value: `${request.analysis_id}-a/logs/${request.pipeline_id}-${index}.log`,
     }],
     volumes: [{
       name: volumeName,

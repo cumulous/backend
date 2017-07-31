@@ -768,6 +768,9 @@ describe('analyses.defineJobs()', () => {
           }, {
             name: 'DATA_PATH',
             value: volumePath,
+          }, {
+            name: 'LOG_DEST',
+            value: fakeAnalysisId + '-a/logs/' + name + '.log',
           }],
           volumes: [{
             name: volumeName,
