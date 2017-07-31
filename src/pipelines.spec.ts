@@ -20,7 +20,7 @@ describe('pipelines.create()', () => {
   const fakePrincipalId = uuid();
   const fakeDate = new Date().toISOString();
   const fakeCores = 24;
-  const fakeMemory = 65536;
+  const fakeMemory = 72;
 
   const fakeDatasets = (): Dict<string> => ({
     'Dataset_1': fakeDatasetId1,

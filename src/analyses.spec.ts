@@ -696,7 +696,7 @@ describe('analyses.defineJobs()', () => {
   const fakeDatasetId1 = uuid();
   const fakeDatasetId2 = uuid();
   const fakeCores = 16;
-  const fakeMemory = 16384;
+  const fakeMemory = 32.7681;
 
   const fakeSteps = () => [{
     app: fakeApp1,
@@ -761,7 +761,7 @@ describe('analyses.defineJobs()', () => {
           jobRoleArn: fakeRoleArn,
           command: [command],
           vcpus: cores,
-          memory,
+          memory: Math.round(memory * 1000),
           environment: [{
             name: 'DATA_BUCKET',
             value: fakeDataBucket,
