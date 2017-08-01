@@ -35,7 +35,7 @@ export const create = (request: Request, context: any, callback: Callback) => {
     .catch(err => respondWithError(callback, request, err));
 };
 
-export const defaultMemory = 1;
+export const defaultMemory = 2;
 
 const generatePipeline = (request: PipelineCreationRequest, principalId: string) => ({
   id: uuid(),

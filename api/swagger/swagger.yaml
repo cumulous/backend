@@ -923,8 +923,8 @@ definitions:
     description: |
       Maximum amount of memory (GB = 1000 MB) consumed by a step in a pipeline
     type: number
-    minimum: 0.1
-    default: 1
+    minimum: 0.5
+    default: 2
     maximum: 480
   PipelineStatus:
     description: Pipeline status
