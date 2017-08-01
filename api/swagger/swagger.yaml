@@ -918,7 +918,7 @@ definitions:
     type: integer
     minimum: 1
     default: 1
-    maximum: 36
+    maximum: 64
   StepMemory:
     description: |
       Maximum amount of memory (GB = 1000 MB) consumed by a step in a pipeline
