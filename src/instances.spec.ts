@@ -31,7 +31,7 @@ let fakeVolumeDevices: string[];
 
 beforeEach(() => {
   // numbers specific to fakeInstanceType
-  fakeVolumeSizes = [133, 133];
+  fakeVolumeSizes = [145, 145];
   fakeVolumeIds = ['vol-abcd01', 'vol-abcd10'];
   fakeVolumeDevices = ['/dev/sdf', '/dev/sdg'];
 });
