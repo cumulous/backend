@@ -388,7 +388,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       Handler: analyses.createWatcher
-      Timeout: 60
+      Timeout: 30
       Environment:
         Variables:
           STACK_NAME: !Ref BackendStack

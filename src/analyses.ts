@@ -318,7 +318,7 @@ const containerProperties = (request: PipelineExecution, step: PipelineStep, ind
     image,
     jobRoleArn,
     command: getCommand(request.analysis_id, request.datasets, step.args),
-    vcpus: step.cores || 1,
+    vcpus: step.cores,
     memory: Math.round(step.memory * 1000),
     environment: [{
       name: 'DATA_BUCKET',
