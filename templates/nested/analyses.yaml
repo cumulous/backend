@@ -393,7 +393,7 @@ Resources:
         Variables:
           STACK_NAME: !Ref BackendStack
           STATE_MACHINE: !Ref JobWatcherStateMachine
-          ROLE_ARN: !Ref JobWatcherInvocationRole
+          ROLE_ARN: !GetAtt JobWatcherInvocationRole.Arn
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
@@ -423,9 +423,6 @@ Resources:
                   - events:PutTargets
                 Resource:
                   - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${BackendStack}-analysis-*
-                Condition:
-                  StringEquals:
-                    'events:source': aws.events
               - Effect: Allow
                 Action: iam:PassRole
                 Resource:
