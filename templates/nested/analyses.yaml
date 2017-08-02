@@ -559,6 +559,39 @@ Resources:
           }
         }
 
+  DescribeJobs:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: analyses.describeJobs
+      Timeout: 60
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt DescribeJobsRole.Arn
+
+  DescribeJobsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DescribeJobsRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - batch:DescribeJobs
+                Resource: '*'
+
   JobWatcherRole:
     Type: AWS::IAM::Role
     Properties:
@@ -569,6 +602,15 @@ Resources:
             Principal:
               Service: !Sub states.${AWS::Region}.amazonaws.com
             Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StartAnalysisRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt DescribeJobs.Arn
 
   JobWatcherStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -579,7 +621,10 @@ Resources:
           "StartAt": "DescribeJobs",
           "States": {
             "DescribeJobs": {
-              "Type": "Succeed"
+              "Type": "Task",
+              "ResultPath": "$.jobs",
+              "Resource": "${DescribeJobs.Arn}",
+              "End": true
             }
           }
         }

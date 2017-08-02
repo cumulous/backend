@@ -3,7 +3,7 @@ import * as uuid from 'uuid';
 
 import { create, createRole, deleteRole, deleteRolePolicy, setRolePolicy,
          defineJobs, submitJobs, submitExecution,
-         createWatcher,
+         createWatcher, describeJobs,
          volumeName, volumePath } from './analyses';
 import * as apig from './apig';
 import { ajv, ApiError } from './apig';
@@ -1083,6 +1083,98 @@ describe('analyses.createWatcher()', () => {
     });
     it('cloudWatchEvents.putTargets() produces an error', () => {
       spyOnPutTargets.and.returnValue(fakeReject('cloudWatchEvents.putTargets()'));
+    });
+  });
+});
+
+describe('analyses.describeJobs()', () => {
+  const fakeJobId1 = uuid();
+  const fakeJobId2 = uuid();
+  const fakeJobId3 = uuid();
+  const fakeStatusReason = 'Out of memory';
+
+  const fakeJobIds = () => [fakeJobId1, fakeJobId2, fakeJobId3];
+
+  const fakeRequest = () => ({
+    analysis_id: fakeAnalysisId,
+    jobIds: fakeJobIds(),
+  });
+
+  const testMethod = (callback: Callback) =>
+    describeJobs(fakeRequest(), null, callback);
+
+  const fakeJobs = () => [{
+    jobId: fakeJobId1,
+    status: 'SUCCEEDED',
+    statusReason: 'OK',
+  }, {
+    jobId: fakeJobId2,
+    status: 'FAILED',
+    statusReason: fakeStatusReason,
+  }, {
+    jobId: fakeJobId3,
+    status: 'PENDING',
+  }];
+
+  let spyOnDescribeJobs: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnDescribeJobs = spyOn(batch, 'describeJobs')
+      .and.returnValue(fakeResolve({
+        jobs: fakeJobs(),
+      }));
+  });
+
+  it('calls batch.describeJobs() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnDescribeJobs).toHaveBeenCalledWith({
+        jobs: fakeJobIds(),
+      });
+      expect(spyOnDescribeJobs).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback with correct parameters', (done: Callback) => {
+    testMethod((err?: Error, data?: any) => {
+      expect(err).toBeFalsy();
+      expect(data).toEqual([{
+        status: 'SUCCEEDED',
+      }, {
+        status: 'FAILED',
+        reason: fakeStatusReason,
+      }, {
+        status: 'PENDING',
+      }]);
+      done();
+    });
+  });
+
+  describe('calls callback immediately with an error if', () => {
+    let request: any;
+    let after: () => void;
+    beforeEach(() => {
+      request = fakeRequest();
+      after = () => {};
+    });
+    afterEach((done: Callback) => {
+      describeJobs(request, null, (err?: Error) => {
+        expect(err).toBeTruthy();
+        after();
+        done();
+      });
+    });
+    describe('request is', () => {
+      afterEach(() => {
+        after = () => {
+          expect(spyOnDescribeJobs).not.toHaveBeenCalled();
+        };
+      });
+      it('is undefined', () => request = undefined);
+      it('is null', () => request = null);
+    });
+    it('batch.describeJobs() produces an error', () => {
+      spyOnDescribeJobs.and.returnValue(fakeReject('batch.describeJobs()'));
     });
   });
 });

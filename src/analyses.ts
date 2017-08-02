@@ -429,3 +429,17 @@ export const createWatcher = (request: JobWatcherRequest, context: any, callback
 
 const ruleName = (analysis_id: string) =>
   `${process.env[envNames.stackName]}-analysis-${analysis_id}`;
+
+export const describeJobs = (request: { jobIds: string[] }, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => batch.describeJobs({
+      jobs: request.jobIds,
+    }).promise())
+    .then(data => callback(null, data.jobs.map(job => Object.assign({
+        status: job.status,
+      }, job.status === 'FAILED' ? {
+        reason: job.statusReason,
+      } : {}
+    ))))
+    .catch(callback);
+};
