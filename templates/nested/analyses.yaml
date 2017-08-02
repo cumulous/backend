@@ -384,6 +384,73 @@ Resources:
                 Resource:
                   - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/submitjob
 
+  CreateWatcher:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: analyses.createWatcher
+      Timeout: 60
+      Environment:
+        Variables:
+          STACK_NAME: !Ref BackendStack
+          STATE_MACHINE: !Ref JobWatcherStateMachine
+          ROLE_ARN: !Ref JobWatcherInvocationRole
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CreateWatcherRole.Arn
+
+  CreateWatcherRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateWatcherRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - events:PutRule
+                  - events:PutTargets
+                Resource:
+                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${BackendStack}-analysis-*
+                Condition:
+                  StringEquals:
+                    'events:source': aws.events
+              - Effect: Allow
+                Action: iam:PassRole
+                Resource:
+                  - !GetAtt JobWatcherInvocationRole.Arn
+
+  JobWatcherInvocationRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: JobWatcherInvocationRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref JobWatcherStateMachine
+
   StartAnalysisRole:
     Type: AWS::IAM::Role
     Properties:
@@ -408,6 +475,7 @@ Resources:
                   - !GetAtt DeleteRoleForAnalysis.Arn
                   - !GetAtt DefineJobs.Arn
                   - !GetAtt SubmitJobs.Arn
+                  - !GetAtt CreateWatcher.Arn
 
   StartAnalysisStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -457,6 +525,11 @@ Resources:
                     "Type": "Task",
                     "ResultPath": "$.jobIds",
                     "Resource": "${SubmitJobs.Arn}",
+                    "Next": "CreateWatcher"
+                  },
+                  "CreateWatcher": {
+                    "Type": "Task",
+                    "Resource": "${CreateWatcher.Arn}",
                     "End": true
                   }
                 }
@@ -485,6 +558,31 @@ Resources:
               "Type": "Pass",
               "InputPath": "$.Error",
               "End": true
+            }
+          }
+        }
+
+  JobWatcherRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+
+  JobWatcherStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt JobWatcherRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "DescribeJobs",
+          "States": {
+            "DescribeJobs": {
+              "Type": "Succeed"
             }
           }
         }

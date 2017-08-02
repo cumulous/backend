@@ -2,7 +2,7 @@ import * as stringify from 'json-stable-stringify';
 import { v4 as uuid } from 'uuid';
 
 import { ajv, ApiError, Request, respond, respondWithError, validate } from './apig';
-import { batch, dynamodb, iam, stepFunctions } from './aws';
+import { batch, cloudWatchEvents, dynamodb, iam, stepFunctions } from './aws';
 import { envNames } from './env';
 import { mountPath } from './instances';
 import { Pipeline, PipelineStep } from './pipelines';
@@ -399,3 +399,33 @@ const batchSubmitJobs = (request: JobsSubmissionRequest, jobIds: string[]): Prom
     })
     .then(() => batchSubmitJobs(request, jobIds));
 };
+
+interface JobWatcherRequest {
+  analysis_id: string;
+  jobIds: string[];
+}
+
+export const createWatcher = (request: JobWatcherRequest, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => cloudWatchEvents.putRule({
+      Name: ruleName(request.analysis_id),
+      ScheduleExpression: 'rate(1 minute)',
+    }).promise())
+    .then(() => cloudWatchEvents.putTargets({
+      Rule: ruleName(request.analysis_id),
+      Targets: [{
+        Id: request.analysis_id,
+        Arn: process.env[envNames.stateMachine],
+        RoleArn: process.env[envNames.roleArn],
+        Input: stringify({
+          analysis_id: request.analysis_id,
+          jobIds: request.jobIds,
+        }),
+      }],
+    }).promise())
+    .then(() => callback())
+    .catch(callback);
+};
+
+const ruleName = (analysis_id: string) =>
+  `${process.env[envNames.stackName]}-analysis-${analysis_id}`;

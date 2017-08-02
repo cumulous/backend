@@ -1,4 +1,4 @@
-import { APIGateway, Batch, CloudFront, CloudSearch,
+import { APIGateway, Batch, CloudFront, CloudSearch, CloudWatchEvents,
          DynamoDB, EC2, IAM, S3, SSM, StepFunctions, STS } from 'aws-sdk';
 import * as stringify from 'json-stable-stringify';
 import { put } from 'request-promise-native';
@@ -11,6 +11,7 @@ export const apiGateway = new APIGateway();
 export const batch = new Batch();
 export const cloudFront = new CloudFront();
 export const cloudSearch = new CloudSearch();
+export const cloudWatchEvents = new CloudWatchEvents();
 export const dynamodb = new DynamoDB.DocumentClient();
 export const ec2 = new EC2();
 export const iam = new IAM();

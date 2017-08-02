@@ -2,10 +2,12 @@ import * as stringify from 'json-stable-stringify';
 import * as uuid from 'uuid';
 
 import { create, createRole, deleteRole, deleteRolePolicy, setRolePolicy,
-         defineJobs, submitJobs, submitExecution, volumeName, volumePath } from './analyses';
+         defineJobs, submitJobs, submitExecution,
+         createWatcher,
+         volumeName, volumePath } from './analyses';
 import * as apig from './apig';
 import { ajv, ApiError } from './apig';
-import { batch, dynamodb, iam, stepFunctions } from './aws';
+import { batch, cloudWatchEvents, dynamodb, iam, stepFunctions } from './aws';
 import { envNames } from './env';
 import { fakeReject, fakeResolve } from './fixtures/support';
 import { mountPath }  from './instances';
@@ -977,6 +979,110 @@ describe('analyses.submitJobs()', () => {
       it('an undefined response', () => response = fakeResolve(undefined));
       it('a null response', () => response = fakeResolve(null));
       it('an empty response', () => response = fakeResolve({}));
+    });
+  });
+});
+
+describe('analyses.createWatcher()', () => {
+  const fakeStackName = 'fake-stack';
+  const fakeWatcherStateMachine = 'arn:aws:states:::execution:FakeAnalysisWatcherStateMachine';
+  const fakeWatcherRoleArn = 'arn:aws:iam::012345678910:role/fake-analysis-watcher-role';
+  const fakeJobId1 = uuid();
+  const fakeJobId2 = uuid();
+  const fakeJobId3 = uuid();
+
+  const fakeJobIds = () => [fakeJobId1, fakeJobId2, fakeJobId3];
+
+  const fakeRequest = () => ({
+    analysis_id: fakeAnalysisId,
+    jobIds: fakeJobIds(),
+  });
+
+  const testMethod = (callback: Callback) =>
+    createWatcher(fakeRequest(), null, callback);
+
+  let spyOnPutRule: jasmine.Spy;
+  let spyOnPutTargets: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.stackName] = fakeStackName;
+    process.env[envNames.stateMachine] = fakeWatcherStateMachine;
+    process.env[envNames.roleArn] = fakeWatcherRoleArn;
+
+    spyOnPutRule = spyOn(cloudWatchEvents, 'putRule')
+      .and.returnValue(fakeResolve());
+    spyOnPutTargets = spyOn(cloudWatchEvents, 'putTargets')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls cloudWatchEvents.putRule() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnPutRule).toHaveBeenCalledWith({
+        Name: fakeStackName + '-analysis-' + fakeAnalysisId,
+        ScheduleExpression: 'rate(1 minute)',
+      });
+      expect(spyOnPutRule).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls cloudWatchEvents.putTargets() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnPutTargets).toHaveBeenCalledWith({
+        Rule: fakeStackName + '-analysis-' + fakeAnalysisId,
+        Targets: [{
+          Id: fakeAnalysisId,
+          Arn: fakeWatcherStateMachine,
+          RoleArn: fakeWatcherRoleArn,
+          Input: stringify({
+            analysis_id: fakeAnalysisId,
+            jobIds: fakeJobIds(),
+          }),
+        }],
+      });
+      expect(spyOnPutTargets).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback without an error upon successful request', (done: Callback) => {
+    testMethod((err?: Error) => {
+      expect(err).toBeFalsy();
+      done();
+    });
+  });
+
+  describe('calls callback immediately with an error if', () => {
+    let request: any;
+    let after: () => void;
+    beforeEach(() => {
+      request = fakeRequest();
+      after = () => {};
+    });
+    afterEach((done: Callback) => {
+      createWatcher(request, null, (err?: Error) => {
+        expect(err).toBeTruthy();
+        after();
+        done();
+      });
+    });
+    describe('request', () => {
+      afterEach(() => {
+        after = () => {
+          expect(spyOnPutRule).not.toHaveBeenCalled();
+        };
+      });
+      it('is undefined', () => request = undefined);
+      it('is null', () => request = null);
+    });
+    it('cloudWatchEvents.putRule() produces an error', () => {
+      spyOnPutRule.and.returnValue(fakeReject('cloudWatchEvents.putRule()'));
+      after = () => {
+        expect(spyOnPutTargets).not.toHaveBeenCalled();
+      };
+    });
+    it('cloudWatchEvents.putTargets() produces an error', () => {
+      spyOnPutTargets.and.returnValue(fakeReject('cloudWatchEvents.putTargets()'));
     });
   });
 });
