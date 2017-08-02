@@ -239,7 +239,7 @@ describe('datasets.requestCredentials()', () => {
   beforeEach(() => {
     process.env[envNames.datasetsTable] = fakeDatasetsTable;
     process.env[envNames.dataBucket] = fakeDataBucket;
-    process.env[envNames.datasetsRole] = fakeDatasetsRoleArn;
+    process.env[envNames.roleArn] = fakeDatasetsRoleArn;
 
     spyOnValidate = spyOn(apig, 'validate')
       .and.callThrough();

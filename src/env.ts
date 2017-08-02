@@ -22,5 +22,5 @@ export const envNames = {
   auth0SecretPath: 'AUTH0_SECRET_PATH',
   dataBucket: 'DATA_BUCKET',
   logsBucket: 'LOGS_BUCKET',
-  datasetsRole: 'DATASETS_ROLE',
+  roleArn: 'ROLE_ARN',
 };

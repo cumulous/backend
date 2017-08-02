@@ -39,7 +39,7 @@ export const requestCredentials = (request: Request, context: any, callback: Cal
   validate(request, 'POST', '/datasets/{dataset_id}/credentials')
     .then(() => setStatusForCredentialsRequest(request.pathParameters.dataset_id, request.body.action))
     .then(() => sts.assumeRole({
-      RoleArn: process.env[envNames.datasetsRole],
+      RoleArn: process.env[envNames.roleArn],
       RoleSessionName: request.pathParameters.dataset_id,
       Policy: credentialsPolicy(request.pathParameters.dataset_id, request.body.action),
     }).promise())

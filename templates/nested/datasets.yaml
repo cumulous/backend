@@ -168,7 +168,7 @@ Resources:
         Variables:
           DATASETS_TABLE: !Ref DatasetsTable
           DATA_BUCKET: !Ref DataBucket
-          DATASETS_ROLE: !GetAtt DatasetsAccessRole.Arn
+          ROLE_ARN: !GetAtt DatasetsAccessRole.Arn
           WEB_DOMAIN: !Ref WebDomain
       Runtime: nodejs6.10
       Code:
