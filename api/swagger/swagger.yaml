@@ -666,7 +666,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri: ${API_LAMBDA_PREFIX}-ExecuteAnalysis/invocations
+        uri: ${API_LAMBDA_PREFIX}-Analyses-SubmitExecution/invocations
 
 definitions:
   Spec:

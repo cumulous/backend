@@ -110,7 +110,7 @@ Resources:
   SubmitExecution:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-SubmitExecution
+      FunctionName: !Sub ${BackendStack}-Analyses-SubmitExecution
       Handler: analyses.submitExecution
       Timeout: 20
       Environment:
