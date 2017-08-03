@@ -2,8 +2,8 @@ import * as stringify from 'json-stable-stringify';
 import * as uuid from 'uuid';
 
 import { create, createRole, deleteRole, deleteRolePolicy, setRolePolicy,
-         defineJobs, submitJobs, submitExecution,
-         createWatcher, describeJobs,
+         defineJobs, submitJobs, describeJobs,
+         submitExecution, createWatcher, calculateStatus,
          volumeName, volumePath } from './analyses';
 import * as apig from './apig';
 import { ajv, ApiError } from './apig';
@@ -1164,7 +1164,7 @@ describe('analyses.describeJobs()', () => {
         done();
       });
     });
-    describe('request is', () => {
+    describe('request', () => {
       afterEach(() => {
         after = () => {
           expect(spyOnDescribeJobs).not.toHaveBeenCalled();
@@ -1176,5 +1176,107 @@ describe('analyses.describeJobs()', () => {
     it('batch.describeJobs() produces an error', () => {
       spyOnDescribeJobs.and.returnValue(fakeReject('batch.describeJobs()'));
     });
+  });
+});
+
+describe('analyses.calculateStatus()', () => {
+  describe('calls callback with correct parameters if', () => {
+    let jobs: any[];
+    let status: string;
+    let reason: string;
+
+    beforeEach(() => {
+      jobs = undefined;
+      status = undefined;
+      reason = '';
+    });
+    afterEach((done: Callback) => {
+      calculateStatus({ jobs }, null, (err?: Error, data?: any) => {
+        expect(err).toBeFalsy();
+        expect(data).toEqual({
+          status,
+          reason,
+        });
+        done();
+      });
+    });
+    it('all jobs are < RUNNING', () => {
+      jobs = [
+        { status: 'SUBMITTED' },
+        { status: 'PENDING' },
+        { status: 'RUNNABLE' },
+        { status: 'STARTING' },
+      ];
+      status = 'PENDING';
+    });
+    it('at least one job is RUNNING, and no jobs are FAILED', () => {
+      jobs = [
+        { status: 'SUBMITTED' },
+        { status: 'PENDING' },
+        { status: 'RUNNABLE' },
+        { status: 'STARTING' },
+        { status: 'RUNNING' },
+      ];
+      status = 'RUNNING';
+    });
+    it('at least one job is SUCCEEDED, and no jobs are FAILED', () => {
+      jobs = [
+        { status: 'SUBMITTED' },
+        { status: 'PENDING' },
+        { status: 'RUNNABLE' },
+        { status: 'STARTING' },
+        { status: 'SUCCEEDED' },
+      ];
+      status = 'RUNNING';
+    });
+    it('at least one job is FAILED', () => {
+      const fakeStatusReason = 'Out of memory';
+      jobs = [
+        { status: 'SUBMITTED' },
+        { status: 'PENDING' },
+        { status: 'RUNNABLE' },
+        { status: 'STARTING' },
+        { status: 'RUNNING' },
+        { status: 'FAILED', reason: fakeStatusReason },
+        { status: 'FAILED', reason: fakeStatusReason + 2 },
+        { status: 'SUCCEEDED' },
+      ];
+      status = 'FAILED';
+      reason = fakeStatusReason;
+    });
+  });
+
+  describe('calls callback immediately with an error if request', () => {
+    let request: any;
+    beforeEach(() => {
+      request = {};
+    });
+    afterEach((done: Callback) => {
+      calculateStatus(request, null, (err?: Error, data?: any) => {
+        expect(err).toBeTruthy();
+        expect(data).toBeUndefined();
+        done();
+      });
+    });
+    it('is undefined', () => request = undefined);
+    it('is null', () => request = null);
+    it('jobs is undefined', () => request.jobs = undefined);
+    it('jobs is null', () => request.jobs = null);
+    it('jobs is not an array', () => request.jobs = {});
+    it('jobs is empty', () => request.jobs = []);
+    describe('a job status is', () => {
+      let status: any;
+      afterEach(() => request.jobs = [
+        { status },
+        { status: 'RUNNING' },
+      ]);
+      it('unrecognized', () => status = 'STATUS');
+      it('undefined', () => status = undefined);
+      it('null', () => status = null);
+      it('not a string', () => status = {});
+    });
+    it('a job status reason is not a string', () => request.jobs = [
+      { status: 'FAILED', reason: {} },
+    ]);
   });
 });

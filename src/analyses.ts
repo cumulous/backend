@@ -440,6 +440,49 @@ export const describeJobs = (request: { jobIds: string[] }, context: any, callba
       }, job.status === 'FAILED' ? {
         reason: job.statusReason,
       } : {}
-    ))))
+    ) as JobDetail)))
+    .catch(callback);
+};
+
+interface JobDetail {
+  status: string;
+  reason?: string;
+}
+
+export const calculateStatus = (request: { jobs: JobDetail[] }, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => {
+      if (!Array.isArray(request.jobs) || request.jobs.length < 1) {
+        throw Error('request.jobs must be a non-empty array');
+      }
+      let status = 'PENDING';
+      for (let job of request.jobs) {
+        if (job.reason !== undefined && typeof job.reason !== 'string') {
+          throw Error('Unexpected reason: ' + stringify(job.reason));
+        }
+        switch (job.status) {
+          case 'FAILED': return {
+            status: 'FAILED',
+            reason: job.reason,
+          };
+          case 'RUNNING':
+          case 'SUCCEEDED':
+            status = 'RUNNING';
+            break;
+          case 'SUBMITTED':
+          case 'PENDING':
+          case 'RUNNABLE':
+          case 'STARTING':
+            break;
+          default:
+            throw Error('Unexpected status: ' + stringify(job.status));
+        }
+      }
+      return {
+        status,
+        reason: '',
+      };
+    })
+    .then(status => callback(null, status))
     .catch(callback);
 };
