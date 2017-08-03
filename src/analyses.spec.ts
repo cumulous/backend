@@ -2,7 +2,7 @@ import * as stringify from 'json-stable-stringify';
 import * as uuid from 'uuid';
 
 import { create, createRole, deleteRole, deleteRolePolicy, setRolePolicy,
-         defineJobs, submitJobs, describeJobs,
+         defineJobs, submitJobs, describeJobs, checkJobsUpdated,
          submitExecution, createWatcher, calculateStatus,
          volumeName, volumePath } from './analyses';
 import * as apig from './apig';
@@ -1176,6 +1176,79 @@ describe('analyses.describeJobs()', () => {
     it('batch.describeJobs() produces an error', () => {
       spyOnDescribeJobs.and.returnValue(fakeReject('batch.describeJobs()'));
     });
+  });
+});
+
+describe('analyses.checkJobsUpdated()', () => {
+  const fakeJobs = () => [
+    { status: 'SUBMITTED' },
+    { status: 'PENDING' },
+    { status: 'RUNNABLE' },
+    { status: 'STARTING' },
+    { status: 'RUNNING' },
+    { status: 'FAILED', reason: 'Fake failure reason' },
+    { status: 'SUCCEEDED' },
+  ];
+
+  describe('calls callback with correct parameters if', () => {
+    let jobs: any[];
+    let oldJobs: any[];
+    let result: boolean;
+
+    beforeEach(() => {
+      jobs = fakeJobs();
+      oldJobs = fakeJobs();
+      result = undefined;
+    });
+
+    afterEach((done: Callback) => {
+      checkJobsUpdated({ jobs, oldJobs }, null, (err?: Error, data?: any) => {
+        expect(err).toBeFalsy();
+        expect(data).toEqual(result);
+        done();
+      });
+    });
+
+    it('all job statuses are the same', () => {
+      result = false;
+    });
+
+    it("at least one job's status has changed", () => {
+      jobs[3] = 'RUNNING';
+      result = true;
+    });
+  });
+
+  describe('calls callback immediately with an error if request', () => {
+    let request: any;
+    beforeEach(() => {
+      request = {
+        jobs: fakeJobs(),
+        oldJobs: fakeJobs(),
+      };
+    });
+    afterEach((done: Callback) => {
+      checkJobsUpdated(request, null, (err?: Error, data?: any) => {
+        expect(err).toBeTruthy();
+        expect(data).toBeUndefined();
+        done();
+      });
+    });
+    it('is undefined', () => request = undefined);
+    it('is null', () => request = null);
+    it('jobs is undefined', () => request.jobs = undefined);
+    it('jobs is null', () => request.jobs = null);
+    it('jobs is not an array', () => request.jobs = {});
+    it('jobs is empty', () => request.jobs = []);
+    it('jobs element is undefined', () => request.jobs[0] = undefined);
+    it('jobs element is null', () => request.jobs[0] = null);
+    it('oldJobs is undefined', () => request.oldJobs = undefined);
+    it('oldJobs is null', () => request.oldJobs = null);
+    it('oldJobs is not an array', () => request.oldJobs = {});
+    it('oldJobs is empty', () => request.oldJobs = []);
+    it('oldJobs element is undefined', () => request.oldJobs[0] = undefined);
+    it('oldJobs element is null', () => request.oldJobs[0] = null);
+    it('jobs and oldJobs are of different length', () => request.jobs.push({ status: 'RUNNING' }));
   });
 });
 

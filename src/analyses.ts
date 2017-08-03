@@ -449,6 +449,21 @@ interface JobDetail {
   reason?: string;
 }
 
+export const checkJobsUpdated = (
+    request: { jobs: JobDetail[], oldJobs: JobDetail[] }, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => {
+      if (!Array.isArray(request.jobs) || !Array.isArray(request.oldJobs) ||
+          request.jobs.length < 1 || request.jobs.length !== request.oldJobs.length) {
+        throw Error('jobs and oldJobs must be non-empty arrays of equal length');
+      }
+    })
+    .then(() => request.jobs.some((job: JobDetail, index: number) =>
+      job.status !== request.oldJobs[index].status))
+    .then(result => callback(null, result))
+    .catch(callback);
+};
+
 export const calculateStatus = (request: { jobs: JobDetail[] }, context: any, callback: Callback) => {
   Promise.resolve()
     .then(() => {
