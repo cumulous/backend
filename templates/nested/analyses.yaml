@@ -534,7 +534,7 @@ Resources:
                     "Type": "Task",
                     "ResultPath": "$.oldJobs",
                     "Resource": "${DescribeJobs.Arn}",
-                    "Next": "CheckJobsUpdated"
+                    "Next": "DescribeJobs"
                   },
                   "DescribeJobs": {
                     "Type": "Task",
