@@ -107,25 +107,25 @@ Resources:
       SourceArn:
         !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/POST/analyses
 
-  ExecuteAnalysis:
+  SubmitExecution:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-ExecuteAnalysis
+      FunctionName: !Sub ${BackendStack}-SubmitExecution
       Handler: analyses.submitExecution
       Timeout: 20
       Environment:
         Variables:
           ANALYSES_TABLE: !Ref AnalysesTable
           PIPELINES_TABLE: !Ref PipelinesTable
-          STATE_MACHINE: !Ref StartAnalysisStateMachine
+          STATE_MACHINE: !Ref ExecuteAnalysisStateMachine
           WEB_DOMAIN: !Ref WebDomain
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
-      Role: !GetAtt ExecuteAnalysisRole.Arn
+      Role: !GetAtt SubmitExecutionRole.Arn
 
-  ExecuteAnalysisRole:
+  SubmitExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -138,7 +138,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: ExecuteAnalysisRole
+        - PolicyName: SubmitExecutionRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
@@ -153,12 +153,12 @@ Resources:
               - Effect: Allow
                 Action: states:StartExecution
                 Resource:
-                  - !Ref StartAnalysisStateMachine
+                  - !Ref ExecuteAnalysisStateMachine
 
-  ExecuteAnalysisPermission:
+  SubmitExecutionPermission:
     Type: AWS::Lambda::Permission
     Properties:
-      FunctionName: !Ref ExecuteAnalysis
+      FunctionName: !Ref SubmitExecution
       Action: lambda:InvokeFunction
       Principal: apigateway.amazonaws.com
       SourceArn:
@@ -384,23 +384,18 @@ Resources:
                 Resource:
                   - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/submitjob
 
-  CreateWatcher:
+  DescribeJobs:
     Type: AWS::Lambda::Function
     Properties:
-      Handler: analyses.createWatcher
-      Timeout: 30
-      Environment:
-        Variables:
-          STACK_NAME: !Ref BackendStack
-          STATE_MACHINE: !Ref JobWatcherStateMachine
-          ROLE_ARN: !GetAtt JobWatcherInvocationRole.Arn
+      Handler: analyses.describeJobs
+      Timeout: 60
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
-      Role: !GetAtt CreateWatcherRole.Arn
+      Role: !GetAtt DescribeJobsRole.Arn
 
-  CreateWatcherRole:
+  DescribeJobsRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -413,22 +408,27 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: CreateWatcherRole
+        - PolicyName: DescribeJobsRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
               - Effect: Allow
                 Action:
-                  - events:PutRule
-                  - events:PutTargets
-                Resource:
-                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:rule/${BackendStack}-analysis-*
-              - Effect: Allow
-                Action: iam:PassRole
-                Resource:
-                  - !GetAtt JobWatcherInvocationRole.Arn
+                  - batch:DescribeJobs
+                Resource: '*'
 
-  JobWatcherInvocationRole:
+  CheckJobsUpdated:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: analyses.checkJobsUpdated
+      Timeout: 30
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+
+  LambdaBasicExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -436,19 +436,23 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: events.amazonaws.com
+              Service: lambda.amazonaws.com
             Action: sts:AssumeRole
-      Policies:
-        - PolicyName: JobWatcherInvocationRole
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action: states:StartExecution
-                Resource:
-                  - !Ref JobWatcherStateMachine
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
-  StartAnalysisRole:
+  CalculateStatus:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: analyses.calculateStatus
+      Timeout: 30
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+
+  ExecuteAnalysisRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -472,12 +476,14 @@ Resources:
                   - !GetAtt DeleteRoleForAnalysis.Arn
                   - !GetAtt DefineJobs.Arn
                   - !GetAtt SubmitJobs.Arn
-                  - !GetAtt CreateWatcher.Arn
+                  - !GetAtt DescribeJobs.Arn
+                  - !GetAtt CheckJobsUpdated.Arn
+                  - !GetAtt CalculateStatus.Arn
 
-  StartAnalysisStateMachine:
+  ExecuteAnalysisStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      RoleArn: !GetAtt StartAnalysisRole.Arn
+      RoleArn: !GetAtt ExecuteAnalysisRole.Arn
       DefinitionString: !Sub |-
         {
           "StartAt": "CreateRoleForAnalysis",
@@ -522,11 +528,52 @@ Resources:
                     "Type": "Task",
                     "ResultPath": "$.jobIds",
                     "Resource": "${SubmitJobs.Arn}",
-                    "Next": "CreateWatcher"
+                    "Next": "DescribeOldJobs"
                   },
-                  "CreateWatcher": {
+                  "DescribeOldJobs": {
                     "Type": "Task",
-                    "Resource": "${CreateWatcher.Arn}",
+                    "ResultPath": "$.oldJobs",
+                    "Resource": "${DescribeJobs.Arn}",
+                    "Next": "CheckJobsUpdated"
+                  },
+                  "DescribeJobs": {
+                    "Type": "Task",
+                    "ResultPath": "$.jobs",
+                    "Resource": "${DescribeJobs.Arn}",
+                    "Next": "CheckJobsUpdated"
+                  },
+                  "CheckJobsUpdated": {
+                    "Type": "Task",
+                    "ResultPath": "$.changed",
+                    "Resource": "${CheckJobsUpdated.Arn}",
+                    "Next": "ChooseIfUpdated"
+                  },
+                  "ChooseIfUpdated": {
+                    "Type": "Choice",
+                    "Choices": [
+                      {
+                        "Variable": "$.changed",
+                        "StringEquals": "true",
+                        "Next": "CalculateStatus"
+                      }
+                    ],
+                    "Default": "PassOldJobs"
+                  },
+                  "PassOldJobs": {
+                    "Type": "Pass",
+                    "InputPath": "$.jobs",
+                    "ResultPath": "$.oldJobs",
+                    "Next": "Wait"
+                  },
+                  "Wait": {
+                    "Type": "Wait",
+                    "Seconds": 30,
+                    "Next": "DescribeJobs"
+                  },
+                  "CalculateStatus": {
+                    "Type": "Task",
+                    "ResultPath": "$.analysis",
+                    "Resource": "${CalculateStatus.Arn}",
                     "End": true
                   }
                 }
@@ -554,106 +601,6 @@ Resources:
             "PassError": {
               "Type": "Pass",
               "InputPath": "$.Error",
-              "End": true
-            }
-          }
-        }
-
-  DescribeJobs:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: analyses.describeJobs
-      Timeout: 60
-      Runtime: nodejs6.10
-      Code:
-        S3Bucket: !Ref ArtifactsBucket
-        S3Key: !Ref LambdaPackage
-      Role: !GetAtt DescribeJobsRole.Arn
-
-  DescribeJobsRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: DescribeJobsRole
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - batch:DescribeJobs
-                Resource: '*'
-
-  CalculateStatus:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: analyses.calculateStatus
-      Timeout: 30
-      Runtime: nodejs6.10
-      Code:
-        S3Bucket: !Ref ArtifactsBucket
-        S3Key: !Ref LambdaPackage
-      Role: !GetAtt LambdaBasicExecutionRole.Arn
-
-  LambdaBasicExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-
-  JobWatcherRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: !Sub states.${AWS::Region}.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: StartAnalysisRole
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action: lambda:InvokeFunction
-                Resource:
-                  - !GetAtt DescribeJobs.Arn
-
-  JobWatcherStateMachine:
-    Type: AWS::StepFunctions::StateMachine
-    Properties:
-      RoleArn: !GetAtt JobWatcherRole.Arn
-      DefinitionString: !Sub |-
-        {
-          "StartAt": "DescribeJobs",
-          "States": {
-            "DescribeJobs": {
-              "Type": "Task",
-              "ResultPath": "$.jobs",
-              "Resource": "${DescribeJobs.Arn}",
-              "Next": "CalculateStatus"
-            },
-            "CalculateStatus": {
-              "Type": "Task",
-              "ResultPath": "$.analysis",
-              "Resource": "${CalculateStatus.Arn}",
               "End": true
             }
           }

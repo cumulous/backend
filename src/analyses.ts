@@ -405,31 +405,6 @@ interface JobWatcherRequest {
   jobIds: string[];
 }
 
-export const createWatcher = (request: JobWatcherRequest, context: any, callback: Callback) => {
-  Promise.resolve()
-    .then(() => cloudWatchEvents.putRule({
-      Name: ruleName(request.analysis_id),
-      ScheduleExpression: 'rate(1 minute)',
-    }).promise())
-    .then(() => cloudWatchEvents.putTargets({
-      Rule: ruleName(request.analysis_id),
-      Targets: [{
-        Id: request.analysis_id,
-        Arn: process.env[envNames.stateMachine],
-        RoleArn: process.env[envNames.roleArn],
-        Input: stringify({
-          analysis_id: request.analysis_id,
-          jobIds: request.jobIds,
-        }),
-      }],
-    }).promise())
-    .then(() => callback())
-    .catch(callback);
-};
-
-const ruleName = (analysis_id: string) =>
-  `${process.env[envNames.stackName]}-analysis-${analysis_id}`;
-
 export const describeJobs = (request: { jobIds: string[] }, context: any, callback: Callback) => {
   Promise.resolve()
     .then(() => batch.describeJobs({
