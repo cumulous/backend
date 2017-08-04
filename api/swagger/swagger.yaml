@@ -948,6 +948,8 @@ definitions:
         $ref: '#/definitions/Description'
       status:
         $ref: '#/definitions/AnalysisStatus'
+      jobs:
+        $ref: '#/definitions/AnalysisJobStatuses'
       error:
         $ref: '#/definitions/AnalysisError'
       created_at:
@@ -993,6 +995,22 @@ definitions:
         $ref: '#/definitions/PipelineDatasets'
       status:
         $ref: '#/definitions/AnalysisStatus'
+  AnalysisJobStatuses:
+    description: List of statuses of the jobs executed for an analysis
+    type: array
+    items:
+      $ref: '#/definitions/AnalysisJobStatus'
+  AnalysisJobStatus:
+    description: Status of a job executed for an analysis
+    type: string
+    enum:
+      - submitted
+      - pending
+      - runnable
+      - starting
+      - running
+      - succeeded
+      - failed
   Description:
     type: string
     pattern: ^[\w-.,;?! ]{1,1000}$

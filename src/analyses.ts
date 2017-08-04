@@ -537,7 +537,7 @@ export const updateStatus = (
         Object.assign({
           ':s': analysis.status,
         }, request.jobs ? {
-          ':j': request.jobs.map(job => job.status),
+          ':j': request.jobs.map(job => job.status.toLowerCase()),
         } : {}),
         analysis.error ? {
           ':e': analysis.error,

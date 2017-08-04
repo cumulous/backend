@@ -1298,7 +1298,7 @@ describe('analyses.updateStatus()', () => {
     { status: 'SUCCEEDED' },
   ];
 
-  const fakeJobStatuses = () => fakeJobs().map(job => job.status);
+  const fakeJobStatuses = () => fakeJobs().map(job => job.status.toLowerCase());
 
   const fakeAnalysis = (error?: string) => Object.assign({
     status: fakeStatus,
