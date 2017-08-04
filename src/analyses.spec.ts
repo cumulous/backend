@@ -1302,10 +1302,10 @@ describe('analyses.updateStatus()', () => {
     error: fakeError,
   } : {});
 
-  const fakeRequest = (error?: string) => ({
+  const fakeRequest = (error?: string, jobs?: any[]) => ({
     analysis_id: fakeAnalysisId,
-    jobs: fakeJobs(),
     analysis: fakeAnalysis(error),
+    jobs,
   });
 
   let spyOnDynamoDbUpdate: jasmine.Spy;
@@ -1317,41 +1317,61 @@ describe('analyses.updateStatus()', () => {
       .and.returnValue(fakeResolve());
   });
 
-  describe('calls dynamodb.update() once with correct parameters when analysis error is', () => {
+  describe('calls dynamodb.update() once with correct parameters when', () => {
     let error: string;
+    let jobs: any[];
+    beforeEach(() => {
+      error = fakeError;
+      jobs = fakeJobs();
+    });
     afterEach((done: Callback) => {
-      updateStatus(fakeRequest(error), null, () => {
+      updateStatus(fakeRequest(error, jobs), null, () => {
         expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
           TableName: fakeAnalysesTable,
           Key: {
             id: fakeAnalysisId,
           },
-          UpdateExpression: error ? 'set #s = :s, #e = :e, #j = :j' : 'set #s = :s, #j = :j',
-          ExpressionAttributeNames: error ? {
+          UpdateExpression: error ?
+            (jobs ? 'set #s = :s, #e = :e, #j = :j' : 'set #s = :s, #e = :e') :
+            (jobs ? 'set #s = :s, #j = :j' : 'set #s = :s'),
+          ExpressionAttributeNames: error ? (jobs ? {
             '#s': 'status',
             '#e': 'error',
             '#j': 'jobs',
           } : {
             '#s': 'status',
+            '#e': 'error',
+          }) : (jobs ? {
+            '#s': 'status',
             '#j': 'jobs',
-          },
-          ExpressionAttributeValues: error ? {
+          } : {
+            '#s': 'status',
+          }),
+          ExpressionAttributeValues: error ? (jobs ? {
             ':s': fakeStatus,
             ':e': error,
             ':j': fakeJobStatuses(),
           } : {
             ':s': fakeStatus,
+            ':e': error,
+          }) : (jobs ? {
+            ':s': fakeStatus,
             ':j': fakeJobStatuses(),
-          },
+          } : {
+            ':s': fakeStatus,
+          }),
         });
         expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
         done();
       });
     });
-    it('undefined', () => error = undefined);
-    it('null', () => error = null);
-    it('empty', () => error = '');
-    it('non-empty', () => error = fakeError);
+    it('analysis error is undefined', () => error = undefined);
+    it('analysis error is null', () => error = null);
+    it('analysis error is empty', () => error = '');
+    it('analysis error is non-empty', () => {});
+    it('jobs is undefined', () => jobs = undefined);
+    it('jobs is null', () => jobs = null);
+    it('jobs is defined', () => {});
   });
 
   it('calls callback with correct parameters on successful update', (done: Callback) => {
@@ -1377,10 +1397,6 @@ describe('analyses.updateStatus()', () => {
     });
     it('request is undefined', () => request = undefined);
     it('request is null', () => request = null);
-    it('jobs is undefined', () => request.jobs = undefined);
-    it('jobs is null', () => request.jobs = null);
-    it('jobs is not an array', () => request.jobs = {});
-    it('jobs is empty', () => request.jobs = []);
     it('analysis is undefined', () => request.analysis = undefined);
     it('analysis is null', () => request.analysis = null);
   });
