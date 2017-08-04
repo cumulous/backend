@@ -626,11 +626,11 @@ Resources:
                         "Variable": "$.analysis.status",
                         "StringEquals": "failed"
                       }],
-                      "Next": "Succeed"
+                      "Next": "Exit"
                     }],
                     "Default": "PassOldJobs"
                   },
-                  "Succeed": {
+                  "Exit": {
                     "Type": "Succeed"
                   }
                 }
@@ -640,6 +640,11 @@ Resources:
                 "ResultPath": "$.error",
                 "Next": "PassFailureStatus"
               }],
+              "Next": "Succeed"
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
               "Next": "DeleteRolePolicy"
             },
             "PassFailureStatus": {
