@@ -962,7 +962,9 @@ definitions:
     enum:
       - created
       - submitted
+      - pending
       - running
+      - failing
       - failed
       - succeeded
       - archiving

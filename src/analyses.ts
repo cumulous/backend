@@ -445,32 +445,50 @@ export const calculateStatus = (request: { jobs: JobDetail[] }, context: any, ca
       if (!Array.isArray(request.jobs) || request.jobs.length < 1) {
         throw Error('request.jobs must be a non-empty array');
       }
-      let status = 'PENDING';
-      for (let job of request.jobs) {
-        if (job.reason !== undefined && typeof job.reason !== 'string') {
+
+      let reason = '';
+      const count: Dict<number> = {
+        SUBMITTED: 0,
+        PENDING: 0,
+        RUNNABLE: 0,
+        STARTING: 0,
+        RUNNING: 0,
+        SUCCEEDED: 0,
+        FAILED: 0,
+      };
+      request.jobs.forEach(job => {
+        if (count[job.status] === undefined) {
+          throw Error('Unexpected job status: ' + stringify(job.status));
+        }
+        count[job.status]++;
+
+        if (job.reason === undefined) {
+          return;
+        }
+        if (typeof job.reason !== 'string') {
           throw Error('Unexpected reason: ' + stringify(job.reason));
         }
-        switch (job.status) {
-          case 'FAILED': return {
-            status: 'FAILED',
-            reason: job.reason,
-          };
-          case 'RUNNING':
-          case 'SUCCEEDED':
-            status = 'RUNNING';
-            break;
-          case 'SUBMITTED':
-          case 'PENDING':
-          case 'RUNNABLE':
-          case 'STARTING':
-            break;
-          default:
-            throw Error('Unexpected status: ' + stringify(job.status));
-        }
+        reason = reason || job.reason;
+      });
+
+      const total = request.jobs.length;
+      let status: string;
+      if (count.SUCCEEDED === total) {
+        status = 'succeeded';
+      } else if (count.FAILED + count.SUCCEEDED == total) {
+        status = 'failed';
+      } else if (count.FAILED) {
+        status = 'failing';
+      } else if (count.RUNNING) {
+        status = 'running';
+      } else if (count.SUCCEEDED && count.SUCCEEDED < total) {
+        status = 'running';
+      } else {
+        status = 'pending';
       }
       return {
         status,
-        reason: '',
+        reason,
       };
     })
     .then(status => callback(null, status))

@@ -1150,6 +1150,8 @@ describe('analyses.checkJobsUpdated()', () => {
 
 describe('analyses.calculateStatus()', () => {
   describe('calls callback with correct parameters if', () => {
+    const fakeStatusReason = 'Out of memory';
+
     let jobs: any[];
     let status: string;
     let reason: string;
@@ -1176,7 +1178,7 @@ describe('analyses.calculateStatus()', () => {
         { status: 'RUNNABLE' },
         { status: 'STARTING' },
       ];
-      status = 'PENDING';
+      status = 'pending';
     });
     it('at least one job is RUNNING, and no jobs are FAILED', () => {
       jobs = [
@@ -1186,9 +1188,9 @@ describe('analyses.calculateStatus()', () => {
         { status: 'STARTING' },
         { status: 'RUNNING' },
       ];
-      status = 'RUNNING';
+      status = 'running';
     });
-    it('at least one job is SUCCEEDED, and no jobs are FAILED', () => {
+    it('at least one job is SUCCEEDED, and all of the others are < RUNNING', () => {
       jobs = [
         { status: 'SUBMITTED' },
         { status: 'PENDING' },
@@ -1196,10 +1198,10 @@ describe('analyses.calculateStatus()', () => {
         { status: 'STARTING' },
         { status: 'SUCCEEDED' },
       ];
-      status = 'RUNNING';
+      status = 'running';
     });
-    it('at least one job is FAILED', () => {
-      const fakeStatusReason = 'Out of memory';
+    it('at least one job is FAILED, and at least one job is <= RUNNING', () => {
+
       jobs = [
         { status: 'SUBMITTED' },
         { status: 'PENDING' },
@@ -1210,8 +1212,36 @@ describe('analyses.calculateStatus()', () => {
         { status: 'FAILED', reason: fakeStatusReason + 2 },
         { status: 'SUCCEEDED' },
       ];
-      status = 'FAILED';
+      status = 'failing';
       reason = fakeStatusReason;
+    });
+    it('at least one job is FAILED, one SUCCEEDED, ' +
+       'and all of the others are either SUCCEEDED or FAILED', () => {
+      jobs = [
+        { status: 'SUCCEEDED' },
+        { status: 'SUCCEEDED' },
+        { status: 'FAILED', reason: fakeStatusReason },
+        { status: 'FAILED', reason: fakeStatusReason + 2 },
+        { status: 'SUCCEEDED' },
+      ];
+      status = 'failed';
+      reason = fakeStatusReason;
+    });
+    it('all of the jobs are FAILED', () => {
+      jobs = [
+        { status: 'FAILED', reason: fakeStatusReason },
+        { status: 'FAILED', reason: fakeStatusReason + 2 },
+      ];
+      status = 'failed';
+      reason = fakeStatusReason;
+    });
+    it('all of the jobs are SUCCEEDED', () => {
+      jobs = [
+        { status: 'SUCCEEDED' },
+        { status: 'SUCCEEDED' },
+        { status: 'SUCCEEDED' },
+      ];
+      status = 'succeeded';
     });
   });
 
@@ -1233,18 +1263,18 @@ describe('analyses.calculateStatus()', () => {
     it('jobs is null', () => request.jobs = null);
     it('jobs is not an array', () => request.jobs = {});
     it('jobs is empty', () => request.jobs = []);
-    describe('a job status is', () => {
+    describe('job status', () => {
       let status: any;
       afterEach(() => request.jobs = [
         { status },
         { status: 'RUNNING' },
       ]);
-      it('unrecognized', () => status = 'STATUS');
-      it('undefined', () => status = undefined);
-      it('null', () => status = null);
-      it('not a string', () => status = {});
+      it('is unrecognized', () => status = 'STATUS');
+      it('is undefined', () => status = undefined);
+      it('is null', () => status = null);
+      it('is not a string', () => status = {});
     });
-    it('a job status reason is not a string', () => request.jobs = [
+    it('reason is not a string', () => request.jobs = [
       { status: 'FAILED', reason: {} },
     ]);
   });
