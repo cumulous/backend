@@ -948,6 +948,8 @@ definitions:
         $ref: '#/definitions/Description'
       status:
         $ref: '#/definitions/AnalysisStatus'
+      pipeline_id:
+        $ref: '#/definitions/PipelineId'
       jobs:
         $ref: '#/definitions/AnalysisJobStatuses'
       error:
