@@ -539,7 +539,7 @@ Resources:
               "Next": "ScheduleJobs",
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.Error",
+                "ResultPath": "$.error",
                 "Next": "DeleteRole"
               }]
             },
@@ -612,37 +612,58 @@ Resources:
                   },
                   "UpdateStatus": {
                     "Type": "Task",
-                    "ResultPath": "$.Error",
+                    "ResultPath": "$.error.Cause",
                     "Resource": "${UpdateStatus.Arn}",
                     "Next": "CheckTerminated"
                   },
                   "CheckTerminated": {
                     "Type": "Choice",
                     "Choices": [{
-                      "Variable": "$.analysis.status",
-                      "StringEquals": "succeeded",
+                      "Or": [{
+                        "Variable": "$.analysis.status",
+                        "StringEquals": "succeeded"
+                      }, {
+                        "Variable": "$.analysis.status",
+                        "StringEquals": "failed"
+                      }],
                       "Next": "Succeed"
-                    }, {
-                      "Variable": "$.analysis.status",
-                      "StringEquals": "failed",
-                      "Next": "Fail"
                     }],
                     "Default": "PassOldJobs"
                   },
                   "Succeed": {
                     "Type": "Succeed"
-                  },
-                  "Fail": {
-                    "Type": "Fail"
                   }
                 }
               }],
               "Catch": [{
                 "ErrorEquals": [ "States.ALL" ],
-                "ResultPath": "$.Error",
-                "Next": "DeleteRolePolicy"
+                "ResultPath": "$.error",
+                "Next": "PassFailureStatus"
               }],
               "Next": "DeleteRolePolicy"
+            },
+            "PassFailureStatus": {
+              "Type": "Pass",
+              "Result": "failed",
+              "ResultPath": "$.analysis.status",
+              "Next": "PassFailureReason"
+            },
+            "PassFailureReason": {
+              "Type": "Pass",
+              "InputPath": "$.error.Error",
+              "ResultPath": "$.analysis.error",
+              "Next": "UpdateFinalStatus"
+            },
+            "UpdateFinalStatus": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${UpdateStatus.Arn}",
+              "Next": "DeleteRolePolicy",
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.error",
+                "Next": "DeleteRolePolicy"
+              }]
             },
             "DeleteRolePolicy": {
               "Type": "Task",
@@ -660,7 +681,7 @@ Resources:
             },
             "PassError": {
               "Type": "Pass",
-              "InputPath": "$.Error",
+              "InputPath": "$.error",
               "End": true
             }
           }
