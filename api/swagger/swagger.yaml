@@ -261,10 +261,10 @@ paths:
       tags:
         - Datasets
       parameters:
-        - $ref: '#/parameters/DatasetsQueryProjectId'
-        - $ref: '#/parameters/DatasetsQueryDescriptionContains'
         - $ref: '#/parameters/DatasetsQueryStatus'
-        - $ref: '#/parameters/DatasetsQuerySort'
+        - $ref: '#/parameters/QueryDescriptionContains'
+        - $ref: '#/parameters/QueryProjectId'
+        - $ref: '#/parameters/QuerySort'
         - $ref: '#/parameters/QueryPaginationOffset'
         - $ref: '#/parameters/QueryPaginationLimit'
         - $ref: '#/parameters/CompressionRequest'
@@ -1083,6 +1083,12 @@ parameters:
           $ref: '#/definitions/ProjectName'
         description:
           $ref: '#/definitions/Description'
+  QueryProjectId:
+    in: query
+    name: project_id
+    description: Filter by project ID
+    type: string
+    format: uuid
   DatasetCreationRequest:
     in: body
     name: DatasetCreationRequest
@@ -1099,18 +1105,6 @@ parameters:
           $ref: '#/definitions/Description'
         metadata:
           $ref: '#/definitions/DatasetMetadata'
-  DatasetsQueryProjectId:
-    in: query
-    name: project_id
-    description: Filter by project ID
-    type: string
-    format: uuid
-  DatasetsQueryDescriptionContains:
-    in: query
-    name: description_contains
-    description: Part of the dataset description (case-insensitive)
-    type: string
-    pattern: ^[\w-., ]{1,200}$
   DatasetsQueryStatus:
     in: query
     name: status
@@ -1125,13 +1119,6 @@ parameters:
       - removed
       - deleting
       - deleted
-  DatasetsQuerySort:
-    in: query
-    name: sort
-    description: Sort by select attributes in specific order
-    type: string
-    pattern: ^created_at:(asc|desc)$
-    default: 'created_at:desc'
   DatasetId:
     in: path
     name: dataset_id
@@ -1231,6 +1218,19 @@ parameters:
           $ref: '#/definitions/PipelineId'
         datasets:
           $ref: '#/definitions/PipelineDatasets'
+  QueryDescriptionContains:
+    in: query
+    name: description_contains
+    description: Part of an item description (case-insensitive)
+    type: string
+    pattern: ^[\w-., ]{1,200}$
+  QuerySort:
+    in: query
+    name: sort
+    description: Sort by select attributes in specific order
+    type: string
+    pattern: ^created_at:(asc|desc)$
+    default: 'created_at:desc'
   QueryPaginationOffset:
     in: query
     name: offset

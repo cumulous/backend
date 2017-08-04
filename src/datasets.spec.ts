@@ -134,8 +134,7 @@ describe('datasets.create()', () => {
   });
 });
 
-describe('datasets.credentials()', () => {
-  const fakeStatus = 'available';
+describe('datasets.list()', () => {
   const fakeRequest = () => ({
     queryStringParameters: {
       project_id: fakeProjectId,
