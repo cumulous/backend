@@ -1294,6 +1294,8 @@ describe('analyses.updateStatus()', () => {
     { status: 'SUCCEEDED' },
   ];
 
+  const fakeJobStatuses = () => fakeJobs().map(job => job.status);
+
   const fakeAnalysis = (error?: string) => Object.assign({
     status: fakeStatus,
   }, error ? {
@@ -1336,10 +1338,10 @@ describe('analyses.updateStatus()', () => {
           ExpressionAttributeValues: error ? {
             ':s': fakeStatus,
             ':e': error,
-            ':j': fakeJobs(),
+            ':j': fakeJobStatuses(),
           } : {
             ':s': fakeStatus,
-            ':j': fakeJobs(),
+            ':j': fakeJobStatuses(),
           },
         });
         expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);

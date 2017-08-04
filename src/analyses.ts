@@ -526,7 +526,7 @@ export const updateStatus = (
       } : {}),
       ExpressionAttributeValues: Object.assign({
         ':s': analysis.status,
-        ':j': request.jobs,
+        ':j': request.jobs.map(job => job.status),
       }, analysis.error ? {
         ':e': analysis.error,
       } : {}),
