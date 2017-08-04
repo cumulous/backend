@@ -515,6 +515,7 @@ Resources:
                   - !GetAtt DescribeJobs.Arn
                   - !GetAtt CheckJobsUpdated.Arn
                   - !GetAtt CalculateStatus.Arn
+                  - !GetAtt UpdateStatus.Arn
 
   ExecuteAnalysisStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -544,7 +545,6 @@ Resources:
             },
             "ScheduleJobs": {
               "Type": "Parallel",
-              "End": true,
               "Branches": [{
                 "StartAt": "DefineJobs",
                 "States": {
@@ -586,13 +586,11 @@ Resources:
                   },
                   "ChooseIfUpdated": {
                     "Type": "Choice",
-                    "Choices": [
-                      {
-                        "Variable": "$.changed",
-                        "BooleanEquals": true,
-                        "Next": "CalculateStatus"
-                      }
-                    ],
+                    "Choices": [{
+                      "Variable": "$.changed",
+                      "BooleanEquals": true,
+                      "Next": "CalculateStatus"
+                    }],
                     "Default": "PassOldJobs"
                   },
                   "PassOldJobs": {
@@ -610,7 +608,32 @@ Resources:
                     "Type": "Task",
                     "ResultPath": "$.analysis",
                     "Resource": "${CalculateStatus.Arn}",
-                    "End": true
+                    "Next": "UpdateStatus"
+                  },
+                  "UpdateStatus": {
+                    "Type": "Task",
+                    "ResultPath": "$.Error",
+                    "Resource": "${UpdateStatus.Arn}",
+                    "Next": "CheckTerminated"
+                  },
+                  "CheckTerminated": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.analysis.status",
+                      "StringEquals": "succeeded",
+                      "Next": "Succeed"
+                    }, {
+                      "Variable": "$.analysis.status",
+                      "StringEquals": "failed",
+                      "Next": "Fail"
+                    }],
+                    "Default": "PassOldJobs"
+                  },
+                  "Succeed": {
+                    "Type": "Succeed"
+                  },
+                  "Fail": {
+                    "Type": "Fail"
                   }
                 }
               }],
@@ -618,7 +641,8 @@ Resources:
                 "ErrorEquals": [ "States.ALL" ],
                 "ResultPath": "$.Error",
                 "Next": "DeleteRolePolicy"
-              }]
+              }],
+              "Next": "DeleteRolePolicy"
             },
             "DeleteRolePolicy": {
               "Type": "Task",
