@@ -1,7 +1,8 @@
 import * as stringify from 'json-stable-stringify';
 import * as uuid from 'uuid';
 
-import { create, createRole, deleteRole, deleteRolePolicy, setRolePolicy,
+import { create, list,
+         createRole, deleteRole, deleteRolePolicy, setRolePolicy,
          defineJobs, submitJobs, describeJobs, checkJobsUpdated,
          submitExecution, calculateStatus, updateStatus,
          volumeName, volumePath } from './analyses';
@@ -11,6 +12,7 @@ import { batch, cloudWatchEvents, dynamodb, iam, stepFunctions } from './aws';
 import { envNames } from './env';
 import { fakeReject, fakeResolve } from './fixtures/support';
 import { mountPath }  from './instances';
+import * as search from './search';
 import { Callback, Dict } from './types';
 import { uuidNil } from './util';
 
@@ -136,6 +138,34 @@ describe('analyses.create()', () => {
       spyOnRespond.and.throwError(err.message);
       testError(() => {}, done);
     });
+  });
+});
+
+describe('analyses.list()', () => {
+  const fakeProjectId = uuid();
+
+  const fakeRequest = () => ({
+    queryStringParameters: {
+      project_id: fakeProjectId,
+    },
+  });
+
+  let spyOnSearchQuery: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnSearchQuery = spyOn(search, 'query')
+      .and.callFake((request: Request, resource: string,
+                    terms: string[] = [], callback: Callback) => callback());
+  });
+
+  it('calls search.query() once with correct parameters', (done: Callback) => {
+    const callback = () => {
+      expect(spyOnSearchQuery).toHaveBeenCalledWith(
+        fakeRequest(), '/analyses', ['project_id', 'status'], callback);
+      expect(spyOnSearchQuery).toHaveBeenCalledTimes(1);
+      done();
+    };
+    list(fakeRequest(), null, callback);
   });
 });
 

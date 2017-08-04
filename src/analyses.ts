@@ -6,6 +6,7 @@ import { batch, cloudWatchEvents, dynamodb, iam, stepFunctions } from './aws';
 import { envNames } from './env';
 import { mountPath } from './instances';
 import { Pipeline, PipelineStep } from './pipelines';
+import { query } from './search';
 import { Callback, Dict } from './types';
 import { uuidNil } from './util';
 
@@ -34,6 +35,10 @@ const generateAnalysis = (request: AnalysisCreationRequest, principalId: string)
   created_by: principalId,
   status: 'created',
 });
+
+export const list = (request: Request, context: any, callback: Callback) => {
+  query(request, '/analyses', ['project_id', 'status'], callback);
+};
 
 export const submitExecution = (request: Request, context: any, callback: Callback) => {
   validate(request, 'POST', '/analyses/{analysis_id}/execution')

@@ -606,6 +606,33 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-CreateAnalysis/invocations
+    get:
+      summary: Get a list of analyses
+      description: |
+        Returns a list of analyses for the current member,
+        filtered by optional parameters.
+      operationId: listAnalyses
+      security:
+        - member_token: []
+      tags:
+        - Analyses
+      parameters:
+        - $ref: '#/parameters/AnalysesQueryStatus'
+        - $ref: '#/parameters/QueryDescriptionContains'
+        - $ref: '#/parameters/QueryProjectId'
+        - $ref: '#/parameters/QuerySort'
+        - $ref: '#/parameters/QueryPaginationOffset'
+        - $ref: '#/parameters/QueryPaginationLimit'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: List of analyses
+          schema:
+            $ref: '#/definitions/ListOfAnalyses'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-ListAnalyses/invocations
   /analyses/{analysis_id}/execution:
     options:
       tags:
@@ -981,6 +1008,20 @@ definitions:
   AnalysisError:
     description: Cause of analysis failure, if any
     type: string
+  ListOfAnalyses:
+    type: object
+    required:
+      - offset
+      - items
+    properties:
+      offset:
+        $ref: '#/definitions/PaginationOffset'
+      items:
+        type: array
+        items:
+          $ref: '#/definitions/Analysis'
+      next:
+        $ref: '#/definitions/PaginationNext'
   AnalysisExecution:
     required:
       - analysis_id
@@ -1196,6 +1237,24 @@ parameters:
           $ref: '#/definitions/ProjectId'
         description:
           $ref: '#/definitions/Description'
+  AnalysesQueryStatus:
+    in: query
+    name: status
+    description: Filter by analysis status
+    type: string
+    enum:
+      - created
+      - submitted
+      - pending
+      - running
+      - failing
+      - failed
+      - succeeded
+      - archiving
+      - archived
+      - removing
+      - removed
+      - deleting
   AnalysisId:
     in: path
     name: analysis_id
