@@ -1000,13 +1000,13 @@ describe('analyses.describeJobs()', () => {
     describeJobs(fakeRequest(), null, callback);
 
   const fakeJobs = () => [{
-    jobId: fakeJobId1,
-    status: 'SUCCEEDED',
-    statusReason: 'OK',
-  }, {
     jobId: fakeJobId2,
     status: 'FAILED',
     statusReason: fakeStatusReason,
+  }, {
+    jobId: fakeJobId1,
+    status: 'SUCCEEDED',
+    statusReason: 'OK',
   }, {
     jobId: fakeJobId3,
     status: 'PENDING',

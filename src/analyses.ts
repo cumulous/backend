@@ -410,12 +410,16 @@ export const describeJobs = (request: { jobIds: string[] }, context: any, callba
     .then(() => batch.describeJobs({
       jobs: request.jobIds,
     }).promise())
-    .then(data => callback(null, data.jobs.map(job => Object.assign({
+    .then(data => {
+      const jobs: Dict<JobStatus> = {};
+      data.jobs.map(job => jobs[job.jobId] = Object.assign({
         status: job.status,
       }, job.status === 'FAILED' ? {
         reason: job.statusReason,
-      } : {}
-    ) as JobStatus)))
+      } : {}));
+      return request.jobIds.map(jobId => jobs[jobId]);
+    })
+    .then(jobs => callback(null, jobs))
     .catch(callback);
 };
 
