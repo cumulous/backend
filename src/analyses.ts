@@ -500,3 +500,37 @@ interface AnalysisStatus {
   status: string;
   error?: string;
 }
+
+export const updateStatus = (
+      request: { analysis_id: string, jobs: JobStatus[], analysis: AnalysisStatus },
+      context: any, callback: Callback
+    ) => {
+  Promise.resolve()
+    .then(() => {
+      if (!Array.isArray(request.jobs) || request.jobs.length < 1) {
+        throw Error('jobs must be a non-empty array');
+      }
+    })
+    .then(() => request.analysis)
+    .then(analysis => dynamodb.update({
+      TableName: process.env[envNames.analysesTable],
+      Key: {
+        Id: request.analysis_id,
+      },
+      UpdateExpression: analysis.error ? 'set #s = :s, #e = :e, #j = :j' : 'set #s = :s, #j = :j',
+      ExpressionAttributeNames: Object.assign({
+        '#s': 'status',
+        '#j': 'jobs',
+      }, analysis.error ? {
+        '#e': 'error',
+      } : {}),
+      ExpressionAttributeValues: Object.assign({
+        ':s': analysis.status,
+        ':j': request.jobs,
+      }, analysis.error ? {
+        ':e': analysis.error,
+      } : {}),
+    }).promise())
+    .then(() => callback())
+    .catch(callback);
+};

@@ -948,6 +948,8 @@ definitions:
         $ref: '#/definitions/Description'
       status:
         $ref: '#/definitions/AnalysisStatus'
+      error:
+        $ref: '#/definitions/AnalysisError'
       created_at:
         $ref: '#/definitions/Date'
       created_by:
@@ -972,6 +974,9 @@ definitions:
       - removing
       - removed
       - deleting
+  AnalysisError:
+    description: Cause of analysis failure, if any
+    type: string
   AnalysisExecution:
     required:
       - analysis_id
