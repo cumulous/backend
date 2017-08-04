@@ -553,7 +553,7 @@ Resources:
                     "Choices": [
                       {
                         "Variable": "$.changed",
-                        "StringEquals": "true",
+                        "BooleanEquals": true,
                         "Next": "CalculateStatus"
                       }
                     ],
