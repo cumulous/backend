@@ -415,17 +415,19 @@ export const describeJobs = (request: { jobIds: string[] }, context: any, callba
       }, job.status === 'FAILED' ? {
         reason: job.statusReason,
       } : {}
-    ) as JobDetail)))
+    ) as JobStatus)))
     .catch(callback);
 };
 
-interface JobDetail {
+interface JobStatus {
   status: string;
   reason?: string;
 }
 
 export const checkJobsUpdated = (
-    request: { jobs: JobDetail[], oldJobs: JobDetail[] }, context: any, callback: Callback) => {
+      request: { jobs: JobStatus[], oldJobs: JobStatus[] },
+      context: any, callback: Callback
+    ) => {
   Promise.resolve()
     .then(() => {
       if (!Array.isArray(request.jobs) || !Array.isArray(request.oldJobs) ||
@@ -433,20 +435,19 @@ export const checkJobsUpdated = (
         throw Error('jobs and oldJobs must be non-empty arrays of equal length');
       }
     })
-    .then(() => request.jobs.some((job: JobDetail, index: number) =>
+    .then(() => request.jobs.some((job: JobStatus, index: number) =>
       job.status !== request.oldJobs[index].status))
     .then(result => callback(null, result))
     .catch(callback);
 };
 
-export const calculateStatus = (request: { jobs: JobDetail[] }, context: any, callback: Callback) => {
+export const calculateStatus = (request: { jobs: JobStatus[] }, context: any, callback: Callback) => {
   Promise.resolve()
     .then(() => {
       if (!Array.isArray(request.jobs) || request.jobs.length < 1) {
         throw Error('request.jobs must be a non-empty array');
       }
-
-      let reason = '';
+      let error = '';
       const count: Dict<number> = {
         SUBMITTED: 0,
         PENDING: 0,
@@ -462,13 +463,13 @@ export const calculateStatus = (request: { jobs: JobDetail[] }, context: any, ca
         }
         count[job.status]++;
 
-        if (job.reason === undefined) {
+        if (job.status !== 'FAILED' || job.reason === undefined) {
           return;
         }
         if (typeof job.reason !== 'string') {
           throw Error('Unexpected reason: ' + stringify(job.reason));
         }
-        reason = reason || job.reason;
+        error = error || job.reason;
       });
 
       const total = request.jobs.length;
@@ -488,9 +489,14 @@ export const calculateStatus = (request: { jobs: JobDetail[] }, context: any, ca
       }
       return {
         status,
-        reason,
-      };
+        error,
+      } as AnalysisStatus;
     })
     .then(status => callback(null, status))
     .catch(callback);
 };
+
+interface AnalysisStatus {
+  status: string;
+  error?: string;
+}

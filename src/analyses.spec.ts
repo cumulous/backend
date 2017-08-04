@@ -1154,19 +1154,19 @@ describe('analyses.calculateStatus()', () => {
 
     let jobs: any[];
     let status: string;
-    let reason: string;
+    let error: string;
 
     beforeEach(() => {
       jobs = undefined;
       status = undefined;
-      reason = '';
+      error = '';
     });
     afterEach((done: Callback) => {
       calculateStatus({ jobs }, null, (err?: Error, data?: any) => {
         expect(err).toBeFalsy();
         expect(data).toEqual({
           status,
-          reason,
+          error,
         });
         done();
       });
@@ -1201,31 +1201,30 @@ describe('analyses.calculateStatus()', () => {
       status = 'running';
     });
     it('at least one job is FAILED, and at least one job is <= RUNNING', () => {
-
       jobs = [
         { status: 'SUBMITTED' },
         { status: 'PENDING' },
         { status: 'RUNNABLE' },
         { status: 'STARTING' },
-        { status: 'RUNNING' },
+        { status: 'RUNNING', reason: fakeStatusReason + 0 },
         { status: 'FAILED', reason: fakeStatusReason },
         { status: 'FAILED', reason: fakeStatusReason + 2 },
         { status: 'SUCCEEDED' },
       ];
       status = 'failing';
-      reason = fakeStatusReason;
+      error = fakeStatusReason;
     });
     it('at least one job is FAILED, one SUCCEEDED, ' +
        'and all of the others are either SUCCEEDED or FAILED', () => {
       jobs = [
         { status: 'SUCCEEDED' },
-        { status: 'SUCCEEDED' },
+        { status: 'SUCCEEDED', reason: fakeStatusReason + 0 },
         { status: 'FAILED', reason: fakeStatusReason },
         { status: 'FAILED', reason: fakeStatusReason + 2 },
         { status: 'SUCCEEDED' },
       ];
       status = 'failed';
-      reason = fakeStatusReason;
+      error = fakeStatusReason;
     });
     it('all of the jobs are FAILED', () => {
       jobs = [
@@ -1233,7 +1232,7 @@ describe('analyses.calculateStatus()', () => {
         { status: 'FAILED', reason: fakeStatusReason + 2 },
       ];
       status = 'failed';
-      reason = fakeStatusReason;
+      error = fakeStatusReason;
     });
     it('all of the jobs are SUCCEEDED', () => {
       jobs = [
