@@ -1354,9 +1354,10 @@ describe('analyses.updateStatus()', () => {
     it('non-empty', () => error = fakeError);
   });
 
-  it('calls callback without an error on successful update', (done: Callback) => {
-    updateStatus(fakeRequest(), null, (err?: Error) => {
+  it('calls callback with correct parameters on successful update', (done: Callback) => {
+    updateStatus(fakeRequest(fakeError), null, (err?: Error, data?: any) => {
       expect(err).toBeFalsy();
+      expect(data).toEqual(fakeError);
       done();
     });
   });

@@ -531,6 +531,6 @@ export const updateStatus = (
         ':e': analysis.error,
       } : {}),
     }).promise())
-    .then(() => callback())
+    .then(() => callback(null, request.analysis.error))
     .catch(callback);
 };
