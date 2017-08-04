@@ -1324,7 +1324,7 @@ describe('analyses.updateStatus()', () => {
         expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
           TableName: fakeAnalysesTable,
           Key: {
-            Id: fakeAnalysisId,
+            id: fakeAnalysisId,
           },
           UpdateExpression: error ? 'set #s = :s, #e = :e, #j = :j' : 'set #s = :s, #j = :j',
           ExpressionAttributeNames: error ? {

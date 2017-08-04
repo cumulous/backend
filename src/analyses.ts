@@ -515,7 +515,7 @@ export const updateStatus = (
     .then(analysis => dynamodb.update({
       TableName: process.env[envNames.analysesTable],
       Key: {
-        Id: request.analysis_id,
+        id: request.analysis_id,
       },
       UpdateExpression: analysis.error ? 'set #s = :s, #e = :e, #j = :j' : 'set #s = :s, #j = :j',
       ExpressionAttributeNames: Object.assign({
