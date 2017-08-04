@@ -264,11 +264,13 @@ describe('analyses.submitExecution()', () => {
         Key: {
           id: fakeAnalysisId,
         },
-        UpdateExpression: 'set #s = :sub, #p = :p',
+        UpdateExpression: 'set #s = :sub, #p = :p, #e = :e, #j = :j',
         ConditionExpression: '(#s = :c) or (#s = :f) or (#s = :suc)',
         ExpressionAttributeNames: {
           '#s': 'status',
           '#p': 'pipeline_id',
+          '#e': 'error',
+          '#j': 'jobs',
         },
         ExpressionAttributeValues: {
           ':c': 'created',
@@ -276,6 +278,8 @@ describe('analyses.submitExecution()', () => {
           ':f': 'failed',
           ':suc': 'succeeded',
           ':p': fakePipelineId,
+          ':e': '-',
+          ':j': [],
         },
       });
       expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);

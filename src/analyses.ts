@@ -82,11 +82,13 @@ const setExecutionStatus = (analysis_id: string, pipeline_id: string) => {
     Key: {
       id: analysis_id,
     },
-    UpdateExpression: 'set #s = :sub, #p = :p',
+    UpdateExpression: 'set #s = :sub, #p = :p, #e = :e, #j = :j',
     ConditionExpression: '(#s = :c) or (#s = :f) or (#s = :suc)',
     ExpressionAttributeNames: {
       '#s': 'status',
       '#p': 'pipeline_id',
+      '#e': 'error',
+      '#j': 'jobs',
     },
     ExpressionAttributeValues: {
       ':c': 'created',
@@ -94,6 +96,8 @@ const setExecutionStatus = (analysis_id: string, pipeline_id: string) => {
       ':f': 'failed',
       ':suc': 'succeeded',
       ':p': pipeline_id,
+      ':e': '-',
+      ':j': [],
     },
   }).promise()
     .catch(err => {
