@@ -104,6 +104,23 @@ Resources:
               "FacetEnabled": false,
               "SortEnabled": false
             }
+          },
+          {
+            "IndexFieldName": "error",
+            "IndexFieldType": "text",
+            "TextOptions": {
+              "SortEnabled": false,
+              "HighlightEnabled": false
+            }
+          },
+          {
+            "IndexFieldName": "jobs",
+            "IndexFieldType": "literal-array",
+            "LiteralArrayOptions": {
+              "SearchEnabled": false,
+              "FacetEnabled": false,
+              "ReturnEnabled": false
+            }
           }
         ]
 
