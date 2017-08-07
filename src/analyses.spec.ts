@@ -1355,8 +1355,8 @@ describe('analyses.updateStatus()', () => {
     let error: string;
     let jobs: any[];
     beforeEach(() => {
-      error = fakeError;
-      jobs = fakeJobs();
+      error = undefined;
+      jobs = undefined;
     });
     afterEach((done: Callback) => {
       updateStatus(fakeRequest(error, jobs), null, () => {
@@ -1402,10 +1402,14 @@ describe('analyses.updateStatus()', () => {
     it('analysis error is undefined', () => error = undefined);
     it('analysis error is null', () => error = null);
     it('analysis error is empty', () => error = '');
-    it('analysis error is non-empty', () => {});
+    it('analysis error is non-empty', () => error = fakeError);
     it('jobs is undefined', () => jobs = undefined);
     it('jobs is null', () => jobs = null);
-    it('jobs is defined', () => {});
+    it('jobs is defined', () => jobs = fakeJobs());
+    it('analysis error is non-empty and jobs is defined', () => {
+      error = fakeError;
+      jobs = fakeJobs();
+    });
   });
 
   it('calls callback with correct parameters on successful update', (done: Callback) => {
