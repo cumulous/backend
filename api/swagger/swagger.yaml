@@ -694,6 +694,27 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-Analyses-SubmitExecution/invocations
+    delete:
+      summary: Cancel an analysis
+      description: |
+        Cancel execution of a computational pipeline for the given analysis.
+      operationId: cancelAnalysis
+      security:
+        - member_token: []
+      tags:
+        - Analyses
+      parameters:
+        - $ref: '#/parameters/AnalysisId'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Properties of the canceled execution
+          schema:
+            $ref: '#/definitions/AnalysisExecution'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-Analyses-CancelExecution/invocations
 
 definitions:
   Spec:

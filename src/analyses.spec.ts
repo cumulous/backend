@@ -4,7 +4,7 @@ import * as uuid from 'uuid';
 import { create, list,
          createRole, deleteRole, deleteRolePolicy, setRolePolicy,
          defineJobs, submitJobs, describeJobs, checkJobsUpdated, cancelJobs,
-         submitExecution, calculateStatus, updateStatus,
+         submitExecution, calculateStatus, updateStatus, cancelExecution,
          volumeName, volumePath } from './analyses';
 import * as apig from './apig';
 import { ajv, ApiError } from './apig';
@@ -1534,6 +1534,145 @@ describe('analyses.cancelJobs()', () => {
         fakeReject('batch.terminateJob()'),
         fakeResolve(),
       );
+    });
+  });
+});
+
+describe('analyses.cancelExecution()', () => {
+  const fakePipelineId = uuid();
+  const fakeDatasetId1 = uuid();
+  const fakeDatasetId2 = uuid();
+  const fakeDate = new Date().toISOString();
+
+  const fakeRequest = () => ({
+    pathParameters: {
+      analysis_id: fakeAnalysisId,
+    },
+  });
+
+  const fakeDatasets = () => ({
+    Dataset_1: fakeDatasetId1,
+    Dataset_2: fakeDatasetId2,
+  });
+
+  const fakeUpdateResponse = () => ({
+    id: fakeAnalysisId,
+    pipeline_id: fakePipelineId,
+    created_at: fakeDate,
+    datasets: fakeDatasets(),
+    status: 'canceling',
+  });
+
+  const fakeResponse = () => ({
+    analysis_id: fakeAnalysisId,
+    pipeline_id: fakePipelineId,
+    datasets: fakeDatasets(),
+    status: 'canceling',
+  });
+
+  const testMethod = (callback: Callback) =>
+    cancelExecution(fakeRequest(), null, callback);
+
+  let spyOnValidate: jasmine.Spy;
+  let spyOnDynamoDbUpdate: jasmine.Spy;
+  let spyOnRespond: jasmine.Spy;
+  let spyOnRespondWithError: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.analysesTable] = fakeAnalysesTable;
+
+    spyOnValidate = spyOn(apig, 'validate')
+      .and.callThrough();
+    spyOnDynamoDbUpdate = spyOn(dynamodb, 'update')
+      .and.returnValue(fakeResolve({ Attributes: fakeUpdateResponse() }));
+    spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    spyOnRespondWithError = spyOn(apig, 'respondWithError')
+      .and.callFake((callback: Callback) => callback());
+  });
+
+  it('calls apig.validate() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnValidate).toHaveBeenCalledWith(fakeRequest(), 'DELETE', '/analyses/{analysis_id}/execution');
+      expect(spyOnValidate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls dynamodb.update() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
+        TableName: fakeAnalysesTable,
+        Key: {
+          id: fakeAnalysisId,
+        },
+        UpdateExpression: 'set #s = :c',
+        ConditionExpression: '#s in (:s, :p, :r, :c)',
+        ExpressionAttributeNames: {
+          '#s': 'status',
+        },
+        ExpressionAttributeValues: {
+          ':s': 'submitted',
+          ':p': 'pending',
+          ':r': 'running',
+          ':c': 'canceling',
+        },
+        ReturnValues: 'ALL_NEW',
+      });
+      expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls apig.respond() once with correct parameters', (done: Callback) => {
+    const callback = () => {
+      expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(), fakeResponse());
+      expect(ajv.validate('spec#/definitions/AnalysisExecution', fakeResponse())).toBe(true);
+      expect(spyOnRespond).toHaveBeenCalledTimes(1);
+      done();
+    };
+    testMethod(callback);
+  });
+
+  describe('calls apig.respondWithError() immediately with the error if', () => {
+    let err: Error | ApiError | jasmine.ObjectContaining<{ code: number }>;
+    let after: () => void;
+    beforeEach(() => {
+      after = () => {};
+    });
+    afterEach((done: Callback) => {
+      const callback = () => {
+        expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, fakeRequest(), err);
+        expect(spyOnRespondWithError).toHaveBeenCalledTimes(1);
+        after();
+        done();
+      };
+      testMethod(callback);
+    });
+
+    it('apig.validate() responds with an error', () => {
+      err = new ApiError('validate()');
+      spyOnValidate.and.returnValue(Promise.reject(err));
+      after = () => {
+        expect(spyOnDynamoDbUpdate).not.toHaveBeenCalled();
+      };
+    });
+
+    it('dynamodb.update() responds with a generic error', () => {
+      err = Error('dynamodb.update()');
+      spyOnDynamoDbUpdate.and.returnValue(fakeReject(err));
+    });
+
+    it('dynamodb.update() responds with ConditionalCheckFailedException', () => {
+      err = jasmine.objectContaining({ code: 409 });
+      const errUpdate = new ApiError('dynamodb.update()',
+        undefined, 'ConditionalCheckFailedException');
+      spyOnDynamoDbUpdate.and.returnValue(fakeReject(errUpdate));
+    });
+
+    it('apig.respond() throws an error', () => {
+      err = Error('apig.respond()');
+      spyOnRespond.and.throwError(err.message);
     });
   });
 });

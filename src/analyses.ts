@@ -569,3 +569,44 @@ export const cancelJobs = (request: { jobIds: string[] }, context: any, callback
     .then(() => callback())
     .catch(callback);
 };
+
+export const cancelExecution = (request: Request, context: any, callback: Callback) => {
+  validate(request, 'DELETE', '/analyses/{analysis_id}/execution')
+    .then(() => dynamodb.update({
+      TableName: process.env[envNames.analysesTable],
+      Key: {
+        id: request.pathParameters.analysis_id,
+      },
+      UpdateExpression: 'set #s = :c',
+      ConditionExpression: '#s in (:s, :p, :r, :c)',
+      ExpressionAttributeNames: {
+        '#s': 'status',
+      },
+      ExpressionAttributeValues: {
+        ':s': 'submitted',
+        ':p': 'pending',
+        ':r': 'running',
+        ':c': 'canceling',
+      },
+      ReturnValues: 'ALL_NEW',
+    }).promise())
+    .then(data => {
+      let { id, pipeline_id, datasets, status } = data.Attributes;
+      return {
+        analysis_id: id,
+        pipeline_id,
+        datasets,
+        status,
+      };
+    })
+    .then(execution => respond(callback, request, execution))
+    .catch(err => {
+      if (err.code === 'ConditionalCheckFailedException') {
+        err = new ApiError('Conflict', [
+          "Analysis must have 'submitted', 'pending', 'running', or 'canceling' " +
+          "status before it can be canceled",
+        ], 409);
+      }
+      respondWithError(callback, request, err);
+    });
+};
