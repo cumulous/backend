@@ -82,11 +82,10 @@ Resources:
           },
           {
             "IndexFieldName": "datasets",
-            "IndexFieldType": "text",
-            "TextOptions": {
-              "SortEnabled": false,
-              "HighlightEnabled": false,
-              "ReturnEnabled": false
+            "IndexFieldType": "literal",
+            "LiteralOptions": {
+              "FacetEnabled": false,
+              "SortEnabled": false
             }
           },
           {

@@ -44,7 +44,7 @@ export const submitExecution = (request: Request, context: any, callback: Callba
   validate(request, 'POST', '/analyses/{analysis_id}/execution')
     .then(() => request.pathParameters.analysis_id)
     .then(analysis_id => getPipeline(request.body)
-      .then(pipeline => setExecutionStatus(analysis_id, pipeline.id)
+      .then(pipeline => storeExecution(analysis_id, pipeline.id, pipeline.datasets)
         .then(() => startExecution(analysis_id, pipeline))))
     .then(execution => respond(callback, request, execution))
     .catch(err => respondWithError(callback, request, err));
@@ -81,17 +81,18 @@ const getPipeline = (request: PipelineRequest) => {
     });
 }
 
-const setExecutionStatus = (analysis_id: string, pipeline_id: string) => {
+const storeExecution = (analysis_id: string, pipeline_id: string, datasets: Dict<string>) => {
   return dynamodb.update({
     TableName: process.env[envNames.analysesTable],
     Key: {
       id: analysis_id,
     },
-    UpdateExpression: 'set #s = :sub, #p = :p, #e = :e, #j = :j',
+    UpdateExpression: 'set #s = :sub, #p = :p, #d = :d, #e = :e, #j = :j',
     ConditionExpression: '(#s = :c) or (#s = :f) or (#s = :suc)',
     ExpressionAttributeNames: {
       '#s': 'status',
       '#p': 'pipeline_id',
+      '#d': 'datasets',
       '#e': 'error',
       '#j': 'jobs',
     },
@@ -101,6 +102,7 @@ const setExecutionStatus = (analysis_id: string, pipeline_id: string) => {
       ':f': 'failed',
       ':suc': 'succeeded',
       ':p': pipeline_id,
+      ':d': datasets,
       ':e': '-',
       ':j': [],
     },
