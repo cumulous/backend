@@ -120,6 +120,15 @@ Resources:
               "FacetEnabled": false,
               "ReturnEnabled": false
             }
+          },
+          {
+            "IndexFieldName": "job_ids",
+            "IndexFieldType": "literal-array",
+            "LiteralArrayOptions": {
+              "SearchEnabled": false,
+              "FacetEnabled": false,
+              "ReturnEnabled": false
+            }
           }
         ]
 

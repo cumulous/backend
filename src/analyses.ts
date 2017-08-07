@@ -517,7 +517,7 @@ interface AnalysisStatus {
 }
 
 export const updateStatus = (
-      request: { analysis_id: string, jobs: JobStatus[], analysis: AnalysisStatus },
+      request: { analysis_id: string, analysis: AnalysisStatus, jobs: JobStatus[], jobIds: string[] },
       context: any, callback: Callback
     ) => {
   Promise.resolve()
@@ -527,31 +527,19 @@ export const updateStatus = (
       Key: {
         id: request.analysis_id,
       },
-      UpdateExpression: analysis.error ?
-        (request.jobs ? 'set #s = :s, #e = :e, #j = :j' : 'set #s = :s, #e = :e') :
-        (request.jobs ? 'set #s = :s, #j = :j' : 'set #s = :s'),
-      ConditionExpression: 'not (#s = :c)',
-      ExpressionAttributeNames: Object.assign(
-        Object.assign({
-          '#s': 'status',
-        }, request.jobs ? {
-          '#j': 'jobs',
-        } : {}),
-        analysis.error ? {
-          '#e': 'error',
-        } : {}
-      ),
-      ExpressionAttributeValues: Object.assign(
-        Object.assign({
-          ':s': analysis.status,
-          ':c': 'canceling',
-        }, request.jobs ? {
-          ':j': request.jobs.map(job => job.status.toLowerCase()),
-        } : {}),
-        analysis.error ? {
-          ':e': analysis.error,
-        } : {}
-      ),
+      UpdateExpression: 'set #s = :s, #e = :e, #j = :j, #ji = :ji',
+      ExpressionAttributeNames: {
+        '#s': 'status',
+        '#e': 'error',
+        '#j': 'jobs',
+        '#ji': 'job_ids',
+      },
+      ExpressionAttributeValues: {
+        ':s': analysis.status,
+        ':e': analysis.error || '-',
+        ':j': request.jobs ? request.jobs.map(job => job.status.toLowerCase()) : [],
+        ':ji': request.jobIds || [],
+      },
     }).promise())
     .then(() => callback(null, request.analysis.error))
     .catch(err => {

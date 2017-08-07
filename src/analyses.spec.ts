@@ -1319,6 +1319,11 @@ describe('analyses.updateStatus()', () => {
   const fakeAnalysesTable = 'fake-analyses-table-' + uuid();
   const fakeStatus = 'failing';
   const fakeError = 'Fake failure';
+  const fakeJobId1 = uuid();
+  const fakeJobId2 = uuid();
+  const fakeJobId3 = uuid();
+
+  const fakeJobIds = () => [fakeJobId1, fakeJobId2, fakeJobId3];
 
   const fakeJobs = () => [
     { status: 'SUBMITTED' },
@@ -1332,16 +1337,14 @@ describe('analyses.updateStatus()', () => {
 
   const fakeJobStatuses = () => fakeJobs().map(job => job.status.toLowerCase());
 
-  const fakeAnalysis = (error?: string) => Object.assign({
-    status: fakeStatus,
-  }, error ? {
-    error: fakeError,
-  } : {});
-
-  const fakeRequest = (error?: string, jobs?: any[]) => ({
+  const fakeRequest = () => ({
     analysis_id: fakeAnalysisId,
-    analysis: fakeAnalysis(error),
-    jobs,
+    analysis: {
+      status: fakeStatus,
+      error: fakeError,
+    },
+    jobs: fakeJobs(),
+    jobIds: fakeJobIds(),
   });
 
   let spyOnDynamoDbUpdate: jasmine.Spy;
@@ -1354,67 +1357,85 @@ describe('analyses.updateStatus()', () => {
   });
 
   describe('calls dynamodb.update() once with correct parameters when', () => {
+    let request: any;
     let error: string;
-    let jobs: any[];
+    let jobs: string[];
+    let job_ids: string[];
     beforeEach(() => {
-      error = undefined;
-      jobs = undefined;
+      request = fakeRequest();
+      error = fakeError;
+      jobs = fakeJobStatuses();
+      job_ids = fakeJobIds();
     });
     afterEach((done: Callback) => {
-      updateStatus(fakeRequest(error, jobs), null, () => {
+      updateStatus(request, null, () => {
         expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
           TableName: fakeAnalysesTable,
           Key: {
             id: fakeAnalysisId,
           },
-          UpdateExpression: error ?
-            (jobs ? 'set #s = :s, #e = :e, #j = :j' : 'set #s = :s, #e = :e') :
-            (jobs ? 'set #s = :s, #j = :j' : 'set #s = :s'),
-          ConditionExpression: 'not (#s = :c)',
-          ExpressionAttributeNames: error ? (jobs ? {
+          UpdateExpression: 'set #s = :s, #e = :e, #j = :j, #ji = :ji',
+          ExpressionAttributeNames: {
             '#s': 'status',
             '#e': 'error',
             '#j': 'jobs',
-          } : {
-            '#s': 'status',
-            '#e': 'error',
-          }) : (jobs ? {
-            '#s': 'status',
-            '#j': 'jobs',
-          } : {
-            '#s': 'status',
-          }),
-          ExpressionAttributeValues: Object.assign({
+            '#ji': 'job_ids',
+          },
+          ExpressionAttributeValues: {
             ':s': fakeStatus,
-            ':c': 'canceling',
-          }, error ? (jobs ? {
             ':e': error,
-            ':j': fakeJobStatuses(),
-          } : {
-            ':e': error,
-          }) : (jobs ? {
-            ':j': fakeJobStatuses(),
-          } : {})),
+            ':j': jobs,
+            ':ji': job_ids,
+          },
         });
         expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
         done();
       });
     });
-    it('analysis error is undefined', () => error = undefined);
-    it('analysis error is null', () => error = null);
-    it('analysis error is empty', () => error = '');
-    it('analysis error is non-empty', () => error = fakeError);
-    it('jobs is undefined', () => jobs = undefined);
-    it('jobs is null', () => jobs = null);
-    it('jobs is defined', () => jobs = fakeJobs());
-    it('analysis error is non-empty and jobs is defined', () => {
+    it('analysis error is undefined', () => {
+      request.analysis.error = undefined;
+      error = '-';
+    });
+    it('analysis error is null', () => {
+      request.analysis.error = null;
+      error = '-';
+    });
+    it('analysis error is empty', () => {
+      request.analysis.error = '';
+      error = '-';
+    });
+    it('analysis error is non-empty', () => {
+      request.analysis.error = fakeError;
       error = fakeError;
-      jobs = fakeJobs();
+    });
+    it('jobs is undefined', () => {
+      request.jobs = undefined;
+      jobs = [];
+    });
+    it('jobs is null', () => {
+      request.jobs = null;
+      jobs = [];
+    });
+    it('jobs is defined', () => {
+      request.jobs = fakeJobs();
+      jobs = fakeJobStatuses();
+    });
+    it('jobIds is undefined', () => {
+      request.jobIds = undefined;
+      job_ids = [];
+    });
+    it('jobIds is null', () => {
+      request.jobIds = null;
+      job_ids = [];
+    });
+    it('jobIds is defined', () => {
+      request.jobIds = fakeJobIds();
+      job_ids = fakeJobIds();
     });
   });
 
   it('calls callback with correct parameters on successful update', (done: Callback) => {
-    updateStatus(fakeRequest(fakeError), null, (err?: Error, data?: any) => {
+    updateStatus(fakeRequest(), null, (err?: Error, data?: any) => {
       expect(err).toBeFalsy();
       expect(data).toEqual(fakeError);
       done();
@@ -1423,7 +1444,7 @@ describe('analyses.updateStatus()', () => {
 
   describe('calls callback immediately with an error if', () => {
     let request: any;
-    let after: (err?: Error) => void;
+    let after: () => void;
     beforeEach(() => {
       request = fakeRequest();
       after = () => {
@@ -1434,7 +1455,7 @@ describe('analyses.updateStatus()', () => {
       updateStatus(request, null, (err?: Error, data?: any) => {
         expect(err).toBeTruthy();
         expect(data).toBeUndefined();
-        after(err);
+        after();
         done();
       });
     });
@@ -1442,13 +1463,9 @@ describe('analyses.updateStatus()', () => {
     it('request is null', () => request = null);
     it('analysis is undefined', () => request.analysis = undefined);
     it('analysis is null', () => request.analysis = null);
-    it('analysis is cancelled', () => {
-      const errUpdate = new ApiError('dynamodb.update()',
-        undefined, 'ConditionalCheckFailedException');
-      spyOnDynamoDbUpdate.and.returnValue(fakeReject(errUpdate));
-      after = (err?: Error) => {
-        expect(err.name).toEqual('ConditionalCheckFailedException');
-      };
+    it('dynamodb.update() responds with an error', () => {
+      spyOnDynamoDbUpdate.and.returnValue(fakeReject('dynamodb.update()'));
+      after = () => {};
     });
   });
 });
