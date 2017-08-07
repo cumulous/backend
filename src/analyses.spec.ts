@@ -3,7 +3,7 @@ import * as uuid from 'uuid';
 
 import { create, list,
          createRole, deleteRole, deleteRolePolicy, setRolePolicy,
-         defineJobs, submitJobs, describeJobs, checkJobsUpdated,
+         defineJobs, submitJobs, describeJobs, checkJobsUpdated, cancelJobs,
          submitExecution, calculateStatus, updateStatus,
          volumeName, volumePath } from './analyses';
 import * as apig from './apig';
@@ -1368,6 +1368,7 @@ describe('analyses.updateStatus()', () => {
           UpdateExpression: error ?
             (jobs ? 'set #s = :s, #e = :e, #j = :j' : 'set #s = :s, #e = :e') :
             (jobs ? 'set #s = :s, #j = :j' : 'set #s = :s'),
+          ConditionExpression: 'not (#s = :c)',
           ExpressionAttributeNames: error ? (jobs ? {
             '#s': 'status',
             '#e': 'error',
@@ -1381,19 +1382,17 @@ describe('analyses.updateStatus()', () => {
           } : {
             '#s': 'status',
           }),
-          ExpressionAttributeValues: error ? (jobs ? {
+          ExpressionAttributeValues: Object.assign({
             ':s': fakeStatus,
+            ':c': 'canceling',
+          }, error ? (jobs ? {
             ':e': error,
             ':j': fakeJobStatuses(),
           } : {
-            ':s': fakeStatus,
             ':e': error,
           }) : (jobs ? {
-            ':s': fakeStatus,
             ':j': fakeJobStatuses(),
-          } : {
-            ':s': fakeStatus,
-          }),
+          } : {})),
         });
         expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
         done();
@@ -1422,14 +1421,18 @@ describe('analyses.updateStatus()', () => {
 
   describe('calls callback immediately with an error if', () => {
     let request: any;
+    let after: (err?: Error) => void;
     beforeEach(() => {
       request = fakeRequest();
+      after = () => {
+        expect(spyOnDynamoDbUpdate).not.toHaveBeenCalled();
+      };
     });
     afterEach((done: Callback) => {
       updateStatus(request, null, (err?: Error, data?: any) => {
         expect(err).toBeTruthy();
         expect(data).toBeUndefined();
-        expect(spyOnDynamoDbUpdate).not.toHaveBeenCalled();
+        after(err);
         done();
       });
     });
@@ -1437,5 +1440,98 @@ describe('analyses.updateStatus()', () => {
     it('request is null', () => request = null);
     it('analysis is undefined', () => request.analysis = undefined);
     it('analysis is null', () => request.analysis = null);
+    it('analysis is cancelled', () => {
+      const errUpdate = new ApiError('dynamodb.update()',
+        undefined, 'ConditionalCheckFailedException');
+      spyOnDynamoDbUpdate.and.returnValue(fakeReject(errUpdate));
+      after = (err?: Error) => {
+        expect(err.name).toEqual('ConditionalCheckFailedException');
+      };
+    });
+  });
+});
+
+describe('analyses.cancelJobs()', () => {
+  const fakeJobId1 = uuid();
+  const fakeJobId2 = uuid();
+  const fakeJobId3 = uuid();
+
+  const fakeJobIds = () => [fakeJobId1, fakeJobId2, fakeJobId3];
+
+  const fakeRequest = () => ({
+    jobIds: fakeJobIds(),
+  });
+
+  const testMethod = (callback: Callback) =>
+    cancelJobs(fakeRequest(), null, callback);
+
+  let spyOnTerminateJob: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnTerminateJob = spyOn(batch, 'terminateJob')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls batch.terminateJob() with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      const reason = 'Canceled by user';
+      expect(spyOnTerminateJob).toHaveBeenCalledWith({
+        jobId: fakeJobId1,
+        reason,
+      });
+      expect(spyOnTerminateJob).toHaveBeenCalledWith({
+        jobId: fakeJobId2,
+        reason,
+      });
+      expect(spyOnTerminateJob).toHaveBeenCalledWith({
+        jobId: fakeJobId3,
+        reason,
+      });
+      expect(spyOnTerminateJob).toHaveBeenCalledTimes(3);
+      done();
+    });
+  });
+
+  it('calls callback without an error for a correct request', (done: Callback) => {
+    testMethod((err?: Error, data?: any) => {
+      expect(err).toBeFalsy();
+      expect(data).toBeUndefined();
+      done();
+    });
+  });
+
+  describe('calls callback immediately with an error if', () => {
+    let request: any;
+    let after: () => void;
+    beforeEach(() => {
+      request = fakeRequest();
+      after = () => {};
+    });
+    afterEach((done: Callback) => {
+      cancelJobs(request, null, (err?: Error) => {
+        expect(err).toBeTruthy();
+        after();
+        done();
+      });
+    });
+    describe('request', () => {
+      afterEach(() => {
+        after = () => {
+          expect(spyOnTerminateJob).not.toHaveBeenCalled();
+        };
+      });
+      it('is undefined', () => request = undefined);
+      it('is null', () => request = null);
+      it('jobIds is undefined', () => request.jobIds = undefined);
+      it('jobIds is null', () => request.jobIds = null);
+      it('jobIds is not an array', () => request.jobIds = {});
+    });
+    it('batch.terminateJob() produces an error', () => {
+      spyOnTerminateJob.and.returnValues(
+        fakeResolve(),
+        fakeReject('batch.terminateJob()'),
+        fakeResolve(),
+      );
+    });
   });
 });

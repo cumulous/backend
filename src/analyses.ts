@@ -528,6 +528,7 @@ export const updateStatus = (
       UpdateExpression: analysis.error ?
         (request.jobs ? 'set #s = :s, #e = :e, #j = :j' : 'set #s = :s, #e = :e') :
         (request.jobs ? 'set #s = :s, #j = :j' : 'set #s = :s'),
+      ConditionExpression: 'not (#s = :c)',
       ExpressionAttributeNames: Object.assign(
         Object.assign({
           '#s': 'status',
@@ -541,6 +542,7 @@ export const updateStatus = (
       ExpressionAttributeValues: Object.assign(
         Object.assign({
           ':s': analysis.status,
+          ':c': 'canceling',
         }, request.jobs ? {
           ':j': request.jobs.map(job => job.status.toLowerCase()),
         } : {}),
@@ -550,5 +552,18 @@ export const updateStatus = (
       ),
     }).promise())
     .then(() => callback(null, request.analysis.error))
+    .catch(err => {
+      err.name = err.code;
+      callback(err);
+    });
+};
+
+export const cancelJobs = (request: { jobIds: string[] }, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => Promise.all(request.jobIds.map(jobId => batch.terminateJob({
+      jobId,
+      reason: 'Canceled by user',
+    }).promise())))
+    .then(() => callback())
     .catch(callback);
 };

@@ -997,6 +997,7 @@ definitions:
       - submitted
       - pending
       - running
+      - canceling
       - failing
       - failed
       - succeeded
