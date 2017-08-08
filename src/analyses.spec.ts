@@ -4,7 +4,7 @@ import * as uuid from 'uuid';
 import { create, list,
          createRole, deleteRole, deleteRolePolicy, setRolePolicy,
          defineJobs, submitJobs, describeJobs, checkJobsUpdated,
-         submitExecution, calculateStatus, updateStatus, cancelExecution,
+         submitExecution, calculateStatus, updateStatus, cancelExecution, cancellationReason,
          volumeName, volumePath } from './analyses';
 import * as apig from './apig';
 import { ajv, ApiError } from './apig';
@@ -1478,8 +1478,6 @@ describe('analyses.cancelExecution()', () => {
   const fakeJobId2 = uuid();
   const fakeJobId3 = uuid();
   const fakeDate = new Date().toISOString();
-  const fakeStatus = 'failing';
-  const fakeError = 'Terminated by user';
 
   const fakeJobIds = () => [fakeJobId1, fakeJobId2, fakeJobId3];
 
@@ -1500,23 +1498,23 @@ describe('analyses.cancelExecution()', () => {
     datasets: fakeDatasets(),
     job_ids: fakeJobIds(),
     created_at: fakeDate,
-    status: fakeStatus,
-    error: fakeError,
+    status: 'canceling',
+    error: cancellationReason,
   });
 
   const fakeResponse = () => ({
     analysis_id: fakeAnalysisId,
     pipeline_id: fakePipelineId,
     datasets: fakeDatasets(),
-    status: fakeStatus,
-    error: fakeError,
+    status: 'canceling',
+    error: cancellationReason,
   });
 
   const testMethod = (callback: Callback) =>
     cancelExecution(fakeRequest(), null, callback);
 
   let spyOnValidate: jasmine.Spy;
-  let spyOnDynamoDbGet: jasmine.Spy;
+  let spyOnDynamoDbUpdate: jasmine.Spy;
   let spyOnTerminateJob: jasmine.Spy;
   let spyOnRespond: jasmine.Spy;
   let spyOnRespondWithError: jasmine.Spy;
@@ -1526,8 +1524,8 @@ describe('analyses.cancelExecution()', () => {
 
     spyOnValidate = spyOn(apig, 'validate')
       .and.callThrough();
-    spyOnDynamoDbGet = spyOn(dynamodb, 'get')
-      .and.returnValue(fakeResolve({ Item: fakeAnalysis() }));
+    spyOnDynamoDbUpdate = spyOn(dynamodb, 'update')
+      .and.returnValue(fakeResolve({ Attributes: fakeAnalysis() }));
     spyOnTerminateJob = spyOn(batch, 'terminateJob')
       .and.returnValue(fakeResolve());
     spyOnRespond = spyOn(apig, 'respond')
@@ -1544,33 +1542,45 @@ describe('analyses.cancelExecution()', () => {
     });
   });
 
-  it('calls dynamodb.get() once with correct parameters', (done: Callback) => {
+  it('calls dynamodb.update() once with correct parameters', (done: Callback) => {
     testMethod(() => {
-      expect(spyOnDynamoDbGet).toHaveBeenCalledWith({
+      expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
         TableName: fakeAnalysesTable,
         Key: {
           id: fakeAnalysisId,
         },
+        UpdateExpression: 'set #s = :c, #e = :e',
+        ConditionExpression: '(#s = :p) or (#s = :r) or (#s = :c)',
+        ExpressionAttributeNames: {
+          '#s': 'status',
+          '#e': 'error',
+        },
+        ExpressionAttributeValues: {
+          ':p': 'pending',
+          ':r': 'running',
+          ':c': 'canceling',
+          ':e': cancellationReason,
+        },
+        ReturnValues: 'ALL_NEW',
       });
-      expect(spyOnDynamoDbGet).toHaveBeenCalledTimes(1);
+      expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
       done();
     });
   });
 
   it('calls batch.terminateJob() with correct parameters', (done: Callback) => {
     testMethod(() => {
-      const reason = 'Canceled by user';
       expect(spyOnTerminateJob).toHaveBeenCalledWith({
         jobId: fakeJobId1,
-        reason,
+        reason: cancellationReason,
       });
       expect(spyOnTerminateJob).toHaveBeenCalledWith({
         jobId: fakeJobId2,
-        reason,
+        reason: cancellationReason,
       });
       expect(spyOnTerminateJob).toHaveBeenCalledWith({
         jobId: fakeJobId3,
-        reason,
+        reason: cancellationReason,
       });
       expect(spyOnTerminateJob).toHaveBeenCalledTimes(3);
       done();
@@ -1607,11 +1617,11 @@ describe('analyses.cancelExecution()', () => {
       err = new ApiError('validate()');
       spyOnValidate.and.returnValue(Promise.reject(err));
       after = () => {
-        expect(spyOnDynamoDbGet).not.toHaveBeenCalled();
+        expect(spyOnDynamoDbUpdate).not.toHaveBeenCalled();
       };
     });
 
-    describe('dynamodb.get()', () => {
+    describe('dynamodb.update()', () => {
       let job_ids: any;
       beforeEach(() => {
         job_ids = undefined;
@@ -1619,9 +1629,15 @@ describe('analyses.cancelExecution()', () => {
           expect(spyOnTerminateJob).not.toHaveBeenCalled();
         };
       });
-      it('produces an error', () => {
-        err = Error('dynamodb.get()');
-        spyOnDynamoDbGet.and.returnValue(fakeReject(err));
+      it('produces a generic error', () => {
+        err = Error('dynamodb.update()');
+        spyOnDynamoDbUpdate.and.returnValue(fakeReject(err));
+      });
+      it('produces a ConditionalCheckFailedException', () => {
+        err = jasmine.objectContaining({ code: 409 });
+        const errUpdate = new ApiError('dynamodb.update()',
+          undefined, 'ConditionalCheckFailedException');
+        spyOnDynamoDbUpdate.and.returnValue(fakeReject(errUpdate));
       });
       describe('returns job_ids that is', () => {
         let job_ids: any;
@@ -1631,7 +1647,7 @@ describe('analyses.cancelExecution()', () => {
         afterEach(() => {
           const analysis = fakeAnalysis();
           analysis.job_ids = job_ids;
-          spyOnDynamoDbGet.and.returnValue(fakeResolve({ Item: analysis }));
+          spyOnDynamoDbUpdate.and.returnValue(fakeResolve({ Attributes: analysis }));
           err = jasmine.objectContaining({ code: 409 });
         });
         it('undefined', () => job_ids = undefined);

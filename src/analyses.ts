@@ -550,26 +550,50 @@ export const updateStatus = (
 
 export const cancelExecution = (request: Request, context: any, callback: Callback) => {
   validate(request, 'DELETE', '/analyses/{analysis_id}/execution')
-    .then(() => getAnalysis(request.pathParameters.analysis_id))
-    .then(data => cancelJobs(data.Item.job_ids)
+    .then(() => setCancellationStatus(request.pathParameters.analysis_id))
+    .then(analysis => cancelJobs(analysis.job_ids)
       .then(() => respond(callback, request, {
-        analysis_id: data.Item.id,
-        pipeline_id: data.Item.pipeline_id,
-        datasets: data.Item.datasets,
-        status: data.Item.status,
-        error: data.Item.error,
+        analysis_id: analysis.id,
+        pipeline_id: analysis.pipeline_id,
+        datasets: analysis.datasets,
+        status: analysis.status,
+        error: analysis.error,
       }))
     )
     .catch(err => respondWithError(callback, request, err));
 };
 
-const getAnalysis = (id: string) => {
-  return dynamodb.get({
+export const cancellationReason = 'Canceled by user';
+
+const setCancellationStatus = (id: string) => {
+  return dynamodb.update({
     TableName: process.env[envNames.analysesTable],
     Key: {
       id,
     },
-  }).promise();
+    UpdateExpression: 'set #s = :c, #e = :e',
+    ConditionExpression: '(#s = :p) or (#s = :r) or (#s = :c)',
+    ExpressionAttributeNames: {
+      '#s': 'status',
+      '#e': 'error',
+    },
+    ExpressionAttributeValues: {
+      ':p': 'pending',
+      ':r': 'running',
+      ':c': 'canceling',
+      ':e': cancellationReason,
+    },
+    ReturnValues: 'ALL_NEW',
+  }).promise()
+    .then(data => data.Attributes)
+    .catch(err => {
+      if (err.code === 'ConditionalCheckFailedException') {
+        err = new ApiError('Conflict', [
+          "Analysis must have 'pending', 'running' or 'canceling' status before it can be canceled",
+        ], 409);
+      }
+      throw err;
+    });
 }
 
 const cancelJobs = (jobIds: string[]) => {
@@ -578,6 +602,6 @@ const cancelJobs = (jobIds: string[]) => {
   }
   return Promise.all(jobIds.map(jobId => batch.terminateJob({
     jobId,
-    reason: 'Canceled by user',
+    reason: cancellationReason,
   }).promise()));
 };

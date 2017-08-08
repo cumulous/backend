@@ -698,6 +698,8 @@ paths:
       summary: Cancel an analysis
       description: |
         Cancel execution of a computational pipeline for the given analysis.
+
+        Analysis must have 'pending', 'running', or 'canceling' status before it can be canceled.
       operationId: cancelAnalysis
       security:
         - member_token: []
@@ -1018,6 +1020,7 @@ definitions:
       - submitted
       - pending
       - running
+      - canceling
       - failing
       - failed
       - succeeded
