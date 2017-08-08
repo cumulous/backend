@@ -3,7 +3,7 @@ import * as uuid from 'uuid';
 
 import { create, list,
          createRole, deleteRole, deleteRolePolicy, setRolePolicy,
-         defineJobs, submitJobs, describeJobs, checkJobsUpdated, cancelJobs,
+         defineJobs, submitJobs, describeJobs, checkJobsUpdated,
          submitExecution, calculateStatus, updateStatus, cancelExecution,
          volumeName, volumePath } from './analyses';
 import * as apig from './apig';
@@ -1470,25 +1470,88 @@ describe('analyses.updateStatus()', () => {
   });
 });
 
-describe('analyses.cancelJobs()', () => {
+describe('analyses.cancelExecution()', () => {
+  const fakePipelineId = uuid();
+  const fakeDatasetId1 = uuid();
+  const fakeDatasetId2 = uuid();
   const fakeJobId1 = uuid();
   const fakeJobId2 = uuid();
   const fakeJobId3 = uuid();
+  const fakeDate = new Date().toISOString();
+  const fakeStatus = 'running';
 
   const fakeJobIds = () => [fakeJobId1, fakeJobId2, fakeJobId3];
 
   const fakeRequest = () => ({
-    jobIds: fakeJobIds(),
+    pathParameters: {
+      analysis_id: fakeAnalysisId,
+    },
+  });
+
+  const fakeDatasets = () => ({
+    Dataset_1: fakeDatasetId1,
+    Dataset_2: fakeDatasetId2,
+  });
+
+  const fakeAnalysis = () => ({
+    id: fakeAnalysisId,
+    pipeline_id: fakePipelineId,
+    datasets: fakeDatasets(),
+    job_ids: fakeJobIds(),
+    created_at: fakeDate,
+    status: fakeStatus,
+  });
+
+  const fakeResponse = () => ({
+    analysis_id: fakeAnalysisId,
+    pipeline_id: fakePipelineId,
+    datasets: fakeDatasets(),
+    status: fakeStatus,
   });
 
   const testMethod = (callback: Callback) =>
-    cancelJobs(fakeRequest(), null, callback);
+    cancelExecution(fakeRequest(), null, callback);
 
+  let spyOnValidate: jasmine.Spy;
+  let spyOnDynamoDbGet: jasmine.Spy;
   let spyOnTerminateJob: jasmine.Spy;
+  let spyOnRespond: jasmine.Spy;
+  let spyOnRespondWithError: jasmine.Spy;
 
   beforeEach(() => {
+    process.env[envNames.analysesTable] = fakeAnalysesTable;
+
+    spyOnValidate = spyOn(apig, 'validate')
+      .and.callThrough();
+    spyOnDynamoDbGet = spyOn(dynamodb, 'get')
+      .and.returnValue(fakeResolve({ Item: fakeAnalysis() }));
     spyOnTerminateJob = spyOn(batch, 'terminateJob')
       .and.returnValue(fakeResolve());
+    spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    spyOnRespondWithError = spyOn(apig, 'respondWithError')
+      .and.callFake((callback: Callback) => callback());
+  });
+
+  it('calls apig.validate() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnValidate).toHaveBeenCalledWith(fakeRequest(), 'DELETE', '/analyses/{analysis_id}/execution');
+      expect(spyOnValidate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls dynamodb.get() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnDynamoDbGet).toHaveBeenCalledWith({
+        TableName: fakeAnalysesTable,
+        Key: {
+          id: fakeAnalysisId,
+        },
+      });
+      expect(spyOnDynamoDbGet).toHaveBeenCalledTimes(1);
+      done();
+    });
   });
 
   it('calls batch.terminateJob() with correct parameters', (done: Callback) => {
@@ -1507,136 +1570,6 @@ describe('analyses.cancelJobs()', () => {
         reason,
       });
       expect(spyOnTerminateJob).toHaveBeenCalledTimes(3);
-      done();
-    });
-  });
-
-  it('calls callback without an error for a correct request', (done: Callback) => {
-    testMethod((err?: Error, data?: any) => {
-      expect(err).toBeFalsy();
-      expect(data).toBeUndefined();
-      done();
-    });
-  });
-
-  describe('calls callback immediately with an error if', () => {
-    let request: any;
-    let after: () => void;
-    beforeEach(() => {
-      request = fakeRequest();
-      after = () => {};
-    });
-    afterEach((done: Callback) => {
-      cancelJobs(request, null, (err?: Error) => {
-        expect(err).toBeTruthy();
-        after();
-        done();
-      });
-    });
-    describe('request', () => {
-      afterEach(() => {
-        after = () => {
-          expect(spyOnTerminateJob).not.toHaveBeenCalled();
-        };
-      });
-      it('is undefined', () => request = undefined);
-      it('is null', () => request = null);
-      it('jobIds is undefined', () => request.jobIds = undefined);
-      it('jobIds is null', () => request.jobIds = null);
-      it('jobIds is not an array', () => request.jobIds = {});
-    });
-    it('batch.terminateJob() produces an error', () => {
-      spyOnTerminateJob.and.returnValues(
-        fakeResolve(),
-        fakeReject('batch.terminateJob()'),
-        fakeResolve(),
-      );
-    });
-  });
-});
-
-describe('analyses.cancelExecution()', () => {
-  const fakePipelineId = uuid();
-  const fakeDatasetId1 = uuid();
-  const fakeDatasetId2 = uuid();
-  const fakeDate = new Date().toISOString();
-
-  const fakeRequest = () => ({
-    pathParameters: {
-      analysis_id: fakeAnalysisId,
-    },
-  });
-
-  const fakeDatasets = () => ({
-    Dataset_1: fakeDatasetId1,
-    Dataset_2: fakeDatasetId2,
-  });
-
-  const fakeUpdateResponse = () => ({
-    id: fakeAnalysisId,
-    pipeline_id: fakePipelineId,
-    created_at: fakeDate,
-    datasets: fakeDatasets(),
-    status: 'canceling',
-  });
-
-  const fakeResponse = () => ({
-    analysis_id: fakeAnalysisId,
-    pipeline_id: fakePipelineId,
-    datasets: fakeDatasets(),
-    status: 'canceling',
-  });
-
-  const testMethod = (callback: Callback) =>
-    cancelExecution(fakeRequest(), null, callback);
-
-  let spyOnValidate: jasmine.Spy;
-  let spyOnDynamoDbUpdate: jasmine.Spy;
-  let spyOnRespond: jasmine.Spy;
-  let spyOnRespondWithError: jasmine.Spy;
-
-  beforeEach(() => {
-    process.env[envNames.analysesTable] = fakeAnalysesTable;
-
-    spyOnValidate = spyOn(apig, 'validate')
-      .and.callThrough();
-    spyOnDynamoDbUpdate = spyOn(dynamodb, 'update')
-      .and.returnValue(fakeResolve({ Attributes: fakeUpdateResponse() }));
-    spyOnRespond = spyOn(apig, 'respond')
-      .and.callFake((callback: Callback) => callback());
-    spyOnRespondWithError = spyOn(apig, 'respondWithError')
-      .and.callFake((callback: Callback) => callback());
-  });
-
-  it('calls apig.validate() once with correct parameters', (done: Callback) => {
-    testMethod(() => {
-      expect(spyOnValidate).toHaveBeenCalledWith(fakeRequest(), 'DELETE', '/analyses/{analysis_id}/execution');
-      expect(spyOnValidate).toHaveBeenCalledTimes(1);
-      done();
-    });
-  });
-
-  it('calls dynamodb.update() once with correct parameters', (done: Callback) => {
-    testMethod(() => {
-      expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
-        TableName: fakeAnalysesTable,
-        Key: {
-          id: fakeAnalysisId,
-        },
-        UpdateExpression: 'set #s = :c',
-        ConditionExpression: '#s in (:s, :p, :r, :c)',
-        ExpressionAttributeNames: {
-          '#s': 'status',
-        },
-        ExpressionAttributeValues: {
-          ':s': 'submitted',
-          ':p': 'pending',
-          ':r': 'running',
-          ':c': 'canceling',
-        },
-        ReturnValues: 'ALL_NEW',
-      });
-      expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
       done();
     });
   });
@@ -1671,20 +1604,45 @@ describe('analyses.cancelExecution()', () => {
       err = new ApiError('validate()');
       spyOnValidate.and.returnValue(Promise.reject(err));
       after = () => {
-        expect(spyOnDynamoDbUpdate).not.toHaveBeenCalled();
+        expect(spyOnDynamoDbGet).not.toHaveBeenCalled();
       };
     });
 
-    it('dynamodb.update() responds with a generic error', () => {
-      err = Error('dynamodb.update()');
-      spyOnDynamoDbUpdate.and.returnValue(fakeReject(err));
+    describe('dynamodb.get()', () => {
+      let job_ids: any;
+      beforeEach(() => {
+        job_ids = undefined;
+        after = () => {
+          expect(spyOnTerminateJob).not.toHaveBeenCalled();
+        };
+      });
+      it('produces an error', () => {
+        err = Error('dynamodb.get()');
+        spyOnDynamoDbGet.and.returnValue(fakeReject(err));
+      });
+      describe('returns job_ids that is', () => {
+        let job_ids: any;
+        beforeEach(() => {
+          job_ids = undefined;
+        });
+        afterEach(() => {
+          const analysis = fakeAnalysis();
+          analysis.job_ids = job_ids;
+          spyOnDynamoDbGet.and.returnValue(fakeResolve({ Item: analysis }));
+          err = jasmine.objectContaining({ code: 409 });
+        });
+        it('undefined', () => job_ids = undefined);
+        it('not an array', () => job_ids = {});
+      });
     });
 
-    it('dynamodb.update() responds with ConditionalCheckFailedException', () => {
-      err = jasmine.objectContaining({ code: 409 });
-      const errUpdate = new ApiError('dynamodb.update()',
-        undefined, 'ConditionalCheckFailedException');
-      spyOnDynamoDbUpdate.and.returnValue(fakeReject(errUpdate));
+    it('batch.terminateJob() produces an error', () => {
+      err = Error('batch.terminateJob()');
+      spyOnTerminateJob.and.returnValues(
+        fakeResolve(),
+        fakeReject(err),
+        fakeResolve(),
+      );
     });
 
     it('apig.respond() throws an error', () => {

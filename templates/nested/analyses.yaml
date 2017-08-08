@@ -223,7 +223,7 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${BackendStack}-Analyses-CancelExecution
-      Handler: analyses.submitExecution
+      Handler: analyses.cancelExecution
       Timeout: 30
       Environment:
         Variables:
@@ -253,9 +253,13 @@ Resources:
             Version: 2012-10-17
             Statement:
               - Effect: Allow
-                Action: dynamodb:UpdateItem
+                Action: dynamodb:GetItem
                 Resource:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AnalysesTable}
+              - Effect: Allow
+                Action: batch:TerminateJob
+                Resource:
+                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/terminatejob
 
   CancelExecutionPermission:
     Type: AWS::Lambda::Permission
@@ -590,39 +594,6 @@ Resources:
                 Resource:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${AnalysesTable}
 
-  CancelJobs:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: analyses.cancelJobs
-      Timeout: 60
-      Runtime: nodejs6.10
-      Code:
-        S3Bucket: !Ref ArtifactsBucket
-        S3Key: !Ref LambdaPackage
-      Role: !GetAtt CancelJobsRole.Arn
-
-  CancelJobsRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: CancelJobsRole
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action: batch:TerminateJob
-                Resource:
-                  - !Sub arn:aws:batch:${AWS::Region}:${AWS::AccountId}:/v1/terminatejob
-
   ExecuteAnalysisRole:
     Type: AWS::IAM::Role
     Properties:
@@ -651,7 +622,6 @@ Resources:
                   - !GetAtt CheckJobsUpdated.Arn
                   - !GetAtt CalculateStatus.Arn
                   - !GetAtt UpdateStatus.Arn
-                  - !GetAtt CancelJobs.Arn
 
   ExecuteAnalysisStateMachine:
     Type: AWS::StepFunctions::StateMachine
@@ -750,17 +720,6 @@ Resources:
                     "Type": "Task",
                     "ResultPath": "$.error.Cause",
                     "Resource": "${UpdateStatus.Arn}",
-                    "Catch": [{
-                      "ErrorEquals": [ "ConditionalCheckFailedException" ],
-                      "ResultPath": "$.error",
-                      "Next": "CancelJobs"
-                    }],
-                    "Next": "CheckTerminated"
-                  },
-                  "CancelJobs": {
-                    "Type": "Task",
-                    "ResultPath": null,
-                    "Resource": "${CancelJobs.Arn}",
                     "Next": "CheckTerminated"
                   },
                   "CheckTerminated": {

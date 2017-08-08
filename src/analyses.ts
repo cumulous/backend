@@ -548,53 +548,35 @@ export const updateStatus = (
     });
 };
 
-export const cancelJobs = (request: { jobIds: string[] }, context: any, callback: Callback) => {
-  Promise.resolve()
-    .then(() => Promise.all(request.jobIds.map(jobId => batch.terminateJob({
-      jobId,
-      reason: 'Canceled by user',
-    }).promise())))
-    .then(() => callback())
-    .catch(callback);
-};
-
 export const cancelExecution = (request: Request, context: any, callback: Callback) => {
   validate(request, 'DELETE', '/analyses/{analysis_id}/execution')
-    .then(() => dynamodb.update({
-      TableName: process.env[envNames.analysesTable],
-      Key: {
-        id: request.pathParameters.analysis_id,
-      },
-      UpdateExpression: 'set #s = :c',
-      ConditionExpression: '#s in (:s, :p, :r, :c)',
-      ExpressionAttributeNames: {
-        '#s': 'status',
-      },
-      ExpressionAttributeValues: {
-        ':s': 'submitted',
-        ':p': 'pending',
-        ':r': 'running',
-        ':c': 'canceling',
-      },
-      ReturnValues: 'ALL_NEW',
-    }).promise())
-    .then(data => {
-      let { id, pipeline_id, datasets, status } = data.Attributes;
-      return {
-        analysis_id: id,
-        pipeline_id,
-        datasets,
-        status,
-      };
-    })
-    .then(execution => respond(callback, request, execution))
-    .catch(err => {
-      if (err.code === 'ConditionalCheckFailedException') {
-        err = new ApiError('Conflict', [
-          "Analysis must have 'submitted', 'pending', 'running', or 'canceling' " +
-          "status before it can be canceled",
-        ], 409);
-      }
-      respondWithError(callback, request, err);
-    });
+    .then(() => getAnalysis(request.pathParameters.analysis_id))
+    .then(data => cancelJobs(data.Item.job_ids)
+      .then(() => respond(callback, request, {
+        analysis_id: data.Item.id,
+        pipeline_id: data.Item.pipeline_id,
+        datasets: data.Item.datasets,
+        status: data.Item.status,
+      }))
+    )
+    .catch(err => respondWithError(callback, request, err));
+};
+
+const getAnalysis = (id: string) => {
+  return dynamodb.get({
+    TableName: process.env[envNames.analysesTable],
+    Key: {
+      id,
+    },
+  }).promise();
+}
+
+const cancelJobs = (jobIds: string[]) => {
+  if (!Array.isArray(jobIds)) {
+    throw new ApiError('Conflict', ['Unable to find jobs to be terminated'], 409);
+  }
+  return Promise.all(jobIds.map(jobId => batch.terminateJob({
+    jobId,
+    reason: 'Canceled by user',
+  }).promise()));
 };

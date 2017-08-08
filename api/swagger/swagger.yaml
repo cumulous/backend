@@ -708,7 +708,7 @@ paths:
         - $ref: '#/parameters/CompressionRequest'
       responses:
         200:
-          description: Properties of the canceled execution
+          description: Properties of the execution to be canceled
           schema:
             $ref: '#/definitions/AnalysisExecution'
       x-amazon-apigateway-integration:
@@ -1018,7 +1018,6 @@ definitions:
       - submitted
       - pending
       - running
-      - canceling
       - failing
       - failed
       - succeeded
