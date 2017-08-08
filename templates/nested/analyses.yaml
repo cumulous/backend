@@ -670,13 +670,13 @@ Resources:
                     "Type": "Task",
                     "ResultPath": "$.jobIds",
                     "Resource": "${SubmitJobs.Arn}",
-                    "Next": "DescribeOldJobs"
+                    "Next": "DescribeSubmittedJobs"
                   },
-                  "DescribeOldJobs": {
+                  "DescribeSubmittedJobs": {
                     "Type": "Task",
-                    "ResultPath": "$.oldJobs",
+                    "ResultPath": "$.jobs",
                     "Resource": "${DescribeJobs.Arn}",
-                    "Next": "DescribeJobs"
+                    "Next": "CalculateStatus"
                   },
                   "DescribeJobs": {
                     "Type": "Task",
