@@ -1059,6 +1059,8 @@ definitions:
         $ref: '#/definitions/PipelineDatasets'
       status:
         $ref: '#/definitions/AnalysisStatus'
+      error:
+        $ref: '#/definitions/AnalysisError'
   AnalysisJobStatuses:
     description: List of statuses of the jobs executed for an analysis
     type: array

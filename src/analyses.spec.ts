@@ -1478,7 +1478,8 @@ describe('analyses.cancelExecution()', () => {
   const fakeJobId2 = uuid();
   const fakeJobId3 = uuid();
   const fakeDate = new Date().toISOString();
-  const fakeStatus = 'running';
+  const fakeStatus = 'failing';
+  const fakeError = 'Terminated by user';
 
   const fakeJobIds = () => [fakeJobId1, fakeJobId2, fakeJobId3];
 
@@ -1500,6 +1501,7 @@ describe('analyses.cancelExecution()', () => {
     job_ids: fakeJobIds(),
     created_at: fakeDate,
     status: fakeStatus,
+    error: fakeError,
   });
 
   const fakeResponse = () => ({
@@ -1507,6 +1509,7 @@ describe('analyses.cancelExecution()', () => {
     pipeline_id: fakePipelineId,
     datasets: fakeDatasets(),
     status: fakeStatus,
+    error: fakeError,
   });
 
   const testMethod = (callback: Callback) =>

@@ -557,6 +557,7 @@ export const cancelExecution = (request: Request, context: any, callback: Callba
         pipeline_id: data.Item.pipeline_id,
         datasets: data.Item.datasets,
         status: data.Item.status,
+        error: data.Item.error,
       }))
     )
     .catch(err => respondWithError(callback, request, err));
