@@ -4,7 +4,7 @@ import * as request from 'request-promise-native';
 import * as aws from './aws';
 import { CloudFormationRequest, CloudFormationResponse,
          sendCloudFormationResponse, setupCustomResource,
-         s3, listObjects, hashObjects,
+         s3, listObjects, hashObjects, tagObjects,
          executeStateMachine, stepFunctions } from './aws';
 import { envNames } from './env';
 
@@ -485,6 +485,125 @@ describe('aws.hashObjects()', () => {
     it('hash.digest() throws an error', () => {
       err = Error('hash.digest()');
       spyOnDigestHash.and.throwError(err.message);
+    });
+  });
+});
+
+describe('aws.tagObjects()', () => {
+  const fakeBucket = 'fake-bucket';
+  const fakePrefix = 'fake-prefix/';
+
+  const fakeTagKey = (index: number) =>
+    'fake-tag-key-' + index;
+
+  const fakeTagValue = (index: number) =>
+    'fake-tag-value-' + index;
+
+  const fakeTag = (index: number) => ({
+    Key: fakeTagKey(index),
+    Value: fakeTagValue(index),
+  });
+
+  const fakeRequest = () => ({
+    Bucket: fakeBucket,
+    Prefix: fakePrefix,
+    Tags: [
+      fakeTag(1),
+      fakeTag(2),
+    ],
+  });
+
+  const testMethod = (callback: Callback) =>
+    tagObjects(fakeRequest(), null, callback);
+
+  const fakeKey = (index: number) =>
+    fakePrefix + 'fake-object-' + index;
+
+  const fakeObject = (index: number) => ({
+    Key: fakeKey(index),
+  });
+
+  const fakeObjects = () => [
+    fakeObject(1),
+    fakeObject(2),
+  ];
+
+  let spyOnListObjects: jasmine.Spy;
+  let spyOnPutObjectTagging: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnListObjects = spyOn(aws, 'listObjects')
+      .and.returnValue(Promise.resolve((fakeObjects())));
+    spyOnPutObjectTagging = spyOn(s3, 'putObjectTagging')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls aws.listObjects() with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnListObjects).toHaveBeenCalledWith(fakeRequest());
+      expect(spyOnListObjects).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls s3.putObjectTagging() for each object', (done: Callback) => {
+    testMethod(() => {
+      const fakeTagging = () => ({
+        TagSet: [{
+          Key: fakeTagKey(1),
+          Value: fakeTagValue(1),
+        }, {
+          Key: fakeTagKey(2),
+          Value: fakeTagValue(2),
+        }],
+      });
+      expect(spyOnPutObjectTagging).toHaveBeenCalledWith({
+        Bucket: fakeBucket,
+        Key: fakeKey(1),
+        Tagging: fakeTagging(),
+      });
+      expect(spyOnPutObjectTagging).toHaveBeenCalledWith({
+        Bucket: fakeBucket,
+        Key: fakeKey(2),
+        Tagging: fakeTagging(),
+      });
+      expect(spyOnPutObjectTagging).toHaveBeenCalledTimes(2);
+      done();
+    });
+  });
+
+  it('calls callback with correct parameters', (done: Callback) => {
+    testMethod((err?: Error, data?: any) => {
+      expect(err).toBeFalsy();
+      expect(data).toBeFalsy();
+      done();
+    });
+  });
+
+  describe('responds immediately with an error if', () => {
+    let err: any;
+    let after: () => void;
+    beforeEach(() => {
+      err = jasmine.any(Error);
+      after = () => {};
+    });
+    afterEach((done: Callback) => {
+      testMethod(e => {
+        expect(e).toEqual(err);
+        after();
+        done();
+      });
+    });
+    it('aws.listObjects() produces the error', () => {
+      err = Error('aws.listObjects()');
+      spyOnListObjects.and.returnValue(Promise.reject(err));
+      after = () => {
+        expect(spyOnPutObjectTagging).not.toHaveBeenCalled();
+      };
+    });
+    it('s3.putObjectTagging() produces the error', () => {
+      err = Error('s3.putObjectTagging()');
+      spyOnPutObjectTagging.and.returnValues(fakeResolve(), fakeReject(err));
     });
   });
 });

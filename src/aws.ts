@@ -154,3 +154,19 @@ export const hashObjects = (request: S3.ListObjectsV2Request, context: any, call
     })
     .catch(callback);
 };
+
+export const tagObjects = (
+      request: S3.ListObjectsV2Request & { Tags: S3.Tag[] },
+      context: any, callback: Callback
+    ) => {
+  listObjects(request)
+    .then(objects => Promise.all(objects.map(obj => s3.putObjectTagging({
+      Bucket: request.Bucket,
+      Key: obj.Key,
+      Tagging: {
+        TagSet: request.Tags,
+      },
+    }).promise())))
+    .then(() => callback())
+    .catch(callback);
+};
