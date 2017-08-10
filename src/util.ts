@@ -1,4 +1,7 @@
+import * as assert from 'assert';
 import { Callback } from './types';
+
+export const uuidNil = '00000000-0000-0000-0000-000000000000';
 
 export const assertNonEmptyArray = (array: any[], name: string) => {
   if (!Array.isArray(array) || array.length === 0) {
@@ -19,4 +22,15 @@ export function promise2<Arg1, Arg2, Data>
       err ? reject(err) : resolve(data)));
 };
 
-export const uuidNil = '00000000-0000-0000-0000-000000000000';
+export const testEqual = (request: { obj: any, obj2: any }, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => assert.deepStrictEqual(request.obj, request.obj2))
+    .then(() => callback(null, true))
+    .catch(err => {
+      if (err.name === 'AssertionError') {
+        return callback(null, false);
+      }
+      throw err;
+    })
+    .catch(callback);
+};
