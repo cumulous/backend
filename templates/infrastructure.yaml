@@ -246,7 +246,6 @@ Resources:
   GetIPSetDescriptors:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: GetIPSetDescriptors
       Handler: index.handler
       Runtime: nodejs6.10
       Role: !GetAtt LambdaBasicExecutionRole.Arn
