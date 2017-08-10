@@ -86,7 +86,7 @@ Parameters:
     Type: Number
     MinValue: 1
     MaxValue: 100
-    Default: 25
+    Default: 40
   Auth0Domain:
     Description: "Your Auth0 domain name (*)"
     Type: String
