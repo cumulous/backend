@@ -155,6 +155,16 @@ Resources:
         WebDomain: !Ref WebDomain
         ApiDomain: !Ref ApiDomain
 
+  Data:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/data.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        ArtifactsBucket: !Ref ArtifactsBucket
+        DataBucket: !Ref DataBucket
+        LambdaPackage: !Ref LambdaPackage
+
   Datasets:
     Type: AWS::CloudFormation::Stack
     Properties:

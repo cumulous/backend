@@ -1,0 +1,185 @@
+Parameters:
+  BackendStack:
+    Type: String
+  ArtifactsBucket:
+    Type: String
+  DataBucket:
+    Type: String
+  LambdaPackage:
+    Type: String
+
+Resources:
+  HashObjects:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: s3.hashObjects
+      MemorySize: 1024
+      Timeout: 60
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt HashObjectsRole.Arn
+
+  HashObjectsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: HashObjectsRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${DataBucket}
+
+  TagObjects:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: s3.tagObjects
+      MemorySize: 1024
+      Timeout: 60
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt TagObjectsRole.Arn
+
+  TagObjectsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: TagObjectsRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource:
+                  - !Sub arn:aws:s3:::${DataBucket}
+              - Effect: Allow
+                Action:
+                  - s3:PutObjectTagging
+                Resource:
+                  - !Sub arn:aws:s3:::${DataBucket}/*
+
+  CompareHashes:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: util.testEqual
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  TagDataExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StartAnalysisRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt HashObjects.Arn
+                  - !GetAtt CompareHashes.Arn
+                  - !GetAtt TagObjects.Arn
+
+  TagDataStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt TagDataExecutionRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "HashObjects",
+          "States": {
+            "HashObjects": {
+              "Type": "Task",
+              "ResultPath": "$.obj2",
+              "Resource": "${HashObjects.Arn}",
+              "Next": "CompareHashes"
+            },
+            "CompareHashes": {
+              "Type": "Task",
+              "ResultPath": "$.stable",
+              "Resource": "${CompareHashes.Arn}",
+              "Next": "CheckHashIsStable"
+            },
+            "CheckHashIsStable": {
+              "Type": "Choice",
+              "Choices": [{
+                "Variable": "$.stable",
+                "BooleanEquals": true,
+                "Next": "TagObjects"
+              }],
+              "Default": "PassHash"
+            },
+            "PassHash": {
+              "Type": "Pass",
+              "InputPath": "$.obj2",
+              "ResultPath": "$.obj",
+              "Next": "Wait"
+            },
+            "Wait": {
+              "Type": "Wait",
+              "Seconds": 60,
+              "Next": "HashObjects"
+            },
+            "TagObjects": {
+              "Type": "Task",
+              "Resource": "${TagObjects.Arn}",
+              "Next": "Succeed"
+            },
+            "Succeed": {
+              "Type": "Succeed"
+            }
+          }
+        }
+
+Outputs:
+  TagDataStateMachine:
+    Value: !Ref TagDataStateMachine
