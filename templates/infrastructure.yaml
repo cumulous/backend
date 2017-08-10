@@ -70,11 +70,6 @@ Parameters:
       ^(1?\\d{0,2}|2[0-4]\\d|25[0-5])(\\.(1?\\d{0,2}|2[0-4]\\d|25[0-5])){3}/([1-2]?[0-9]|3[0-2])\
       (,(1?\\d{0,2}|2[0-4]\\d|25[0-5])(\\.(1?\\d{0,2}|2[0-4]\\d|25[0-5])){3}/([1-2]?[0-9]|3[0-2]))*$"
     Default: 0.0.0.0/0
-  SearchDomainName:
-    Description: "The name of the Cloudsearch domain to reuse when re-creating this template"
-    Type: String
-    AllowedPattern: ^([a-z][a-z\d-]{2,27})?$
-    Default: ''
   DataBucketName:
     Description: "The name of the data bucket to reuse when re-creating this template"
     Type: String
@@ -152,11 +147,6 @@ Metadata:
           - WebFirewallRanges
       -
         Label:
-          default: "Databases"
-        Parameters:
-          - SearchDomainName
-      -
-        Label:
           default: "Data"
         Parameters:
           - DataBucketName
@@ -179,7 +169,6 @@ Metadata:
 Conditions:
   CreateNotification: !Not [!Equals [!Ref NotificationEmail, '']]
   CreateHostedZone: !Equals [!Ref HostedZone, '']
-  CreateSearchDomain: !Equals [!Ref SearchDomainName, '']
   CreateDataBucket: !Equals [!Ref DataBucketName, '']
 
 Resources:
@@ -281,16 +270,13 @@ Resources:
 
   SearchDomain:
     Type: AWS::CloudFormation::CustomResource
-    Condition: CreateSearchDomain
     DeletionPolicy: Retain
     Properties:
       ServiceToken: !GetAtt SetupSearchDomain.Arn
 
   SetupSearchDomain:
     Type: AWS::Lambda::Function
-    Condition: CreateSearchDomain
     Properties:
-      FunctionName: !Sub ${AWS::StackName}-SetupSearchDomain
       Handler: index.handler
       Runtime: nodejs6.10
       Role: !GetAtt SetupSearchDomainRole.Arn
@@ -497,10 +483,7 @@ Resources:
           - Name: AUTH0_CREATE_CLIENT_ROLE_ARN
             Value: !GetAtt Auth0CreateClientRole.Arn
           - Name: SEARCH_DOMAIN
-            Value: !If
-              - CreateSearchDomain
-              - !GetAtt SearchDomain.Name
-              - !Ref SearchDomainName
+            Value: !GetAtt SearchDomain.Name
       Artifacts:
         Type: CODEPIPELINE
       Source:
@@ -571,10 +554,7 @@ Resources:
           - Name: AUTH0_CREATE_CLIENT_ROLE_ARN
             Value: !GetAtt Auth0CreateClientRole.Arn
           - Name: SEARCH_DOMAIN
-            Value: !If
-              - CreateSearchDomain
-              - !GetAtt SearchDomain.Name
-              - !Ref SearchDomainName
+            Value: !GetAtt SearchDomain.Name
       Artifacts:
         Type: CODEPIPELINE
       Source:
@@ -737,10 +717,7 @@ Resources:
                   - cloudsearch:CreateDomain
                   - cloudsearch:DescribeDomains
                 Resource:
-                  - !If
-                    - CreateSearchDomain
-                    - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/search-*
-                    - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomainName}
+                  - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/search-*
 
   BackendPipelineRole:
     Type: AWS::IAM::Role
@@ -1873,10 +1850,7 @@ Outputs:
   FrontendPipelineUrl:
     Value: !Sub 'https://console.aws.amazon.com/codepipeline/home?region=${AWS::Region}#/view/${FrontendPipeline}'
   SearchDomain:
-    Value: !If
-      - CreateSearchDomain
-      - !GetAtt SearchDomain.Name
-      - !Ref SearchDomainName
+    Value: !GetAtt SearchDomain.Name
   DataBucket:
     Value: !If
       - CreateDataBucket
