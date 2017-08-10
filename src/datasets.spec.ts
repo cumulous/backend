@@ -3,7 +3,7 @@ import * as uuid from 'uuid';
 
 import * as apig from './apig';
 import { ajv, ApiError, Request } from './apig';
-import { dynamodb, s3, sts } from './aws';
+import { dynamodb, stepFunctions, sts } from './aws';
 import { create, CredentialsAction, list,
          requestCredentials, setStorage, StorageType } from './datasets';
 import { envNames } from './env';
@@ -413,7 +413,7 @@ describe('datasets.requestCredentials()', () => {
 });
 
 describe('datasets.setStorage()', () => {
-  const fakeContinuationToken = 'fake-continuation-token';
+  const fakeTagDataStateMachine = 'fake-tag-data-state-machine';
 
   const fakeBody = (type: StorageType) => ({
     type,
@@ -430,11 +430,6 @@ describe('datasets.setStorage()', () => {
     project_id: fakeProjectId,
     status,
   });
-  const fakeObjects = (index: number) => [{
-    Key: fakeDatasetId + '/fake-object-A-' + index,
-  }, {
-    Key: fakeDatasetId + '/fake-object-B-' + index,
-  }];
   const fakeResponse = (type: StorageType) => ({
     id: fakeDatasetId,
     type,
@@ -445,14 +440,14 @@ describe('datasets.setStorage()', () => {
 
   let spyOnValidate: jasmine.Spy;
   let spyOnDynamoDbUpdate: jasmine.Spy;
-  let spyOnListObjects: jasmine.Spy;
-  let spyOnPutObjectTagging: jasmine.Spy;
+  let spyOnStartExecution: jasmine.Spy;
   let spyOnRespond: jasmine.Spy;
   let spyOnRespondWithError: jasmine.Spy;
 
   beforeEach(() => {
     process.env[envNames.datasetsTable] = fakeDatasetsTable;
     process.env[envNames.dataBucket] = fakeDataBucket;
+    process.env[envNames.stateMachine] = fakeTagDataStateMachine;
 
     spyOnValidate = spyOn(apig, 'validate')
       .and.callThrough();
@@ -460,15 +455,7 @@ describe('datasets.setStorage()', () => {
       .and.returnValue(fakeResolve({
         Attributes: fakeAttributes('uploading'),
       }));
-    spyOnListObjects = spyOn(s3, 'listObjectsV2')
-      .and.returnValues(fakeResolve({
-        Contents: fakeObjects(1),
-        NextContinuationToken: fakeContinuationToken,
-        IsTruncated: true,
-      }), fakeResolve({
-        Contents: fakeObjects(2),
-      }));
-    spyOnPutObjectTagging = spyOn(s3, 'putObjectTagging')
+    spyOnStartExecution = spyOn(stepFunctions, 'startExecution')
       .and.returnValue(fakeResolve());
     spyOnRespond = spyOn(apig, 'respond')
       .and.callFake((callback: Callback) => callback());
@@ -508,60 +495,21 @@ describe('datasets.setStorage()', () => {
     });
   });
 
-  it('calls s3.listObjectsV2() multiple times with correct parameters for "available" type',
+  it('calls stepFunctions.startExecution() once with correct parameters for "available" type',
       (done: Callback) => {
     testMethod('available', () => {
-      expect(spyOnListObjects).toHaveBeenCalledWith({
-        Bucket: fakeDataBucket,
-        Prefix: fakeDatasetId + '-d/',
-        ContinuationToken: fakeContinuationToken,
-      });
-      expect(spyOnListObjects).toHaveBeenCalledWith({
-        Bucket: fakeDataBucket,
-        Prefix: fakeDatasetId + '-d/',
-      });
-      expect(spyOnListObjects).toHaveBeenCalledTimes(2);
-      done();
-    });
-  });
-
-  it('calls s3.putObjectTagging() for each object', (done: Callback) => {
-    testMethod('available', () => {
-      fakeObjects(1).concat(fakeObjects(2)).map(obj => {
-        expect(spyOnPutObjectTagging).toHaveBeenCalledWith({
+      expect(spyOnStartExecution).toHaveBeenCalledWith({
+        stateMachineArn: fakeTagDataStateMachine,
+        input: stringify({
           Bucket: fakeDataBucket,
-          Key: obj.Key,
-          Tagging: {
-            TagSet: [{
-              Key: 'project_id',
-              Value: fakeProjectId,
-            }],
-          },
-        });
+          Prefix: fakeDatasetId + '-d/',
+          Tags: [{
+            Key: 'project_id',
+            Value: fakeProjectId,
+          }],
+        }),
       });
-      expect(spyOnPutObjectTagging).toHaveBeenCalledTimes(4);
-      done();
-    });
-  });
-
-  it('resets dataset status to "uploading" if no files were found for "available" type',
-      (done: Callback) => {
-    spyOnListObjects.and.returnValue(fakeResolve({ Contents: [] }));
-    testMethod('available', () => {
-      expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
-        TableName: fakeDatasetsTable,
-        Key: {
-          id: fakeDatasetId,
-        },
-        UpdateExpression: 'set #s = :u',
-        ExpressionAttributeNames: {
-          '#s': 'status',
-        },
-        ExpressionAttributeValues: {
-          ':u': 'uploading',
-        },
-      });
-      expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(2);
+      expect(spyOnStartExecution).toHaveBeenCalledTimes(1);
       done();
     });
   });
@@ -598,7 +546,7 @@ describe('datasets.setStorage()', () => {
         (done: Callback) => {
       status = 'available';
       test(() => {
-        expect(spyOnListObjects).not.toHaveBeenCalled();
+        expect(spyOnStartExecution).not.toHaveBeenCalled();
       }, done);
     });
   });
@@ -632,7 +580,7 @@ describe('datasets.setStorage()', () => {
       err = Error('dynamodb.update()');
       spyOnDynamoDbUpdate.and.returnValue(fakeReject(err));
       testError(() => {
-        expect(spyOnListObjects).not.toHaveBeenCalled();
+        expect(spyOnStartExecution).not.toHaveBeenCalled();
       }, done);
     });
 
@@ -643,7 +591,7 @@ describe('datasets.setStorage()', () => {
       err = jasmine.objectContaining({ code: 409 });
       spyOnDynamoDbUpdate.and.returnValue(fakeReject(errUpdate));
       testError(() => {
-        expect(spyOnListObjects).not.toHaveBeenCalled();
+        expect(spyOnStartExecution).not.toHaveBeenCalled();
       }, done);
     });
 
@@ -654,46 +602,14 @@ describe('datasets.setStorage()', () => {
       });
       type = 'archived';
       testError(() => {
-        expect(spyOnListObjects).not.toHaveBeenCalled();
+        expect(spyOnStartExecution).not.toHaveBeenCalled();
       }, done);
     });
 
-    it('first s3.listObjectsV2() responds with an error', (done: Callback) => {
-      err = Error('s3.listObjectsV2() 1');
-      spyOnListObjects.and.returnValue(fakeReject(err));
-      testError(() => {
-        expect(spyOnPutObjectTagging).not.toHaveBeenCalled();
-      }, done);
-    });
-
-    it('next s3.listObjectsV2() responds with an error', (done: Callback) => {
-      err = Error('s3.listObjectsV2() 2');
-      spyOnListObjects.and.returnValues(fakeResolve({
-        Contents: fakeObjects(1),
-        NextContinuationToken: fakeContinuationToken,
-        IsTruncated: true,
-      }), fakeReject(err));
-      testError(() => {
-        expect(spyOnPutObjectTagging).not.toHaveBeenCalled();
-      }, done);
-    });
-
-    it('next s3.listObjectsV2() produces an empty list', (done: Callback) => {
-      err = jasmine.objectContaining({ code: 409 });
-      spyOnListObjects.and.returnValue(fakeResolve({ Contents: [] }));
-      testError(() => {
-        expect(spyOnPutObjectTagging).not.toHaveBeenCalled();
-        expect(spyOnRespond).not.toHaveBeenCalled();
-      }, done);
-    });
-
-    it('at least one of s3.putObjectTagging() responds with an error', (done: Callback) => {
-      err = Error('s3.putObjectTagging()');
-      spyOnPutObjectTagging.and.returnValues(
-        fakeResolve(), fakeReject(err), fakeResolve(), fakeResolve());
-      testError(() => {
-        expect(spyOnRespond).not.toHaveBeenCalled();
-      }, done);
+    it('stepFunctions.startExecution() responds with an error', (done: Callback) => {
+      err = Error('stepFunctions.startExecution()');
+      spyOnStartExecution.and.returnValue(fakeReject(err));
+      testError(() => {}, done);
     });
 
     it('apig.respond() throws an error', (done: Callback) => {

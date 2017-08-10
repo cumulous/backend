@@ -21,6 +21,8 @@ Parameters:
     Type: String
   SearchStackSuffix:
     Type: String
+  TagDataStateMachine:
+    Type: String
 
 Mappings:
   StackMap:
@@ -247,6 +249,7 @@ Resources:
         Variables:
           DATASETS_TABLE: !Ref DatasetsTable
           DATA_BUCKET: !Ref DataBucket
+          STATE_MACHINE: !Ref TagDataStateMachine
           WEB_DOMAIN: !Ref WebDomain
       Runtime: nodejs6.10
       Code:
@@ -273,19 +276,13 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - s3:ListBucket
-                Resource:
-                  - !Sub arn:aws:s3:::${DataBucket}
-              - Effect: Allow
-                Action:
-                  - s3:PutObjectTagging
-                Resource:
-                  - !Sub arn:aws:s3:::${DataBucket}/*-d/*
-              - Effect: Allow
-                Action:
                   - dynamodb:UpdateItem
                 Resource:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DatasetsTable}
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref TagDataStateMachine
 
   SetDatasetStoragePermission:
     Type: AWS::Lambda::Permission

@@ -3,7 +3,7 @@ import * as stringify from 'json-stable-stringify';
 import { v4 as uuid } from 'uuid';
 
 import { ApiError, Request, respond, respondWithError, validate } from './apig';
-import { dynamodb, s3, sts } from './aws';
+import { dynamodb, stepFunctions, sts } from './aws';
 import { envNames } from './env';
 import { query } from './search';
 import { Callback } from './types';
@@ -124,9 +124,8 @@ export type StorageType = 'available' | 'archived';
 export const setStorage = (request: Request, context: any, callback: Callback) => {
   validate(request, 'PUT', '/datasets/{dataset_id}/storage')
     .then(() => setStorageType(request.pathParameters.dataset_id, request.body.type))
-    .then(dataset => dataset.status === 'available' ? null : listObjects(dataset.id)
-      .then(keys => checkEmptyObjectList(keys, dataset.id))
-      .then(keys => tagObjects(keys, dataset.project_id)))
+    .then(dataset => dataset.status === 'available' ? null :
+      tagObjects(dataset.id, dataset.project_id))
     .then(() => respond(callback, request, {
       id: request.pathParameters.dataset_id,
       type: request.body.type,
@@ -165,53 +164,16 @@ const setStorageType = (id: string, type: StorageType) => {
   }
 };
 
-const listObjects = (id: string, token?: string): Promise<string[]> => {
-  return s3.listObjectsV2(Object.assign({
-    Bucket: process.env[envNames.dataBucket],
-    Prefix: `${id}-d/`,
-  }, token == null ? {} : {
-    ContinuationToken: token,
-  })).promise()
-    .then(data => {
-      const keys = data.Contents.map(obj => obj.Key);
-      if (data.IsTruncated) {
-        return listObjects(id, data.NextContinuationToken)
-          .then(nextKeys => keys.concat(nextKeys));
-      } else {
-        return keys;
-      }
-    });
-};
-
-const checkEmptyObjectList = (keys: string[], id: string) => {
-  return keys.length > 0 ? keys :
-    dynamodb.update({
-      TableName: process.env[envNames.datasetsTable],
-      Key: {
-        id,
-      },
-      UpdateExpression: 'set #s = :u',
-      ExpressionAttributeNames: {
-        '#s': 'status',
-      },
-      ExpressionAttributeValues: {
-        ':u': 'uploading',
-      },
-    }).promise()
-      .then(() => {
-        throw new ApiError('Conflict', ["Empty datasets cannot be made 'available'"], 409);
-      }) as Promise<string[]>;
-};
-
-const tagObjects = (keys: string[], project_id: string) => {
-  return Promise.all(keys.map(key => s3.putObjectTagging({
-    Bucket: process.env[envNames.dataBucket],
-    Key: key,
-    Tagging: {
-      TagSet: [{
+const tagObjects = (dataset_id: string, project_id: string) => {
+  return stepFunctions.startExecution({
+    stateMachineArn: process.env[envNames.stateMachine],
+    input: stringify({
+      Bucket: process.env[envNames.dataBucket],
+      Prefix: `${dataset_id}-d/`,
+      Tags: [{
         Key: 'project_id',
         Value: project_id,
       }],
-    },
-  }).promise()));
+    }),
+  }).promise();
 };

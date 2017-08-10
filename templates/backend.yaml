@@ -181,6 +181,7 @@ Resources:
         SearchUploadDocumentsFunction: !GetAtt Search.Outputs.UploadDocumentsFunction
         SearchQueryEndpoint: !GetAtt Search.Outputs.QueryEndpoint
         SearchStackSuffix: !GetAtt Search.Outputs.StackSuffix
+        TagDataStateMachine: !GetAtt Data.Outputs.TagDataStateMachine
 
   Pipelines:
     Type: AWS::CloudFormation::Stack
