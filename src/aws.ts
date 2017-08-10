@@ -1,5 +1,6 @@
 import { APIGateway, Batch, CloudFront, CloudSearch, CloudWatchEvents,
          DynamoDB, EC2, IAM, S3, SSM, StepFunctions, STS } from 'aws-sdk';
+import { createHash } from 'crypto';
 import * as stringify from 'json-stable-stringify';
 import { put } from 'request-promise-native';
 
@@ -139,4 +140,17 @@ export const listObjects = (request: S3.ListObjectsV2Request): Promise<S3.Object
         data.Contents.concat(nextData)
       )
     );
+};
+
+export const hashObjects = (request: S3.ListObjectsV2Request, context: any, callback: Callback) => {
+  listObjects(request)
+    .then(objects => {
+      const hash = createHash('md5');
+      objects.forEach(obj => {
+        hash.update(obj.Key);
+        hash.update(obj.ETag);
+      });
+      callback(null, hash.digest('hex'));
+    })
+    .catch(callback);
 };

@@ -1,9 +1,11 @@
+import * as crypto from 'crypto';
 import * as request from 'request-promise-native';
 
 import * as aws from './aws';
 import { CloudFormationRequest, CloudFormationResponse,
-         sendCloudFormationResponse, deleteS3Object, executeStateMachine,
-         s3, listObjects, setupCustomResource, stepFunctions } from './aws';
+         sendCloudFormationResponse, setupCustomResource,
+         s3, listObjects, hashObjects,
+         executeStateMachine, stepFunctions } from './aws';
 import { envNames } from './env';
 
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
@@ -379,6 +381,110 @@ describe('aws.listObjects()', () => {
         fakeReject(err),
       );
       calls = 3;
+    });
+  });
+});
+
+describe('aws.hashObjects()', () => {
+  const fakeBucket = 'fake-bucket';
+  const fakePrefix = 'fake-prefix/';
+
+  const fakeKey = (index: number) =>
+    fakePrefix + 'fake-object-' + index;
+
+  const fakeETag = (index: number) =>
+    'fake-etag-' + index;
+
+  const fakeObject = (index: number) => ({
+    Key: fakeKey(index),
+    ETag: fakeETag(index),
+  });
+
+  const fakeObjects = () => [
+    fakeObject(1),
+    fakeObject(2),
+  ];
+
+  const fakeRequest = () => ({
+    Bucket: fakeBucket,
+    Prefix: fakePrefix,
+  });
+
+  const testMethod = (callback: Callback) =>
+    hashObjects(fakeRequest(), null, callback);
+
+  let spyOnListObjects: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnListObjects = spyOn(aws, 'listObjects')
+      .and.returnValue(Promise.resolve((fakeObjects())));
+  });
+
+  it('calls aws.listObjects() with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnListObjects).toHaveBeenCalledWith(fakeRequest());
+      expect(spyOnListObjects).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls callback with correct parameters', (done: Callback) => {
+    testMethod((err?: Error, data?: any) => {
+      const hash = crypto.createHash('md5');
+      hash.update(fakeKey(1));
+      hash.update(fakeETag(1));
+      hash.update(fakeKey(2));
+      hash.update(fakeETag(2));
+      expect(err).toBeFalsy();
+      expect(data).toEqual(hash.digest('hex'));
+      done();
+    });
+  });
+
+  describe('returns immediately with an error if', () => {
+    let err: any;
+    let after: () => void;
+
+    let spyOnCreateHash: jasmine.Spy;
+    let spyOnUpdateHash: jasmine.Spy;
+    let spyOnDigestHash: jasmine.Spy;
+
+    beforeEach(() => {
+      err = jasmine.any(Error);
+      after = () => {};
+
+      const hash = crypto.createHash('md5');
+      spyOnCreateHash = spyOn(crypto, 'createHash')
+        .and.returnValue(hash);
+      spyOnUpdateHash = spyOn(hash, 'update')
+        .and.callThrough();
+      spyOnDigestHash = spyOn(hash, 'digest')
+        .and.callThrough();
+    });
+    afterEach((done: Callback) => {
+      testMethod(e => {
+        expect(e).toEqual(err);
+        after();
+        done();
+      });
+    });
+    it('aws.listObjects() responds with the error', () => {
+      err = Error('aws.listObjects()');
+      spyOnListObjects.and.returnValue(Promise.reject(err));
+      after = () => {
+        expect(spyOnCreateHash).not.toHaveBeenCalled();
+      };
+    });
+    it('hash.update() throws an error', () => {
+      err = Error('hash.update()');
+      spyOnUpdateHash.and.throwError(err.message);
+      after = () => {
+        expect(spyOnDigestHash).not.toHaveBeenCalled();
+      };
+    });
+    it('hash.digest() throws an error', () => {
+      err = Error('hash.digest()');
+      spyOnDigestHash.and.throwError(err.message);
     });
   });
 });
