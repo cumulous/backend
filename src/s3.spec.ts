@@ -100,6 +100,7 @@ describe('s3.listAllObjects()', () => {
   const fakeRequest = () => ({
     Bucket: fakeBucket,
     Prefix: fakePrefix,
+    Extra: 'property',
   });
 
   const testMethod = () =>
@@ -164,39 +165,54 @@ describe('s3.listAllObjects()', () => {
     });
   });
 
-  describe('responds immediately with an error if s3.listObjectsV2() produces the error', () => {
-    const err = Error('s3.listObjectsV2()');
+  describe('responds immediately with an error if', () => {
+    let request: any;
+    let err: any;
     let calls: number;
+    beforeEach(() => {
+      request = fakeRequest();
+      err = jasmine.any(Error);
+    });
     afterEach((done: Callback) => {
-      testMethod().catch(e => {
+      listAllObjects(request).catch(e => {
         expect(e).toEqual(err);
         expect(spyOnListAllObjects).toHaveBeenCalledTimes(calls);
         done();
       });
     });
-    it('in the initial call', () => {
-      spyOnListAllObjects.and.returnValues(
-        fakeReject(err),
-        fakeResolve(fakeListResponse(2)),
-        fakeResolve(fakeListResponse(3, false)),
-      );
-      calls = 1;
+    describe('request is', () => {
+      beforeEach(() => calls = 0);
+      it('undefined', () => request = undefined);
+      it('null', () => request = null);
     });
-    it('in a subsequent call', () => {
-      spyOnListAllObjects.and.returnValues(
-        fakeResolve(fakeListResponse(1)),
-        fakeReject(err),
-        fakeResolve(fakeListResponse(3, false)),
-      );
-      calls = 2;
-    });
-    it('in the last call', () => {
-      spyOnListAllObjects.and.returnValues(
-        fakeResolve(fakeListResponse(1)),
-        fakeResolve(fakeListResponse(2)),
-        fakeReject(err),
-      );
-      calls = 3;
+    describe('s3.listObjectsV2() produces the error', () => {
+      beforeEach(() => {
+        err = Error('s3.listObjectsV2()');
+      });
+      it('in the initial call', () => {
+        spyOnListAllObjects.and.returnValues(
+          fakeReject(err),
+          fakeResolve(fakeListResponse(2)),
+          fakeResolve(fakeListResponse(3, false)),
+        );
+        calls = 1;
+      });
+      it('in a subsequent call', () => {
+        spyOnListAllObjects.and.returnValues(
+          fakeResolve(fakeListResponse(1)),
+          fakeReject(err),
+          fakeResolve(fakeListResponse(3, false)),
+        );
+        calls = 2;
+      });
+      it('in the last call', () => {
+        spyOnListAllObjects.and.returnValues(
+          fakeResolve(fakeListResponse(1)),
+          fakeResolve(fakeListResponse(2)),
+          fakeReject(err),
+        );
+        calls = 3;
+      });
     });
   });
 });

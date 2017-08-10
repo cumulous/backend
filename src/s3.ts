@@ -53,7 +53,13 @@ export const deleteObject = (
 };
 
 export const listAllObjects = (request: S3.ListObjectsV2Request): Promise<S3.Object[]> => {
-  return s3.listObjectsV2(request).promise()
+  return Promise.resolve()
+    .then(() => s3.listObjectsV2(Object.assign({
+      Bucket: request.Bucket,
+      Prefix: request.Prefix,
+    }, request.ContinuationToken == null ? {} : {
+      ContinuationToken: request.ContinuationToken,
+    })).promise())
     .then(data => !data.IsTruncated ? data.Contents :
       listAllObjects({
         Bucket: request.Bucket,
