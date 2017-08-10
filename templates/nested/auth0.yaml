@@ -91,7 +91,7 @@ Resources:
   DeleteAuth0ManagementSecret:
     Type: AWS::Lambda::Function
     Properties:
-      Handler: aws.deleteS3Object
+      Handler: s3.deleteObject
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
@@ -334,7 +334,7 @@ Resources:
   StoreAuth0Config:
     Type: AWS::Lambda::Function
     Properties:
-      Handler: aws.putS3Object
+      Handler: s3.putObject
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
@@ -366,7 +366,7 @@ Resources:
   RetrieveAuth0Config:
     Type: AWS::Lambda::Function
     Properties:
-      Handler: aws.getS3Object
+      Handler: s3.getObject
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket

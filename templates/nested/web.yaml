@@ -547,7 +547,7 @@ Resources:
     Type: AWS::Lambda::Function
     Condition: SetupWebSigningKeyPair
     Properties:
-      Handler: aws.deleteS3Object
+      Handler: s3.deleteObject
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket
