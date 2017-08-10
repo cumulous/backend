@@ -38,7 +38,7 @@ const setAnalyticsConfig = (accountId: string, bucketName: string, projectId: st
       Id: projectId,
       Filter: {
         Tag: {
-          Key: 'project_id',
+          Key: 'ProjectId',
           Value: projectId,
         },
       },

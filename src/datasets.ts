@@ -171,7 +171,7 @@ const tagObjects = (dataset_id: string, project_id: string) => {
       Bucket: process.env[envNames.dataBucket],
       Prefix: `${dataset_id}-d/`,
       Tags: [{
-        Key: 'project_id',
+        Key: 'ProjectId',
         Value: project_id,
       }],
     }),

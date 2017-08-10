@@ -97,7 +97,7 @@ describe('projects.create()', () => {
           Id: fakeProjectId,
           Filter: {
             Tag: {
-              Key: 'project_id',
+              Key: 'ProjectId',
               Value: fakeProjectId,
             },
           },

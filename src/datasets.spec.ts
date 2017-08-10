@@ -504,7 +504,7 @@ describe('datasets.setStorage()', () => {
           Bucket: fakeDataBucket,
           Prefix: fakeDatasetId + '-d/',
           Tags: [{
-            Key: 'project_id',
+            Key: 'ProjectId',
             Value: fakeProjectId,
           }],
         }),
