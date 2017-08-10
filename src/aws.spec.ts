@@ -3,7 +3,7 @@ import * as request from 'request-promise-native';
 import * as aws from './aws';
 import { CloudFormationRequest, CloudFormationResponse,
          sendCloudFormationResponse, deleteS3Object, executeStateMachine,
-         s3, setupCustomResource, stepFunctions } from './aws';
+         s3, listObjects, setupCustomResource, stepFunctions } from './aws';
 import { envNames } from './env';
 
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
@@ -274,3 +274,111 @@ testS3Method('deleteS3Object', 'deleteObject', () => ({
   Bucket: fakeBucket,
   Key: fakePath,
 }));
+
+describe('aws.listObjects()', () => {
+  const fakeBucket = 'fake-bucket';
+  const fakePrefix = 'fake-prefix/';
+
+  const fakeRequest = () => ({
+    Bucket: fakeBucket,
+    Prefix: fakePrefix,
+  });
+
+  const testMethod = () =>
+    listObjects(fakeRequest());
+
+  const fakeContinuationToken = (index: number) =>
+    'fake-continuation-token-' + index;
+
+  const fakeObjects = (index: number) => [{
+    Key: fakePrefix + 'fake-object-A-' + index,
+    ETag: 'fake-etag-A-' + index,
+  }, {
+    Key: fakePrefix + 'fake-object-B-' + index,
+    ETag: 'fake-etag-B-' + index,
+  }];
+
+  const fakeListResponse = (index: number, truncated = true) => Object.assign({
+    Contents: fakeObjects(index),
+  }, truncated ? {
+    NextContinuationToken: fakeContinuationToken(index),
+    IsTruncated: true,
+  } : {
+    IsTruncated: false,
+  });
+
+  let spyOnListObjects: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnListObjects = spyOn(s3, 'listObjectsV2')
+      .and.returnValues(
+        fakeResolve(fakeListResponse(1)),
+        fakeResolve(fakeListResponse(2)),
+        fakeResolve(fakeListResponse(3, false)),
+      );
+  });
+
+  it('calls s3.listObjectsV2() multiple times with correct parameters', (done: Callback) => {
+    testMethod().then(() => {
+      expect(spyOnListObjects.calls.argsFor(0)).toEqual([{
+        Bucket: fakeBucket,
+        Prefix: fakePrefix,
+      }]);
+      expect(spyOnListObjects.calls.argsFor(1)).toEqual([{
+        Bucket: fakeBucket,
+        Prefix: fakePrefix,
+        ContinuationToken: fakeContinuationToken(1),
+      }]);
+      expect(spyOnListObjects.calls.argsFor(2)).toEqual([{
+        Bucket: fakeBucket,
+        Prefix: fakePrefix,
+        ContinuationToken: fakeContinuationToken(2),
+      }]);
+      expect(spyOnListObjects).toHaveBeenCalledTimes(3);
+      done();
+    });
+  });
+
+  it('resolves correct response', (done: Callback) => {
+    testMethod().then(data => {
+      expect(data).toEqual(fakeObjects(1).concat(fakeObjects(2)).concat(fakeObjects(3)));
+      done();
+    });
+  });
+
+  describe('responds immediately with an error if s3.listObjectsV2() produces the error', () => {
+    const err = Error('s3.listObjectsV2()');
+    let calls: number;
+    afterEach((done: Callback) => {
+      testMethod().catch(e => {
+        expect(e).toEqual(err);
+        expect(spyOnListObjects).toHaveBeenCalledTimes(calls);
+        done();
+      });
+    });
+    it('in the initial call', () => {
+      spyOnListObjects.and.returnValues(
+        fakeReject(err),
+        fakeResolve(fakeListResponse(2)),
+        fakeResolve(fakeListResponse(3, false)),
+      );
+      calls = 1;
+    });
+    it('in a subsequent call', () => {
+      spyOnListObjects.and.returnValues(
+        fakeResolve(fakeListResponse(1)),
+        fakeReject(err),
+        fakeResolve(fakeListResponse(3, false)),
+      );
+      calls = 2;
+    });
+    it('in the last call', () => {
+      spyOnListObjects.and.returnValues(
+        fakeResolve(fakeListResponse(1)),
+        fakeResolve(fakeListResponse(2)),
+        fakeReject(err),
+      );
+      calls = 3;
+    });
+  });
+});

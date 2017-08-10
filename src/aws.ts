@@ -127,3 +127,16 @@ export const deleteS3Object = (event: { Bucket: string, Path: string },
     .then(() => callback())
     .catch(callback);
 };
+
+export const listObjects = (request: S3.ListObjectsV2Request): Promise<S3.Object[]> => {
+  return s3.listObjectsV2(request).promise()
+    .then(data => !data.IsTruncated ? data.Contents :
+      listObjects({
+        Bucket: request.Bucket,
+        Prefix: request.Prefix,
+        ContinuationToken: data.NextContinuationToken,
+      }).then(nextData =>
+        data.Contents.concat(nextData)
+      )
+    );
+};
