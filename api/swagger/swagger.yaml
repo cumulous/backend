@@ -1082,7 +1082,7 @@ definitions:
       - failed
   Description:
     type: string
-    pattern: ^[\w-.,;?! ]{1,1000}$
+    pattern: ^[\w-.,;?!() ]{1,1000}$
   AwsCredentials:
     required:
       - access_key_id
