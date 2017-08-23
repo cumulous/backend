@@ -11,6 +11,8 @@ Resources:
       UserPoolName: !Sub ${BackendStack}-user-pool
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: True
+      AliasAttributes:
+        - email
       AutoVerifiedAttributes:
         - email
       Schema:
