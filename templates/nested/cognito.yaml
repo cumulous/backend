@@ -287,11 +287,11 @@ Resources:
           }
         }
 
-  FrontendClientCustomization:
-    Type: Custom::UserPoolClientCustomization
+  FrontendClientIntegration:
+    Type: Custom::UserPoolClientIntegration
     Properties:
-      ServiceToken: !GetAtt CustomizeUserPoolClient.Arn
-      StateMachine: !Ref UserPoolClientCustomizationStateMachine
+      ServiceToken: !GetAtt SetupUserPoolClientIntegration.Arn
+      StateMachine: !Ref UserPoolClientIntegrationStateMachine
       Config: !Sub |-
         {
           "UserPoolId": "${UserPool}",
@@ -304,7 +304,7 @@ Resources:
           "SupportedIdentityProviders": [ "COGNITO" ]
         }
 
-  CustomizeUserPoolClient:
+  SetupUserPoolClientIntegration:
     Type: AWS::Lambda::Function
     Properties:
       Handler: aws.setupCustomResource
@@ -313,9 +313,9 @@ Resources:
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
-      Role: !GetAtt CustomizeUserPoolClientRole.Arn
+      Role: !GetAtt SetupUserPoolClientIntegrationRole.Arn
 
-  CustomizeUserPoolClientRole:
+  SetupUserPoolClientIntegrationRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -328,14 +328,14 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: CustomizeUserPoolClientRole
+        - PolicyName: SetupUserPoolClientIntegrationRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
               - Effect: Allow
                 Action: states:StartExecution
                 Resource:
-                  - !Ref UserPoolClientCustomizationStateMachine
+                  - !Ref UserPoolClientIntegrationStateMachine
 
   UpdateUserPoolClient:
     Type: AWS::Lambda::Function
@@ -370,7 +370,7 @@ Resources:
                 Resource:
                   - !GetAtt UserPool.Arn
 
-  UserPoolClientCustomizationStateMachineRole:
+  UserPoolClientIntegrationStateMachineRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -391,15 +391,15 @@ Resources:
                   - !GetAtt UpdateUserPoolClient.Arn
                   - !GetAtt SendCloudFormationResponse.Arn
 
-  UserPoolClientCustomizationStateMachine:
+  UserPoolClientIntegrationStateMachine:
     Type: AWS::StepFunctions::StateMachine
     Properties:
-      RoleArn: !GetAtt UserPoolClientCustomizationStateMachineRole.Arn
+      RoleArn: !GetAtt UserPoolClientIntegrationStateMachineRole.Arn
       DefinitionString: !Sub |-
         {
-          "StartAt": "Customize",
+          "StartAt": "SetupIntegration",
           "States": {
-            "Customize": {
+            "SetupIntegration": {
               "Type": "Parallel",
               "Next": "Succeed",
               "Branches": [{
