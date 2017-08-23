@@ -29,3 +29,13 @@ export const deleteUserPoolDomain = (request: UserPoolDomainRequest, context: an
     .then(() => callback())
     .catch(callback);
 };
+
+export const updateUserPoolClient = (
+      request: CognitoIdentityServiceProvider.Types.UpdateUserPoolClientRequest,
+      context: any, callback: Callback,
+    ) => {
+  return Promise.resolve()
+    .then(() => cognito.updateUserPoolClient(request).promise())
+    .then(() => callback())
+    .catch(callback);
+};

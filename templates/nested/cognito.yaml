@@ -287,6 +287,183 @@ Resources:
           }
         }
 
+  FrontendClientCustomization:
+    Type: Custom::UserPoolClientCustomization
+    Properties:
+      ServiceToken: !GetAtt CustomizeUserPoolClient.Arn
+      StateMachine: !Ref UserPoolClientCustomizationStateMachine
+      Config:
+        UserPoolId: !Ref UserPool
+        ClientId: !Ref FrontendClient
+        AllowedOAuthFlowsUserPoolClient: true
+        AllowedOAuthFlows:
+          - implicit
+        AllowedOAuthScopes:
+          - openid
+        CallbackURLs:
+          - https://${WebDomain}/login
+        LogoutURLs:
+          - https://${WebDomain}/login
+        SupportedIdentityProviders:
+          - COGNITO
+
+  CustomizeUserPoolClient:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.setupCustomResource
+      Timeout: 10
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CustomizeUserPoolClientRole.Arn
+
+  CustomizeUserPoolClientRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CustomizeUserPoolClientRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref UserPoolClientCustomizationStateMachine
+
+  UpdateUserPoolClient:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: cognito.updateUserPoolClient
+      Timeout: 30
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt UpdateUserPoolClientRole.Arn
+
+  UpdateUserPoolClientRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: UpdateUserPoolClientRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cognito-idp:UpdateUserPoolClient
+                Resource:
+                  - !GetAtt UserPool.Arn
+
+  UserPoolClientCustomizationStateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StatesExecutionRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt UpdateUserPoolClient.Arn
+                  - !GetAtt SendCloudFormationResponse.Arn
+
+  UserPoolClientCustomizationStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt UserPoolClientCustomizationStateMachineRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "Customize",
+          "States": {
+            "Customize": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "CheckDelete",
+                "States": {
+                  "CheckDelete": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Delete",
+                      "Next": "Success"
+                    }],
+                    "Default": "UpdateClient"
+                  },
+                  "UpdateClient": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Config",
+                    "ResultPath": null,
+                    "Resource": "${UpdateUserPoolClient.Arn}",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
+
 Outputs:
   UserPoolId:
     Value: !Ref UserPool

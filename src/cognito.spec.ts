@@ -1,4 +1,4 @@
-import { cognito, createUserPoolDomain, deleteUserPoolDomain } from './cognito';
+import { cognito, createUserPoolDomain, deleteUserPoolDomain, updateUserPoolClient } from './cognito';
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
 import { Callback } from './types';
 
@@ -155,6 +155,43 @@ describe('cognito.deleteUserPoolDomain()', () => {
         testError(deleteUserPoolDomain, request, done);
         after();
       });
+    });
+  });
+});
+
+describe('cognito.updateUserPoolClient()', () => {
+  const fakeClientId = 'fake-client-id';
+
+  const fakeRequest = () => ({
+    UserPoolId: fakeUserPoolId,
+    ClientId: fakeClientId,
+    AllowedOAuthFlowsUserPoolClient: false,
+  });
+
+  let spyOnUpdateClient: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnUpdateClient = spyOn(cognito, 'updateUserPoolClient')
+      .and.returnValue(fakeResolve());
+  })
+
+  it('calls CognitoIdentityServiceProvider.updateUserPoolClient() once with correct parameters', (done: Callback) => {
+    updateUserPoolClient(fakeRequest(), null, () => {
+      expect(spyOnUpdateClient).toHaveBeenCalledWith(fakeRequest());
+      expect(spyOnUpdateClient).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  describe('calls callback with correct parameters', () => {
+    it('for a successful request', (done: Callback) => {
+      testError(updateUserPoolClient, fakeRequest(), done, false);
+    });
+    it('if CognitoIdentityServiceProvider.updateUserPoolClient() produces an error', (done: Callback) => {
+      spyOnUpdateClient.and.returnValue(
+        fakeReject('CognitoIdentityServiceProvider.updateUserPoolClient()')
+      );
+      testError(updateUserPoolClient, fakeRequest(), done);
     });
   });
 });
