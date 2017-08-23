@@ -48,14 +48,14 @@ Resources:
         - email
         - name
 
-  UserPoolDomain:
-    Type: Custom::UserPoolDomain
-    Properties:
-      ServiceToken: !GetAtt SetupUserPoolDomain.Arn
-      StateMachine: !Ref UserPoolDomainStateMachine
-      Config:
-        Domain: !Ref WebDomain
-        UserPoolId: !Ref UserPool
+  # UserPoolDomain:
+  #   Type: Custom::UserPoolDomain
+  #   Properties:
+  #     ServiceToken: !GetAtt SetupUserPoolDomain.Arn
+  #     StateMachine: !Ref UserPoolDomainStateMachine
+  #     Config:
+  #       Domain: !Ref WebDomain
+  #       UserPoolId: !Ref UserPool
 
   SetupUserPoolDomain:
     Type: AWS::Lambda::Function
