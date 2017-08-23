@@ -292,7 +292,6 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupUserPoolClientIntegration.Arn
       StateMachine: !Ref UserPoolClientIntegrationStateMachine
-      Version: 1.1
       Config: !Sub |-
         {
           "UserPoolId": "${UserPool}",
@@ -463,5 +462,5 @@ Resources:
         }
 
 Outputs:
-  UserPoolId:
-    Value: !Ref UserPool
+  AuthDomain:
+    Value: !Sub cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
