@@ -5,8 +5,9 @@ import * as jwt from './jwt';
 import { authenticate, getCertificate } from './jwt';
 import { Callback, Dict } from './types';
 
+const fakeAuthDomain = 'cognito-idp.us-east-1.amazonaws.com/us-east-1_abcd';
+
 describe('getCertificate()', () => {
-  const fakeAuthDomain = 'example.auth0.com';
   const fakeKid = 'FAKE_KEY_ID';
   const fakeKey = 'FAKE_KEY';
 
@@ -87,11 +88,10 @@ describe('getCertificate()', () => {
 });
 
 describe('authenticate()', () => {
-  const fakeApiDomain = 'api.example.org';
-  const fakeAuthDomain = 'tenant.auth0.com';
   const fakeToken = 'ey.ab.cd';
   const fakeKid = 'FAKE_KID';
   const fakeCert = 'FAKE_CERT ABCD';
+  const fakeTokenLifetime = 3600;
 
   let fakePayload: () => Dict<string>;
 
@@ -104,7 +104,7 @@ describe('authenticate()', () => {
       sub: '1234',
     });
 
-    process.env[envNames.apiDomain] = fakeApiDomain;
+    process.env[envNames.authTokenLifetime] = fakeTokenLifetime;
 
     spyOnDecodeJwt = spyOn(jsonwebtoken, 'decode')
       .and.returnValue({
@@ -143,7 +143,9 @@ describe('authenticate()', () => {
       expect(spyOnVerifyJwt).toHaveBeenCalledWith(
         fakeToken, fakeCert, {
           algorithms: ['RS256'],
-          audience: `https://${fakeApiDomain}`,
+          issuer: `https://${fakeAuthDomain}`,
+          maxAge: fakeTokenLifetime + 's',
+          ignoreExpiration: true,
         });
       expect(spyOnVerifyJwt).toHaveBeenCalledTimes(1);
       done();

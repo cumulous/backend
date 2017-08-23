@@ -75,6 +75,7 @@ ARGS=" \
     ParameterKey=DataBucket,ParameterValue=${DATA_BUCKET} \
     ParameterKey=ClusterCores,ParameterValue=${CLUSTER_CORES} \
     ParameterKey=SpotBidPercent,ParameterValue=${SPOT_BID_PERCENT} \
+    ParameterKey=AuthTokenLifetime,ParameterValue=${AUTH_TOKEN_LIFETIME} \
     ParameterKey=Auth0Domain,ParameterValue=${AUTH0_DOMAIN} \
     ParameterKey=Auth0ManagementClientID,ParameterValue=${AUTH0_MANAGEMENT_CLIENT_ID} \
     ParameterKey=Auth0ManagementClientSecret,ParameterValue=${AUTH0_MANAGEMENT_CLIENT_SECRET} \

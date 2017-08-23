@@ -111,6 +111,12 @@ Parameters:
     Type: Number
     MinValue: 1
     Default: 36000
+  AuthTokenLifetime:
+    Description: "Number of seconds that authentication tokens are valid for (*)"
+    Type: Number
+    MinValue: 1
+    Default: 36000
+    MaxValue: 86400
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -165,6 +171,7 @@ Metadata:
           - Auth0ManagementClientID
           - Auth0ManagementClientSecret
           - Auth0UserTokenLifetime
+          - AuthTokenLifetime
 
 Conditions:
   CreateNotification: !Not [!Equals [!Ref NotificationEmail, '']]
@@ -467,6 +474,8 @@ Resources:
             Value: !Ref ClusterCores
           - Name: SPOT_BID_PERCENT
             Value: !Ref SpotBidPercent
+          - Name: AUTH_TOKEN_LIFETIME
+            Value: !Ref AuthTokenLifetime
           - Name: AUTH0_DOMAIN
             Value: !Ref Auth0Domain
           - Name: AUTH0_MANAGEMENT_CLIENT_ID
@@ -540,6 +549,8 @@ Resources:
             Value: !Ref ClusterCores
           - Name: SPOT_BID_PERCENT
             Value: !Ref SpotBidPercent
+          - Name: AUTH_TOKEN_LIFETIME
+            Value: !Ref AuthTokenLifetime
           - Name: AUTH0_DOMAIN
             Value: !Ref Auth0Domain
           - Name: AUTH0_MANAGEMENT_CLIENT_ID

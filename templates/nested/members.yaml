@@ -5,10 +5,10 @@ Parameters:
     Type: String
   LambdaPackage:
     Type: String
-  ApiDomain:
+  AuthDomain:
     Type: String
-  Auth0Domain:
-    Type: String
+  AuthTokenLifetime:
+    Type: Number
 
 Resources:
   Authorizer:
@@ -19,8 +19,8 @@ Resources:
       Timeout: 10
       Environment:
         Variables:
-          API_DOMAIN: !Ref ApiDomain
-          AUTH0_DOMAIN: !Ref Auth0Domain
+          AUTH_DOMAIN: !Ref AuthDomain
+          AUTH_TOKEN_LIFETIME: !Ref AuthTokenLifetime
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket

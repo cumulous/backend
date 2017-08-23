@@ -4,7 +4,7 @@ import * as members from './members';
 import { authorize, getPolicy, Policy } from './members';
 import { Callback } from './types';
 
-const fakeAuth0Domain = 'tenant.auth0.com';
+const fakeAuthDomain = 'cognito-idp.us-east-1.amazonaws.com/us-east-1_aBCD';
 const fakeToken = 'ey.ab.cd';
 const fakeSub = 'abcd@1234';
 const fakeExp = 1514764800;
@@ -39,7 +39,7 @@ describe('authorize()', () => {
   let spyOnGetPolicy: jasmine.Spy;
 
   beforeEach(() => {
-    process.env[envNames.auth0Domain] = fakeAuth0Domain;
+    process.env[envNames.authDomain] = fakeAuthDomain;
 
     spyOnAuthenticate = spyOn(jwt, 'authenticate')
       .and.returnValue(Promise.resolve(fakePayload()));
@@ -53,7 +53,7 @@ describe('authorize()', () => {
 
   it('calls jwt.authenticate() with correct parameters', (done: Callback) => {
     testMethod(() => {
-      expect(spyOnAuthenticate).toHaveBeenCalledWith(fakeAuth0Domain, fakeToken);
+      expect(spyOnAuthenticate).toHaveBeenCalledWith(fakeAuthDomain, fakeToken);
       expect(spyOnAuthenticate).toHaveBeenCalledTimes(1);
       done();
     });

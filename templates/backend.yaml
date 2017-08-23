@@ -45,6 +45,8 @@ Parameters:
     Type: Number
   SpotBidPercent:
     Type: Number
+  AuthTokenLifetime:
+    Type: Number
   Auth0Domain:
     Type: String
   Auth0ManagementClientID:
@@ -132,8 +134,8 @@ Resources:
         BackendStack: !Ref AWS::StackName
         ArtifactsBucket: !Ref ArtifactsBucket
         LambdaPackage: !Ref LambdaPackage
-        ApiDomain: !Ref ApiDomain
-        Auth0Domain: !Ref Auth0Domain
+        AuthDomain: !GetAtt Cognito.Outputs.AuthDomain
+        AuthTokenLifetime: !Ref AuthTokenLifetime
 
   Auth0:
     Type: AWS::CloudFormation::Stack

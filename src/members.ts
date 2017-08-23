@@ -8,7 +8,7 @@ import { Callback, Dict } from './types';
 export const authorize = (event: { authorizationToken: string, methodArn: string },
                         context: any, callback: Callback) => {
   Promise.resolve(event)
-    .then(event => authenticate(process.env[envNames.auth0Domain], event.authorizationToken))
+    .then(event => authenticate(process.env[envNames.authDomain], event.authorizationToken))
     .then((payload: Dict<any>) => getPolicy(payload.sub, payload.exp, event.methodArn))
     .then(policy => {
       log.debug(stringify(policy));
