@@ -155,6 +155,14 @@ Resources:
         WebDomain: !Ref WebDomain
         ApiDomain: !Ref ApiDomain
 
+  Auth:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/auth.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        MinimumPasswordLength: 12
+
   Data:
     Type: AWS::CloudFormation::Stack
     Properties:
