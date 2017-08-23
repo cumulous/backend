@@ -1,3 +1,5 @@
+import * as stringify from 'json-stable-stringify';
+
 import { cognito, createUserPoolDomain, deleteUserPoolDomain, updateUserPoolClient } from './cognito';
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
 import { Callback } from './types';
@@ -162,11 +164,13 @@ describe('cognito.deleteUserPoolDomain()', () => {
 describe('cognito.updateUserPoolClient()', () => {
   const fakeClientId = 'fake-client-id';
 
-  const fakeRequest = () => ({
+  const fakeConfig = () => ({
     UserPoolId: fakeUserPoolId,
     ClientId: fakeClientId,
     AllowedOAuthFlowsUserPoolClient: false,
   });
+
+  const fakeRequest = () => stringify(fakeConfig());
 
   let spyOnUpdateClient: jasmine.Spy;
 
@@ -177,7 +181,7 @@ describe('cognito.updateUserPoolClient()', () => {
 
   it('calls CognitoIdentityServiceProvider.updateUserPoolClient() once with correct parameters', (done: Callback) => {
     updateUserPoolClient(fakeRequest(), null, () => {
-      expect(spyOnUpdateClient).toHaveBeenCalledWith(fakeRequest());
+      expect(spyOnUpdateClient).toHaveBeenCalledWith(fakeConfig());
       expect(spyOnUpdateClient).toHaveBeenCalledTimes(1);
       done();
     });
@@ -186,6 +190,13 @@ describe('cognito.updateUserPoolClient()', () => {
   describe('calls callback with correct parameters', () => {
     it('for a successful request', (done: Callback) => {
       testError(updateUserPoolClient, fakeRequest(), done, false);
+    });
+    it('if request could not be parsed', (done: Callback) => {
+      updateUserPoolClient(fakeRequest().substr(1), null, (err?: Error) => {
+        expect(err).toBeTruthy();
+        expect(spyOnUpdateClient).not.toHaveBeenCalled();
+        done();
+      });
     });
     it('if CognitoIdentityServiceProvider.updateUserPoolClient() produces an error', (done: Callback) => {
       spyOnUpdateClient.and.returnValue(

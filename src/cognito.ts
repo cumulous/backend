@@ -30,12 +30,10 @@ export const deleteUserPoolDomain = (request: UserPoolDomainRequest, context: an
     .catch(callback);
 };
 
-export const updateUserPoolClient = (
-      request: CognitoIdentityServiceProvider.Types.UpdateUserPoolClientRequest,
-      context: any, callback: Callback,
-    ) => {
+export const updateUserPoolClient = (request: string, context: any, callback: Callback) => {
   return Promise.resolve()
-    .then(() => cognito.updateUserPoolClient(request).promise())
+    .then(() => JSON.parse(request))
+    .then(request => cognito.updateUserPoolClient(request).promise())
     .then(() => callback())
     .catch(callback);
 };

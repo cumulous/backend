@@ -292,20 +292,17 @@ Resources:
     Properties:
       ServiceToken: !GetAtt CustomizeUserPoolClient.Arn
       StateMachine: !Ref UserPoolClientCustomizationStateMachine
-      Config:
-        UserPoolId: !Ref UserPool
-        ClientId: !Ref FrontendClient
-        AllowedOAuthFlowsUserPoolClient: true
-        AllowedOAuthFlows:
-          - implicit
-        AllowedOAuthScopes:
-          - openid
-        CallbackURLs:
-          - https://${WebDomain}/login
-        LogoutURLs:
-          - https://${WebDomain}/login
-        SupportedIdentityProviders:
-          - COGNITO
+      Config: !Sub |-
+        {
+          "UserPoolId": "${UserPool}",
+          "ClientId": "${FrontendClient}",
+          "AllowedOAuthFlowsUserPoolClient": true,
+          "AllowedOAuthFlows": [ "implicit" ],
+          "AllowedOAuthScopes": [ "openid" ],
+          "CallbackURLs": [ "https://${WebDomain}/login" ],
+          "LogoutURLs": [ "https://${WebDomain}/login" ],
+          "SupportedIdentityProviders": [ "COGNITO" ]
+        }
 
   CustomizeUserPoolClient:
     Type: AWS::Lambda::Function
