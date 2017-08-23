@@ -155,10 +155,10 @@ Resources:
         WebDomain: !Ref WebDomain
         ApiDomain: !Ref ApiDomain
 
-  Auth:
+  Cognito:
     Type: AWS::CloudFormation::Stack
     Properties:
-      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/auth.yaml
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/cognito.yaml
       Parameters:
         BackendStack: !Ref AWS::StackName
         MinimumPasswordLength: 12

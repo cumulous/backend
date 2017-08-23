@@ -1,0 +1,292 @@
+Parameters:
+  BackendStack:
+    Type: String
+  ArtifactsBucket:
+    Type: String
+  LambdaPackage:
+    Type: String
+  WebDomain:
+    Type: String
+  MinimumPasswordLength:
+    Type: Number
+
+Resources:
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: !Sub ${BackendStack}-user-pool
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: True
+      AliasAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: False
+          Required: True
+        - Name: name
+          AttributeDataType: String
+          Mutable: True
+          Required: True
+      Policies:
+        PasswordPolicy:
+          MinimumLength: !Ref MinimumPasswordLength
+          RequireLowercase: True
+          RequireNumbers: True
+          RequireSymbols: True
+          RequireUppercase: True
+
+  FrontendClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub ${BackendStack}-frontend-client
+      UserPoolId: !Ref UserPool
+      GenerateSecret: False
+      ReadAttributes:
+        - email
+        - name
+
+  AppIntegration:
+    Type: Custom::UserPoolDomain
+    Properties:
+      ServiceToken: !GetAtt UserPoolDomain.Arn
+      StateMachine: !Ref UserPoolDomainStateMachine
+      Config:
+        Domain: !Ref WebDomain
+        UserPoolId: !Ref UserPool
+
+  UserPoolDomain:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.setupCustomResource
+      Timeout: 10
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt UserPoolDomainRole.Arn
+
+  UserPoolDomainRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: UserPoolDomainRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref UserPoolDomainStateMachine
+
+  CreateUserPoolDomain:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: cognito.createUserPoolDomain
+      Timeout: 30
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CreateUserPoolDomainRole.Arn
+
+  CreateUserPoolDomainRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateUserPoolDomainRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cognito-idp:CreateUserPoolDomain
+                Resource:
+                  - !GetAtt UserPool.Arn
+
+  DeleteUserPoolDomain:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: cognito.deleteUserPoolDomain
+      Timeout: 30
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt DeleteUserPoolDomainRole.Arn
+
+  DeleteUserPoolDomainRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DeleteUserPoolDomainRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cognito-idp:DeleteUserPoolDomain
+                Resource:
+                  - !GetAtt UserPool.Arn
+
+  SendCloudFormationResponse:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.sendCloudFormationResponse
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  UserPoolDomainStateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StatesExecutionRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CreateUserPoolDomain.Arn
+                  - !GetAtt DeleteUserPoolDomain.Arn
+                  - !GetAtt SendCloudFormationResponse.Arn
+
+  UserPoolDomainStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt UserPoolDomainStateMachineRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupDomain",
+          "States": {
+            "SetupDomain": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "CheckCreate",
+                "States": {
+                  "CheckCreate": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Create",
+                      "Next": "CreateDomain"
+                    }],
+                    "Default": "DeleteDomain"
+                  },
+                  "CreateDomain": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Config",
+                    "ResultPath": "$.Data.Domain",
+                    "Resource": "${CreateUserPoolDomain.Arn}",
+                    "Next": "Success"
+                  },
+                  "DeleteDomain": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Config",
+                    "ResultPath": null,
+                    "Resource": "${DeleteUserPoolDomain.Arn}",
+                    "Next": "CheckUpdate"
+                  },
+                  "CheckUpdate": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "CreateDomain"
+                    }],
+                    "Default": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
+
+Outputs:
+  UserPoolId:
+    Value: !Ref UserPool
