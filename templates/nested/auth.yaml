@@ -36,6 +36,9 @@ Resources:
       ClientName: !Sub ${BackendStack}-frontend-client
       UserPoolId: !Ref UserPool
       GenerateSecret: False
+      ReadAttributes:
+        - email
+        - name
 
 Outputs:
   UserPoolId:
