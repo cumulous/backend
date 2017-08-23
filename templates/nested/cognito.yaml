@@ -48,16 +48,16 @@ Resources:
         - email
         - name
 
-  AppIntegration:
+  UserPoolDomain:
     Type: Custom::UserPoolDomain
     Properties:
-      ServiceToken: !GetAtt UserPoolDomain.Arn
+      ServiceToken: !GetAtt SetupUserPoolDomain.Arn
       StateMachine: !Ref UserPoolDomainStateMachine
       Config:
         Domain: !Ref WebDomain
         UserPoolId: !Ref UserPool
 
-  UserPoolDomain:
+  SetupUserPoolDomain:
     Type: AWS::Lambda::Function
     Properties:
       Handler: aws.setupCustomResource
@@ -66,9 +66,9 @@ Resources:
       Code:
         S3Bucket: !Ref ArtifactsBucket
         S3Key: !Ref LambdaPackage
-      Role: !GetAtt UserPoolDomainRole.Arn
+      Role: !GetAtt SetupUserPoolDomainRole.Arn
 
-  UserPoolDomainRole:
+  SetupUserPoolDomainRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -81,7 +81,7 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
       Policies:
-        - PolicyName: UserPoolDomainRole
+        - PolicyName: SetupUserPoolDomainRole
           PolicyDocument:
             Version: 2012-10-17
             Statement:
