@@ -1036,6 +1036,17 @@ Resources:
                   - waf:GetWebACL
                 Resource:
                   - !Sub arn:aws:waf::${AWS::AccountId}:webacl/${WebACL}
+              - Effect: Allow
+                Action:
+                  - cognito-idp:CreateUserPool
+                  - cognito-idp:DescribeUserPool
+                  - cognito-idp:UpdateUserPool
+                  - cognito-idp:DeleteUserPool
+                  - cognito-idp:CreateUserPoolClient
+                  - cognito-idp:DescribeUserPoolClient
+                  - cognito-idp:UpdateUserPoolClient
+                  - cognito-idp:DeleteUserPoolClient
+                Resource: '*'
 
   SSHKeyPutRole:
     Type: AWS::IAM::Role
