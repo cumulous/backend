@@ -197,6 +197,59 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-GetProjects/invocations
+  /projects/{project_id}/members:
+    options:
+      tags:
+        - Members
+      parameters:
+        - $ref: '#/parameters/ProjectId'
+      responses:
+        200:
+          description: HTTP options
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
+    post:
+      summary: Create a project member
+      description: |
+        Adds an identity (a user or a programmatic client) to a project
+      operationId: createMember
+      security:
+        - member_token: []
+      tags:
+        - Members
+      parameters:
+        - $ref: '#/parameters/ProjectId'
+        - $ref: '#/parameters/ProjectMemberCreationRequest'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Properties of the created member
+          schema:
+            $ref: '#/definitions/ProjectMember'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-CreateMember/invocations
   /datasets:
     options:
       tags:
@@ -765,9 +818,125 @@ definitions:
       next:
         $ref: '#/definitions/PaginationNext'
   ProjectMemberId:
-    description: Unique identifier for a project member
+    description: Identifier for a project member
     type: string
-    format: uuid
+    pattern: ^([\w+]{1,128}|[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$
+  ProjectMember:
+    required:
+      - id
+      - created_at
+      - created_by
+      - status
+    additionalProperties: false
+    properties:
+      id:
+        $ref: '#/definitions/ProjectMemberId'
+      scopes:
+        $ref: '#/definitions/ProjectMemberScopes'
+      created_at:
+        $ref: '#/definitions/Date'
+      created_by:
+        $ref: '#/definitions/ProjectMemberId'
+      status:
+        $ref: '#/definitions/ProjectMemberStatus'
+  ProjectMemberStatus:
+    type: string
+    enum:
+      - active
+      - disabled
+  ProjectMemberScopes:
+    type: object
+    required:
+      - project
+      - members
+      - users
+      - clients
+      - datasets
+      - analyses
+      - pipelines
+    additionalProperties: false
+    properties:
+      project:
+        type: array
+        items:
+          $ref: '#/definitions/ProjectScope'
+      members:
+        type: array
+        items:
+          $ref: '#/definitions/MembersScope'
+      users:
+        type: array
+        items:
+          $ref: '#/definitions/UsersScope'
+      clients:
+        type: array
+        items:
+          $ref: '#/definitions/ClientsScope'
+      datasets:
+        type: array
+        items:
+          $ref: '#/definitions/DatasetsScope'
+      analyses:
+        type: array
+        items:
+          $ref: '#/definitions/AnalysesScope'
+      pipelines:
+        type: array
+        items:
+          $ref: '#/definitions/PipelinesScope'
+  ProjectScope:
+    type: string
+    enum:
+      - create
+      - describe
+      - update
+      - remove
+      - delete
+  MembersScope:
+    type: string
+    enum:
+      - create
+      - describe
+      - describe_scopes
+      - update
+      - delete
+  UsersScope:
+    type: string
+    enum:
+      - create
+      - describe
+  ClientsScope:
+    type: string
+    enum:
+      - create
+      - describe
+  DatasetsScope:
+    type: string
+    enum:
+      - create
+      - describe
+      - update
+      - upload
+      - download
+      - remove
+      - delete
+  AnalysesScope:
+    type: string
+    enum:
+      - create
+      - describe
+      - update
+      - execute
+      - cancel
+      - remove
+      - delete
+  PipelinesScope:
+    type: string
+    enum:
+      - create
+      - describe
+      - update
+      - delete
   Dataset:
     required:
       - id
@@ -1154,6 +1323,25 @@ parameters:
     in: query
     name: project_id
     description: Filter by project ID
+    type: string
+    format: uuid
+  ProjectMemberCreationRequest:
+    in: body
+    name: ProjectMemberCreationRequest
+    description: Properties of the project member to be created
+    required: true
+    schema:
+      required:
+        - scopes
+      additionalProperties: false
+      properties:
+        scopes:
+          $ref: '#/definitions/ProjectMemberScopes'
+  ProjectId:
+    in: path
+    name: project_id
+    description: Unique identifier for a project
+    required: true
     type: string
     format: uuid
   DatasetCreationRequest:
