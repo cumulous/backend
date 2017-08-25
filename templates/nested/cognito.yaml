@@ -215,16 +215,23 @@ Resources:
               "Type": "Parallel",
               "Next": "Succeed",
               "Branches": [{
-                "StartAt": "CheckCreate",
+                "StartAt": "CheckRequestType",
                 "States": {
-                  "CheckCreate": {
+                  "CheckRequestType": {
                     "Type": "Choice",
                     "Choices": [{
                       "Variable": "$.RequestType",
                       "StringEquals": "Create",
                       "Next": "CreateDomain"
-                    }],
-                    "Default": "DeleteDomain"
+                    },{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "DeleteBeforeCreate"
+                    },{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "DeleteDomain"
+                    }]
                   },
                   "CreateDomain": {
                     "Type": "Task",
@@ -233,21 +240,19 @@ Resources:
                     "Resource": "${CreateUserPoolDomain.Arn}",
                     "Next": "Success"
                   },
+                  "DeleteBeforeCreate": {
+                    "Type": "Task",
+                    "InputPath": "$.OldResourceProperties.Config",
+                    "ResultPath": null,
+                    "Resource": "${DeleteUserPoolDomain.Arn}",
+                    "Next": "CreateDomain"
+                  },
                   "DeleteDomain": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.Config",
                     "ResultPath": null,
                     "Resource": "${DeleteUserPoolDomain.Arn}",
-                    "Next": "CheckUpdate"
-                  },
-                  "CheckUpdate": {
-                    "Type": "Choice",
-                    "Choices": [{
-                      "Variable": "$.RequestType",
-                      "StringEquals": "Update",
-                      "Next": "CreateDomain"
-                    }],
-                    "Default": "Success"
+                    "Next": "Success"
                   },
                   "Success": {
                     "Type": "Pass",
