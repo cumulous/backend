@@ -250,6 +250,56 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-CreateMember/invocations
+  /users:
+    options:
+      tags:
+        - Users
+      responses:
+        200:
+          description: HTTP options
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
+    post:
+      summary: Create a user
+      description: |
+        Creates a user
+      operationId: createUser
+      security:
+        - member_token: []
+      tags:
+        - Users
+      parameters:
+        - $ref: '#/parameters/UserCreationRequest'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Properties of the created user
+          schema:
+            $ref: '#/definitions/User'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-CreateUser/invocations
   /datasets:
     options:
       tags:
@@ -937,6 +987,26 @@ definitions:
       - describe
       - update
       - delete
+  User:
+    required:
+      - id
+      - email
+      - name
+    properties:
+      id:
+        $ref: '#/definitions/UserId'
+      email:
+        $ref: '#/definitions/Email'
+      name:
+        $ref: '#/definitions/IdentityName'
+  UserId:
+    description: Unique identifier for a user
+    type: string
+    format: uuid
+  IdentityName:
+    description: User or client name
+    type: string
+    pattern: ^[A-Za-z0-9.' ]{3,100}$
   Dataset:
     required:
       - id
@@ -1274,6 +1344,9 @@ definitions:
   Date:
     type: string
     format: date-time
+  Email:
+    type: string
+    format: email
 
 parameters:
   ProjectsQueryNameContains:
@@ -1319,6 +1392,13 @@ parameters:
           $ref: '#/definitions/ProjectName'
         description:
           $ref: '#/definitions/Description'
+  ProjectId:
+    in: path
+    name: project_id
+    description: Unique identifier for a project
+    required: true
+    type: string
+    format: uuid
   QueryProjectId:
     in: query
     name: project_id
@@ -1337,13 +1417,21 @@ parameters:
       properties:
         scopes:
           $ref: '#/definitions/ProjectMemberScopes'
-  ProjectId:
-    in: path
-    name: project_id
-    description: Unique identifier for a project
+  UserCreationRequest:
+    in: body
+    name: UserCreationRequest
+    description: Properties of the user to be created
     required: true
-    type: string
-    format: uuid
+    schema:
+      required:
+        - email
+        - name
+      additionalProperties: false
+      properties:
+        email:
+          $ref: '#/definitions/Email'
+        name:
+          $ref: '#/definitions/IdentityName'
   DatasetCreationRequest:
     in: body
     name: DatasetCreationRequest
