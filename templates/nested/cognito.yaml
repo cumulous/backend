@@ -19,12 +19,10 @@ Resources:
         AllowAdminCreateUserOnly: True
       AliasAttributes:
         - email
-      AutoVerifiedAttributes:
-        - email
       Schema:
         - Name: email
           AttributeDataType: String
-          Mutable: False
+          Mutable: True
           Required: True
         - Name: name
           AttributeDataType: String
