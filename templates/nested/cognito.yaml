@@ -17,6 +17,7 @@ Parameters:
 Resources:
   UserPool:
     Type: AWS::Cognito::UserPool
+    DeletionPolicy: Retain
     Properties:
       UserPoolName: !Sub ${BackendStack}-user-pool
       AdminCreateUserConfig:
