@@ -47,9 +47,15 @@ Resources:
       ClientName: !Sub ${BackendStack}-frontend-client
       UserPoolId: !Ref UserPool
       GenerateSecret: False
-      ReadAttributes:
-        - email
-        - name
+
+  BackendClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub ${BackendStack}-backend-client
+      UserPoolId: !Ref UserPool
+      GenerateSecret: False
+      ExplicitAuthFlows:
+        - ADMIN_NO_SRP_AUTH
 
   UserPoolDomain:
     Type: Custom::UserPoolDomain
@@ -477,7 +483,7 @@ Resources:
       Timeout: 30
       Environment:
         Variables:
-          AUTH_CLIENT_ID: !Ref UserPoolClient
+          AUTH_CLIENT_ID: !Ref BackendClient
           USER_POOL_ID: !Ref UserPool
           WEB_DOMAIN: !Ref WebDomain
       Runtime: nodejs6.10
