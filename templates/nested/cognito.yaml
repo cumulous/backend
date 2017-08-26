@@ -49,12 +49,6 @@ Resources:
       ClientName: !Sub ${BackendStack}-frontend-client
       UserPoolId: !Ref UserPool
       GenerateSecret: False
-      WriteAttributes:
-        - email
-        - name
-      ReadAttributes:
-        - email
-        - name
 
   BackendClient:
     Type: AWS::Cognito::UserPoolClient
@@ -64,9 +58,6 @@ Resources:
       GenerateSecret: False
       ExplicitAuthFlows:
         - ADMIN_NO_SRP_AUTH
-      WriteAttributes:
-        - email
-        - name
       ReadAttributes:
         - email
         - name
@@ -329,7 +320,8 @@ Resources:
           "AllowedOAuthScopes": [ "openid" ],
           "CallbackURLs": [ "https://${WebDomain}/login" ],
           "LogoutURLs": [ "https://${WebDomain}/login" ],
-          "SupportedIdentityProviders": [ "COGNITO" ]
+          "SupportedIdentityProviders": [ "COGNITO" ],
+          "ReadAttributes": [ "email", "name" ]
         }
 
   SetupUserPoolClientIntegration:
