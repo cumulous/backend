@@ -16,6 +16,8 @@ export const envNames = {
   searchStackSuffix: 'SEARCH_STACK_SUFFIX',
   searchDocEndpoint: 'SEARCH_DOC_ENDPOINT',
   searchQueryEndpoint: 'SEARCH_QUERY_ENDPOINT',
+  userPoolId: 'USER_POOL_ID',
+  authClientId: 'AUTH_CLIENT_ID',
   authDomain: 'AUTH_DOMAIN',
   authTokenLifetime: 'AUTH_TOKEN_LIFETIME',
   auth0Domain: 'AUTH0_DOMAIN',

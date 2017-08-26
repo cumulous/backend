@@ -1,12 +1,19 @@
 import * as stringify from 'json-stable-stringify';
+import * as uuid from 'uuid';
 
-import { cognito, createUserPoolDomain, deleteUserPoolDomain, updateUserPoolClient } from './cognito';
+import * as apig from './apig';
+import { ajv, ApiError } from './apig';
+import { cognito, createUser,
+         createUserPoolDomain, deleteUserPoolDomain, updateUserPoolClient } from './cognito';
+import { envNames } from './env';
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
 import { Callback } from './types';
 
 const fakeUserPoolId = 'fake-user-pool-id';
 const fakeWebDomain = 'fake.web.domain';
 const fakeUserPoolDomainPrefix = 'fake-web-domain';
+const fakeEmail = 'fake-email@example.org';
+const fakeIdentityName = 'Fake Identity Name';
 
 const fakeUserPoolDomainRequest = () => ({
   Domain: fakeWebDomain,
@@ -203,6 +210,183 @@ describe('cognito.updateUserPoolClient()', () => {
         fakeReject('CognitoIdentityServiceProvider.updateUserPoolClient()')
       );
       testError(updateUserPoolClient, fakeRequest(), done);
+    });
+  });
+});
+
+describe('cognito.createUser', () => {
+  const fakeUserId = uuid();
+  const fakeClientId = 'fake-client-id';
+  const fakeTemporaryPassword = 'fake-temporary-password';
+  const fakeNewPassword = 'fake-new-password';
+  const fakeSessionToken = 'fake-session-token';
+
+  const fakeBody = () => ({
+    email: fakeEmail,
+    name: fakeIdentityName,
+  });
+
+  const fakeRequest = (validated = true) => ({
+    body: validated ? fakeBody() : stringify(fakeBody()),
+  });
+
+  const fakeResponse = () => ({
+    id: fakeUserId,
+    email: fakeEmail,
+    name: fakeIdentityName,
+  });
+
+  const testMethod = (callback: Callback) =>
+    createUser(fakeRequest(false), null, callback);
+
+  let spyOnValidate: jasmine.Spy;
+  let spyOnAdminCreateUser: jasmine.Spy;
+  let spyOnAdminInitiateAuth: jasmine.Spy;
+  let spyOnAdminRespondToChallenge: jasmine.Spy;
+  let spyOnRespond: jasmine.Spy;
+  let spyOnRespondWithError: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.userPoolId] = fakeUserPoolId;
+    process.env[envNames.authClientId] = fakeClientId;
+
+    spyOnValidate = spyOn(apig, 'validate')
+      .and.callThrough();
+    spyOn(uuid, 'v4').and.returnValue(fakeUserId);
+    spyOn(Buffer.prototype, 'toString').and.returnValues(fakeTemporaryPassword, fakeNewPassword);
+    spyOnAdminCreateUser = spyOn(cognito, 'adminCreateUser')
+      .and.returnValue(fakeResolve());
+    spyOnAdminInitiateAuth = spyOn(cognito, 'adminInitiateAuth')
+      .and.returnValue(fakeResolve({ Session: fakeSessionToken }));
+    spyOnAdminRespondToChallenge = spyOn(cognito, 'adminRespondToAuthChallenge')
+      .and.returnValue(fakeResolve());
+    spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    spyOnRespondWithError = spyOn(apig, 'respondWithError')
+      .and.callFake((callback: Callback) => callback());
+  });
+
+  it('calls apig.validate() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnValidate).toHaveBeenCalledWith(fakeRequest(), 'POST', '/users');
+      expect(spyOnValidate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls CognitoIdentityServiceProvider.adminCreateUser() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnAdminCreateUser).toHaveBeenCalledWith({
+        UserPoolId: fakeUserPoolId,
+        Username: fakeUserId,
+        MessageAction: 'SUPPRESS',
+        TemporaryPassword: fakeTemporaryPassword,
+        UserAttributes: [{
+          Name: 'email',
+          Value: fakeEmail,
+        },{
+          Name: 'name',
+          Value: fakeIdentityName,
+        }],
+      });
+      expect(spyOnAdminCreateUser).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls CognitoIdentityServiceProvider.adminInitiateAuth() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnAdminInitiateAuth).toHaveBeenCalledWith({
+        AuthFlow: 'ADMIN_NO_SRP_AUTH',
+        ClientId: fakeClientId,
+        UserPoolId: fakeUserPoolId,
+        AuthParameters: {
+          USERNAME: fakeUserId,
+          PASSWORD: fakeTemporaryPassword,
+        },
+      });
+      expect(spyOnAdminInitiateAuth).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls CognitoIdentityServiceProvider.adminRespondToAuthChallenge() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnAdminRespondToChallenge).toHaveBeenCalledWith({
+        ChallengeName: 'NEW_PASSWORD_REQUIRED',
+        ClientId: fakeClientId,
+        UserPoolId: fakeUserPoolId,
+        ChallengeResponses: {
+          USERNAME: fakeUserId,
+          NEW_PASSWORD: fakeNewPassword,
+        },
+        Session: fakeSessionToken,
+      });
+      expect(spyOnAdminRespondToChallenge).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls apig.respond() once with correct parameters', (done: Callback) => {
+    const callback = () => {
+      expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(), fakeResponse());
+      expect(ajv.validate('spec#/definitions/User', fakeResponse())).toBe(true);
+      expect(spyOnRespond).toHaveBeenCalledTimes(1);
+      done();
+    };
+    testMethod(callback);
+  });
+
+  describe('calls apig.respondWithError() immediately with the error if', () => {
+    let err: Error | ApiError;
+
+    const testError = (after: Callback, done: Callback, validated = true) => {
+      const callback = () => {
+        expect(spyOnRespondWithError).toHaveBeenCalledWith(
+          callback, fakeRequest(validated), err);
+        expect(spyOnRespondWithError).toHaveBeenCalledTimes(1);
+        after();
+        done();
+      };
+      testMethod(callback);
+    };
+
+    it('apig.validate() responds with an error', (done: Callback) => {
+      err = new ApiError('validate()');
+      spyOnValidate.and.returnValue(Promise.reject(err));
+      testError(() => {
+        expect(spyOnAdminCreateUser).not.toHaveBeenCalled();
+      }, done, false);
+    });
+
+    it('CognitoIdentityServiceProvider.adminCreateUser() responds with an error', (done: Callback) => {
+      err = Error('CognitoIdentityServiceProvider.adminCreateUser()');
+      spyOnAdminCreateUser.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnAdminInitiateAuth).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('CognitoIdentityServiceProvider.adminInitiateAuth() responds with an error', (done: Callback) => {
+      err = Error('CognitoIdentityServiceProvider.adminInitiateAuth()');
+      spyOnAdminInitiateAuth.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnAdminRespondToChallenge).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('CognitoIdentityServiceProvider.adminRespondToAuthChallenge() responds with an error', (done: Callback) => {
+      err = Error('CognitoIdentityServiceProvider.adminRespondToAuthChallenge()');
+      spyOnAdminRespondToChallenge.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('apig.respond() throws an error', (done: Callback) => {
+      err = Error('apig.respond()');
+      spyOnRespond.and.throwError(err.message);
+      testError(() => {}, done);
     });
   });
 });

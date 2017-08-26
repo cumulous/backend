@@ -473,11 +473,12 @@ Resources:
     Type: AWS::Lambda::Function
     Properties:
       FunctionName: !Sub ${BackendStack}-CreateUser
-      Handler: users.create
+      Handler: cognito.createUser
       Timeout: 30
       Environment:
         Variables:
-          USER_POOL: !Ref UserPool
+          AUTH_CLIENT_ID: !Ref UserPoolClient
+          USER_POOL_ID: !Ref UserPool
           WEB_DOMAIN: !Ref WebDomain
       Runtime: nodejs6.10
       Code:
@@ -503,7 +504,10 @@ Resources:
             Version: 2012-10-17
             Statement:
               - Effect: Allow
-                Action: cognito-idp:AdminCreateUser
+                Action:
+                  - cognito-idp:AdminCreateUser
+                  - cognito-idp:AdminInitiateAuth
+                  - cognito-idp:AdminRespondToAuthChallenge
                 Resource:
                   - !GetAtt UserPool.Arn
 
