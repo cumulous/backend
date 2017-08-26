@@ -285,6 +285,9 @@ describe('cognito.createUser', () => {
           Name: 'email',
           Value: fakeEmail,
         },{
+          Name: 'email_verified',
+          Value: 'true',
+        },{
           Name: 'name',
           Value: fakeIdentityName,
         }],

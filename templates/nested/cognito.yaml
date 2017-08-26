@@ -24,8 +24,6 @@ Resources:
         AllowAdminCreateUserOnly: True
       AliasAttributes:
         - email
-      AutoVerifiedAttributes:
-        - email
       Schema:
         - Name: email
           AttributeDataType: String

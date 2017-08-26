@@ -72,6 +72,9 @@ const adminCreateUser = (username: string, password: string, email: string, name
       Name: 'email',
       Value: email,
     },{
+      Name: 'email_verified',
+      Value: 'true',
+    },{
       Name: 'name',
       Value: name,
     }],
