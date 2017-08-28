@@ -756,7 +756,7 @@ Resources:
   ListUser:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-CreateUser
+      FunctionName: !Sub ${BackendStack}-ListUser
       Handler: cognito.createUser
       Timeout: 30
       Environment:
