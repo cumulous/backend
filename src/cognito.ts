@@ -2,7 +2,7 @@ import { CognitoIdentityServiceProvider } from 'aws-sdk';
 import { randomBytes } from 'crypto';
 import { v4 as uuid } from 'uuid';
 
-import { Request, respond, respondWithError, validate } from './apig';
+import { ApiError, Request, respond, respondWithError, validate } from './apig';
 import { envNames } from './env';
 import { Callback } from './types';
 
@@ -86,7 +86,12 @@ export const createUser = (request: Request, context: any, callback: Callback) =
           name: request.body.name,
         }));
     })
-    .catch(err => respondWithError(callback, request, err));
+    .catch(err => {
+      if (err.code === 'UsernameExistsException') {
+        err = new ApiError('Conflict', ['User with this email already exists'], 409);
+      }
+      respondWithError(callback, request, err);
+    });
 };
 
 const generatePassword = () =>

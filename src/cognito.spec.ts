@@ -453,7 +453,7 @@ describe('cognito.createUser', () => {
   });
 
   describe('calls apig.respondWithError() immediately with the error if', () => {
-    let err: Error | ApiError;
+    let err: Error | ApiError | jasmine.ObjectContaining<{ code: number }>;
 
     const testError = (after: Callback, done: Callback, validated = true) => {
       const callback = () => {
@@ -474,9 +474,19 @@ describe('cognito.createUser', () => {
       }, done, false);
     });
 
-    it('CognitoIdentityServiceProvider.adminCreateUser() responds with an error', (done: Callback) => {
+    it('CognitoIdentityServiceProvider.adminCreateUser() responds with a generic error', (done: Callback) => {
       err = Error('CognitoIdentityServiceProvider.adminCreateUser()');
       spyOnAdminCreateUser.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnAdminInitiateAuth).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('CognitoIdentityServiceProvider.adminCreateUser() responds with UsernameExistsException', (done: Callback) => {
+      err = jasmine.objectContaining({ code: 409 });
+      spyOnAdminCreateUser.and.returnValue(fakeReject(new ApiError(
+        'CognitoIdentityServiceProvider.adminCreateUser()', undefined, 'UsernameExistsException'
+      )));
       testError(() => {
         expect(spyOnAdminInitiateAuth).not.toHaveBeenCalled();
       }, done);
