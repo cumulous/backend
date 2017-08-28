@@ -56,7 +56,7 @@ export const createResourceServer = (request: ResourceServerRequest, context: an
       }],
     }).promise())
     .then(() => callback(null, {
-      Scopes: [`${request.Identifier}/invoke`],
+      Scope: `${request.Identifier}/invoke`,
     }))
     .catch(callback);
 };

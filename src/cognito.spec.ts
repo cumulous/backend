@@ -251,9 +251,7 @@ describe('cognito.createResourceServer()', () => {
       createResourceServer(fakeRequest(), null, (err?: Error, data?: any) => {
         expect(err).toBeFalsy();
         expect(data).toEqual({
-          Scopes: [
-            fakeIdentifier + '/invoke',
-          ],
+          Scope: fakeIdentifier + '/invoke',
         });
         done();
       });

@@ -317,7 +317,7 @@ Resources:
           "ClientId": "${FrontendClient}",
           "AllowedOAuthFlowsUserPoolClient": true,
           "AllowedOAuthFlows": [ "implicit" ],
-          "AllowedOAuthScopes": ${ResourceServer.Scopes},
+          "AllowedOAuthScopes": ${ResourceServer.Scope},
           "CallbackURLs": [ "https://${WebDomain}/login" ],
           "LogoutURLs": [ "https://${WebDomain}/login" ],
           "SupportedIdentityProviders": [ "COGNITO" ],
@@ -644,7 +644,7 @@ Resources:
                   "CreateResourceServer": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.Config",
-                    "ResultPath": "$.Data.Scopes",
+                    "ResultPath": "$.Data",
                     "Resource": "${CreateResourceServer.Arn}",
                     "Next": "Success"
                   },
