@@ -608,7 +608,7 @@ Resources:
                 Action: lambda:InvokeFunction
                 Resource:
                   - !GetAtt CreateResourceServer.Arn
-                  - !GetAtt UpdateResourceServer.Arn
+                  - !GetAtt DeleteResourceServer.Arn
                   - !GetAtt SendCloudFormationResponse.Arn
 
   ResourceServerStateMachine:
