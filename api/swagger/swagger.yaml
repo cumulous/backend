@@ -300,6 +300,27 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-CreateUser/invocations
+    get:
+      summary: Get a user by their email
+      description: |
+        Returns a user given their email
+      operationId: listUser
+      security:
+        - member_token: []
+      tags:
+        - Users
+      parameters:
+        - $ref: '#/parameters/QueryUserByEmail'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: A user (if found)
+          schema:
+            $ref: '#/definitions/User'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-ListUser/invocations
   /datasets:
     options:
       tags:
@@ -1432,6 +1453,13 @@ parameters:
           $ref: '#/definitions/Email'
         name:
           $ref: '#/definitions/IdentityName'
+  QueryUserByEmail:
+    in: query
+    name: email
+    description: User email
+    type: string
+    required: true
+    format: email
   DatasetCreationRequest:
     in: body
     name: DatasetCreationRequest

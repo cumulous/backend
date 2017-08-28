@@ -3,7 +3,7 @@ import * as uuid from 'uuid';
 
 import * as apig from './apig';
 import { ajv, ApiError } from './apig';
-import { cognito, createUser,
+import { cognito, createUser, listUser,
          createUserPoolDomain, deleteUserPoolDomain, updateUserPoolClient,
          createResourceServer, deleteResourceServer } from './cognito';
 import { envNames } from './env';
@@ -503,6 +503,155 @@ describe('cognito.createUser', () => {
     it('CognitoIdentityServiceProvider.adminRespondToAuthChallenge() responds with an error', (done: Callback) => {
       err = Error('CognitoIdentityServiceProvider.adminRespondToAuthChallenge()');
       spyOnAdminRespondToChallenge.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('apig.respond() throws an error', (done: Callback) => {
+      err = Error('apig.respond()');
+      spyOnRespond.and.throwError(err.message);
+      testError(() => {}, done);
+    });
+  });
+});
+
+describe('cognito.listUser', () => {
+  const fakeUserId = uuid();
+
+  const fakeQuery = () => ({
+    email: fakeEmail,
+  });
+
+  const fakeRequest = () => ({
+    queryStringParameters: fakeQuery(),
+  });
+
+  const fakeUser = (status = 'CONFIRMED') => ({
+    Username: fakeUserId,
+    Attributes: [{
+      Name: 'email',
+      Value: fakeEmail,
+    },{
+      Name: 'name',
+      Value: fakeIdentityName,
+    }],
+    UserStatus: status,
+  });
+
+  const fakeSocialUser = () => ({
+    Username: fakeUserId,
+    Attributes: [{
+      Name: 'email',
+      Value: fakeEmail,
+    },{
+      Name: 'name',
+      Value: fakeIdentityName + ' (Social)',
+    }],
+    UserStatus: 'EXTERNAL_PROVIDER',
+  });
+
+  const fakeResponse = () => ({
+    id: fakeUserId,
+    email: fakeEmail,
+    name: fakeIdentityName,
+  });
+
+  const testMethod = (callback: Callback) =>
+    listUser(fakeRequest(), null, callback);
+
+  let spyOnValidate: jasmine.Spy;
+  let spyOnListUsers: jasmine.Spy;
+  let spyOnRespond: jasmine.Spy;
+  let spyOnRespondWithError: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.userPoolId] = fakeUserPoolId;
+
+    spyOnValidate = spyOn(apig, 'validate')
+      .and.callThrough();
+    spyOnListUsers = spyOn(cognito, 'listUsers')
+      .and.returnValue(fakeResolve({
+        Users: [fakeSocialUser(), fakeUser()],
+      }));
+    spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    spyOnRespondWithError = spyOn(apig, 'respondWithError')
+      .and.callFake((callback: Callback) => callback());
+  });
+
+  it('calls apig.validate() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnValidate).toHaveBeenCalledWith(fakeRequest(), 'GET', '/users');
+      expect(spyOnValidate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls CognitoIdentityServiceProvider.listUsers() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnListUsers).toHaveBeenCalledWith({
+        UserPoolId: fakeUserPoolId,
+        AttributesToGet: [ 'email', 'name' ],
+        Filter: 'email = "' + fakeEmail + '"',
+      });
+      expect(spyOnListUsers).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls apig.respond() once with correct parameters', (done: Callback) => {
+    const callback = () => {
+      expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(), fakeResponse());
+      expect(ajv.validate('spec#/definitions/User', fakeResponse())).toBe(true);
+      expect(spyOnRespond).toHaveBeenCalledTimes(1);
+      done();
+    };
+    testMethod(callback);
+  });
+
+  describe('calls apig.respondWithError() immediately with the error if', () => {
+    let err: Error | ApiError | jasmine.ObjectContaining<{ code: number }>;
+
+    const testError = (after: Callback, done: Callback) => {
+      const callback = () => {
+        expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, fakeRequest(), err);
+        expect(spyOnRespondWithError).toHaveBeenCalledTimes(1);
+        after();
+        done();
+      };
+      testMethod(callback);
+    };
+
+    it('apig.validate() responds with an error', (done: Callback) => {
+      err = new ApiError('validate()');
+      spyOnValidate.and.returnValue(Promise.reject(err));
+      testError(() => {
+        expect(spyOnListUsers).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('CognitoIdentityServiceProvider.listUsers() responds with an error', (done: Callback) => {
+      err = Error('CognitoIdentityServiceProvider.listUsers()');
+      spyOnListUsers.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('CognitoIdentityServiceProvider.listUsers() responds with an empty list', (done: Callback) => {
+      err = jasmine.objectContaining({ code: 404 });
+      spyOnListUsers.and.returnValue(fakeResolve({ Users: [] }));
+      testError(() => {
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('CognitoIdentityServiceProvider.listUsers() does not list a built-in user', (done: Callback) => {
+      err = jasmine.objectContaining({ code: 404 });
+      spyOnListUsers.and.returnValue(fakeResolve({
+        Users: [fakeSocialUser()],
+      }));
       testError(() => {
         expect(spyOnRespond).not.toHaveBeenCalled();
       }, done);

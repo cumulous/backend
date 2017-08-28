@@ -140,3 +140,34 @@ const adminRespondToAuthChallenge = (username: string, password: string, session
     Session: session,
   }).promise();
 };
+
+export const listUser = (request: Request, context: any, callback: Callback) => {
+  validate(request, 'GET', '/users')
+    .then(() => getUserByAttribute('email', request.queryStringParameters.email))
+    .then(user => respond(callback, request, {
+      id: user.Username,
+      email: getUserAttribute(user, 'email'),
+      name:  getUserAttribute(user, 'name'),
+    }))
+    .catch(err => respondWithError(callback, request, err));
+};
+
+const getUserByAttribute = (attributeName: string, attributeValue: string) => {
+  return cognito.listUsers({
+    UserPoolId: process.env[envNames.userPoolId],
+    AttributesToGet: [ 'email', 'name' ],
+    Filter: `${attributeName} = "${attributeValue}"`,
+  }).promise()
+    .then(data => {
+      const user = data.Users.filter(user => user.UserStatus !== 'EXTERNAL_PROVIDER')[0];
+      if (user == null) {
+        throw new ApiError('Not Found', ['User not found'], 404);
+      }
+      return user;
+    });
+}
+
+type User = CognitoIdentityServiceProvider.Types.UserType;
+
+const getUserAttribute = (user: User, attributeName: string) =>
+  user.Attributes.filter(attribute => attribute.Name === attributeName)[0].Value;
