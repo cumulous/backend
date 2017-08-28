@@ -321,6 +321,58 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-ListUser/invocations
+  /users/{user_id}:
+    options:
+      tags:
+        - Users
+      parameters:
+        - $ref: '#/parameters/UserId'
+      responses:
+        200:
+          description: HTTP options
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
+    get:
+      summary: Get a user by their id
+      description: |
+        Returns a user given their id
+      operationId: getUser
+      security:
+        - member_token: []
+      tags:
+        - Users
+      parameters:
+        - $ref: '#/parameters/UserId'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: User details
+          schema:
+            $ref: '#/definitions/User'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-GetUser/invocations
   /datasets:
     options:
       tags:
@@ -1460,6 +1512,13 @@ parameters:
     type: string
     required: true
     format: email
+  UserId:
+    in: path
+    name: user_id
+    description: Unique identifier for a user
+    required: true
+    type: string
+    format: uuid
   DatasetCreationRequest:
     in: body
     name: DatasetCreationRequest

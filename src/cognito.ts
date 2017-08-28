@@ -146,8 +146,8 @@ export const listUser = (request: Request, context: any, callback: Callback) => 
     .then(() => getUserByAttribute('email', request.queryStringParameters.email))
     .then(user => respond(callback, request, {
       id: user.Username,
-      email: getUserAttribute(user, 'email'),
-      name:  getUserAttribute(user, 'name'),
+      email: getUserAttribute(user.Attributes, 'email'),
+      name:  getUserAttribute(user.Attributes, 'name'),
     }))
     .catch(err => respondWithError(callback, request, err));
 };
@@ -167,7 +167,26 @@ const getUserByAttribute = (attributeName: string, attributeValue: string) => {
     });
 }
 
-type User = CognitoIdentityServiceProvider.Types.UserType;
+type UserAttribute = CognitoIdentityServiceProvider.Types.AttributeType;
 
-const getUserAttribute = (user: User, attributeName: string) =>
-  user.Attributes.filter(attribute => attribute.Name === attributeName)[0].Value;
+const getUserAttribute = (attributes: UserAttribute[], attributeName: string) =>
+  attributes.filter(attribute => attribute.Name === attributeName)[0].Value;
+
+export const getUser = (request: Request, context: any, callback: Callback) => {
+  validate(request, 'GET', '/users/{user_id}')
+    .then(() => cognito.adminGetUser({
+      UserPoolId: process.env[envNames.userPoolId],
+      Username: request.pathParameters.user_id,
+    }).promise())
+    .then(user => respond(callback, request, {
+      id: user.Username,
+      email: getUserAttribute(user.UserAttributes, 'email'),
+      name:  getUserAttribute(user.UserAttributes, 'name'),
+    }))
+    .catch(err => {
+      if (err.code === 'UserNotFoundException') {
+        err = new ApiError('Not Found', ['User not found'], 404);
+      }
+      respondWithError(callback, request, err);
+    });
+};

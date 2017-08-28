@@ -51,6 +51,7 @@ export const getPolicy = (principalId: string, expiresAt: number, methodArn: str
               'POST   /projects',
               'POST   /users',
               'GET    /users',
+              'GET    /users/*',
               'GET    /datasets',
               'POST   /datasets',
               'POST   /datasets/*/credentials',
