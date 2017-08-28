@@ -7,6 +7,8 @@ Parameters:
     Type: String
   WebDomain:
     Type: String
+  ApiDomain:
+    Type: String
   ApiId:
     Type: String
   ApiStage:
@@ -437,6 +439,227 @@ Resources:
                     "InputPath": "$.ResourceProperties.Config",
                     "ResultPath": null,
                     "Resource": "${UpdateUserPoolClient.Arn}",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
+
+  ResourceServer:
+    Type: Custom::UserPoolResourceServer
+    Properties:
+      ServiceToken: !GetAtt SetupResourceServer.Arn
+      StateMachine: !Ref ResourceServerStateMachine
+      Config:
+        Identifier: !Ref ApiDomain
+        UserPoolId: !Ref UserPool
+
+  SetupResourceServer:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.setupCustomResource
+      Timeout: 10
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt SetupResourceServerRole.Arn
+
+  SetupResourceServerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SetupResourceServerRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref ResourceServerStateMachine
+
+  CreateResourceServer:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: cognito.createResourceServer
+      Timeout: 30
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CreateResourceServerRole.Arn
+
+  CreateResourceServerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateResourceServerRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cognito-idp:CreateResourceServer
+                Resource:
+                  - !GetAtt UserPool.Arn
+
+  DeleteResourceServer:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: cognito.deleteResourceServer
+      Timeout: 30
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt DeleteResourceServerRole.Arn
+
+  DeleteResourceServerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: DeleteResourceServerRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cognito-idp:DeleteResourceServer
+                Resource:
+                  - !GetAtt UserPool.Arn
+
+  ResourceServerStateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StatesExecutionRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CreateResourceServer.Arn
+                  - !GetAtt UpdateResourceServer.Arn
+                  - !GetAtt SendCloudFormationResponse.Arn
+
+  ResourceServerStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt ResourceServerStateMachineRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupIntegration",
+          "States": {
+            "SetupIntegration": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "CheckRequestType",
+                "States": {
+                  "CheckRequestType": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Create",
+                      "Next": "CreateResourceServer"
+                    },{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "DeleteBeforeCreate"
+                    },{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "DeleteResourceServer"
+                    }]
+                  },
+                  "CreateResourceServer": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Config",
+                    "ResultPath": "$.Data.Scopes",
+                    "Resource": "${CreateResourceServer.Arn}",
+                    "Next": "Success"
+                  },
+                  "DeleteBeforeCreate": {
+                    "Type": "Task",
+                    "InputPath": "$.OldResourceProperties.Config",
+                    "ResultPath": null,
+                    "Resource": "${DeleteResourceServer.Arn}",
+                    "Next": "CreateResourceServer"
+                  },
+                  "DeleteResourceServer": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Config",
+                    "ResultPath": null,
+                    "Resource": "${DeleteResourceServer.Arn}",
                     "Next": "Success"
                   },
                   "Success": {

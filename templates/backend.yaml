@@ -166,6 +166,7 @@ Resources:
         ArtifactsBucket: !Ref ArtifactsBucket
         LambdaPackage: !Ref LambdaPackage
         WebDomain: !Ref WebDomain
+        ApiDomain: !Ref ApiDomain
         ApiId: !GetAtt Api.Outputs.ApiId
         ApiStage: !GetAtt Api.Outputs.ApiStage
         MinimumPasswordLength: 12

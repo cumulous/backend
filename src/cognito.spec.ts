@@ -4,7 +4,8 @@ import * as uuid from 'uuid';
 import * as apig from './apig';
 import { ajv, ApiError } from './apig';
 import { cognito, createUser,
-         createUserPoolDomain, deleteUserPoolDomain, updateUserPoolClient } from './cognito';
+         createUserPoolDomain, deleteUserPoolDomain, updateUserPoolClient,
+         createResourceServer, deleteResourceServer } from './cognito';
 import { envNames } from './env';
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
 import { Callback } from './types';
@@ -210,6 +211,119 @@ describe('cognito.updateUserPoolClient()', () => {
         fakeReject('CognitoIdentityServiceProvider.updateUserPoolClient()')
       );
       testError(updateUserPoolClient, fakeRequest(), done);
+    });
+  });
+});
+
+describe('cognito.createResourceServer()', () => {
+  const fakeIdentifier = 'api.example.org';
+
+  const fakeRequest = () => ({
+    Identifier: fakeIdentifier,
+    UserPoolId: fakeUserPoolId,
+  });
+
+  let spyOnCreateResourceServer: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnCreateResourceServer = spyOn(cognito, 'createResourceServer')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls CognitoIdentityServiceProvider.createResourceServer() once with correct parameters', (done: Callback) => {
+    createResourceServer(fakeRequest(), null, () => {
+      expect(spyOnCreateResourceServer).toHaveBeenCalledWith({
+        Identifier: fakeIdentifier,
+        Name: fakeIdentifier,
+        UserPoolId: fakeUserPoolId,
+        Scopes: [{
+          ScopeDescription: jasmine.any(String),
+          ScopeName: 'invoke',
+        }],
+      });
+      expect(spyOnCreateResourceServer).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  describe('calls callback with correct parameters', () => {
+    it('for a successful request', (done: Callback) => {
+      createResourceServer(fakeRequest(), null, (err?: Error, data?: any) => {
+        expect(err).toBeFalsy();
+        expect(data).toEqual({
+          Scopes: [
+            fakeIdentifier + '/invoke',
+          ],
+        });
+        done();
+      });
+    });
+    describe('if request is', () => {
+      let request: any;
+      it('undefined', () => request = undefined);
+      it('null', () => request = null);
+      afterEach((done: Callback) => {
+        testError(createResourceServer, request, () => {
+          expect(spyOnCreateResourceServer).not.toHaveBeenCalled();
+          done();
+        });
+      });
+    });
+    it('if CognitoIdentityServiceProvider.createResourceServer() produces an error', (done: Callback) => {
+      spyOnCreateResourceServer.and.returnValue(
+        fakeReject('CognitoIdentityServiceProvider.createResourceServer()')
+      );
+      testError(createResourceServer, fakeRequest(), done);
+    });
+  });
+});
+
+describe('cognito.deleteResourceServer()', () => {
+  const fakeIdentifier = 'api.example.org';
+
+  const fakeRequest = () => ({
+    Identifier: fakeIdentifier,
+    UserPoolId: fakeUserPoolId,
+  });
+
+  let spyOnDeleteResourceServer: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnDeleteResourceServer = spyOn(cognito, 'deleteResourceServer')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls CognitoIdentityServiceProvider.deleteResourceServer() once with correct parameters', (done: Callback) => {
+    deleteResourceServer(fakeRequest(), null, () => {
+      expect(spyOnDeleteResourceServer).toHaveBeenCalledWith({
+        Identifier: fakeIdentifier,
+        UserPoolId: fakeUserPoolId,
+      });
+      expect(spyOnDeleteResourceServer).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  describe('calls callback with correct parameters', () => {
+    it('for a successful request', (done: Callback) => {
+      testError(deleteResourceServer, fakeRequest(), done, false);
+    });
+    describe('if request is', () => {
+      let request: any;
+      it('undefined', () => request = undefined);
+      it('null', () => request = null);
+      afterEach((done: Callback) => {
+        testError(deleteResourceServer, request, () => {
+          expect(spyOnDeleteResourceServer).not.toHaveBeenCalled();
+          done();
+        });
+      });
+    });
+    it('if CognitoIdentityServiceProvider.deleteResourceServer() produces an error', (done: Callback) => {
+      spyOnDeleteResourceServer.and.returnValue(
+        fakeReject('CognitoIdentityServiceProvider.deleteResourceServer()')
+      );
+      testError(deleteResourceServer, fakeRequest(), done);
     });
   });
 });

@@ -14,7 +14,7 @@ interface UserPoolDomainRequest {
 };
 
 export const createUserPoolDomain = (request: UserPoolDomainRequest, context: any, callback: Callback) => {
-  return Promise.resolve()
+  Promise.resolve()
     .then(() => getDomain(request))
     .then(domain => cognito.createUserPoolDomain(domain).promise()
       .then(() => callback(null, domain)))
@@ -27,7 +27,7 @@ const getDomain = (request: UserPoolDomainRequest) => ({
 });
 
 export const deleteUserPoolDomain = (request: UserPoolDomainRequest, context: any, callback: Callback) => {
-  return Promise.resolve()
+  Promise.resolve()
     .then(() => getDomain(request))
     .then(domain => cognito.deleteUserPoolDomain(domain).promise())
     .then(() => callback())
@@ -35,9 +35,38 @@ export const deleteUserPoolDomain = (request: UserPoolDomainRequest, context: an
 };
 
 export const updateUserPoolClient = (request: string, context: any, callback: Callback) => {
-  return Promise.resolve()
+  Promise.resolve()
     .then(() => JSON.parse(request))
     .then(request => cognito.updateUserPoolClient(request).promise())
+    .then(() => callback())
+    .catch(callback);
+};
+
+type ResourceServerRequest = CognitoIdentityServiceProvider.Types.DescribeResourceServerRequest;
+
+export const createResourceServer = (request: ResourceServerRequest, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => cognito.createResourceServer({
+      UserPoolId: request.UserPoolId,
+      Identifier: request.Identifier,
+      Name: request.Identifier,
+      Scopes: [{
+        ScopeName: 'invoke',
+        ScopeDescription: 'Invoke ' + request.Identifier,
+      }],
+    }).promise())
+    .then(() => callback(null, {
+      Scopes: [`${request.Identifier}/invoke`],
+    }))
+    .catch(callback);
+};
+
+export const deleteResourceServer = (request: ResourceServerRequest, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => cognito.deleteResourceServer({
+      UserPoolId: request.UserPoolId,
+      Identifier: request.Identifier,
+    }).promise())
     .then(() => callback())
     .catch(callback);
 };
