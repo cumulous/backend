@@ -317,7 +317,7 @@ Resources:
           "ClientId": "${FrontendClient}",
           "AllowedOAuthFlowsUserPoolClient": true,
           "AllowedOAuthFlows": [ "implicit" ],
-          "AllowedOAuthScopes": [ "openid" ],
+          "AllowedOAuthScopes": ${ResourceServer.Scopes},
           "CallbackURLs": [ "https://${WebDomain}/login" ],
           "LogoutURLs": [ "https://${WebDomain}/login" ],
           "SupportedIdentityProviders": [ "COGNITO" ],
