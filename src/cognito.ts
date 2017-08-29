@@ -190,3 +190,35 @@ export const getUser = (request: Request, context: any, callback: Callback) => {
       respondWithError(callback, request, err);
     });
 };
+
+export const createClient = (request: Request, context: any, callback: Callback) => {
+  validate(request, 'POST', '/clients')
+    .then(() => createUserPoolClient(request.body.email, request.body.name))
+    .then(data => data.UserPoolClient)
+    .then(client => respond(callback, request, {
+      id: client.ClientId,
+      secret: client.ClientSecret,
+      email: request.body.email,
+      name: request.body.name,
+    }))
+    .catch(err => {
+      if (err.code === 'LimitExceededException') {
+        err = new ApiError('Too Many Requests', [
+          'Exceeded the maximum number of clients per user pool. ' +
+          'Please contact your system administrator to increase this limit.',
+        ], 429);
+      }
+      respondWithError(callback, request, err);
+    });
+};
+
+const createUserPoolClient = (email: string, name: string) => {
+  return cognito.createUserPoolClient({
+    UserPoolId: process.env[envNames.userPoolId],
+    ClientName: `${email}, ${name}`,
+    AllowedOAuthFlowsUserPoolClient: true,
+    AllowedOAuthFlows: ['client_credentials'],
+    AllowedOAuthScopes: [`${process.env[envNames.apiDomain]}/invoke`],
+    GenerateSecret: true,
+  }).promise();
+}

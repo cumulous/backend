@@ -373,6 +373,62 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-GetUser/invocations
+  /clients:
+    options:
+      tags:
+        - Clients
+      responses:
+        200:
+          description: HTTP options
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
+    post:
+      summary: Create an API client
+      description: |
+        Creates a client for invoking this API from a command line,
+        or from any other program that doesn't include a web flow for authentication.
+
+        Returns properties of the created client, including its ***secret***.
+        This is the **only** time that the secret can be obtained,
+        and as such it should be properly recorded
+        and stored in a secure environment.
+      operationId: createClient
+      security:
+        - member_token: []
+      tags:
+        - Clients
+      parameters:
+        - $ref: '#/parameters/ClientCreationRequest'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Properties of the created client
+          schema:
+            $ref: '#/definitions/Client'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-CreateClient/invocations
   /datasets:
     options:
       tags:
@@ -1076,6 +1132,28 @@ definitions:
     description: Unique identifier for a user
     type: string
     format: uuid
+  Client:
+    required:
+      - id
+      - email
+      - name
+    properties:
+      id:
+        $ref: '#/definitions/ClientId'
+      secret:
+        $ref: '#/definitions/ClientSecret'
+      email:
+        $ref: '#/definitions/Email'
+      name:
+        $ref: '#/definitions/IdentityName'
+  ClientId:
+    description: Unique identifier for a client
+    type: string
+    pattern: ^[\w+]{1,128}$
+  ClientSecret:
+    description: Client secret
+    type: string
+    pattern: ^[\w+]{1,64}$
   IdentityName:
     description: User or client name
     type: string
@@ -1519,6 +1597,21 @@ parameters:
     required: true
     type: string
     format: uuid
+  ClientCreationRequest:
+    in: body
+    name: ClientCreationRequest
+    description: Properties of the client to be created
+    required: true
+    schema:
+      required:
+        - email
+        - name
+      additionalProperties: false
+      properties:
+        email:
+          $ref: '#/definitions/Email'
+        name:
+          $ref: '#/definitions/IdentityName'
   DatasetCreationRequest:
     in: body
     name: DatasetCreationRequest
