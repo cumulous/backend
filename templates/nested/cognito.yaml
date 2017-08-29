@@ -43,35 +43,6 @@ Resources:
           RequireSymbols: True
           RequireUppercase: True
 
-  FrontendClient:
-    Type: AWS::Cognito::UserPoolClient
-    Properties:
-      ClientName: !Sub ${BackendStack}-frontend-client
-      UserPoolId: !Ref UserPool
-      GenerateSecret: False
-
-  BackendClient:
-    Type: AWS::Cognito::UserPoolClient
-    Properties:
-      ClientName: !Sub ${BackendStack}-backend-client
-      UserPoolId: !Ref UserPool
-      GenerateSecret: False
-      ExplicitAuthFlows:
-        - ADMIN_NO_SRP_AUTH
-      ReadAttributes:
-        - email
-        - name
-
-  TestClient:
-    Type: AWS::Cognito::UserPoolClient
-    Properties:
-      ClientName: !Sub ${BackendStack}-test-client
-      UserPoolId: !Ref UserPool
-      GenerateSecret: True
-      ReadAttributes:
-        - email
-        - name
-
   UserPoolDomain:
     Type: Custom::UserPoolDomain
     Properties:
@@ -315,6 +286,46 @@ Resources:
             }
           }
         }
+  BackendClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub ${BackendStack}-backend-client
+      UserPoolId: !Ref UserPool
+      GenerateSecret: False
+      ExplicitAuthFlows:
+        - ADMIN_NO_SRP_AUTH
+      ReadAttributes:
+        - email
+        - name
+
+  TestClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub ${BackendStack}-test-client
+      UserPoolId: !Ref UserPool
+      GenerateSecret: True
+
+  TestClientIntegration:
+    Type: Custom::UserPoolClientIntegration
+    Properties:
+      ServiceToken: !GetAtt SetupUserPoolClientIntegration.Arn
+      StateMachine: !Ref UserPoolClientIntegrationStateMachine
+      Config: !Sub |-
+        {
+          "UserPoolId": "${UserPool}",
+          "ClientId": "${TestClient}",
+          "AllowedOAuthFlowsUserPoolClient": true,
+          "AllowedOAuthFlows": [ "client_credentials" ],
+          "AllowedOAuthScopes": [ "${ResourceServer.Scope}" ],
+          "ReadAttributes": [ "email", "name" ]
+        }
+
+  FrontendClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub ${BackendStack}-frontend-client
+      UserPoolId: !Ref UserPool
+      GenerateSecret: False
 
   FrontendClientIntegration:
     Type: Custom::UserPoolClientIntegration
