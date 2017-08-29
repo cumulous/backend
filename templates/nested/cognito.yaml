@@ -289,7 +289,7 @@ Resources:
   BackendClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      ClientName: !Sub backend-client
+      ClientName: !Sub backend
       UserPoolId: !Ref UserPool
       GenerateSecret: False
       ExplicitAuthFlows:
@@ -301,7 +301,6 @@ Resources:
   TestClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      ClientName: !Sub test-client
       UserPoolId: !Ref UserPool
       GenerateSecret: True
 
@@ -313,6 +312,7 @@ Resources:
       Config: !Sub |-
         {
           "UserPoolId": "${UserPool}",
+          "ClientName": "test",
           "ClientId": "${TestClient}",
           "AllowedOAuthFlowsUserPoolClient": true,
           "AllowedOAuthFlows": [ "client_credentials" ],
@@ -320,14 +320,13 @@ Resources:
           "ReadAttributes": [ "email", "name" ]
         }
 
-  FrontendClient:
+  WebClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      ClientName: !Sub frontend-client
       UserPoolId: !Ref UserPool
       GenerateSecret: False
 
-  FrontendClientIntegration:
+  WebClientIntegration:
     Type: Custom::UserPoolClientIntegration
     Properties:
       ServiceToken: !GetAtt SetupUserPoolClientIntegration.Arn
@@ -335,6 +334,7 @@ Resources:
       Config: !Sub |-
         {
           "UserPoolId": "${UserPool}",
+          "ClientName": "web",
           "ClientId": "${FrontendClient}",
           "AllowedOAuthFlowsUserPoolClient": true,
           "AllowedOAuthFlows": [ "implicit" ],
@@ -978,10 +978,10 @@ Outputs:
     Value: !Sub ${UserPoolDomain.Domain}.auth.${AWS::Region}.amazoncognito.com
     Export:
       Name: !Sub ${BackendStack}-TokenDomain
-  FrontendClient:
-    Value: !Ref FrontendClient
+  WebClient:
+    Value: !Ref WebClient
     Export:
-      Name: !Sub ${BackendStack}-FrontendClient
+      Name: !Sub ${BackendStack}-WebClient
   TestClient:
     Value: !Ref TestClient
     Export:
