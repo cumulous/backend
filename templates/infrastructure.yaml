@@ -1529,18 +1529,14 @@ Resources:
         Image: aws/codebuild/nodejs:7.0.0
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
-          - Name: ARTIFACTS_BUCKET
-            Value: !Ref BackendArtifactsBucket
-          - Name: SECRETS_BUCKET
-            Value: !Ref SecretsBucket
-          - Name: WEB_BUCKET
-            Value: !Ref BetaWebBucket
           - Name: STACK_NAME
             Value: backend-beta
           - Name: API_DOMAIN
             Value: !Sub api.beta.${Domain}
-          - Name: AUTH0_DOMAIN
-            Value: !Ref Auth0Domain
+          - Name: TOKEN_LIFETIME
+            Value: !Ref AuthTokenLifetime
+          - Name: WEB_BUCKET
+            Value: !Ref BetaWebBucket
       ServiceRole: !Ref FrontendBuildRole
 
   FrontendReleaseBuildProject:
@@ -1653,6 +1649,14 @@ Resources:
                 Resource:
                   - !Sub arn:aws:s3:::${BetaWebBucket}
                   - !Sub arn:aws:s3:::${ReleaseWebBucket}
+              - Effect: Allow
+                Action:
+                  - cloudformation:ListExports
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - cognito-idp:DescribeUserPoolClient
+                Resource: '*'
 
   FrontendAuthPipeline:
     Type: AWS::CodePipeline::Pipeline
