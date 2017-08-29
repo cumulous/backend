@@ -227,11 +227,16 @@ export const getClient = (request: Request, context: any, callback: Callback) =>
   validate(request, 'GET', '/clients/{client_id}')
     .then(() => describeUserPoolClient(request.pathParameters.client_id))
     .then(data => data.UserPoolClient)
-    .then(client => respond(callback, request, {
-      id: request.pathParameters.client_id,
-      email: client.ClientName.split(/, /)[0],
-      name: client.ClientName.split(/, (.+)/)[1],
-    }))
+    .then(client => {
+      if (!/, /.test(client.ClientName)) {
+        throw new ApiError('Not Found', ['Client not found'], 404);
+      }
+      respond(callback, request, {
+        id: request.pathParameters.client_id,
+        email: client.ClientName.split(/, /)[0],
+        name: client.ClientName.split(/, (.+)/)[1],
+      });
+    })
     .catch(err => {
       if (err.code === 'ResourceNotFoundException') {
         err = new ApiError('Not Found', ['Client not found'], 404);

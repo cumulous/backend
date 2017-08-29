@@ -1028,6 +1028,19 @@ describe('cognito.getClient()', () => {
       }, done);
     });
 
+    it('client name does not follow "email, name" format', (done: Callback) => {
+      err = jasmine.objectContaining({ code: 404 });
+      spyOnDescribeUserPoolClient.and.returnValue(fakeResolve({
+        UserPoolClient: {
+          ClientName: 'backend-client',
+          ClientSecret: fakeClientSecret,
+        },
+      }));
+      testError(() => {
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+
     it('apig.respond() throws an error', (done: Callback) => {
       err = Error('apig.respond()');
       spyOnRespond.and.throwError(err.message);
