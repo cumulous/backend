@@ -963,15 +963,11 @@ Outputs:
     Value: !Sub ${UserPoolDomain.Domain}.auth.${AWS::Region}.amazoncognito.com
     Export:
       Name: !Sub ${BackendStack}-TokenDomain
-  FrontendClientId:
+  FrontendClient:
     Value: !Ref FrontendClient
     Export:
-      Name: !Sub ${BackendStack}-FrontendClientId
-  TestClientId:
+      Name: !Sub ${BackendStack}-FrontendClient
+  TestClient:
     Value: !Ref TestClient
     Export:
-      Name: !Sub ${BackendStack}-TestClientId
-  TestClientSecret:
-    Value: !GetAtt TestClient.ClientSecret
-    Export:
-      Name: !Sub ${BackendStack}-TestClientSecret
+      Name: !Sub ${BackendStack}-TestClient
