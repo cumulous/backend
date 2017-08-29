@@ -248,7 +248,7 @@ Resources:
                   "CreateDomain": {
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.Config",
-                    "ResultPath": "$.Data.Domain",
+                    "ResultPath": "$.Data",
                     "Resource": "${CreateUserPoolDomain.Arn}",
                     "Next": "Success"
                   },
