@@ -289,7 +289,7 @@ Resources:
   BackendClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      ClientName: !Sub ${BackendStack}-backend-client
+      ClientName: !Sub backend-client
       UserPoolId: !Ref UserPool
       GenerateSecret: False
       ExplicitAuthFlows:
@@ -301,7 +301,7 @@ Resources:
   TestClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      ClientName: !Sub ${BackendStack}-test-client
+      ClientName: !Sub test-client
       UserPoolId: !Ref UserPool
       GenerateSecret: True
 
@@ -323,7 +323,7 @@ Resources:
   FrontendClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
-      ClientName: !Sub ${BackendStack}-frontend-client
+      ClientName: !Sub frontend-client
       UserPoolId: !Ref UserPool
       GenerateSecret: False
 
