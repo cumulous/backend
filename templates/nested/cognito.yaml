@@ -335,7 +335,7 @@ Resources:
         {
           "UserPoolId": "${UserPool}",
           "ClientName": "web",
-          "ClientId": "${FrontendClient}",
+          "ClientId": "${WebClient}",
           "AllowedOAuthFlowsUserPoolClient": true,
           "AllowedOAuthFlows": [ "implicit" ],
           "AllowedOAuthScopes": [ "${ResourceServer.Scope}" ],
