@@ -62,6 +62,16 @@ Resources:
         - email
         - name
 
+  TestClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: !Sub ${BackendStack}-test-client
+      UserPoolId: !Ref UserPool
+      GenerateSecret: True
+      ReadAttributes:
+        - email
+        - name
+
   UserPoolDomain:
     Type: Custom::UserPoolDomain
     Properties:
@@ -947,21 +957,21 @@ Resources:
         arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/GET/clients/{client_id}
 
 Outputs:
-  UserPool:
-    Value: !Ref UserPool
-    Export:
-      Name: !Sub ${BackendStack}-UserPool
   AuthDomain:
     Value: !Sub cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
   TokenDomain:
     Value: !Sub ${UserPoolDomain.Domain}.auth.${AWS::Region}.amazoncognito.com
     Export:
       Name: !Sub ${BackendStack}-TokenDomain
-  FrontendClient:
+  FrontendClientID:
     Value: !Ref FrontendClient
     Export:
-      Name: !Sub ${BackendStack}-FrontendClient
-  BackendClient:
-    Value: !Ref BackendClient
+      Name: !Sub ${BackendStack}-FrontendClientID
+  TestClientID:
+    Value: !Ref TestClient
     Export:
-      Name: !Sub ${BackendStack}-BackendClient
+      Name: !Sub ${BackendStack}-TestClientID
+  TestClientSecret:
+    Value: !GetAtt TestClient.ClientSecret
+    Export:
+      Name: !Sub ${BackendStack}-TestClientSecret
