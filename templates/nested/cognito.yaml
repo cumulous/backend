@@ -947,6 +947,10 @@ Resources:
         arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/GET/clients/{client_id}
 
 Outputs:
+  UserPool:
+    Value: !Ref UserPool
+    Export:
+      Name: !Sub ${BackendStack}-UserPool
   AuthDomain:
     Value: !Sub cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
   TokenDomain:
