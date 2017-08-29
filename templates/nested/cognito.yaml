@@ -286,6 +286,7 @@ Resources:
             }
           }
         }
+
   BackendClient:
     Type: AWS::Cognito::UserPoolClient
     Properties:
@@ -312,8 +313,8 @@ Resources:
       Config: !Sub |-
         {
           "UserPoolId": "${UserPool}",
-          "ClientName": "test",
           "ClientId": "${TestClient}",
+          "ClientName": "test",
           "AllowedOAuthFlowsUserPoolClient": true,
           "AllowedOAuthFlows": [ "client_credentials" ],
           "AllowedOAuthScopes": [ "${ResourceServer.Scope}" ],
@@ -334,8 +335,8 @@ Resources:
       Config: !Sub |-
         {
           "UserPoolId": "${UserPool}",
-          "ClientName": "web",
           "ClientId": "${WebClient}",
+          "ClientName": "web",
           "AllowedOAuthFlowsUserPoolClient": true,
           "AllowedOAuthFlows": [ "implicit" ],
           "AllowedOAuthScopes": [ "${ResourceServer.Scope}" ],
