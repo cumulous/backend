@@ -222,3 +222,27 @@ const createUserPoolClient = (email: string, name: string) => {
     GenerateSecret: true,
   }).promise();
 }
+
+export const getClient = (request: Request, context: any, callback: Callback) => {
+  validate(request, 'GET', '/clients/{client_id}')
+    .then(() => describeUserPoolClient(request.pathParameters.client_id))
+    .then(data => data.UserPoolClient)
+    .then(client => respond(callback, request, {
+      id: request.pathParameters.client_id,
+      email: client.ClientName.split(/, /)[0],
+      name: client.ClientName.split(/, (.+)/)[1],
+    }))
+    .catch(err => {
+      if (err.code === 'ResourceNotFoundException') {
+        err = new ApiError('Not Found', ['Client not found'], 404);
+      }
+      respondWithError(callback, request, err);
+    });
+};
+
+const describeUserPoolClient = (clientId: string) => {
+  return cognito.describeUserPoolClient({
+    UserPoolId: process.env[envNames.userPoolId],
+    ClientId: clientId,
+  }).promise();
+}

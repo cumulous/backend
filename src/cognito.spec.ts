@@ -6,7 +6,7 @@ import { ajv, ApiError } from './apig';
 import { cognito, createUserPoolDomain, deleteUserPoolDomain, updateUserPoolClient,
          createResourceServer, deleteResourceServer,
          createUser, listUser, getUser,
-         createClient,
+         createClient, getClient,
 } from './cognito';
 import { envNames } from './env';
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
@@ -904,6 +904,124 @@ describe('cognito.createClient()', () => {
       err = jasmine.objectContaining({ code: 429 });
       spyOnCreateUserPoolClient.and.returnValue(fakeReject(new ApiError(
         'CognitoIdentityServiceProvider.createUserPoolClient()', undefined, 'LimitExceededException'
+      )));
+      testError(() => {
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('apig.respond() throws an error', (done: Callback) => {
+      err = Error('apig.respond()');
+      spyOnRespond.and.throwError(err.message);
+      testError(() => {}, done);
+    });
+  });
+});
+
+describe('cognito.getClient()', () => {
+  const fakeClientId = 'fakeOAuth2Client';
+  const fakeClientSecret = 'fakeClientSecret';
+
+  const fakeRequest = () => ({
+    pathParameters: {
+      client_id: fakeClientId,
+    },
+  });
+
+  const fakeClient = () => ({
+    ClientName: fakeEmail + ', ' + fakeIdentityName,
+    ClientSecret: fakeClientSecret,
+  });
+
+  const fakeResponse = () => ({
+    id: fakeClientId,
+    email: fakeEmail,
+    name: fakeIdentityName,
+  });
+
+  const testMethod = (callback: Callback) =>
+    getClient(fakeRequest(), null, callback);
+
+  let spyOnValidate: jasmine.Spy;
+  let spyOnDescribeUserPoolClient: jasmine.Spy;
+  let spyOnRespond: jasmine.Spy;
+  let spyOnRespondWithError: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.userPoolId] = fakeUserPoolId;
+
+    spyOnValidate = spyOn(apig, 'validate')
+      .and.callThrough();
+    spyOnDescribeUserPoolClient = spyOn(cognito, 'describeUserPoolClient')
+      .and.returnValue(fakeResolve({ UserPoolClient: fakeClient() }));
+    spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    spyOnRespondWithError = spyOn(apig, 'respondWithError')
+      .and.callFake((callback: Callback) => callback());
+  });
+
+  it('calls apig.validate() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnValidate).toHaveBeenCalledWith(fakeRequest(), 'GET', '/clients/{client_id}');
+      expect(spyOnValidate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls CognitoIdentityServiceProvider.describeUserPoolClient() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnDescribeUserPoolClient).toHaveBeenCalledWith({
+        ClientId: fakeClientId,
+        UserPoolId: fakeUserPoolId,
+      });
+      expect(spyOnDescribeUserPoolClient).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls apig.respond() once with correct parameters', (done: Callback) => {
+    const callback = () => {
+      expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(), fakeResponse());
+      expect(ajv.validate('spec#/definitions/Client', fakeResponse())).toBe(true);
+      expect(spyOnRespond).toHaveBeenCalledTimes(1);
+      done();
+    };
+    testMethod(callback);
+  });
+
+  describe('calls apig.respondWithError() immediately with the error if', () => {
+    let err: Error | ApiError | jasmine.ObjectContaining<{ code: number }>;
+
+    const testError = (after: Callback, done: Callback) => {
+      const callback = () => {
+        expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, fakeRequest(), err);
+        expect(spyOnRespondWithError).toHaveBeenCalledTimes(1);
+        after();
+        done();
+      };
+      testMethod(callback);
+    };
+
+    it('apig.validate() responds with an error', (done: Callback) => {
+      err = new ApiError('validate()');
+      spyOnValidate.and.returnValue(Promise.reject(err));
+      testError(() => {
+        expect(spyOnDescribeUserPoolClient).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('CognitoIdentityServiceProvider.describeUserPoolClient() responds with a generic error', (done: Callback) => {
+      err = Error('CognitoIdentityServiceProvider.describeUserPoolClient()');
+      spyOnDescribeUserPoolClient.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('CognitoIdentityServiceProvider.describeUserPoolClient() responds with ResourceNotFoundException', (done: Callback) => {
+      err = jasmine.objectContaining({ code: 404 });
+      spyOnDescribeUserPoolClient.and.returnValue(fakeReject(new ApiError(
+        'CognitoIdentityServiceProvider.describeUserPoolClient()', undefined, 'ResourceNotFoundException'
       )));
       testError(() => {
         expect(spyOnRespond).not.toHaveBeenCalled();

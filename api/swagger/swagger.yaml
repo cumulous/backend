@@ -429,6 +429,58 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-CreateClient/invocations
+  /clients/{client_id}:
+    options:
+      tags:
+        - Clients
+      parameters:
+        - $ref: '#/parameters/ClientId'
+      responses:
+        200:
+          description: HTTP options
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
+    get:
+      summary: Get a client by its id
+      description: |
+        Returns details for a client given its id
+      operationId: getClient
+      security:
+        - member_token: []
+      tags:
+        - Clients
+      parameters:
+        - $ref: '#/parameters/ClientId'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Client details
+          schema:
+            $ref: '#/definitions/Client'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-GetClient/invocations
   /datasets:
     options:
       tags:
@@ -1612,6 +1664,13 @@ parameters:
           $ref: '#/definitions/Email'
         name:
           $ref: '#/definitions/IdentityName'
+  ClientId:
+    in: path
+    name: client_id
+    description: Unique identifier for a client
+    required: true
+    type: string
+    pattern: ^[\w+]{1,128}$
   DatasetCreationRequest:
     in: body
     name: DatasetCreationRequest

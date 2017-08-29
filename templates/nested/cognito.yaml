@@ -898,6 +898,54 @@ Resources:
       SourceArn: !Sub
         arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/POST/clients
 
+  GetClient:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-GetClient
+      Handler: cognito.getClient
+      Timeout: 30
+      Environment:
+        Variables:
+          USER_POOL_ID: !Ref UserPool
+          WEB_DOMAIN: !Ref WebDomain
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt GetClientRole.Arn
+
+  GetClientRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: GetClientRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cognito-idp:DescribeUserPoolClient
+                Resource:
+                  - !GetAtt UserPool.Arn
+
+  GetClientPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GetClient
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub
+        arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/GET/clients/{client_id}
+
 Outputs:
   AuthDomain:
     Value: !Sub cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
