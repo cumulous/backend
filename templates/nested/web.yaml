@@ -73,29 +73,14 @@ Resources:
           S3OriginConfig:
             OriginAccessIdentity:
               !Sub origin-access-identity/cloudfront/${WebOriginAccessIdentity.Id}
-        DefaultRootObject: login.html
+        DefaultRootObject: index.html
         CustomErrorResponses:
-          - ErrorCachingMinTTL: !Ref WebTTL
-            ErrorCode: 403
-            ResponseCode: 200
-            ResponsePagePath: /login.html
           - ErrorCachingMinTTL: !Ref WebTTL
             ErrorCode: 404
             ResponseCode: 200
-            ResponsePagePath: /app/index.html
+            ResponsePagePath: /index.html
         DefaultCacheBehavior:
           TargetOriginId: web
-          ViewerProtocolPolicy: redirect-to-https
-          ForwardedValues:
-            QueryString: false
-          MinTTL: !Ref WebTTL
-          DefaultTTL: !Ref WebTTL
-          Compress: true
-          TrustedSigners:
-            - !Ref AWS::AccountId
-        CacheBehaviors:
-        - TargetOriginId: web
-          PathPattern: login.*
           ViewerProtocolPolicy: redirect-to-https
           ForwardedValues:
             QueryString: false

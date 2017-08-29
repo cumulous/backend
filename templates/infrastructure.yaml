@@ -1645,8 +1645,8 @@ Resources:
                   - s3:GetObject
                   - s3:PutObject
                 Resource:
-                  - !Sub arn:aws:s3:::${BetaWebBucket}/app/*
-                  - !Sub arn:aws:s3:::${ReleaseWebBucket}/app/*
+                  - !Sub arn:aws:s3:::${BetaWebBucket}/*
+                  - !Sub arn:aws:s3:::${ReleaseWebBucket}/*
               - Effect: Allow
                 Action:
                   - s3:ListBucket
