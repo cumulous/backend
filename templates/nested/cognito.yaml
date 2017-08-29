@@ -949,10 +949,10 @@ Resources:
 Outputs:
   AuthDomain:
     Value: !Sub cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
-  TokenEndpoint:
-    Value: !Sub https://${UserPoolDomain.Domain}.auth.${AWS::Region}.amazoncognito.com/oauth2/token
+  TokenDomain:
+    Value: !GetAtt UserPoolDomain.Domain
     Export:
-      Name: !Sub ${BackendStack}-TokenEndpoint
+      Name: !Sub ${BackendStack}-TokenDomain
   FrontendClient:
     Value: !Ref FrontendClient
     Export:
