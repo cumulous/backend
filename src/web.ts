@@ -1,14 +1,7 @@
-import * as assert from 'assert';
-import { Signer } from 'aws-sdk/clients/cloudfront';
-import { execSync } from 'child_process';
 import * as stringify from 'json-stable-stringify';
 
-import { Request, respond, respondWithError, validate } from './apig';
-import { cloudFront, s3,
-         CloudFormationRequest, CloudFormationResponse, sendCloudFormationResponse } from './aws';
-import { envNames } from './env';
-import { Callback, Dict } from './types';
-import { assertNonEmptyArray } from './util';
+import { cloudFront, s3, CloudFormationRequest, CloudFormationResponse } from './aws';
+import { Callback } from './types';
 
 export const createOriginAccessIdentity = (event: CloudFormationRequest,
                                         context: any, callback: Callback) => {
@@ -84,40 +77,4 @@ export const retrieveOriginAccessIdentity = (event: { Bucket: string, Path: stri
       callback(null, JSON.parse(config));
     })
     .catch(callback);
-};
-
-interface KeyObject {
-  Bucket: string;
-  Path: string;
-  EncryptionKeyId?: string;
-}
-
-interface KeyRequest {
-  KeySize: number;
-  PrivateKey: KeyObject;
-  PublicKey: KeyObject;
-}
-
-export const createAndExportSigningKey = (request: KeyRequest, context: any, callback: Callback) => {
-
-  Promise.resolve()
-    .then(() => assert.notEqual(request.PrivateKey, null))
-    .then(() => assert.notEqual(request.PublicKey, null))
-    .then(() => execSync(`openssl genrsa ${request.KeySize}`))
-    .then(key => storeSigningKey(request.PrivateKey, key)
-      .then(() => execSync('openssl rsa -pubout', { input: key })))
-    .then(pubkey => storeSigningKey(request.PublicKey, pubkey))
-    .then(() => callback(null, request.PublicKey))
-    .catch(callback);
-};
-
-const storeSigningKey = (key: KeyObject, value: Buffer) => {
-  return s3.putObject(Object.assign({
-      Bucket: key.Bucket,
-      Key: key.Path,
-      Body: value,
-    }, key.EncryptionKeyId == null ? {} : {
-      SSEKMSKeyId: key.EncryptionKeyId,
-      ServerSideEncryption: 'aws:kms',
-    })).promise();
 };
