@@ -39,7 +39,7 @@ Resources:
                   &mdash; a portal for storing, organizing and analyzing your data in the cloud.
                 </p>
                 <p>
-                  Please set your password by clicking "Forgot your password?";
+                  Please set a password by clicking "Forgot your password?";
                   then enter your <em>email</em>, click "Reset my password", and follow the instructions.
                 </p>
                 <p>
@@ -48,12 +48,13 @@ Resources:
                 <p hidden>
                   {username} {####}
                 </p>
+              </body>
             - ProvidersMessage: !If
               - AuthProvidersEmpty
               - ''
               - !Join
                 - ''
-                - - 'Alternatively, you can log in with an external identity provider ('
+                - - 'You can also log in with an external identity provider ('
                   - !Join [ '/', !Ref AuthProviders ]
                   - '), as long as its email is the same.'
       AliasAttributes:
