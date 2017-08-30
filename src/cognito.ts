@@ -78,10 +78,9 @@ export const createUser = (request: Request, context: any, callback: Callback) =
     .then(() => {
       const userId = uuid();
       const tempPass = generatePassword();
-      const newPass = generatePassword();
       return adminCreateUser(userId, tempPass, request.body.email, request.body.name)
         .then(() => adminInitiateAuth(userId, tempPass))
-        .then(data => adminRespondToAuthChallenge(userId, newPass, data.Session))
+        .then(data => adminRespondToAuthChallenge(userId, tempPass, data.Session))
         .then(() => respond(callback, request, {
           id: userId,
           email: request.body.email,
@@ -97,7 +96,7 @@ export const createUser = (request: Request, context: any, callback: Callback) =
 };
 
 const generatePassword = () =>
-  randomBytes(192).toString('base64');
+  randomBytes(16).toString('base64').replace('=', '!');
 
 const adminCreateUser = (username: string, password: string, email: string, name: string) => {
   return cognito.adminCreateUser({
@@ -114,7 +113,6 @@ const adminCreateUser = (username: string, password: string, email: string, name
       Name: 'name',
       Value: name,
     }],
-    MessageAction: 'SUPPRESS',
   }).promise();
 };
 
