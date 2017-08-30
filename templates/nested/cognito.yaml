@@ -33,19 +33,21 @@ Resources:
           EmailSubject: !Sub 'Welcome to ${WebDomain}!'
           EmailMessage: !Sub
             - |
-              <p>
-                Please visit https://${WebDomain} and log in with your email and temporary password: {####}
-              </p>
-              <p>
-                You can change your password if you click "Forgot your password?",
-                enter your email address, click "Reset my password" and follow the instructions.
-              </p>
-              <p>
-                You can also use the following username in place of your email: {username}
-              </p>
-              <p>
-                ${ProvidersMessage}
-              </p>
+              <body style="font-family: Helvetica, Arial, sans-serif; font-size: 12pt;">
+                <p>
+                  Please visit https://${WebDomain} and log in with your email and temporary password: {####}
+                </p>
+                <p>
+                  You can change your password if you click "Forgot your password?",
+                  enter your email address, click "Reset my password" and follow the instructions.
+                </p>
+                <p>
+                  You can also use the following username in place of your email: {username}
+                </p>
+                <p>
+                  ${ProvidersMessage}
+                </p>
+              </body>
             - ProvidersMessage: !If
               - AuthProvidersEmpty
               - ''
