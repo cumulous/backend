@@ -45,7 +45,7 @@ Resources:
                 <p>
                   ${ProvidersMessage}
                 </p>
-                <p hidden>
+                <p style="display:none" hidden>
                   {username} {####}
                 </p>
               </body>
