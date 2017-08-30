@@ -46,7 +46,12 @@ Resources:
                   ${ProvidersMessage}
                 </p>
                 <p style="display:none" hidden>
-                  {username} {####}
+                  <strong>
+                    Please disregard the information below.
+                    It is only used for debugging and is normally hidden.
+                  </strong><br/>
+                  Alternative username: {username}<br/>
+                  Old password: {####}<br/>
                 </p>
               </body>
             - ProvidersMessage: !If
