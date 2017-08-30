@@ -42,7 +42,7 @@ Parameters:
   SpotBidPercent:
     Type: Number
   AuthProviders:
-    Type: CommaDelimitedList
+    Type: String
   AuthTokenLifetime:
     Type: Number
 
@@ -125,7 +125,7 @@ Resources:
         ApiDomain: !Ref ApiDomain
         ApiId: !GetAtt Api.Outputs.ApiId
         ApiStage: !GetAtt Api.Outputs.ApiStage
-        AuthProviders: !Join [ '', ['"', !Join [ '","', !Ref AuthProviders ], '"' ] ]
+        AuthProviders: !Ref AuthProviders
         MinimumPasswordLength: 12
 
   Data:

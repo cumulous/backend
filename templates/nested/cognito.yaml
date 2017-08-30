@@ -14,7 +14,7 @@ Parameters:
   ApiStage:
     Type: String
   AuthProviders:
-    Type: String
+    Type: CommaDelimitedList
   MinimumPasswordLength:
     Type: Number
 
@@ -334,22 +334,24 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupUserPoolClientIntegration.Arn
       StateMachine: !Ref UserPoolClientIntegrationStateMachine
-      Config: !Sub |-
-        {
-          "UserPoolId": "${UserPool}",
-          "ClientId": "${WebClient}",
-          "ClientName": "web",
-          "AllowedOAuthFlowsUserPoolClient": true,
-          "AllowedOAuthFlows": [ "implicit" ],
-          "AllowedOAuthScopes": [ "${ResourceServer.Scope}" ],
-          "CallbackURLs": [ "https://${WebDomain}/login" ],
-          "LogoutURLs": [ "https://${WebDomain}/login" ],
-          "SupportedIdentityProviders": [ ${AuthProviders} ],
-          "ReadAttributes": [ "email", "name" ],
-          "LambdaConfig": {
-            "PreSignUp": "${PreSignUp.Arn}"
+      Config: !Sub
+        - |
+          {
+            "UserPoolId": "${UserPool}",
+            "ClientId": "${WebClient}",
+            "ClientName": "web",
+            "AllowedOAuthFlowsUserPoolClient": true,
+            "AllowedOAuthFlows": [ "implicit" ],
+            "AllowedOAuthScopes": [ "${ResourceServer.Scope}" ],
+            "CallbackURLs": [ "https://${WebDomain}/login" ],
+            "LogoutURLs": [ "https://${WebDomain}/login" ],
+            "SupportedIdentityProviders": [ "COGNITO", ${Providers} ],
+            "ReadAttributes": [ "email", "name" ],
+            "LambdaConfig": {
+              "PreSignUp": "${PreSignUp.Arn}"
+            }
           }
-        }
+        - Providers: !Join [ '', ['"', !Join [ '", "', !Ref AuthProviders ], '"' ] ]
 
   SetupUserPoolClientIntegration:
     Type: AWS::Lambda::Function

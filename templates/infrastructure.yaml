@@ -83,10 +83,10 @@ Parameters:
     MaxValue: 100
     Default: 40
   AuthProviders:
-    Description: "Comma-delimited list of authentication providers (*)"
+    Description: "Comma-delimited list of external authentication providers"
     Type: String
-    AllowedPattern: ^COGNITO(,\w{1,20})*$
-    Default: 'COGNITO'
+    AllowedPattern: ^\w{0,20}(,\w{1,20})*$
+    Default: ''
     MaxLength: 256
   AuthTokenLifetime:
     Description: "Number of seconds that authentication tokens are valid for (*)"
