@@ -72,10 +72,6 @@ Resources:
           AttributeDataType: String
           Mutable: True
           Required: True
-        - Name: name
-          AttributeDataType: String
-          Mutable: True
-          Required: True
       Policies:
         PasswordPolicy:
           MinimumLength: !Ref MinimumPasswordLength
@@ -341,7 +337,6 @@ Resources:
         - ADMIN_NO_SRP_AUTH
       ReadAttributes:
         - email
-        - name
 
   TestClient:
     Type: AWS::Cognito::UserPoolClient
@@ -362,7 +357,7 @@ Resources:
           "AllowedOAuthFlowsUserPoolClient": true,
           "AllowedOAuthFlows": [ "client_credentials" ],
           "AllowedOAuthScopes": [ "${ResourceServer.Scope}" ],
-          "ReadAttributes": [ "email", "name" ]
+          "ReadAttributes": [ "email" ]
         }
 
   WebClient:
