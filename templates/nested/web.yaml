@@ -664,33 +664,6 @@ Resources:
           }
         }
 
-  GenerateSignedCookies:
-    Type: AWS::Lambda::Function
-    Properties:
-      FunctionName: !Sub ${BackendStack}-GenerateSignedCookies
-      Handler: web.generateSignedCookies
-      Timeout: 10
-      Environment:
-        Variables:
-          WEB_DOMAIN: !Ref WebDomain
-          WEB_DISTRIBUTION_ID: !Ref WebDistribution
-          WEB_SIGNING_KEY_BUCKET: !Ref SecretsBucket
-          WEB_SIGNING_KEY_PATH: !Sub web/signing.pem
-      Runtime: nodejs6.10
-      Code:
-        S3Bucket: !Ref ArtifactsBucket
-        S3Key: !Ref LambdaPackage
-      Role: !Ref WebSigningKeyGetRoleArn
-
-  GenerateSignedCookiesPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !Ref GenerateSignedCookies
-      Action: lambda:InvokeFunction
-      Principal: apigateway.amazonaws.com
-      SourceArn:
-        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/GET/weblogin
-
 Outputs:
   WebSigningPubKey:
     Condition: SetupWebSigningKeyPair

@@ -59,62 +59,6 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-GetApi/invocations
-  /weblogin:
-    options:
-      tags:
-        - Web
-      responses:
-        200:
-          description: HTTP options
-          headers:
-            Access-Control-Allow-Methods:
-              type: string
-            Access-Control-Allow-Headers:
-              type: string
-            Access-Control-Allow-Origin:
-              type: string
-            Access-Control-Allow-Credentials:
-              type: string
-      x-amazon-apigateway-integration:
-        type: mock
-        requestTemplates:
-          application/json: '{"statusCode": 200}'
-        contentHandling: CONVERT_TO_TEXT
-        responses:
-          default:
-            statusCode: 200
-            responseParameters:
-              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
-              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
-              method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
-              method.response.header.Access-Control-Allow-Credentials: "'true'"
-    get:
-      summary: Set website cookies
-      description: Sets browser cookies for accessing protected content on the website.
-      operationId: weblogin
-      security:
-        - member_token: []
-      tags:
-        - Web
-      parameters:
-        - $ref: '#/parameters/CompressionRequest'
-      responses:
-        200:
-          description: Set-Cookie headers for accessing the website
-          headers:
-            Set-Cookie:
-              description: '"CloudFront-Expires" header'
-              type: string
-            Set-cookie:
-              description: '"CloudFront-Key-Pair-Id" header'
-              type: string
-            set-cookie:
-              description: '"CloudFront-Signature" header'
-              type: string
-      x-amazon-apigateway-integration:
-        type: aws_proxy
-        httpMethod: POST
-        uri: ${API_LAMBDA_PREFIX}-GenerateSignedCookies/invocations
   /projects:
     options:
       tags:
