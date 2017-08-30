@@ -68,6 +68,9 @@ Resources:
           RequireNumbers: True
           RequireSymbols: True
           RequireUppercase: True
+      LambdaConfig:
+        PreSignUp: !Sub
+          arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-PreSignUp
 
   UserPoolDomain:
     Type: Custom::UserPoolDomain
@@ -370,10 +373,7 @@ Resources:
             "CallbackURLs": [ "https://${WebDomain}/login" ],
             "LogoutURLs": [ "https://${WebDomain}/login" ],
             "SupportedIdentityProviders": [ "COGNITO", ${Providers} ],
-            "ReadAttributes": [ "email", "name" ],
-            "LambdaConfig": {
-              "PreSignUp": "${PreSignUp.Arn}"
-            }
+            "ReadAttributes": [ "email", "name" ]
           }
         - Providers: !Join [ '', ['"', !Join [ '", "', !Ref AuthProviders ], '"' ] ]
 
@@ -1002,6 +1002,7 @@ Resources:
   PreSignUp:
     Type: AWS::Lambda::Function
     Properties:
+      FunctionName: !Sub ${BackendStack}-PreSignUp
       Handler: cognito.preSignUp
       Timeout: 30
       Environment:
