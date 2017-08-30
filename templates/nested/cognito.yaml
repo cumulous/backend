@@ -70,7 +70,7 @@ Resources:
           RequireUppercase: True
       LambdaConfig:
         PreSignUp: !Sub
-          arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-PreSignUp
+          arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-PreSignUp
 
   UserPoolDomain:
     Type: Custom::UserPoolDomain
@@ -1002,7 +1002,7 @@ Resources:
   PreSignUp:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub ${BackendStack}-PreSignUp
+      FunctionName: !Sub ${BackendStack}-Cognito-PreSignUp
       Handler: cognito.preSignUp
       Timeout: 30
       Environment:
@@ -1038,6 +1038,14 @@ Resources:
                   - cognito-idp:AdminLinkProviderForUser
                 Resource:
                   - !GetAtt UserPool.Arn
+
+  GetClientPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref PreSignUp
+      Action: lambda:InvokeFunction
+      Principal: cognito-idp.amazonaws.com
+      SourceArn: !GetAtt UserPool.Arn
 
 Outputs:
   UserPool:
