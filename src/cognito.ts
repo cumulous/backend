@@ -1,10 +1,12 @@
 import { CognitoIdentityServiceProvider } from 'aws-sdk';
 import { randomBytes } from 'crypto';
+import * as stringify from 'json-stable-stringify';
 import { v4 as uuid } from 'uuid';
 
 import { ApiError, Request, respond, respondWithError, validate } from './apig';
 import { envNames } from './env';
-import { Callback } from './types';
+import { log } from './log';
+import { Callback, Dict } from './types';
 
 export const cognito = new CognitoIdentityServiceProvider();
 
@@ -143,7 +145,7 @@ const adminRespondToAuthChallenge = (username: string, password: string, session
 
 export const listUser = (request: Request, context: any, callback: Callback) => {
   validate(request, 'GET', '/users')
-    .then(() => getUserByAttribute('email', request.queryStringParameters.email))
+    .then(() => getUserByAttribute('email', request.queryStringParameters.email, ['name']))
     .then(user => respond(callback, request, {
       id: user.Username,
       email: getUserAttribute(user.Attributes, 'email'),
@@ -152,10 +154,12 @@ export const listUser = (request: Request, context: any, callback: Callback) => 
     .catch(err => respondWithError(callback, request, err));
 };
 
-const getUserByAttribute = (attributeName: string, attributeValue: string) => {
+const getUserByAttribute =
+    (attributeName: string, attributeValue: string, additionalAttributes: string[] = []) => {
+
   return cognito.listUsers({
     UserPoolId: process.env[envNames.userPoolId],
-    AttributesToGet: [ 'email', 'name' ],
+    AttributesToGet: [ attributeName ].concat(additionalAttributes),
     Filter: `${attributeName} = "${attributeValue}"`,
   }).promise()
     .then(data => {
@@ -251,3 +255,42 @@ const describeUserPoolClient = (clientId: string) => {
     ClientId: clientId,
   }).promise();
 }
+
+interface SignUpUserEvent {
+  triggerSource: string;
+  userName: string;
+  request: {
+    userAttributes: Dict<string>;
+  };
+}
+
+export const preSignUp = (newUser: SignUpUserEvent, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => {
+      log.debug(stringify(newUser));
+      if (newUser.triggerSource === 'PreSignUp_ExternalProvider') {
+        return getUserByAttribute('email', newUser.request.userAttributes.email)
+          .then(existingUser => linkUsers(newUser.userName, existingUser.Username));
+      }
+    })
+    .then(() => callback(null, newUser))
+    .catch(err => {
+      log.error(stringify(err));
+      callback('User signup is disabled');
+    });
+};
+
+const linkUsers = (externalUsername: string, internalUsername: string) => {
+  return cognito.adminLinkProviderForUser({
+    UserPoolId: process.env[envNames.userPoolId],
+    SourceUser: {
+      ProviderName: externalUsername.split('_')[0],
+      ProviderAttributeName: 'Cognito_Subject',
+      ProviderAttributeValue: externalUsername.split('_')[1],
+    },
+    DestinationUser: {
+      ProviderName: 'Cognito',
+      ProviderAttributeValue: internalUsername,
+    },
+  }).promise();
+};

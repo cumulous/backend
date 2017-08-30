@@ -5,7 +5,7 @@ import * as apig from './apig';
 import { ajv, ApiError } from './apig';
 import { cognito, createUserPoolDomain, deleteUserPoolDomain, updateUserPoolClient,
          createResourceServer, deleteResourceServer,
-         createUser, listUser, getUser,
+         createUser, listUser, getUser, preSignUp,
          createClient, getClient,
 } from './cognito';
 import { envNames } from './env';
@@ -17,6 +17,7 @@ const fakeWebDomain = 'fake.web.domain';
 const fakeUserPoolDomainPrefix = 'fake-web-domain';
 const fakeEmail = 'fake-email@example.org';
 const fakeIdentityName = 'Fake Identity Name';
+const fakeUserId = uuid();
 
 const fakeUserPoolDomainRequest = () => ({
   Domain: fakeWebDomain,
@@ -329,7 +330,6 @@ describe('cognito.deleteResourceServer()', () => {
 });
 
 describe('cognito.createUser()', () => {
-  const fakeUserId = uuid();
   const fakeClientId = 'fake-client-id';
   const fakeTemporaryPassword = 'fake-temporary-password';
   const fakeNewPassword = 'fake-new-password';
@@ -518,37 +518,35 @@ describe('cognito.createUser()', () => {
   });
 });
 
-describe('cognito.listUser()', () => {
-  const fakeUserId = uuid();
+const fakeUser = () => ({
+  Username: fakeUserId,
+  Attributes: [{
+    Name: 'email',
+    Value: fakeEmail,
+  },{
+    Name: 'name',
+    Value: fakeIdentityName,
+  }],
+  UserStatus: 'FORCE_CHANGE_PASSWORD',
+});
 
+const fakeSocialUser = () => ({
+  Username: fakeUserId,
+  Attributes: [{
+    Name: 'email',
+    Value: fakeEmail,
+  },{
+    Name: 'name',
+    Value: fakeIdentityName + ' (Social)',
+  }],
+  UserStatus: 'EXTERNAL_PROVIDER',
+});
+
+describe('cognito.listUser()', () => {
   const fakeRequest = () => ({
     queryStringParameters: {
       email: fakeEmail,
     },
-  });
-
-  const fakeUser = () => ({
-    Username: fakeUserId,
-    Attributes: [{
-      Name: 'email',
-      Value: fakeEmail,
-    },{
-      Name: 'name',
-      Value: fakeIdentityName,
-    }],
-    UserStatus: 'FORCE_CHANGE_PASSWORD',
-  });
-
-  const fakeSocialUser = () => ({
-    Username: fakeUserId,
-    Attributes: [{
-      Name: 'email',
-      Value: fakeEmail,
-    },{
-      Name: 'name',
-      Value: fakeIdentityName + ' (Social)',
-    }],
-    UserStatus: 'EXTERNAL_PROVIDER',
   });
 
   const fakeResponse = () => ({
@@ -666,8 +664,6 @@ describe('cognito.listUser()', () => {
 });
 
 describe('cognito.getUser()', () => {
-  const fakeUserId = uuid();
-
   const fakeRequest = () => ({
     pathParameters: {
       user_id: fakeUserId,
@@ -1045,6 +1041,149 @@ describe('cognito.getClient()', () => {
       err = Error('apig.respond()');
       spyOnRespond.and.throwError(err.message);
       testError(() => {}, done);
+    });
+  });
+});
+
+describe('cognito.preSignUp()', () => {
+  const fakeProvider = 'FakeProvider';
+  const fakeProviderUserId = 'user1234';
+  const fakeUsername = fakeProvider + '_' + fakeProviderUserId;
+
+  const fakeEvent = (external = true) => ({
+    triggerSource: external ? 'PreSignUp_ExternalProvider' : 'PreSignUp_SignUp',
+    userName: external ? fakeUsername : fakeUserId,
+    request: {
+      userAttributes: {
+        email: fakeEmail,
+      },
+    },
+  });
+
+  let spyOnListUsers: jasmine.Spy;
+  let spyOnLinkUsers: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env[envNames.userPoolId] = fakeUserPoolId;
+
+    spyOnListUsers = spyOn(cognito, 'listUsers')
+      .and.returnValue(fakeResolve({
+        Users: [fakeSocialUser(), fakeUser()],
+      }));
+    spyOnLinkUsers = spyOn(cognito, 'adminLinkProviderForUser')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls CognitoIdentityServiceProvider.listUsers() once with correct parameters ' +
+     'for an external provider', (done: Callback) => {
+    preSignUp(fakeEvent(), null, () => {
+      expect(spyOnListUsers).toHaveBeenCalledWith({
+        AttributesToGet: ['email'],
+        Filter: 'email = "' + fakeEmail + '"',
+        UserPoolId: fakeUserPoolId,
+      });
+      expect(spyOnListUsers).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls CognitoIdentityServiceProvider.adminLinkProviderForUser() once with correct parameters ' +
+     'for an external provider if it finds an internal user with the same email', (done: Callback) => {
+    preSignUp(fakeEvent(), null, () => {
+      expect(spyOnLinkUsers).toHaveBeenCalledWith({
+        DestinationUser: {
+          ProviderAttributeValue: fakeUserId,
+          ProviderName: 'Cognito',
+        },
+        SourceUser: {
+          ProviderAttributeName: 'Cognito_Subject',
+          ProviderAttributeValue: fakeProviderUserId,
+          ProviderName: fakeProvider,
+        },
+        UserPoolId: fakeUserPoolId,
+      });
+      expect(spyOnLinkUsers).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('does not call CognitoIdentityServiceProvider.listUsers() for an internal user signup', (done: Callback) => {
+    preSignUp(fakeEvent(false), null, () => {
+      expect(spyOnListUsers).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('does not call CognitoIdentityServiceProvider.adminLinkProviderForUser() for an internal user signup',
+      (done: Callback) => {
+    preSignUp(fakeEvent(false), null, () => {
+      expect(spyOnLinkUsers).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
+  describe('calls callback with correct parameters', () => {
+    const errMessage = 'User signup is disabled';
+
+    let event: any;
+    let after: Callback;
+
+    beforeEach(() => {
+      event = fakeEvent();
+    });
+
+    afterEach((done: Callback) => {
+      preSignUp(event, null, (err?: string | Error, data?: any) => {
+        after(err, data);
+        done();
+      });
+    });
+
+    it('for a successful external user signup', () => {
+      after = (err?: Error, data?: any) => {
+        expect(err).toBeFalsy();
+        expect(data).toEqual(fakeEvent());
+      };
+    });
+
+    it('for a successful internal user signup', () => {
+      event = fakeEvent(false);
+      after = (err?: string | Error, data?: any) => {
+        expect(err).toBeFalsy();
+        expect(data).toEqual(fakeEvent(false));
+      };
+    });
+
+    it('if an internal user is not found', () => {
+      spyOnListUsers.and.returnValue(fakeResolve({
+        Users: [fakeSocialUser()],
+      }));
+      after = (err?: string | Error, data?: any) => {
+        expect(err).toBe(errMessage);
+        expect(data).toBeUndefined();
+        expect(spyOnLinkUsers).not.toHaveBeenCalled();
+      };
+    });
+
+    it('if CognitoIdentityServiceProvider.listUsers() produces an error', () => {
+      spyOnListUsers.and.returnValue(
+        fakeReject('CognitoIdentityServiceProvider.listUsers()')
+      );
+      after = (err?: string | Error, data?: any) => {
+        expect(err).toBe(errMessage);
+        expect(data).toBeUndefined();
+        expect(spyOnLinkUsers).not.toHaveBeenCalled();
+      };
+    });
+
+    it('if CognitoIdentityServiceProvider.listUsers() produces an error', () => {
+      spyOnLinkUsers.and.returnValue(
+        fakeReject('CognitoIdentityServiceProvider.adminLinkProviderForUser()')
+      );
+      after = (err?: string | Error, data?: any) => {
+        expect(err).toBe(errMessage);
+        expect(data).toBeUndefined();
+      };
     });
   });
 });
