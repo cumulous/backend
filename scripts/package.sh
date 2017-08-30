@@ -67,13 +67,13 @@ ARGS=" \
     ParameterKey=WebBucket,ParameterValue=${WEB_BUCKET} \
     ParameterKey=WebTTL,ParameterValue=${WEB_TTL} \
     ParameterKey=WebPriceClass,ParameterValue=${WEB_PRICE_CLASS} \
-    ParameterKey=WebLocations,ParameterValue=${WEB_LOCATIONS} \
+    ParameterKey=WebLocations,ParameterValue=\"${WEB_LOCATIONS}\" \
     ParameterKey=WebACL,ParameterValue=${WEB_ACL} \
     ParameterKey=SearchDomain,ParameterValue=${SEARCH_DOMAIN} \
     ParameterKey=DataBucket,ParameterValue=${DATA_BUCKET} \
     ParameterKey=ClusterCores,ParameterValue=${CLUSTER_CORES} \
     ParameterKey=SpotBidPercent,ParameterValue=${SPOT_BID_PERCENT} \
-    ParameterKey=AuthProviders,ParameterValue=${AUTH_PROVIDERS} \
+    ParameterKey=AuthProviders,ParameterValue=\"${AUTH_PROVIDERS}\" \
     ParameterKey=AuthTokenLifetime,ParameterValue=${AUTH_TOKEN_LIFETIME} "
 
 aws cloudformation delete-change-set ${CHANGE_SET} || true
