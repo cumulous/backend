@@ -33,10 +33,6 @@ Parameters:
     Type: String
   WebACL:
     Type: String
-  WebSigningKeyPutRoleArn:
-    Type: String
-  WebSigningKeyGetRoleArn:
-    Type: String
   SearchDomain:
     Type: String
   DataBucket:
@@ -70,20 +66,14 @@ Resources:
       Parameters:
         BackendStack: !Ref AWS::StackName
         ArtifactsBucket: !Ref ArtifactsBucket
-        SecretsBucket: !Ref SecretsBucket
         WebBucket: !Ref WebBucket
         LambdaPackage: !Ref LambdaPackage
-        EncryptionKeyId: !Ref EncryptionKeyId
         DomainZone: !Ref DomainZone
         WebDomain: !Ref WebDomain
         WebTTL: !Ref WebTTL
         WebPriceClass: !Ref WebPriceClass
         WebLocations: !Ref WebLocations
         WebACL: !Ref WebACL
-        WebSigningKeyPutRoleArn: !Ref WebSigningKeyPutRoleArn
-        WebSigningKeyGetRoleArn: !Ref WebSigningKeyGetRoleArn
-        ApiId: !GetAtt Api.Outputs.ApiId
-        ApiStage: !GetAtt Api.Outputs.ApiStage
 
   Search:
     Type: AWS::CloudFormation::Stack

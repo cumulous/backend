@@ -69,8 +69,6 @@ ARGS=" \
     ParameterKey=WebPriceClass,ParameterValue=${WEB_PRICE_CLASS} \
     ParameterKey=WebLocations,ParameterValue=${WEB_LOCATIONS} \
     ParameterKey=WebACL,ParameterValue=${WEB_ACL} \
-    ParameterKey=WebSigningKeyGetRoleArn,ParameterValue=${WEB_SIGNING_KEY_GET_ROLE_ARN} \
-    ParameterKey=WebSigningKeyPutRoleArn,ParameterValue=${WEB_SIGNING_KEY_PUT_ROLE_ARN} \
     ParameterKey=SearchDomain,ParameterValue=${SEARCH_DOMAIN} \
     ParameterKey=DataBucket,ParameterValue=${DATA_BUCKET} \
     ParameterKey=ClusterCores,ParameterValue=${CLUSTER_CORES} \
