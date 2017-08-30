@@ -188,8 +188,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: cognito-idp:DeleteUserPoolDomain
-                Resource:
-                  - !GetAtt UserPool.Arn
+                Resource: '*'
 
   SendCloudFormationResponse:
     Type: AWS::Lambda::Function
@@ -652,8 +651,7 @@ Resources:
             Statement:
               - Effect: Allow
                 Action: cognito-idp:DeleteResourceServer
-                Resource:
-                  - !GetAtt UserPool.Arn
+                Resource: '*'
 
   ResourceServerStateMachineRole:
     Type: AWS::IAM::Role
