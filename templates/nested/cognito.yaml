@@ -378,10 +378,13 @@ Resources:
             "AllowedOAuthScopes": [ "${ResourceServer.Scope}" ],
             "CallbackURLs": [ "https://${WebDomain}/login" ],
             "LogoutURLs": [ "https://${WebDomain}/login" ],
-            "SupportedIdentityProviders": [ "COGNITO", ${Providers} ],
+            "SupportedIdentityProviders": [ ${Providers} ],
             "ReadAttributes": [ "email", "name" ]
           }
-        - Providers: !Join [ '', ['"', !Join [ '", "', !Ref AuthProviders ], '"' ] ]
+        - Providers: !If
+          - AuthProvidersEmpty
+          - '"COGNITO"'
+          - !Join [ '', ['"COGNITO", "', !Join [ '", "', !Ref AuthProviders ], '"' ] ]
 
   SetupUserPoolClientIntegration:
     Type: AWS::Lambda::Function
