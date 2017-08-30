@@ -345,7 +345,10 @@ Resources:
           "CallbackURLs": [ "https://${WebDomain}/login" ],
           "LogoutURLs": [ "https://${WebDomain}/login" ],
           "SupportedIdentityProviders": [ ${AuthProviders} ],
-          "ReadAttributes": [ "email", "name" ]
+          "ReadAttributes": [ "email", "name" ],
+          "LambdaConfig": {
+            "PreSignUp": "${PreSignUp.Arn}"
+          }
         }
 
   SetupUserPoolClientIntegration:
