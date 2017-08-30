@@ -39,19 +39,22 @@ Resources:
                   &mdash; a portal for storing, organizing and analyzing your data in the cloud.
                 </p>
                 <p>
-                  Please set a password by clicking "Forgot your password?";
-                  then enter your <em>email</em>, click "Reset my password", and follow the instructions.
+                  To set a password, please click <em>Forgot your password?</em>,
+                  enter your <em>email</em>, click <em>Reset my password</em>,
+                  and follow the instructions.
                 </p>
                 <p>
                   ${ProvidersMessage}
                 </p>
                 <p style="display:none" hidden>
-                  <strong>
-                    Please disregard the information below.
-                    It is only used for debugging and is normally hidden.
-                  </strong><br/>
-                  Alternative username: {username}<br/>
-                  Old password: {####}<br/>
+                  <small>
+                    <strong>
+                      Please disregard the information below.
+                      It is only used for debugging and is normally hidden.
+                    </strong><br/>
+                    Alternative username: {username}<br/>
+                    Old password: {####}<br/>
+                  </small>
                 </p>
               </body>
             - ProvidersMessage: !If
