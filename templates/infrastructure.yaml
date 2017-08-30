@@ -442,8 +442,6 @@ Resources:
             Value: !Ref ClusterCores
           - Name: SPOT_BID_PERCENT
             Value: !Ref SpotBidPercent
-          - Name: AUTH_PROVIDERS
-            Value: !Ref AuthProviders
           - Name: AUTH_TOKEN_LIFETIME
             Value: !Ref AuthTokenLifetime
           - Name: SEARCH_DOMAIN
