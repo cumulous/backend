@@ -35,27 +35,26 @@ Resources:
             - |
               <body style="font-family: Helvetica, Arial, sans-serif; font-size: 12pt;">
                 <p>
-                  Please visit https://${WebDomain} and log in with your
-                  <em>email</em> and temporary password: <strong>{####}</strong>
+                  Someone invited you to <a href=https://${WebDomain}>${WebDomain}</a>
+                  &mdash; a portal for storing, organizing and analyzing your data in the cloud.
                 </p>
                 <p>
-                  You can change your password if you click "Forgot your password?",
-                  enter your email, click "Reset my password", and follow the instructions.
+                  Please set your password by clicking "Forgot your password?";
+                  then enter your <em>email</em>, click "Reset my password", and follow the instructions.
                 </p>
                 <p>
                   ${ProvidersMessage}
                 </p>
                 <p hidden>
-                  You can also use the following username in place of your email: {username}
+                  {username} {####}
                 </p>
-              </body>
             - ProvidersMessage: !If
               - AuthProvidersEmpty
               - ''
               - !Join
                 - ''
                 - - 'Alternatively, you can log in with an external identity provider ('
-                  - !Join [ ', ', !Ref AuthProviders ]
+                  - !Join [ '/', !Ref AuthProviders ]
                   - '), as long as its email is the same.'
       AliasAttributes:
         - email

@@ -332,6 +332,7 @@ describe('cognito.deleteResourceServer()', () => {
 describe('cognito.createUser()', () => {
   const fakeClientId = 'fake-client-id';
   const fakeTemporaryPassword = 'fake-temporary-password';
+  const fakeNewPassword = 'fake-new-password';
   const fakeSessionToken = 'fake-session-token';
 
   const fakeBody = () => ({
@@ -366,7 +367,7 @@ describe('cognito.createUser()', () => {
     spyOnValidate = spyOn(apig, 'validate')
       .and.callThrough();
     spyOn(uuid, 'v4').and.returnValue(fakeUserId);
-    spyOn(Buffer.prototype, 'toString').and.returnValue(fakeTemporaryPassword);
+    spyOn(Buffer.prototype, 'toString').and.returnValues(fakeTemporaryPassword, fakeNewPassword);
     spyOnAdminCreateUser = spyOn(cognito, 'adminCreateUser')
       .and.returnValue(fakeResolve());
     spyOnAdminInitiateAuth = spyOn(cognito, 'adminInitiateAuth')
@@ -433,7 +434,7 @@ describe('cognito.createUser()', () => {
         UserPoolId: fakeUserPoolId,
         ChallengeResponses: {
           USERNAME: fakeUserId,
-          NEW_PASSWORD: fakeTemporaryPassword,
+          NEW_PASSWORD: fakeNewPassword,
         },
         Session: fakeSessionToken,
       });
