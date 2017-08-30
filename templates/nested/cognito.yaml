@@ -45,7 +45,7 @@ Resources:
                 <p>
                   ${ProvidersMessage}
                 </p>
-                <p>
+                <p hidden>
                   You can also use the following username in place of your email: {username}
                 </p>
               </body>
