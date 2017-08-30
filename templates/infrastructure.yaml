@@ -82,6 +82,12 @@ Parameters:
     MinValue: 1
     MaxValue: 100
     Default: 40
+  AuthProviders:
+    Description: "Comma-delimited list of authentication providers (*)"
+    Type: String
+    AllowedPattern: ^Cognito(,\w{1,20})*$
+    Default: 'Cognito'
+    MaxLength: 256
   AuthTokenLifetime:
     Description: "Number of seconds that authentication tokens are valid for (*)"
     Type: Number
@@ -136,6 +142,7 @@ Metadata:
         Label:
           default: "Auth"
         Parameters:
+          - AuthProviders
           - AuthTokenLifetime
 
 Conditions:
@@ -435,6 +442,8 @@ Resources:
             Value: !Ref ClusterCores
           - Name: SPOT_BID_PERCENT
             Value: !Ref SpotBidPercent
+          - Name: AUTH_PROVIDERS
+            Value: !Ref AuthProviders
           - Name: AUTH_TOKEN_LIFETIME
             Value: !Ref AuthTokenLifetime
           - Name: SEARCH_DOMAIN
@@ -494,6 +503,8 @@ Resources:
             Value: !Ref ClusterCores
           - Name: SPOT_BID_PERCENT
             Value: !Ref SpotBidPercent
+          - Name: AUTH_PROVIDERS
+            Value: !Ref AuthProviders
           - Name: AUTH_TOKEN_LIFETIME
             Value: !Ref AuthTokenLifetime
           - Name: SEARCH_DOMAIN

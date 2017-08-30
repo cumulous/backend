@@ -13,6 +13,8 @@ Parameters:
     Type: String
   ApiStage:
     Type: String
+  AuthProviders:
+    Type: String
   MinimumPasswordLength:
     Type: Number
 
@@ -342,7 +344,7 @@ Resources:
           "AllowedOAuthScopes": [ "${ResourceServer.Scope}" ],
           "CallbackURLs": [ "https://${WebDomain}/login" ],
           "LogoutURLs": [ "https://${WebDomain}/login" ],
-          "SupportedIdentityProviders": [ "COGNITO" ],
+          "SupportedIdentityProviders": [ ${AuthProviders} ],
           "ReadAttributes": [ "email", "name" ]
         }
 

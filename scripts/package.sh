@@ -73,6 +73,7 @@ ARGS=" \
     ParameterKey=DataBucket,ParameterValue=${DATA_BUCKET} \
     ParameterKey=ClusterCores,ParameterValue=${CLUSTER_CORES} \
     ParameterKey=SpotBidPercent,ParameterValue=${SPOT_BID_PERCENT} \
+    ParameterKey=AuthProviders,ParameterValue=${AUTH_PROVIDERS} \
     ParameterKey=AuthTokenLifetime,ParameterValue=${AUTH_TOKEN_LIFETIME} "
 
 aws cloudformation delete-change-set ${CHANGE_SET} || true
