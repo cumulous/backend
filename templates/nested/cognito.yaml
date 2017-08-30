@@ -26,6 +26,19 @@ Resources:
       UserPoolName: !Sub ${BackendStack}-user-pool
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: True
+        InviteMessageTemplate:
+          EmailSubject: !Sub 'Welcome to ${WebDomain}!'
+          EmailMessage: !Sub
+            - |
+              Please visit https://${WebDomain} and log in with your email and temporary password: {####}
+
+              You can also change your password if you click "Forgot your password?",
+              enter your email address, click "Reset my password" and follow the instructions.
+
+              Alternatively, you can log in with one of external identity providers: ${Providers}
+              as long as their email is the same.
+
+            - Providers: !Join [ ', ', !Ref AuthProviders ]
       AliasAttributes:
         - email
       Schema:
