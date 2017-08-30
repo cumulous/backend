@@ -18,6 +18,9 @@ Parameters:
   MinimumPasswordLength:
     Type: Number
 
+Conditions:
+  AuthProvidersEmpty: !Equals [!Join [ '', !Ref AuthProviders ], '']
+
 Resources:
   UserPool:
     Type: AWS::Cognito::UserPool
@@ -35,10 +38,16 @@ Resources:
               You can also change your password if you click "Forgot your password?",
               enter your email address, click "Reset my password" and follow the instructions.
 
-              Alternatively, you can log in with one of external identity providers: ${Providers}
-              as long as their email is the same.
+              ${ProvidersMessage}
 
-            - Providers: !Join [ ', ', !Ref AuthProviders ]
+            - ProvidersMessage: !If
+              - AuthProvidersEmpty
+              - ''
+              - !Join
+                - ''
+                - - 'Alternatively, you can log in with one of external identity providers: '
+                  - !Join [ ', ', !Ref AuthProviders ]
+                  - 'as long as their email is the same.'
       AliasAttributes:
         - email
       Schema:
