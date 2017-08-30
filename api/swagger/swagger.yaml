@@ -11,7 +11,7 @@ paths:
   /:
     options:
       tags:
-        - Spec
+        - Api
       responses:
         200:
           description: HTTP options
@@ -47,7 +47,7 @@ paths:
       security:
         - member_token: []
       tags:
-        - Spec
+        - Api
       parameters:
         - $ref: '#/parameters/CompressionRequest'
       responses:
