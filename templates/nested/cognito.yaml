@@ -1039,7 +1039,7 @@ Resources:
                 Resource:
                   - !GetAtt UserPool.Arn
 
-  GetClientPermission:
+  PreSignUpPermission:
     Type: AWS::Lambda::Permission
     Properties:
       FunctionName: !Ref PreSignUp
