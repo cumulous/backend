@@ -75,14 +75,7 @@ ARGS=" \
     ParameterKey=DataBucket,ParameterValue=${DATA_BUCKET} \
     ParameterKey=ClusterCores,ParameterValue=${CLUSTER_CORES} \
     ParameterKey=SpotBidPercent,ParameterValue=${SPOT_BID_PERCENT} \
-    ParameterKey=AuthTokenLifetime,ParameterValue=${AUTH_TOKEN_LIFETIME} \
-    ParameterKey=Auth0Domain,ParameterValue=${AUTH0_DOMAIN} \
-    ParameterKey=Auth0ManagementClientID,ParameterValue=${AUTH0_MANAGEMENT_CLIENT_ID} \
-    ParameterKey=Auth0ManagementClientSecret,ParameterValue=${AUTH0_MANAGEMENT_CLIENT_SECRET} \
-    ParameterKey=Auth0UserTokenLifetime,ParameterValue=${AUTH0_USER_TOKEN_LIFETIME} \
-    ParameterKey=Auth0GetManagementSecretRoleArn,ParameterValue=${AUTH0_GET_MANAGEMENT_SECRET_ROLE_ARN} \
-    ParameterKey=Auth0PutSecretRoleArn,ParameterValue=${AUTH0_PUT_SECRET_ROLE_ARN} \
-    ParameterKey=Auth0CreateClientRoleArn,ParameterValue=${AUTH0_CREATE_CLIENT_ROLE_ARN} "
+    ParameterKey=AuthTokenLifetime,ParameterValue=${AUTH_TOKEN_LIFETIME} "
 
 aws cloudformation delete-change-set ${CHANGE_SET} || true
 aws cloudformation create-change-set ${ARGS} || \

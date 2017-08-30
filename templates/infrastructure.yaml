@@ -82,30 +82,6 @@ Parameters:
     MinValue: 1
     MaxValue: 100
     Default: 40
-  Auth0Domain:
-    Description: "Your Auth0 domain name (*)"
-    Type: String
-    AllowedPattern: ^[a-z][a-z0-9\.]*\.[a-z]+$
-  Auth0Connections:
-    Description: "Comma-separated names of Auth0 connections for frontend authentication \
-      [without spaces] (*)"
-    Type: String
-    AllowedPattern: ^[\w-]+(,[\w-]+)*$
-    Default: google-oauth2
-  Auth0ManagementClientID:
-    Description: "Your Auth0 Management cliend ID (*)"
-    Type: String
-    MinLength: 1
-  Auth0ManagementClientSecret:
-    Description: "Your Auth0 Management cliend secret (*)"
-    Type: String
-    NoEcho: true
-    MinLength: 1
-  Auth0UserTokenLifetime:
-    Description: "Number of seconds that user tokens are valid for (*)"
-    Type: Number
-    MinValue: 1
-    Default: 36000
   AuthTokenLifetime:
     Description: "Number of seconds that authentication tokens are valid for (*)"
     Type: Number
@@ -158,13 +134,8 @@ Metadata:
           - SpotBidPercent
       -
         Label:
-          default: "Auth0"
+          default: "Auth"
         Parameters:
-          - Auth0Domain
-          - Auth0Connections
-          - Auth0ManagementClientID
-          - Auth0ManagementClientSecret
-          - Auth0UserTokenLifetime
           - AuthTokenLifetime
 
 Conditions:
@@ -470,20 +441,6 @@ Resources:
             Value: !Ref SpotBidPercent
           - Name: AUTH_TOKEN_LIFETIME
             Value: !Ref AuthTokenLifetime
-          - Name: AUTH0_DOMAIN
-            Value: !Ref Auth0Domain
-          - Name: AUTH0_MANAGEMENT_CLIENT_ID
-            Value: !Ref Auth0ManagementClientID
-          - Name: AUTH0_MANAGEMENT_CLIENT_SECRET
-            Value: !Ref Auth0ManagementClientSecret
-          - Name: AUTH0_USER_TOKEN_LIFETIME
-            Value: !Ref Auth0UserTokenLifetime
-          - Name: AUTH0_PUT_SECRET_ROLE_ARN
-            Value: !GetAtt Auth0PutSecretRole.Arn
-          - Name: AUTH0_GET_MANAGEMENT_SECRET_ROLE_ARN
-            Value: !GetAtt Auth0GetManagementSecretRole.Arn
-          - Name: AUTH0_CREATE_CLIENT_ROLE_ARN
-            Value: !GetAtt Auth0CreateClientRole.Arn
           - Name: SEARCH_DOMAIN
             Value: !GetAtt SearchDomain.Name
       Artifacts:
@@ -545,18 +502,6 @@ Resources:
             Value: !Ref SpotBidPercent
           - Name: AUTH_TOKEN_LIFETIME
             Value: !Ref AuthTokenLifetime
-          - Name: AUTH0_DOMAIN
-            Value: !Ref Auth0Domain
-          - Name: AUTH0_MANAGEMENT_CLIENT_ID
-            Value: !Ref Auth0ManagementClientID
-          - Name: AUTH0_USER_TOKEN_LIFETIME
-            Value: !Ref Auth0UserTokenLifetime
-          - Name: AUTH0_PUT_SECRET_ROLE_ARN
-            Value: !GetAtt Auth0PutSecretRole.Arn
-          - Name: AUTH0_GET_MANAGEMENT_SECRET_ROLE_ARN
-            Value: !GetAtt Auth0GetManagementSecretRole.Arn
-          - Name: AUTH0_CREATE_CLIENT_ROLE_ARN
-            Value: !GetAtt Auth0CreateClientRole.Arn
           - Name: SEARCH_DOMAIN
             Value: !GetAtt SearchDomain.Name
       Artifacts:
@@ -614,53 +559,6 @@ Resources:
                 'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
               StringLike:
                 'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
-            Resource: '*'
-          - Effect: Allow
-            Principal:
-              AWS: !GetAtt Auth0PutSecretRole.Arn
-            Action:
-              - kms:GenerateDataKey
-            Condition:
-              StringEquals:
-                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
-              StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*
-            Resource: '*'
-          - Effect: Allow
-            Principal:
-              AWS: !GetAtt Auth0CreateClientRole.Arn
-            Action:
-              - kms:GenerateDataKey
-            Condition:
-              StringEquals:
-                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
-              StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-client.key
-            Resource: '*'
-          - Effect: Allow
-            Principal:
-              AWS:
-                - !GetAtt Auth0GetManagementSecretRole.Arn
-                - !GetAtt Auth0CreateClientRole.Arn
-            Action:
-              - kms:Decrypt
-            Condition:
-              StringEquals:
-                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
-              StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/manage.key
-            Resource: '*'
-          - Effect: Allow
-            Principal:
-              AWS:
-                - !GetAtt FrontendBuildRole.Arn
-            Action:
-              - kms:Decrypt
-            Condition:
-              StringEquals:
-                'kms:ViaService': !Sub s3.${AWS::Region}.amazonaws.com
-              StringLike:
-                'kms:EncryptionContext:aws:s3:arn': !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-api-test-client.key
             Resource: '*'
           - Effect: Allow
             Principal:
@@ -871,9 +769,6 @@ Resources:
                 Resource:
                   - !GetAtt SSHKeyPutRole.Arn
                   - !GetAtt SSHKeyGetRole.Arn
-                  - !GetAtt Auth0PutSecretRole.Arn
-                  - !GetAtt Auth0GetManagementSecretRole.Arn
-                  - !GetAtt Auth0CreateClientRole.Arn
                   - !GetAtt WebSigningKeyPutRole.Arn
                   - !GetAtt WebSigningKeyGetRole.Arn
                   - !GetAtt AuthorizerInvocationRole.Arn
@@ -1098,80 +993,6 @@ Resources:
                 Action: s3:GetObject
                 Resource:
                   - !Sub arn:aws:s3:::${SecretsBucket}/ssh/*.pem
-
-  Auth0PutSecretRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: Auth0PutSecretPolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:PutObject
-                Resource:
-                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*
-
-  Auth0GetManagementSecretRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: Auth0GetManagementSecretPolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                Resource:
-                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/manage.key
-
-  Auth0CreateClientRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: Auth0CreateClientPolicy
-          PolicyDocument:
-            Version: 2012-10-17
-            Statement:
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                Resource:
-                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/manage.key
-              - Effect: Allow
-                Action:
-                  - s3:PutObject
-                Resource:
-                  - !Sub arn:aws:s3:::${SecretsBucket}/auth0/*-client.key
 
   WebSigningKeyPutRole:
     Type: AWS::IAM::Role
