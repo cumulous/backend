@@ -126,7 +126,6 @@ describe('getPolicy()', () => {
             Effect: 'Allow',
             Resource: [
               fakeBaseArn + '/GET/',
-              fakeBaseArn + '/GET/weblogin',
               fakeBaseArn + '/POST/projects',
               fakeBaseArn + '/POST/users',
               fakeBaseArn + '/GET/users',
