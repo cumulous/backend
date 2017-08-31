@@ -38,12 +38,16 @@ describe('cognito.createUserPool()', () => {
     AutoVerifiedAttributes: ['email'],
   });
 
+  let request: string;
+
   const testMethod = (callback: Callback) =>
-    createUserPool(fakeRequest(), null, callback);
+    createUserPool(request, null, callback);
 
   let spyOnCreateUserPool: jasmine.Spy;
 
   beforeEach(() => {
+    request = stringify(fakeRequest());
+
     process.env['AWS_REGION'] = fakeRegion;
     process.env[envNames.accountId] = fakeAccountId;
 
@@ -76,11 +80,24 @@ describe('cognito.createUserPool()', () => {
       });
     });
 
+    it('if request could not be parsed', (done: Callback) => {
+      request += '}';
+      testMethod((err?: Error, data?: any) => {
+        expect(err).toBeTruthy();
+        expect(data).toBeUndefined();
+        done();
+      });
+    });
+
     it('if CognitoIdentityServiceProvider.createUserPoolDomain() produces an error', (done: Callback) => {
       spyOnCreateUserPool.and.returnValue(
         fakeReject('CognitoIdentityServiceProvider.createUserPoolDomain()')
       );
-      testError(createUserPool, fakeRequest(), done);
+      testMethod((err?: Error, data?: any) => {
+        expect(err).toBeTruthy();
+        expect(data).toBeUndefined();
+        done();
+      });
     });
   });
 });
@@ -94,12 +111,16 @@ describe('cognito.updateUserPool()', () => {
     },
   });
 
+  let request: string;
+
   const testMethod = (callback: Callback) =>
-    updateUserPool(fakeRequest(), null, callback);
+    updateUserPool(request, null, callback);
 
   let spyOnUpdateUserPool: jasmine.Spy;
 
   beforeEach(() => {
+    request = stringify(fakeRequest());
+
     process.env['AWS_REGION'] = fakeRegion;
     process.env[envNames.accountId] = fakeAccountId;
     process.env[envNames.userPoolId] = fakeUserPoolId;
@@ -130,11 +151,24 @@ describe('cognito.updateUserPool()', () => {
       });
     });
 
+    it('if request could not be parsed', (done: Callback) => {
+      request += ']';
+      testMethod((err?: Error, data?: any) => {
+        expect(err).toBeTruthy();
+        expect(data).toBeUndefined();
+        done();
+      });
+    });
+
     it('if CognitoIdentityServiceProvider.updateUserPoolDomain() produces an error', (done: Callback) => {
       spyOnUpdateUserPool.and.returnValue(
         fakeReject('CognitoIdentityServiceProvider.updateUserPoolDomain()')
       );
-      testError(updateUserPool, fakeRequest(), done);
+      testMethod((err?: Error, data?: any) => {
+        expect(err).toBeTruthy();
+        expect(data).toBeUndefined();
+        done();
+      });
     });
   });
 });

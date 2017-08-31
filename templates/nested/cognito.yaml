@@ -28,67 +28,40 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupUserPool.Arn
       StateMachine: !Ref UserPoolStateMachine
-      Config:
-        PoolName: !Sub ${BackendStack}-user-pool
-        Schema:
-          - Name: email
-            AttributeDataType: String
-            Mutable: True
-            Required: True
-        UsernameAttributes:
-          - email
-        AutoVerifiedAttributes:
-          - email
-        Policies:
-          PasswordPolicy:
-            MinimumLength: !Ref MinimumPasswordLength
-            RequireLowercase: True
-            RequireNumbers: True
-            RequireSymbols: True
-            RequireUppercase: True
-        LambdaConfig:
-          PreSignUp: !Sub
-            arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-PreSignUp
-        VerificationMessageTemplate:
-          DefaultEmailOption: CONFIRM_WITH_LINK
-        AdminCreateUserConfig:
-          AllowAdminCreateUserOnly: True
-          InviteMessageTemplate:
-            EmailSubject: !Sub 'Welcome to ${WebDomain}!'
-            EmailMessage: !Sub
-              - |
-                <body style="font-family: Helvetica, Arial, sans-serif; font-size: 12pt;">
-                  <p>
-                    Someone invited you to <a href=https://${WebDomain}>${WebDomain}</a>
-                    &mdash; a portal for storing, organizing and analyzing your data in the cloud.
-                  </p>
-                  <p>
-                    To set a password, please click <em>Forgot your password?</em>,
-                    enter your <em>email</em>, click <em>Reset my password</em>,
-                    and follow the instructions.
-                  </p>
-                  <p>
-                    ${ProvidersMessage}
-                  </p>
-                  <p style="font-size: 0pt; display: none;" hidden>
-                    <small>
-                      <em>
-                        Please disregard the information below.
-                        It is only used for debugging and is normally hidden.
-                      </em><br/>
-                      Alternative username: {username}<br/>
-                      Old password: {####}<br/>
-                    </small>
-                  </p>
-                </body>
-              - ProvidersMessage: !If
-                - AuthProvidersEmpty
-                - ''
-                - !Join
-                  - ''
-                  - - 'You can also log in with an external identity provider ('
-                    - !Join [ '/', !Ref AuthProviders ]
-                    - '), as long as its <em>email</em> is the same.'
+      Config: !Sub |
+        {
+          "PoolName": "${BackendStack}-user-pool",
+          "Schema": [{
+            "Name": "email",
+            "AttributeDataType": "String",
+            "Mutable": true,
+            "Required": true
+          }],
+          "UsernameAttributes": [
+            "email"
+          ],
+          "AutoVerifiedAttributes": [
+            "email"
+          ],
+          "Policies": {
+            "PasswordPolicy": {
+              "MinimumLength": ${MinimumPasswordLength},
+              "RequireLowercase": true,
+              "RequireNumbers": true,
+              "RequireSymbols": true,
+              "RequireUppercase": true
+            }
+          },
+          "LambdaConfig": {
+            "PreSignUp": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-PreSignUp"
+          },
+          "VerificationMessageTemplate": {
+            "DefaultEmailOption": "CONFIRM_WITH_LINK"
+          },
+          "AdminCreateUserConfig": {
+            "AllowAdminCreateUserOnly": true
+          }
+        }
 
   SetupUserPool:
     Type: AWS::Lambda::Function

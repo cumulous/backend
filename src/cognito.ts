@@ -10,11 +10,9 @@ import { Callback, Dict } from './types';
 
 export const cognito = new CognitoIdentityServiceProvider();
 
-type CreateUserPoolRequest = CognitoIdentityServiceProvider.Types.CreateUserPoolRequest;
-
-export const createUserPool = (request: CreateUserPoolRequest, context: any, callback: Callback) => {
+export const createUserPool = (request: string, context: any, callback: Callback) => {
   Promise.resolve()
-    .then(() => cognito.createUserPool(request).promise())
+    .then(() => cognito.createUserPool(JSON.parse(request)).promise())
     .then(data => data.UserPool.Id)
     .then(id => callback(null, {
       Id: id,
@@ -28,16 +26,9 @@ const getUserPoolArn = (userPoolId: string) => [
   process.env[envNames.accountId], `userpool/${userPoolId}`
 ].join(':');
 
-type UpdateUserPoolRequest = CognitoIdentityServiceProvider.Types.UpdateUserPoolRequest & {
-  UserPoolId: undefined;
-};
-
-export const updateUserPool = (
-      request: CognitoIdentityServiceProvider.Types.UpdateUserPoolRequest,
-      context: any, callback: Callback
-    ) => {
+export const updateUserPool = (request: string, context: any, callback: Callback) => {
   Promise.resolve()
-    .then(() => cognito.updateUserPool(Object.assign(request, {
+    .then(() => cognito.updateUserPool(Object.assign(JSON.parse(request), {
       UserPoolId: process.env[envNames.userPoolId],
     })).promise())
     .then(() => callback(null, {
