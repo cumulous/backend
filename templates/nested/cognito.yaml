@@ -27,6 +27,23 @@ Resources:
     DeletionPolicy: Retain
     Properties:
       UserPoolName: !Sub ${BackendStack}-user-pool
+      AliasAttributes:
+        - email
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: True
+          Required: True
+      Policies:
+        PasswordPolicy:
+          MinimumLength: !Ref MinimumPasswordLength
+          RequireLowercase: True
+          RequireNumbers: True
+          RequireSymbols: True
+          RequireUppercase: True
+      LambdaConfig:
+        PreSignUp: !Sub
+          arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-PreSignUp
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: True
         InviteMessageTemplate:
@@ -64,24 +81,7 @@ Resources:
                 - ''
                 - - 'You can also log in with an external identity provider ('
                   - !Join [ '/', !Ref AuthProviders ]
-                  - '), as long as its email is the same.'
-      AliasAttributes:
-        - email
-      Schema:
-        - Name: email
-          AttributeDataType: String
-          Mutable: True
-          Required: True
-      Policies:
-        PasswordPolicy:
-          MinimumLength: !Ref MinimumPasswordLength
-          RequireLowercase: True
-          RequireNumbers: True
-          RequireSymbols: True
-          RequireUppercase: True
-      LambdaConfig:
-        PreSignUp: !Sub
-          arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-PreSignUp
+                  - '), as long as its <em>email</em> is the same.'
 
   UserPoolDomain:
     Type: Custom::UserPoolDomain
