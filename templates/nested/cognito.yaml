@@ -27,13 +27,15 @@ Resources:
     DeletionPolicy: Retain
     Properties:
       UserPoolName: !Sub ${BackendStack}-user-pool
-      AliasAttributes:
-        - email
       Schema:
         - Name: email
           AttributeDataType: String
           Mutable: True
           Required: True
+      AliasAttributes:
+        - email
+      AutoVerifiedAttributes:
+        - email
       Policies:
         PasswordPolicy:
           MinimumLength: !Ref MinimumPasswordLength
