@@ -517,11 +517,14 @@ describe('cognito.createUser()', () => {
   });
 });
 
-const fakeUser = () => ({
+const fakeUser = (verified = true) => ({
   Username: fakeUserId,
   Attributes: [{
     Name: 'email',
     Value: fakeEmail,
+  },{
+    Name: 'email_verified',
+    Value: verified ? 'true' : 'false',
   },{
     Name: 'name',
     Value: fakeIdentityName,
@@ -1077,7 +1080,7 @@ describe('cognito.preSignUp()', () => {
      'for an external provider', (done: Callback) => {
     preSignUp(fakeEvent(), null, () => {
       expect(spyOnListUsers).toHaveBeenCalledWith({
-        AttributesToGet: ['email'],
+        AttributesToGet: ['email', 'email_verified'],
         Filter: 'email = "' + fakeEmail + '"',
         UserPoolId: fakeUserPoolId,
       });
@@ -1164,6 +1167,17 @@ describe('cognito.preSignUp()', () => {
       };
     });
 
+    it("if the internal user's email is not verified", () => {
+      spyOnListUsers.and.returnValue(fakeResolve({
+        Users: [fakeSocialUser(), fakeUser(false)],
+      }));
+      after = (err?: string | Error, data?: any) => {
+        expect(err).toBe(errMessage);
+        expect(data).toBeUndefined();
+        expect(spyOnLinkUsers).not.toHaveBeenCalled();
+      };
+    });
+
     it('if CognitoIdentityServiceProvider.listUsers() produces an error', () => {
       spyOnListUsers.and.returnValue(
         fakeReject('CognitoIdentityServiceProvider.listUsers()')
@@ -1175,7 +1189,7 @@ describe('cognito.preSignUp()', () => {
       };
     });
 
-    it('if CognitoIdentityServiceProvider.listUsers() produces an error', () => {
+    it('if CognitoIdentityServiceProvider.adminLinkProviderForUser() produces an error', () => {
       spyOnLinkUsers.and.returnValue(
         fakeReject('CognitoIdentityServiceProvider.adminLinkProviderForUser()')
       );

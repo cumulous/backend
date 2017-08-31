@@ -268,8 +268,15 @@ export const preSignUp = (newUser: SignUpUserEvent, context: any, callback: Call
     .then(() => {
       log.debug(stringify(newUser));
       if (newUser.triggerSource === 'PreSignUp_ExternalProvider') {
-        return getUserByAttribute('email', newUser.request.userAttributes.email)
-          .then(existingUser => linkUsers(newUser.userName, existingUser.Username));
+        return getUserByAttribute('email', newUser.request.userAttributes.email, ['email_verified'])
+          .then(existingUser => {
+            log.debug(stringify(existingUser));
+            if (getUserAttribute(existingUser.Attributes, 'email_verified') === 'true') {
+              return linkUsers(newUser.userName, existingUser.Username);
+            } else {
+              throw Error(`email_verified = false for ${existingUser.Username}`);
+            }
+          });
       }
     })
     .then(() => callback(null, newUser))
