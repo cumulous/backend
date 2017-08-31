@@ -113,20 +113,20 @@ Resources:
   #       AuthDomain: !GetAtt Cognito.Outputs.AuthDomain
   #       AuthTokenLifetime: !Ref AuthTokenLifetime
 
-  # Cognito:
-  #   Type: AWS::CloudFormation::Stack
-  #   Properties:
-  #     TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/cognito.yaml
-  #     Parameters:
-  #       BackendStack: !Ref AWS::StackName
-  #       ArtifactsBucket: !Ref ArtifactsBucket
-  #       LambdaPackage: !Ref LambdaPackage
-  #       WebDomain: !Ref WebDomain
-  #       ApiDomain: !Ref ApiDomain
-  #       ApiId: !GetAtt Api.Outputs.ApiId
-  #       ApiStage: !GetAtt Api.Outputs.ApiStage
-  #       AuthProviders: !Ref AuthProviders
-  #       MinimumPasswordLength: 12
+  Cognito:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/cognito.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        ArtifactsBucket: !Ref ArtifactsBucket
+        LambdaPackage: !Ref LambdaPackage
+        WebDomain: !Ref WebDomain
+        ApiDomain: !Ref ApiDomain
+        ApiId: !GetAtt Api.Outputs.ApiId
+        ApiStage: !GetAtt Api.Outputs.ApiStage
+        AuthProviders: !Ref AuthProviders
+        MinimumPasswordLength: 12
 
   Data:
     Type: AWS::CloudFormation::Stack
