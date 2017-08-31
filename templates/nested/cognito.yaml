@@ -1048,9 +1048,12 @@ Resources:
               - Effect: Allow
                 Action:
                   - cognito-idp:ListUsers
-                  - cognito-idp:AdminLinkProviderForUser
                 Resource:
                   - !GetAtt UserPool.Arn
+              - Effect: Allow
+                Action:
+                  - cognito-idp:AdminLinkProviderForUser
+                Resource: '*'
 
   PreSignUpPermission:
     Type: AWS::Lambda::Permission
