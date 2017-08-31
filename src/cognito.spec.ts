@@ -1174,6 +1174,15 @@ describe('cognito.preSignUp()', () => {
       };
     });
 
+    it("if the external user's email is not verified", () => {
+      event.request.userAttributes.email_verified = 'false';
+      after = (err?: string | Error, data?: any) => {
+        expect(err).toBe(errMessage);
+        expect(data).toBeUndefined();
+        expect(spyOnLinkUsers).not.toHaveBeenCalled();
+      };
+    });
+
     it("if the internal user's email is not verified", () => {
       spyOnListUsers.and.returnValue(fakeResolve({
         Users: [fakeSocialUser(), fakeUser(false)],
