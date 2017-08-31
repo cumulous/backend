@@ -1060,6 +1060,9 @@ describe('cognito.preSignUp()', () => {
         email: fakeEmail,
       },
     },
+    response: {
+      autoVerifyEmail: false,
+    },
   });
 
   let spyOnListUsers: jasmine.Spy;
@@ -1143,16 +1146,20 @@ describe('cognito.preSignUp()', () => {
 
     it('for a successful external user signup', () => {
       after = (err?: Error, data?: any) => {
+        const result = fakeEvent();
+        result.response.autoVerifyEmail = true;
         expect(err).toBeFalsy();
-        expect(data).toEqual(fakeEvent());
+        expect(data).toEqual(result);
       };
     });
 
     it('for a successful internal user signup', () => {
       event = fakeEvent(false);
       after = (err?: string | Error, data?: any) => {
+        const result = fakeEvent(false);
+        result.response.autoVerifyEmail = true;
         expect(err).toBeFalsy();
-        expect(data).toEqual(fakeEvent(false));
+        expect(data).toEqual(result);
       };
     });
 
