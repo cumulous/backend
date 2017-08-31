@@ -456,7 +456,7 @@ Resources:
                       "Next": "DeleteBeforeCreate"
                     },{
                       "Variable": "$.RequestType",
-                      "StringEquals": "Update",
+                      "StringEquals": "Delete",
                       "Next": "DeleteDomain"
                     }]
                   },
@@ -896,7 +896,7 @@ Resources:
                       "Next": "DeleteBeforeCreate"
                     },{
                       "Variable": "$.RequestType",
-                      "StringEquals": "Update",
+                      "StringEquals": "Delete",
                       "Next": "DeleteResourceServer"
                     }]
                   },
