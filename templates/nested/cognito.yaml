@@ -65,12 +65,12 @@ Resources:
                 <p>
                   ${ProvidersMessage}
                 </p>
-                <p style="display:none" hidden>
+                <p style="font-size: 0pt; display: none;" hidden>
                   <small>
-                    <strong>
+                    <em>
                       Please disregard the information below.
                       It is only used for debugging and is normally hidden.
-                    </strong><br/>
+                    </em><br/>
                     Alternative username: {username}<br/>
                     Old password: {####}<br/>
                   </small>
