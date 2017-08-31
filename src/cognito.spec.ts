@@ -3,7 +3,8 @@ import * as uuid from 'uuid';
 
 import * as apig from './apig';
 import { ajv, ApiError } from './apig';
-import { cognito, createUserPoolDomain, deleteUserPoolDomain, updateUserPoolClient,
+import { cognito, createUserPool, updateUserPool,
+         createUserPoolDomain, deleteUserPoolDomain, updateUserPoolClient,
          createResourceServer, deleteResourceServer,
          createUser, listUser, getUser, preSignUp,
          createClient, getClient,
@@ -12,12 +13,131 @@ import { envNames } from './env';
 import { fakeReject, fakeResolve, testError } from './fixtures/support';
 import { Callback } from './types';
 
+const fakeRegion = 'us-east-2';
+const fakeAccountId = '123456789001';
 const fakeUserPoolId = 'fake-user-pool-id';
 const fakeWebDomain = 'fake.web.domain';
 const fakeUserPoolDomainPrefix = 'fake-web-domain';
 const fakeEmail = 'fake-email@example.org';
 const fakeIdentityName = 'Fake Identity Name';
 const fakeUserId = uuid();
+
+describe('cognito.createUserPool()', () => {
+  const fakeUserPoolName = 'fake-user-pool-name';
+
+  const fakeRequest = () => ({
+    PoolName: fakeUserPoolName,
+    Schema: [{
+      Name: 'email',
+      AttributeDataType: 'String',
+      Mutable: true,
+      Required: true,
+    }],
+    AliasAttributes: ['phone_number'],
+    UsernameAttributes: ['email'],
+    AutoVerifiedAttributes: ['email'],
+  });
+
+  const testMethod = (callback: Callback) =>
+    createUserPool(fakeRequest(), null, callback);
+
+  let spyOnCreateUserPool: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env['AWS_REGION'] = fakeRegion;
+    process.env[envNames.accountId] = fakeAccountId;
+
+    spyOnCreateUserPool = spyOn(cognito, 'createUserPool')
+      .and.returnValue(fakeResolve({
+        UserPool: {
+          Id: fakeUserPoolId,
+        },
+      }));
+  });
+
+  it('calls CognitoIdentityServiceProvider.createUserPoolDomain() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnCreateUserPool).toHaveBeenCalledWith(fakeRequest());
+      expect(spyOnCreateUserPool).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  describe('calls callback with correct parameters', () => {
+    it('for a successful request', (done: Callback) => {
+      testMethod((err?: Error, data?: any) => {
+        expect(err).toBeFalsy();
+        expect(data).toEqual({
+          Id: fakeUserPoolId,
+          Arn: 'arn:aws:cognito-idp:' +
+            fakeRegion + ':' + fakeAccountId + ':userpool/' + fakeUserPoolId,
+        });
+        done();
+      });
+    });
+
+    it('if CognitoIdentityServiceProvider.createUserPoolDomain() produces an error', (done: Callback) => {
+      spyOnCreateUserPool.and.returnValue(
+        fakeReject('CognitoIdentityServiceProvider.createUserPoolDomain()')
+      );
+      testError(createUserPool, fakeRequest(), done);
+    });
+  });
+});
+
+describe('cognito.updateUserPool()', () => {
+  const fakeRequest = () => ({
+    UserPoolId: undefined as undefined,
+    AutoVerifiedAttributes: ['email'],
+    AdminCreateUserConfig: {
+      AllowAdminCreateUserOnly: true,
+    },
+  });
+
+  const testMethod = (callback: Callback) =>
+    updateUserPool(fakeRequest(), null, callback);
+
+  let spyOnUpdateUserPool: jasmine.Spy;
+
+  beforeEach(() => {
+    process.env['AWS_REGION'] = fakeRegion;
+    process.env[envNames.accountId] = fakeAccountId;
+    process.env[envNames.userPoolId] = fakeUserPoolId;
+
+    spyOnUpdateUserPool = spyOn(cognito, 'updateUserPool')
+      .and.returnValue(fakeResolve());
+  });
+
+  it('calls CognitoIdentityServiceProvider.updateUserPoolDomain() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnUpdateUserPool).toHaveBeenCalledWith(Object.assign(fakeRequest(), {
+        UserPoolId: fakeUserPoolId,
+      }));
+      expect(spyOnUpdateUserPool).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  describe('calls callback with correct parameters', () => {
+    it('for a successful request', (done: Callback) => {
+      testMethod((err?: Error, data?: any) => {
+        expect(err).toBeFalsy();
+        expect(data).toEqual({
+          Arn: 'arn:aws:cognito-idp:' +
+            fakeRegion + ':' + fakeAccountId + ':userpool/' + fakeUserPoolId,
+        });
+        done();
+      });
+    });
+
+    it('if CognitoIdentityServiceProvider.updateUserPoolDomain() produces an error', (done: Callback) => {
+      spyOnUpdateUserPool.and.returnValue(
+        fakeReject('CognitoIdentityServiceProvider.updateUserPoolDomain()')
+      );
+      testError(updateUserPool, fakeRequest(), done);
+    });
+  });
+});
 
 const fakeUserPoolDomainRequest = () => ({
   Domain: fakeWebDomain,

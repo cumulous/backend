@@ -23,67 +23,310 @@ Conditions:
 
 Resources:
   UserPool:
-    Type: AWS::Cognito::UserPool
+    Type: Custom::UserPool
     DeletionPolicy: Retain
     Properties:
-      UserPoolName: !Sub ${BackendStack}-user-pool
-      Schema:
-        - Name: email
-          AttributeDataType: String
-          Mutable: True
-          Required: True
-      AliasAttributes:
-        - email
-      AutoVerifiedAttributes:
-        - email
-      Policies:
-        PasswordPolicy:
-          MinimumLength: !Ref MinimumPasswordLength
-          RequireLowercase: True
-          RequireNumbers: True
-          RequireSymbols: True
-          RequireUppercase: True
-      LambdaConfig:
-        PreSignUp: !Sub
-          arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-PreSignUp
-      AdminCreateUserConfig:
-        AllowAdminCreateUserOnly: True
-        InviteMessageTemplate:
-          EmailSubject: !Sub 'Welcome to ${WebDomain}!'
-          EmailMessage: !Sub
-            - |
-              <body style="font-family: Helvetica, Arial, sans-serif; font-size: 12pt;">
-                <p>
-                  Someone invited you to <a href=https://${WebDomain}>${WebDomain}</a>
-                  &mdash; a portal for storing, organizing and analyzing your data in the cloud.
-                </p>
-                <p>
-                  To set a password, please click <em>Forgot your password?</em>,
-                  enter your <em>email</em>, click <em>Reset my password</em>,
-                  and follow the instructions.
-                </p>
-                <p>
-                  ${ProvidersMessage}
-                </p>
-                <p style="font-size: 0pt; display: none;" hidden>
-                  <small>
-                    <em>
-                      Please disregard the information below.
-                      It is only used for debugging and is normally hidden.
-                    </em><br/>
-                    Alternative username: {username}<br/>
-                    Old password: {####}<br/>
-                  </small>
-                </p>
-              </body>
-            - ProvidersMessage: !If
-              - AuthProvidersEmpty
-              - ''
-              - !Join
+      ServiceToken: !GetAtt SetupUserPool.Arn
+      StateMachine: !Ref UserPoolStateMachine
+      Config:
+        PoolName: !Sub ${BackendStack}-user-pool
+        Schema:
+          - Name: email
+            AttributeDataType: String
+            Mutable: True
+            Required: True
+        UsernameAttributes:
+          - email
+        AutoVerifiedAttributes:
+          - email
+        Policies:
+          PasswordPolicy:
+            MinimumLength: !Ref MinimumPasswordLength
+            RequireLowercase: True
+            RequireNumbers: True
+            RequireSymbols: True
+            RequireUppercase: True
+        LambdaConfig:
+          PreSignUp: !Sub
+            arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-PreSignUp
+        VerificationMessageTemplate:
+          DefaultEmailOption: CONFIRM_WITH_LINK
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: True
+          InviteMessageTemplate:
+            EmailSubject: !Sub 'Welcome to ${WebDomain}!'
+            EmailMessage: !Sub
+              - |
+                <body style="font-family: Helvetica, Arial, sans-serif; font-size: 12pt;">
+                  <p>
+                    Someone invited you to <a href=https://${WebDomain}>${WebDomain}</a>
+                    &mdash; a portal for storing, organizing and analyzing your data in the cloud.
+                  </p>
+                  <p>
+                    To set a password, please click <em>Forgot your password?</em>,
+                    enter your <em>email</em>, click <em>Reset my password</em>,
+                    and follow the instructions.
+                  </p>
+                  <p>
+                    ${ProvidersMessage}
+                  </p>
+                  <p style="font-size: 0pt; display: none;" hidden>
+                    <small>
+                      <em>
+                        Please disregard the information below.
+                        It is only used for debugging and is normally hidden.
+                      </em><br/>
+                      Alternative username: {username}<br/>
+                      Old password: {####}<br/>
+                    </small>
+                  </p>
+                </body>
+              - ProvidersMessage: !If
+                - AuthProvidersEmpty
                 - ''
-                - - 'You can also log in with an external identity provider ('
-                  - !Join [ '/', !Ref AuthProviders ]
-                  - '), as long as its <em>email</em> is the same.'
+                - !Join
+                  - ''
+                  - - 'You can also log in with an external identity provider ('
+                    - !Join [ '/', !Ref AuthProviders ]
+                    - '), as long as its <em>email</em> is the same.'
+
+  SetupUserPool:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.setupCustomResource
+      Timeout: 10
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt SetupUserPoolRole.Arn
+
+  SetupUserPoolRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SetupUserPoolRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: states:StartExecution
+                Resource:
+                  - !Ref UserPoolStateMachine
+
+  CreateUserPool:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: cognito.createUserPool
+      Timeout: 30
+      Environment:
+        Variables:
+          ACCOUNT_ID: !Ref AWS::AccountId
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt CreateUserPoolRole.Arn
+
+  CreateUserPoolRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: CreateUserPoolRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cognito-idp:CreateUserPool
+                Resource: '*'
+
+  UpdateUserPool:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-Cognito-UpdateUserPool
+      Handler: cognito.updateUserPool
+      Timeout: 30
+      Environment:
+        Variables:
+          ACCOUNT_ID: !Ref AWS::AccountId
+          USER_POOL_ID: !Ref UserPool
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt UpdateUserPoolRole.Arn
+
+  UpdateUserPoolRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: UpdateUserPoolRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: cognito-idp:UpdateUserPool
+                Resource:
+                  - !GetAtt UserPool.Arn
+
+  SendCloudFormationResponse:
+    Type: AWS::Lambda::Function
+    Properties:
+      Handler: aws.sendCloudFormationResponse
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt LambdaBasicExecutionRole.Arn
+
+  LambdaBasicExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  UserPoolStateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: !Sub states.${AWS::Region}.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: StatesExecutionRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: lambda:InvokeFunction
+                Resource:
+                  - !GetAtt CreateUserPool.Arn
+                  - !Sub arn:arn:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-UpdateUserPool
+                  - !GetAtt SendCloudFormationResponse.Arn
+
+  UserPoolStateMachine:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      RoleArn: !GetAtt UserPoolStateMachineRole.Arn
+      DefinitionString: !Sub |-
+        {
+          "StartAt": "SetupUserPool",
+          "States": {
+            "SetupUserPool": {
+              "Type": "Parallel",
+              "Next": "Succeed",
+              "Branches": [{
+                "StartAt": "CheckRequestType",
+                "States": {
+                  "CheckRequestType": {
+                    "Type": "Choice",
+                    "Choices": [{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Create",
+                      "Next": "CreateUserPool"
+                    },{
+                      "Variable": "$.RequestType",
+                      "StringEquals": "Update",
+                      "Next": "UpdateUserPool"
+                    }],
+                    "Default": "Success"
+                  },
+                  "CreateUserPool": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Config",
+                    "ResultPath": "$.Data",
+                    "Resource": "${CreateUserPool.Arn}",
+                    "Next": "PassResourceId"
+                  },
+                  "PassResourceId": {
+                    "Type": "Pass",
+                    "InputPath": "$.Data.Id",
+                    "ResultPath": "$.PhysicalResourceId",
+                    "Next": "Success"
+                  },
+                  "UpdateUserPool": {
+                    "Type": "Task",
+                    "InputPath": "$.ResourceProperties.Config",
+                    "ResultPath": "$.Data",
+                    "Resource": "arn:arn:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-UpdateUserPool",
+                    "Next": "Success"
+                  },
+                  "Success": {
+                    "Type": "Pass",
+                    "ResultPath": "$.Status",
+                    "Result": "SUCCESS",
+                    "End": true
+                  }
+                }
+              }],
+              "Catch": [{
+                "ErrorEquals": [ "States.ALL" ],
+                "ResultPath": "$.Error",
+                "Next": "PassReason"
+              }]
+            },
+            "Succeed": {
+              "InputPath": "$.[0]",
+              "Type": "Pass",
+              "Next": "End"
+            },
+            "PassReason": {
+              "Type": "Pass",
+              "InputPath": "$.Error.Cause",
+              "ResultPath": "$.Reason",
+              "Next": "Fail"
+            },
+            "Fail": {
+              "Type": "Pass",
+              "ResultPath": "$.Status",
+              "Result": "FAILED",
+              "Next": "End"
+            },
+            "End": {
+              "Type": "Task",
+              "ResultPath": null,
+              "Resource": "${SendCloudFormationResponse.Arn}",
+              "End": true
+            }
+          }
+        }
 
   UserPoolDomain:
     Type: Custom::UserPoolDomain
@@ -191,29 +434,6 @@ Resources:
               - Effect: Allow
                 Action: cognito-idp:DeleteUserPoolDomain
                 Resource: '*'
-
-  SendCloudFormationResponse:
-    Type: AWS::Lambda::Function
-    Properties:
-      Handler: aws.sendCloudFormationResponse
-      Runtime: nodejs6.10
-      Code:
-        S3Bucket: !Ref ArtifactsBucket
-        S3Key: !Ref LambdaPackage
-      Role: !GetAtt LambdaBasicExecutionRole.Arn
-
-  LambdaBasicExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
 
   UserPoolDomainStateMachineRole:
     Type: AWS::IAM::Role
@@ -1021,7 +1241,6 @@ Resources:
       Environment:
         Variables:
           USER_POOL_ID: !Ref UserPool
-          WEB_DOMAIN: !Ref WebDomain
       Runtime: nodejs6.10
       Code:
         S3Bucket: !Ref ArtifactsBucket

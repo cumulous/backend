@@ -10,6 +10,42 @@ import { Callback, Dict } from './types';
 
 export const cognito = new CognitoIdentityServiceProvider();
 
+type CreateUserPoolRequest = CognitoIdentityServiceProvider.Types.CreateUserPoolRequest;
+
+export const createUserPool = (request: CreateUserPoolRequest, context: any, callback: Callback) => {
+  Promise.resolve()
+    .then(() => cognito.createUserPool(request).promise())
+    .then(data => data.UserPool.Id)
+    .then(id => callback(null, {
+      Id: id,
+      Arn: getUserPoolArn(id),
+    }))
+    .catch(callback);
+};
+
+const getUserPoolArn = (userPoolId: string) => [
+  'arn', 'aws', 'cognito-idp', process.env['AWS_REGION'],
+  process.env[envNames.accountId], `userpool/${userPoolId}`
+].join(':');
+
+type UpdateUserPoolRequest = CognitoIdentityServiceProvider.Types.UpdateUserPoolRequest & {
+  UserPoolId: undefined;
+};
+
+export const updateUserPool = (
+      request: CognitoIdentityServiceProvider.Types.UpdateUserPoolRequest,
+      context: any, callback: Callback
+    ) => {
+  Promise.resolve()
+    .then(() => cognito.updateUserPool(Object.assign(request, {
+      UserPoolId: process.env[envNames.userPoolId],
+    })).promise())
+    .then(() => callback(null, {
+      Arn: getUserPoolArn(process.env[envNames.userPoolId]),
+    }))
+    .catch(callback);
+};
+
 interface UserPoolDomainRequest {
   Domain: string;
   UserPoolId: string;
