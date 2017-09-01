@@ -22,6 +22,7 @@ const fakeUserPoolDomainPrefix = 'fake-web-domain';
 const fakeEmail = 'fake-email@example.org';
 const fakeIdentityName = 'Fake Identity Name';
 const fakeUserId = uuid();
+const fakeSocialUserId = uuid();
 
 const fakeUpdateUserPoolRequest = () => ({
   AutoVerifiedAttributes: ['email'],
@@ -534,10 +535,11 @@ describe('cognito.createUser()', () => {
 
     spyOnValidate = spyOn(apig, 'validate')
       .and.callThrough();
-    spyOn(uuid, 'v4').and.returnValue(fakeUserId);
     spyOn(Buffer.prototype, 'toString').and.returnValues(fakeTemporaryPassword, fakeNewPassword);
     spyOnAdminCreateUser = spyOn(cognito, 'adminCreateUser')
-      .and.returnValue(fakeResolve());
+      .and.returnValue(fakeResolve({
+        User: fakeUser(),
+      }));
     spyOnAdminInitiateAuth = spyOn(cognito, 'adminInitiateAuth')
       .and.returnValue(fakeResolve({ Session: fakeSessionToken }));
     spyOnAdminRespondToChallenge = spyOn(cognito, 'adminRespondToAuthChallenge')
@@ -560,7 +562,7 @@ describe('cognito.createUser()', () => {
     testMethod(() => {
       expect(spyOnAdminCreateUser).toHaveBeenCalledWith({
         UserPoolId: fakeUserPoolId,
-        Username: fakeUserId,
+        Username: fakeEmail,
         TemporaryPassword: fakeTemporaryPassword,
         UserAttributes: [{
           Name: 'email',
@@ -701,7 +703,7 @@ const fakeUser = (verified = true) => ({
 });
 
 const fakeSocialUser = () => ({
-  Username: fakeUserId,
+  Username: fakeSocialUserId,
   Attributes: [{
     Name: 'email',
     Value: fakeEmail,

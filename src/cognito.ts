@@ -110,17 +110,18 @@ export const deleteResourceServer = (request: ResourceServerRequest, context: an
 export const createUser = (request: Request, context: any, callback: Callback) => {
   validate(request, 'POST', '/users')
     .then(() => {
-      const userId = uuid();
       const tempPass = generatePassword();
       const newPass = generatePassword();
-      return adminCreateUser(userId, tempPass, request.body.email, request.body.name)
-        .then(() => adminInitiateAuth(userId, tempPass))
-        .then(data => adminRespondToAuthChallenge(userId, newPass, data.Session))
-        .then(() => respond(callback, request, {
-          id: userId,
-          email: request.body.email,
-          name: request.body.name,
-        }));
+      return adminCreateUser(request.body.email, tempPass, request.body.name)
+        .then(data => data.User.Username)
+        .then(userId => adminInitiateAuth(userId, tempPass)
+          .then(data => adminRespondToAuthChallenge(userId, newPass, data.Session))
+          .then(() => respond(callback, request, {
+            id: userId,
+            email: request.body.email,
+            name: request.body.name,
+          }))
+        );
     })
     .catch(err => {
       if (err.code === 'UsernameExistsException') {
@@ -133,10 +134,10 @@ export const createUser = (request: Request, context: any, callback: Callback) =
 const generatePassword = () =>
   randomBytes(192).toString('base64');
 
-const adminCreateUser = (username: string, password: string, email: string, name: string) => {
+const adminCreateUser = (email: string, password: string, name: string) => {
   return cognito.adminCreateUser({
     UserPoolId: process.env[envNames.userPoolId],
-    Username: username,
+    Username: email,
     TemporaryPassword: password,
     UserAttributes: [{
       Name: 'email',
