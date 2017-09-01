@@ -253,7 +253,6 @@ Resources:
                   },
                   "UpdateUserPool": {
                     "Type": "Task",
-                    "InputPath": "$.ResourceProperties",
                     "ResultPath": "$.Data",
                     "Resource": "${UpdateUserPool.Arn}",
                     "Next": "Success"
