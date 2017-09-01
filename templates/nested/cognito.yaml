@@ -28,40 +28,78 @@ Resources:
     Properties:
       ServiceToken: !GetAtt SetupUserPool.Arn
       StateMachine: !Ref UserPoolStateMachine
-      Config: !Sub |
-        {
-          "PoolName": "${BackendStack}-user-pool",
-          "Schema": [{
-            "Name": "email",
-            "AttributeDataType": "String",
-            "Mutable": true,
-            "Required": true
-          }],
-          "UsernameAttributes": [
-            "email"
-          ],
-          "AutoVerifiedAttributes": [
-            "email"
-          ],
-          "Policies": {
-            "PasswordPolicy": {
-              "MinimumLength": ${MinimumPasswordLength},
-              "RequireLowercase": true,
-              "RequireNumbers": true,
-              "RequireSymbols": true,
-              "RequireUppercase": true
+      Config: !Sub
+        - |
+          {
+            "PoolName": "${BackendStack}-user-pool",
+            "Schema": [{
+              "Name": "email",
+              "AttributeDataType": "String",
+              "Mutable": true,
+              "Required": true
+            }],
+            "UsernameAttributes": [
+              "email"
+            ],
+            "AutoVerifiedAttributes": [
+              "email"
+            ],
+            "Policies": {
+              "PasswordPolicy": {
+                "MinimumLength": ${MinimumPasswordLength},
+                "RequireLowercase": true,
+                "RequireNumbers": true,
+                "RequireSymbols": true,
+                "RequireUppercase": true
+              }
+            },
+            "LambdaConfig": {
+              "PreSignUp": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-PreSignUp"
+            },
+            "VerificationMessageTemplate": {
+              "DefaultEmailOption": "CONFIRM_WITH_LINK",
+              "EmailMessageByLink": "Please verify your email address for ${WebDomain} by following this link: {##Verify Email##}"
+            },
+            "AdminCreateUserConfig": {
+              "AllowAdminCreateUserOnly": true,
+              "InviteMessageTemplate": {
+                "EmailSubject": "Welcome to ${WebDomain}!",
+                "EmailMessage": "<body style=\"font-family: Helvetica, Arial, sans-serif; font-size: 10pt;\">
+                  Hi there,
+                  <p>
+                    Someone invited you to <a href=https://${WebDomain}>${WebDomain}</a>
+                    &mdash; a portal for storing, organizing and analyzing your data in the cloud.
+                  </p>
+                  <p>
+                    To set a password, please open the portal, click <em>Forgot your password?</em>,
+                    enter your <em>email</em>, click <em>Reset my password</em>,
+                    and follow the instructions.
+                  </p>
+                  <p>
+                    ${ProvidersMessage}
+                  </p>
+                  <p style=\"font-size: 0pt; display: none;\" hidden>
+                    <small>
+                      <em>
+                        Please disregard weird characters below.
+                        They are only used for debugging and should normally be hidden.
+                      </em>
+                      <br/>
+                      {####}
+                    </small>
+                  </p>
+                </body>"
+              }
             }
-          },
-          "LambdaConfig": {
-            "PreSignUp": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-PreSignUp"
-          },
-          "VerificationMessageTemplate": {
-            "DefaultEmailOption": "CONFIRM_WITH_LINK"
-          },
-          "AdminCreateUserConfig": {
-            "AllowAdminCreateUserOnly": true
           }
-        }
+        - ProvidersMessage: !If
+          - AuthProvidersEmpty
+          - ''
+          - !Join
+            - ''
+            - - 'You can also log in with an external identity provider ('
+              - !Join [ '/', !Ref AuthProviders ]
+              - '), as long as its <em>email</em> is the same.'
 
   SetupUserPool:
     Type: AWS::Lambda::Function
