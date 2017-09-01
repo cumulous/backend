@@ -29,8 +29,7 @@ Resources:
       ServiceToken: !GetAtt SetupUserPool.Arn
       StateMachine: !Ref UserPoolStateMachine
       Config: !Sub
-        - >-
-          {
+        - '{
             "PoolName": "${BackendStack}-user-pool",
             "Schema": [{
               "Name": "email",
@@ -64,7 +63,7 @@ Resources:
               "AllowAdminCreateUserOnly": true,
               "InviteMessageTemplate": {
                 "EmailSubject": "Welcome to ${WebDomain}!",
-                "EmailMessage": "<body style=\"font-family: Helvetica, Arial, sans-serif; font-size: 10pt;\">
+                "EmailMessage": "<body style="font-family: Helvetica, Arial, sans-serif; font-size: 10pt;">
                   Hi there,
                   <p>
                     Someone invited you to <a href=https://${WebDomain}>${WebDomain}</a>
@@ -78,7 +77,7 @@ Resources:
                   <p>
                     ${ProvidersMessage}
                   </p>
-                  <p style=\"font-size: 0pt; display: none;\" hidden>
+                  <p style="font-size: 0pt; display: none;" hidden>
                     <small>
                       <em>
                         Please disregard weird characters below.
@@ -91,7 +90,7 @@ Resources:
                 </body>"
               }
             }
-          }
+          }'
         - ProvidersMessage: !If
           - AuthProvidersEmpty
           - ''
