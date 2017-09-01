@@ -71,7 +71,7 @@ Resources:
                   </p>
                   <p>
                     To set a password, please open the portal, click <em>Forgot your password?</em>,
-                    enter your <em>email</em>, click <em>Reset my password</em>,
+                    enter your email ({username}), click <em>Reset my password</em>,
                     and follow the instructions.
                   </p>
                   <p>
