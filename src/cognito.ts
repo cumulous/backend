@@ -28,9 +28,15 @@ const getUserPoolArn = (userPoolId: string) => [
 
 export const updateUserPool = (request: string, context: any, callback: Callback) => {
   Promise.resolve()
-    .then(() => cognito.updateUserPool(Object.assign(JSON.parse(request), {
-      UserPoolId: process.env[envNames.userPoolId],
-    })).promise())
+    .then(() => {
+      const params = JSON.parse(request);
+      delete params.PoolName;
+      delete params.Schema;
+      delete params.AliasAttributes;
+      delete params.UsernameAttributes;
+      params.UserPoolId = process.env[envNames.userPoolId];
+      return cognito.updateUserPool(params).promise();
+    })
     .then(() => callback(null, {
       Arn: getUserPoolArn(process.env[envNames.userPoolId]),
     }))

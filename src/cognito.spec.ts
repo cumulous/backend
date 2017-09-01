@@ -15,6 +15,7 @@ import { Callback } from './types';
 
 const fakeRegion = 'us-east-2';
 const fakeAccountId = '123456789001';
+const fakeUserPoolName = 'fake-user-pool-name';
 const fakeUserPoolId = 'fake-user-pool-id';
 const fakeWebDomain = 'fake.web.domain';
 const fakeUserPoolDomainPrefix = 'fake-web-domain';
@@ -22,22 +23,26 @@ const fakeEmail = 'fake-email@example.org';
 const fakeIdentityName = 'Fake Identity Name';
 const fakeUserId = uuid();
 
+const fakeUpdateUserPoolRequest = () => ({
+  AutoVerifiedAttributes: ['email'],
+  AdminCreateUserConfig: {
+    AllowAdminCreateUserOnly: true,
+  },
+});
+
+const fakeUserPoolRequest = () => Object.assign({
+  PoolName: fakeUserPoolName,
+  Schema: [{
+    Name: 'email',
+    AttributeDataType: 'String',
+    Mutable: true,
+    Required: true,
+  }],
+  AliasAttributes: ['phone_number'],
+  UsernameAttributes: ['email'],
+}, fakeUpdateUserPoolRequest());
+
 describe('cognito.createUserPool()', () => {
-  const fakeUserPoolName = 'fake-user-pool-name';
-
-  const fakeRequest = () => ({
-    PoolName: fakeUserPoolName,
-    Schema: [{
-      Name: 'email',
-      AttributeDataType: 'String',
-      Mutable: true,
-      Required: true,
-    }],
-    AliasAttributes: ['phone_number'],
-    UsernameAttributes: ['email'],
-    AutoVerifiedAttributes: ['email'],
-  });
-
   let request: string;
 
   const testMethod = (callback: Callback) =>
@@ -46,7 +51,7 @@ describe('cognito.createUserPool()', () => {
   let spyOnCreateUserPool: jasmine.Spy;
 
   beforeEach(() => {
-    request = stringify(fakeRequest());
+    request = stringify(fakeUserPoolRequest());
 
     process.env['AWS_REGION'] = fakeRegion;
     process.env[envNames.accountId] = fakeAccountId;
@@ -61,7 +66,7 @@ describe('cognito.createUserPool()', () => {
 
   it('calls CognitoIdentityServiceProvider.createUserPoolDomain() once with correct parameters', (done: Callback) => {
     testMethod(() => {
-      expect(spyOnCreateUserPool).toHaveBeenCalledWith(fakeRequest());
+      expect(spyOnCreateUserPool).toHaveBeenCalledWith(fakeUserPoolRequest());
       expect(spyOnCreateUserPool).toHaveBeenCalledTimes(1);
       done();
     });
@@ -103,14 +108,6 @@ describe('cognito.createUserPool()', () => {
 });
 
 describe('cognito.updateUserPool()', () => {
-  const fakeRequest = () => ({
-    UserPoolId: undefined as undefined,
-    AutoVerifiedAttributes: ['email'],
-    AdminCreateUserConfig: {
-      AllowAdminCreateUserOnly: true,
-    },
-  });
-
   let request: string;
 
   const testMethod = (callback: Callback) =>
@@ -119,7 +116,7 @@ describe('cognito.updateUserPool()', () => {
   let spyOnUpdateUserPool: jasmine.Spy;
 
   beforeEach(() => {
-    request = stringify(fakeRequest());
+    request = stringify(fakeUserPoolRequest());
 
     process.env['AWS_REGION'] = fakeRegion;
     process.env[envNames.accountId] = fakeAccountId;
@@ -131,7 +128,7 @@ describe('cognito.updateUserPool()', () => {
 
   it('calls CognitoIdentityServiceProvider.updateUserPoolDomain() once with correct parameters', (done: Callback) => {
     testMethod(() => {
-      expect(spyOnUpdateUserPool).toHaveBeenCalledWith(Object.assign(fakeRequest(), {
+      expect(spyOnUpdateUserPool).toHaveBeenCalledWith(Object.assign(fakeUpdateUserPoolRequest(), {
         UserPoolId: fakeUserPoolId,
       }));
       expect(spyOnUpdateUserPool).toHaveBeenCalledTimes(1);
