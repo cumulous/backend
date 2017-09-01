@@ -211,7 +211,7 @@ Resources:
                 Action: lambda:InvokeFunction
                 Resource:
                   - !GetAtt CreateUserPool.Arn
-                  - !Sub arn:arn:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-UpdateUserPool
+                  - !Sub arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-UpdateUserPool
                   - !GetAtt SendCloudFormationResponse.Arn
 
   UserPoolStateMachine:
@@ -258,7 +258,7 @@ Resources:
                     "Type": "Task",
                     "InputPath": "$.ResourceProperties.Config",
                     "ResultPath": "$.Data",
-                    "Resource": "arn:arn:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-UpdateUserPool",
+                    "Resource": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BackendStack}-Cognito-UpdateUserPool",
                     "Next": "Success"
                   },
                   "Success": {
