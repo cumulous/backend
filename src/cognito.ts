@@ -295,9 +295,6 @@ interface SignUpUserEvent {
   request: {
     userAttributes: Dict<string>;
   };
-  response: {
-    autoVerifyEmail: boolean;
-  };
 }
 
 export const preSignUp = (newUser: SignUpUserEvent, context: any, callback: Callback) => {
@@ -320,10 +317,7 @@ export const preSignUp = (newUser: SignUpUserEvent, context: any, callback: Call
           });
       }
     })
-    .then(() => {
-      newUser.response.autoVerifyEmail = true;
-      callback(null, newUser);
-    })
+    .then(() => callback(null, newUser))
     .catch(err => {
       log.error(stringify(err));
       callback('User signup is disabled');
