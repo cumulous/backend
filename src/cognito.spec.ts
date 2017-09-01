@@ -500,8 +500,6 @@ describe('cognito.deleteResourceServer()', () => {
 
 describe('cognito.createUser()', () => {
   const fakeClientId = 'fake-client-id';
-  const fakeTemporaryPassword = 'fake-temporary-password';
-  const fakeNewPassword = 'fake-new-password';
   const fakeSessionToken = 'fake-session-token';
 
   const fakeBody = () => ({
@@ -529,21 +527,31 @@ describe('cognito.createUser()', () => {
   let spyOnRespond: jasmine.Spy;
   let spyOnRespondWithError: jasmine.Spy;
 
+  let tempPassword: string;
+  let newPassword: string;
+
   beforeEach(() => {
     process.env[envNames.userPoolId] = fakeUserPoolId;
     process.env[envNames.authClientId] = fakeClientId;
 
     spyOnValidate = spyOn(apig, 'validate')
       .and.callThrough();
-    spyOn(Buffer.prototype, 'toString').and.returnValues(fakeTemporaryPassword, fakeNewPassword);
     spyOnAdminCreateUser = spyOn(cognito, 'adminCreateUser')
-      .and.returnValue(fakeResolve({
-        User: fakeUser(),
-      }));
+      .and.callFake((params: any) => {
+        tempPassword = params.TemporaryPassword;
+        return fakeResolve({
+          User: fakeUser(),
+        });
+      });
     spyOnAdminInitiateAuth = spyOn(cognito, 'adminInitiateAuth')
-      .and.returnValue(fakeResolve({ Session: fakeSessionToken }));
+      .and.returnValue(fakeResolve({
+        Session: fakeSessionToken,
+      }));
     spyOnAdminRespondToChallenge = spyOn(cognito, 'adminRespondToAuthChallenge')
-      .and.returnValue(fakeResolve());
+      .and.callFake((params: any) => {
+        newPassword = params.ChallengeResponses.NEW_PASSWORD;
+        return fakeResolve();
+      });
     spyOnRespond = spyOn(apig, 'respond')
       .and.callFake((callback: Callback) => callback());
     spyOnRespondWithError = spyOn(apig, 'respondWithError')
@@ -558,12 +566,17 @@ describe('cognito.createUser()', () => {
     });
   });
 
+  const testPassword = (password: String) => {
+    expect(password.length).toBe(256);
+    expect(password).not.toMatch(/[<&>]/);
+  };
+
   it('calls CognitoIdentityServiceProvider.adminCreateUser() once with correct parameters', (done: Callback) => {
     testMethod(() => {
       expect(spyOnAdminCreateUser).toHaveBeenCalledWith({
         UserPoolId: fakeUserPoolId,
         Username: fakeEmail,
-        TemporaryPassword: fakeTemporaryPassword,
+        TemporaryPassword: tempPassword,
         UserAttributes: [{
           Name: 'email',
           Value: fakeEmail,
@@ -575,6 +588,7 @@ describe('cognito.createUser()', () => {
           Value: fakeIdentityName,
         }],
       });
+      testPassword(tempPassword);
       expect(spyOnAdminCreateUser).toHaveBeenCalledTimes(1);
       done();
     });
@@ -588,7 +602,7 @@ describe('cognito.createUser()', () => {
         UserPoolId: fakeUserPoolId,
         AuthParameters: {
           USERNAME: fakeUserId,
-          PASSWORD: fakeTemporaryPassword,
+          PASSWORD: tempPassword,
         },
       });
       expect(spyOnAdminInitiateAuth).toHaveBeenCalledTimes(1);
@@ -604,10 +618,12 @@ describe('cognito.createUser()', () => {
         UserPoolId: fakeUserPoolId,
         ChallengeResponses: {
           USERNAME: fakeUserId,
-          NEW_PASSWORD: fakeNewPassword,
+          NEW_PASSWORD: newPassword,
         },
         Session: fakeSessionToken,
       });
+      testPassword(newPassword);
+      expect(newPassword).not.toEqual(tempPassword);
       expect(spyOnAdminRespondToChallenge).toHaveBeenCalledTimes(1);
       done();
     });

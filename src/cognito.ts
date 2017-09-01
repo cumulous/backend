@@ -131,8 +131,16 @@ export const createUser = (request: Request, context: any, callback: Callback) =
     });
 };
 
-const generatePassword = () =>
-  randomBytes(192).toString('base64');
+const generatePassword = () => {
+  return Buffer.alloc(256).map(() => {
+    while (true) {
+      const char = 0x21 + (randomBytes(1)[0] & 0x7f);
+      if (char < 0x7f && char !== 0x3c && char !== 0x3e && char !== 0x26) {
+        return char;
+      }
+    }
+  }).toString();
+}
 
 const adminCreateUser = (email: string, password: string, name: string) => {
   return cognito.adminCreateUser({
