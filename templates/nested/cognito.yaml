@@ -29,7 +29,7 @@ Resources:
       ServiceToken: !GetAtt SetupUserPool.Arn
       StateMachine: !Ref UserPoolStateMachine
       Config: !Sub
-        - |
+        - >-
           {
             "PoolName": "${BackendStack}-user-pool",
             "Schema": [{
