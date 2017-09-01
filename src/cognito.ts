@@ -4,6 +4,7 @@ import * as stringify from 'json-stable-stringify';
 import { v4 as uuid } from 'uuid';
 
 import { ApiError, Request, respond, respondWithError, validate } from './apig';
+import { CloudFormationRequest } from './aws';
 import { envNames } from './env';
 import { log } from './log';
 import { Callback, Dict } from './types';
@@ -26,19 +27,19 @@ const getUserPoolArn = (userPoolId: string) => [
   process.env[envNames.accountId], `userpool/${userPoolId}`
 ].join(':');
 
-export const updateUserPool = (request: string, context: any, callback: Callback) => {
+export const updateUserPool = (request: CloudFormationRequest, context: any, callback: Callback) => {
   Promise.resolve()
     .then(() => {
-      const params = JSON.parse(request);
-      delete params.PoolName;
-      delete params.Schema;
-      delete params.AliasAttributes;
-      delete params.UsernameAttributes;
-      params.UserPoolId = process.env[envNames.userPoolId];
-      return cognito.updateUserPool(params).promise();
+      const config = JSON.parse(request.ResourceProperties.Config);
+      delete config.PoolName;
+      delete config.Schema;
+      delete config.AliasAttributes;
+      delete config.UsernameAttributes;
+      config.UserPoolId = request.PhysicalResourceId;
+      return cognito.updateUserPool(config).promise();
     })
     .then(() => callback(null, {
-      Arn: getUserPoolArn(process.env[envNames.userPoolId]),
+      Arn: getUserPoolArn(request.PhysicalResourceId),
     }))
     .catch(callback);
 };

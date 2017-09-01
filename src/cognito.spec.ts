@@ -30,7 +30,7 @@ const fakeUpdateUserPoolRequest = () => ({
   },
 });
 
-const fakeUserPoolRequest = () => Object.assign({
+const fakeUserPoolConfig = () => Object.assign({
   PoolName: fakeUserPoolName,
   Schema: [{
     Name: 'email',
@@ -51,7 +51,7 @@ describe('cognito.createUserPool()', () => {
   let spyOnCreateUserPool: jasmine.Spy;
 
   beforeEach(() => {
-    request = stringify(fakeUserPoolRequest());
+    request = stringify(fakeUserPoolConfig());
 
     process.env['AWS_REGION'] = fakeRegion;
     process.env[envNames.accountId] = fakeAccountId;
@@ -66,7 +66,7 @@ describe('cognito.createUserPool()', () => {
 
   it('calls CognitoIdentityServiceProvider.createUserPoolDomain() once with correct parameters', (done: Callback) => {
     testMethod(() => {
-      expect(spyOnCreateUserPool).toHaveBeenCalledWith(fakeUserPoolRequest());
+      expect(spyOnCreateUserPool).toHaveBeenCalledWith(fakeUserPoolConfig());
       expect(spyOnCreateUserPool).toHaveBeenCalledTimes(1);
       done();
     });
@@ -108,7 +108,14 @@ describe('cognito.createUserPool()', () => {
 });
 
 describe('cognito.updateUserPool()', () => {
-  let request: string;
+  const fakeRequest = () => ({
+    PhysicalResourceId: fakeUserPoolId,
+    ResourceProperties: {
+      Config: stringify(fakeUserPoolConfig()),
+    },
+  });
+
+  let request: any;
 
   const testMethod = (callback: Callback) =>
     updateUserPool(request, null, callback);
@@ -116,11 +123,10 @@ describe('cognito.updateUserPool()', () => {
   let spyOnUpdateUserPool: jasmine.Spy;
 
   beforeEach(() => {
-    request = stringify(fakeUserPoolRequest());
+    request = fakeRequest();
 
     process.env['AWS_REGION'] = fakeRegion;
     process.env[envNames.accountId] = fakeAccountId;
-    process.env[envNames.userPoolId] = fakeUserPoolId;
 
     spyOnUpdateUserPool = spyOn(cognito, 'updateUserPool')
       .and.returnValue(fakeResolve());
@@ -136,34 +142,45 @@ describe('cognito.updateUserPool()', () => {
     });
   });
 
-  describe('calls callback with correct parameters', () => {
-    it('for a successful request', (done: Callback) => {
-      testMethod((err?: Error, data?: any) => {
-        expect(err).toBeFalsy();
-        expect(data).toEqual({
-          Arn: 'arn:aws:cognito-idp:' +
-            fakeRegion + ':' + fakeAccountId + ':userpool/' + fakeUserPoolId,
-        });
-        done();
+  it('calls callback with correct parameters for a successful request', (done: Callback) => {
+    testMethod((err?: Error, data?: any) => {
+      expect(err).toBeFalsy();
+      expect(data).toEqual({
+        Arn: 'arn:aws:cognito-idp:' +
+          fakeRegion + ':' + fakeAccountId + ':userpool/' + fakeUserPoolId,
       });
+      done();
+    });
+  });
+
+  describe('calls callback immediately with an error if', () => {
+    let after: Callback;
+
+    beforeEach(() => {
+      after = () => {
+        expect(spyOnUpdateUserPool).not.toHaveBeenCalled();
+      };
     });
 
-    it('if request could not be parsed', (done: Callback) => {
-      request += ']';
-      testMethod((err?: Error, data?: any) => {
-        expect(err).toBeTruthy();
-        expect(data).toBeUndefined();
-        done();
-      });
+    it('request is undefined', () => request = undefined);
+    it('request is null', () => request = null);
+    it('request.ResourceProperties is undefined', () => request.ResourceProperties = undefined);
+    it('request.ResourceProperties is null', () => request.ResourceProperties = null);
+    it('config could not be parsed', () => {
+      request.ResourceProperties.Config += ']';
     });
-
-    it('if CognitoIdentityServiceProvider.updateUserPoolDomain() produces an error', (done: Callback) => {
+    it('CognitoIdentityServiceProvider.updateUserPoolDomain() produces an error', () => {
       spyOnUpdateUserPool.and.returnValue(
         fakeReject('CognitoIdentityServiceProvider.updateUserPoolDomain()')
       );
+      after = () => {};
+    });
+
+    afterEach((done: Callback) => {
       testMethod((err?: Error, data?: any) => {
         expect(err).toBeTruthy();
         expect(data).toBeUndefined();
+        after();
         done();
       });
     });
