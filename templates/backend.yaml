@@ -102,16 +102,16 @@ Resources:
         ApiStage: !GetAtt Api.Outputs.ApiStage
         SearchUploadDocumentsFunction: !GetAtt Search.Outputs.UploadDocumentsFunction
 
-  # Members:
-  #   Type: AWS::CloudFormation::Stack
-  #   Properties:
-  #     TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/members.yaml
-  #     Parameters:
-  #       BackendStack: !Ref AWS::StackName
-  #       ArtifactsBucket: !Ref ArtifactsBucket
-  #       LambdaPackage: !Ref LambdaPackage
-  #       AuthDomain: !GetAtt Cognito.Outputs.AuthDomain
-  #       AuthTokenLifetime: !Ref AuthTokenLifetime
+  Members:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://s3.amazonaws.com/${ArtifactsBucket}/${TemplatesPath}/members.yaml
+      Parameters:
+        BackendStack: !Ref AWS::StackName
+        ArtifactsBucket: !Ref ArtifactsBucket
+        LambdaPackage: !Ref LambdaPackage
+        AuthDomain: !GetAtt Cognito.Outputs.AuthDomain
+        AuthTokenLifetime: !Ref AuthTokenLifetime
 
   Cognito:
     Type: AWS::CloudFormation::Stack
