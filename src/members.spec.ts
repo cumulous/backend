@@ -7,7 +7,6 @@ import { Callback } from './types';
 const fakeAuthDomain = 'cognito-idp.us-east-1.amazonaws.com/us-east-1_aBCD';
 const fakeToken = 'ey.ab.cd';
 const fakeSub = 'abcd@1234';
-const fakeExp = 1514764800;
 const fakeBaseArn = 'arn:aws:execute-api:us-west-2:123456789012:ymy8tbxw7b/Stage';
 const fakeMethodArn = `${fakeBaseArn}/GET/resource`;
 
@@ -18,7 +17,6 @@ describe('authorize()', () => {
   });
   let fakePayload = () => ({
     sub: fakeSub,
-    exp: fakeExp,
   });
   let fakePolicy = (): Policy => ({
     principalId: fakeSub,
@@ -61,7 +59,7 @@ describe('authorize()', () => {
 
   it('calls getPolicy() with correct parameters', (done: Callback) => {
     testMethod(() => {
-      expect(spyOnGetPolicy).toHaveBeenCalledWith(fakeSub, fakeExp, fakeMethodArn);
+      expect(spyOnGetPolicy).toHaveBeenCalledWith(fakeSub, fakeMethodArn);
       expect(spyOnGetPolicy).toHaveBeenCalledTimes(1);
       done();
     });
@@ -116,7 +114,7 @@ describe('authorize()', () => {
 
 describe('getPolicy()', () => {
   it('returns correct policy response if there were no errors', (done: Callback) => {
-    getPolicy(fakeSub, fakeExp, fakeMethodArn).then((policy: Policy) => {
+    getPolicy(fakeSub, fakeMethodArn).then((policy: Policy) => {
       expect(policy).toEqual({
         principalId: fakeSub,
         policyDocument: {
@@ -144,9 +142,6 @@ describe('getPolicy()', () => {
             ],
           }],
         },
-        context: {
-          expiresAt: fakeExp,
-        },
       });
       done();
     });
@@ -160,7 +155,7 @@ describe('getPolicy()', () => {
       methodArn = fakeMethodArn;
     });
     afterEach((done: Callback) => {
-      getPolicy(principalId, fakeExp, methodArn).catch(err => {
+      getPolicy(principalId, methodArn).catch(err => {
         expect(err).toEqual(jasmine.any(Error));
         done();
       });

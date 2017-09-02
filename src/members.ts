@@ -5,11 +5,15 @@ import { envNames } from './env';
 import { log } from './log';
 import { Callback, Dict } from './types';
 
+interface TokenPayload {
+  sub: string;
+}
+
 export const authorize = (event: { authorizationToken: string, methodArn: string },
                         context: any, callback: Callback) => {
   Promise.resolve(event)
     .then(event => authenticate(process.env[envNames.authDomain], event.authorizationToken))
-    .then((payload: Dict<any>) => getPolicy(payload.sub, payload.exp, event.methodArn))
+    .then((payload: TokenPayload) => getPolicy(payload.sub, event.methodArn))
     .then(policy => {
       log.debug(stringify(policy));
       callback(null, policy);
@@ -32,7 +36,7 @@ export interface Policy {
   context?: Dict<any>;
 };
 
-export const getPolicy = (principalId: string, expiresAt: number, methodArn: string): Promise<Policy> => {
+export const getPolicy = (principalId: string, methodArn: string): Promise<Policy> => {
   if (!principalId) {
     return Promise.reject(Error('Expected non-empty principalId'));
   } else {
@@ -66,9 +70,6 @@ export const getPolicy = (principalId: string, expiresAt: number, methodArn: str
               `${baseArn}/${endpoint.replace(/ /g, '')}`
             ),
           }],
-        },
-        context: {
-          expiresAt: expiresAt,
         },
       }));
   }
