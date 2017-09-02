@@ -310,7 +310,7 @@ export const preSignUp = (newUser: SignUpUserEvent, context: any, callback: Call
   Promise.resolve()
     .then(() => {
       if (newUser.request.userAttributes.email_verified === 'false') {
-        throw Error(`email_verified = false for ${newUser.userName}`);
+        throw new ApiError(`email_verified = false for ${newUser.userName}`);
       }
       if (newUser.triggerSource === 'PreSignUp_ExternalProvider') {
         return getUserByAttribute('email', newUser.request.userAttributes.email, ['email_verified'])
@@ -320,7 +320,7 @@ export const preSignUp = (newUser: SignUpUserEvent, context: any, callback: Call
               return linkUsers(newUser.userName, existingUser.Username);
             } else {
               log.error(stringify(existingUser));
-              throw Error(`invalid state for ${existingUser.Username}`);
+              throw new ApiError(`invalid state for ${existingUser.Username}`);
             }
           });
       }
