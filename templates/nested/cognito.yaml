@@ -57,13 +57,16 @@ Resources:
             },
             "VerificationMessageTemplate": {
               "DefaultEmailOption": "CONFIRM_WITH_LINK",
-              "EmailMessageByLink": "Please verify your email address for ${WebDomain} by following this link: {##Verify Email##}"
+              "EmailMessageByLink": "
+                Please verify your email address for <a href=https://${WebDomain}>${WebDomain}</a>
+                by following this link: {##Verify Email##}
+              "
             },
             "AdminCreateUserConfig": {
               "AllowAdminCreateUserOnly": true,
               "InviteMessageTemplate": {
                 "EmailSubject": "Welcome to ${WebDomain}!",
-                "EmailMessage": "<body style=\"font-family: Helvetica, Arial, sans-serif; font-size: 10pt;\">
+                "EmailMessage": "<body style=\"font-family: Helvetica, Arial, sans-serif; font-size: 12pt;\">
                   Hi there,
                   <p>
                     Someone invited you to <a href=https://${WebDomain}>${WebDomain}</a>
@@ -77,6 +80,7 @@ Resources:
                   <p>
                     ${ProvidersMessage}
                   </p>
+                  Welcome!
                   <p style=\"font-size: 0pt; display: none;\" hidden>
                     <small>
                       <em>
