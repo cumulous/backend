@@ -318,7 +318,8 @@ export const preSignUp = (newUser: SignUpUserEvent, context: any, callback: Call
           .then(existingUser => {
             log.debug(stringify(existingUser));
 
-            if (getUserAttribute(existingUser.Attributes, 'email_verified') === 'true') {
+            if (existingUser.Enabled && existingUser.UserStatus === 'CONFIRMED' &&
+                getUserAttribute(existingUser.Attributes, 'email_verified') === 'true') {
               return linkUsers(newUser.userName, existingUser.Username);
             } else {
               throw Error(`email_verified = false for ${existingUser.Username}`);

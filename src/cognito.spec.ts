@@ -703,7 +703,7 @@ describe('cognito.createUser()', () => {
   });
 });
 
-const fakeUser = (verified = true) => ({
+const fakeUser = (verified = true, enabled = true, status = 'CONFIRMED') => ({
   Username: fakeUserId,
   Attributes: [{
     Name: 'email',
@@ -715,7 +715,8 @@ const fakeUser = (verified = true) => ({
     Name: 'name',
     Value: fakeIdentityName,
   }],
-  UserStatus: 'FORCE_CHANGE_PASSWORD',
+  UserStatus: status,
+  Enabled: enabled,
 });
 
 const fakeSocialUser = () => ({
@@ -1345,6 +1346,28 @@ describe('cognito.preSignUp()', () => {
     it('if an internal user is not found', () => {
       spyOnListUsers.and.returnValue(fakeResolve({
         Users: [fakeSocialUser()],
+      }));
+      after = (err?: string | Error, data?: any) => {
+        expect(err).toBe(errMessage);
+        expect(data).toBeUndefined();
+        expect(spyOnLinkUsers).not.toHaveBeenCalled();
+      };
+    });
+
+    it('if the internal user is disabled', () => {
+      spyOnListUsers.and.returnValue(fakeResolve({
+        Users: [fakeUser(true, false)],
+      }));
+      after = (err?: string | Error, data?: any) => {
+        expect(err).toBe(errMessage);
+        expect(data).toBeUndefined();
+        expect(spyOnLinkUsers).not.toHaveBeenCalled();
+      };
+    });
+
+    it("if the internal user's status is not 'CONFIRMED'", () => {
+      spyOnListUsers.and.returnValue(fakeResolve({
+        Users: [fakeUser(true, true, 'FORCE_CHANGE_PASSWORD')],
       }));
       after = (err?: string | Error, data?: any) => {
         expect(err).toBe(errMessage);
