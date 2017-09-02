@@ -309,27 +309,25 @@ interface SignUpUserEvent {
 export const preSignUp = (newUser: SignUpUserEvent, context: any, callback: Callback) => {
   Promise.resolve()
     .then(() => {
-      log.debug(stringify(newUser));
       if (newUser.request.userAttributes.email_verified === 'false') {
         throw Error(`email_verified = false for ${newUser.userName}`);
       }
       if (newUser.triggerSource === 'PreSignUp_ExternalProvider') {
         return getUserByAttribute('email', newUser.request.userAttributes.email, ['email_verified'])
           .then(existingUser => {
-            log.debug(stringify(existingUser));
-
             if (existingUser.Enabled && existingUser.UserStatus === 'CONFIRMED' &&
                 getUserAttribute(existingUser.Attributes, 'email_verified') === 'true') {
               return linkUsers(newUser.userName, existingUser.Username);
             } else {
-              throw Error(`email_verified = false for ${existingUser.Username}`);
+              log.error(stringify(existingUser));
+              throw Error(`invalid state for ${existingUser.Username}`);
             }
           });
       }
     })
     .then(() => callback(null, newUser))
     .catch(err => {
-      log.error(stringify(err));
+      log.error(stringify([newUser, err]));
       callback('User signup is disabled');
     });
 };
