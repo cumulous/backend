@@ -1,7 +1,7 @@
 swagger: '2.0'
 info:
   title: Backend API
-  version: '1'
+  version: '1.0'
 schemes:
   - https
 produces:
@@ -326,7 +326,7 @@ paths:
 
         Certain updates (currently, only for email) also trigger
         verification with a code, which should be submitted through
-        [POST /users/{user_id}/verification](#verifyUserAttribute).
+        [POST /users/{user_id}/verification](#/Users/verifyUserAttribute).
       operationId: updateUser
       security:
         - member_token: []
@@ -895,7 +895,7 @@ paths:
         one or more pipelines, and stores general information about
         the purpose of analyzing the data.
 
-        Use [POST /analyses/{analysis_id}/execution](#executeAnalysis) to schedule a pipeline.
+        Use [POST /analyses/{analysis_id}/execution](#/Analyses/executeAnalysis) to schedule a pipeline.
       operationId: createAnalysis
       security:
         - member_token: []
