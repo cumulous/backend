@@ -84,7 +84,7 @@ paths:
           default:
             statusCode: 200
             responseParameters:
-              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,GET'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
               method.response.header.Access-Control-Allow-Credentials: "'true'"
@@ -168,7 +168,7 @@ paths:
           default:
             statusCode: 200
             responseParameters:
-              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
               method.response.header.Access-Control-Allow-Credentials: "'true'"
@@ -219,7 +219,7 @@ paths:
           default:
             statusCode: 200
             responseParameters:
-              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,GET'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
               method.response.header.Access-Control-Allow-Credentials: "'true'"
@@ -342,7 +342,7 @@ paths:
           default:
             statusCode: 200
             responseParameters:
-              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
               method.response.header.Access-Control-Allow-Credentials: "'true'"
@@ -750,7 +750,7 @@ paths:
           default:
             statusCode: 200
             responseParameters:
-              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,GET'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
               method.response.header.Access-Control-Allow-Credentials: "'true'"
@@ -890,7 +890,7 @@ paths:
           default:
             statusCode: 200
             responseParameters:
-              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,GET'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,DELETE'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
               method.response.header.Access-Control-Allow-Credentials: "'true'"
