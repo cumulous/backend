@@ -59,11 +59,11 @@ Resources:
               "DefaultEmailOption": "CONFIRM_WITH_LINK",
               "EmailMessage": "
                 Your verification code for <a href=https://${WebDomain}>${WebDomain}</a>
-                is: {####}
+                is {####}
               ",
               "EmailMessageByLink": "
                 Please verify your email address for <a href=https://${WebDomain}>${WebDomain}</a>
-                by following this link: {##Verify Email##}
+                by clicking on this link: {##Verify Email##}
               "
             },
             "AdminCreateUserConfig": {
