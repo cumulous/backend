@@ -780,7 +780,6 @@ describe('cognito.listUser()', () => {
     testMethod(() => {
       expect(spyOnListUsers).toHaveBeenCalledWith({
         UserPoolId: fakeUserPoolId,
-        AttributesToGet: [ 'email', 'name' ],
         Filter: 'email = "' + fakeEmail + '"',
       });
       expect(spyOnListUsers).toHaveBeenCalledTimes(1);
@@ -1581,7 +1580,6 @@ describe('cognito.preSignUp()', () => {
      'for an external provider', (done: Callback) => {
     preSignUp(fakeEvent(), null, () => {
       expect(spyOnListUsers).toHaveBeenCalledWith({
-        AttributesToGet: ['email', 'email_verified'],
         Filter: 'email = "' + fakeEmail + '"',
         UserPoolId: fakeUserPoolId,
       });

@@ -187,7 +187,7 @@ const adminRespondToAuthChallenge = (username: string, password: string, session
 
 export const listUser = (request: Request, context: any, callback: Callback) => {
   validate(request, 'GET', '/users')
-    .then(() => getUserByAttribute('email', request.queryStringParameters.email, ['name']))
+    .then(() => getUserByAttribute('email', request.queryStringParameters.email))
     .then(user => respond(callback, request, {
       id: user.Username,
       email: getUserAttribute(user.Attributes, 'email'),
@@ -196,12 +196,9 @@ export const listUser = (request: Request, context: any, callback: Callback) => 
     .catch(err => respondWithError(callback, request, err));
 };
 
-const getUserByAttribute =
-    (attributeName: string, attributeValue: string, additionalAttributes: string[] = []) => {
-
+const getUserByAttribute = (attributeName: string, attributeValue: string) => {
   return cognito.listUsers({
     UserPoolId: process.env[envNames.userPoolId],
-    AttributesToGet: [ attributeName ].concat(additionalAttributes),
     Filter: `${attributeName} = "${attributeValue}"`,
   }).promise()
     .then(data => {
@@ -371,7 +368,7 @@ export const preSignUp = (newUser: SignUpUserEvent, context: any, callback: Call
         throw new ApiError(`email_verified = false for ${newUser.userName}`);
       }
       if (newUser.triggerSource === 'PreSignUp_ExternalProvider') {
-        return getUserByAttribute('email', newUser.request.userAttributes.email, ['email_verified'])
+        return getUserByAttribute('email', newUser.request.userAttributes.email)
           .then(existingUser => {
             if (existingUser.Enabled && existingUser.UserStatus === 'CONFIRMED' &&
                 getUserAttribute(existingUser.Attributes, 'email_verified') === 'true') {
