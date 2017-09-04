@@ -285,7 +285,7 @@ export const verifyUserAttribute = (request: Request, context: any, callback: Ca
     .then(() => respond(callback, request))
     .catch(err => {
       if (err.code === 'CodeMismatchException') {
-        err = new ApiError('Forbidden', ["Provided code doesn't match expected value"], 403);
+        err = new ApiError('Forbidden', ["Provided code doesn't match the expected value"], 403);
       } else if (err.code === 'ExpiredCodeException') {
         err = new ApiError('Forbidden', ["Provided code has expired"], 403);
       } else if (err.code === 'UserNotFoundException') {
