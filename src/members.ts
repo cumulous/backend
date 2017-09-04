@@ -15,7 +15,7 @@ export const authorize = (event: { authorizationToken: string, methodArn: string
     .then(event => authenticate(process.env[envNames.authDomain], event.authorizationToken))
     .then((payload: TokenPayload) => getPolicy(payload.sub, event.methodArn))
     .then(policy => {
-      log.debug(stringify(policy));
+      policy.context.accessToken = event.authorizationToken;
       callback(null, policy);
     })
     .catch(err => callback('Unauthorized'));
@@ -55,6 +55,8 @@ export const getPolicy = (principalId: string, methodArn: string): Promise<Polic
               'POST   /users',
               'GET    /users',
               'GET    /users/*',
+              `PATCH  /users/${principalId}`,
+              `POST   /users/${principalId}/verification`,
               'POST   /clients',
               'GET    /clients/*',
               'GET    /datasets',
@@ -71,6 +73,7 @@ export const getPolicy = (principalId: string, methodArn: string): Promise<Polic
             ),
           }],
         },
+        context: {},
       }));
   }
 };

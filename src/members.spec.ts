@@ -67,8 +67,10 @@ describe('authorize()', () => {
 
   it('calls callback with correct parameters if there were no errors', (done: Callback) => {
     testMethod((err: Error, policy: Policy) => {
+      const response = fakePolicy();
+      response.context.accessToken = fakeToken;
       expect(err).toBeFalsy();
-      expect(policy).toEqual(fakePolicy());
+      expect(policy).toEqual(response);
       done();
     });
   });
@@ -128,6 +130,8 @@ describe('getPolicy()', () => {
               fakeBaseArn + '/POST/users',
               fakeBaseArn + '/GET/users',
               fakeBaseArn + '/GET/users/*',
+              fakeBaseArn + '/PATCH/users/' + fakeSub,
+              fakeBaseArn + '/POST/users/' + fakeSub + '/verification',
               fakeBaseArn + '/POST/clients',
               fakeBaseArn + '/GET/clients/*',
               fakeBaseArn + '/GET/datasets',
@@ -142,6 +146,7 @@ describe('getPolicy()', () => {
             ],
           }],
         },
+        context: {},
       });
       done();
     });

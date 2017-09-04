@@ -6,7 +6,7 @@ import { ajv, ApiError } from './apig';
 import { cognito, createUserPool, updateUserPool,
          createUserPoolDomain, deleteUserPoolDomain, updateUserPoolClient,
          createResourceServer, deleteResourceServer,
-         createUser, listUser, getUser, preSignUp,
+         createUser, listUser, getUser, updateUser, verifyUserAttribute, preSignUp,
          createClient, getClient,
 } from './cognito';
 import { envNames } from './env';
@@ -23,6 +23,7 @@ const fakeEmail = 'fake-email@example.org';
 const fakeIdentityName = 'Fake Identity Name';
 const fakeUserId = uuid();
 const fakeSocialUserId = uuid();
+const fakeToken = 'ey.12.abcd';
 
 const fakeUpdateUserPoolRequest = () => ({
   AutoVerifiedAttributes: ['email'],
@@ -964,6 +965,319 @@ describe('cognito.getUser()', () => {
       testError(() => {
         expect(spyOnRespond).not.toHaveBeenCalled();
       }, done);
+    });
+
+    it('apig.respond() throws an error', (done: Callback) => {
+      err = Error('apig.respond()');
+      spyOnRespond.and.throwError(err.message);
+      testError(() => {}, done);
+    });
+  });
+});
+
+describe('cognito.updateUser()', () => {
+  const fakeContext = () => ({
+    authorizer: {
+      accessToken: fakeToken,
+    },
+  });
+
+  const fakeBody = () => ({
+    email: fakeEmail,
+    name: fakeIdentityName,
+  });
+
+  const fakeRequest = (validated = true) => ({
+    pathParameters: {
+      user_id: fakeUserId,
+    },
+    body: validated ? fakeBody() : stringify(fakeBody()),
+    requestContext: fakeContext(),
+  });
+
+  const fakeResponse = () => ({
+    id: fakeUserId,
+    email: fakeEmail,
+    name: fakeIdentityName,
+  });
+
+  const testMethod = (callback: Callback) =>
+    updateUser(fakeRequest(false), null, callback);
+
+  let spyOnValidate: jasmine.Spy;
+  let spyOnUpdateUserAttributes: jasmine.Spy;
+  let spyOnGetVerificationCode: jasmine.Spy;
+  let spyOnRespond: jasmine.Spy;
+  let spyOnRespondWithError: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnValidate = spyOn(apig, 'validate')
+      .and.callThrough();
+    spyOnUpdateUserAttributes = spyOn(cognito, 'updateUserAttributes')
+      .and.returnValue(fakeResolve({}));
+    spyOnGetVerificationCode = spyOn(cognito, 'getUserAttributeVerificationCode')
+      .and.returnValue(fakeResolve());
+    spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    spyOnRespondWithError = spyOn(apig, 'respondWithError')
+      .and.callFake((callback: Callback) => callback());
+  });
+
+  it('calls apig.validate() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnValidate).toHaveBeenCalledWith(fakeRequest(), 'PATCH', '/users/{user_id}');
+      expect(spyOnValidate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls CognitoIdentityServiceProvider.updateUserAttributes() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnUpdateUserAttributes).toHaveBeenCalledWith({
+        AccessToken: fakeToken,
+        UserAttributes: [{
+          Name: 'email',
+          Value: fakeEmail,
+        },{
+          Name: 'name',
+          Value: fakeIdentityName,
+        }],
+      });
+      expect(spyOnUpdateUserAttributes).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('does not call CognitoIdentityServiceProvider.getUserAttributeVerificationCode() ' +
+    'if CognitoIdentityServiceProvider.updateUserAttributes() returns code delivery details', (done: Callback) => {
+    spyOnUpdateUserAttributes.and.returnValue(fakeResolve({
+      CodeDeliveryDetailsList: [{}],
+    }));
+    testMethod(() => {
+      expect(spyOnGetVerificationCode).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('calls CognitoIdentityServiceProvider.getUserAttributeVerificationCode() once with correct parameters ' +
+     'if no code delivery details were returned, but an email update was requested', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnGetVerificationCode).toHaveBeenCalledWith({
+        AccessToken: fakeToken,
+        AttributeName: 'email',
+      });
+      expect(spyOnGetVerificationCode).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('does not call CognitoIdentityServiceProvider.getUserAttributeVerificationCode() ' +
+      'if an email update was not requested', (done: Callback) => {
+    const request = {
+      pathParameters: {
+        user_id: fakeUserId,
+      },
+      body: stringify({
+        name: fakeIdentityName,
+      }),
+      requestContext: fakeContext(),
+    };
+    updateUser(request, null, () => {
+      expect(spyOnGetVerificationCode).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('calls apig.respond() once with correct parameters', (done: Callback) => {
+    const callback = () => {
+      expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest(), fakeResponse());
+      expect(ajv.validate('spec#/definitions/UserUpdateResponse', fakeResponse())).toBe(true);
+      expect(spyOnRespond).toHaveBeenCalledTimes(1);
+      done();
+    };
+    testMethod(callback);
+  });
+
+  describe('calls apig.respondWithError() immediately with the error if', () => {
+    let err: Error | ApiError | jasmine.ObjectContaining<{ code: number }>;
+
+    const testError = (after: Callback, done: Callback, validated = true) => {
+      const callback = () => {
+        expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, fakeRequest(validated), err);
+        expect(spyOnRespondWithError).toHaveBeenCalledTimes(1);
+        after();
+        done();
+      };
+      testMethod(callback);
+    };
+
+    it('apig.validate() responds with an error', (done: Callback) => {
+      err = new ApiError('validate()');
+      spyOnValidate.and.returnValue(Promise.reject(err));
+      testError(() => {
+        expect(spyOnUpdateUserAttributes).not.toHaveBeenCalled();
+      }, done, false);
+    });
+
+    describe('CognitoIdentityServiceProvider.updateUserAttributes() responds with', () => {
+      it('a generic error', () => {
+        err = Error('CognitoIdentityServiceProvider.updateUserAttributes()');
+        spyOnUpdateUserAttributes.and.returnValue(fakeReject(err));
+      });
+      it('AliasExistsException', () => {
+        err = jasmine.objectContaining({ code: 409 });
+        spyOnUpdateUserAttributes.and.returnValue(fakeReject(new ApiError(
+          'CognitoIdentityServiceProvider.updateUserAttributes()', undefined, 'AliasExistsException'
+        )));
+      });
+      it('UserNotFoundException', () => {
+        err = jasmine.objectContaining({ code: 404 });
+        spyOnUpdateUserAttributes.and.returnValue(fakeReject(new ApiError(
+          'CognitoIdentityServiceProvider.updateUserAttributes()', undefined, 'UserNotFoundException'
+        )));
+      });
+      afterEach((done: Callback) => {
+        testError(() => {
+          expect(spyOnGetVerificationCode).not.toHaveBeenCalled();
+        }, done);
+      });
+    });
+
+    it('CognitoIdentityServiceProvider.getUserAttributeVerificationCode() responds with an error', (done: Callback) => {
+      err = Error('CognitoIdentityServiceProvider.getUserAttributeVerificationCode()');
+      spyOnGetVerificationCode.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('apig.respond() throws an error', (done: Callback) => {
+      err = Error('apig.respond()');
+      spyOnRespond.and.throwError(err.message);
+      testError(() => {}, done);
+    });
+  });
+});
+
+describe('cognito.verifyUserAttribute()', () => {
+  const fakeVerificationCode = '1234';
+
+  const fakeContext = () => ({
+    authorizer: {
+      accessToken: fakeToken,
+    },
+  });
+
+  const fakeBody = () => ({
+    attribute: 'email',
+    code: fakeVerificationCode,
+  });
+
+  const fakeRequest = (validated = true) => ({
+    pathParameters: {
+      user_id: fakeUserId,
+    },
+    body: validated ? fakeBody() : stringify(fakeBody()),
+    requestContext: fakeContext(),
+  });
+
+  const testMethod = (callback: Callback) =>
+    verifyUserAttribute(fakeRequest(false), null, callback);
+
+  let spyOnValidate: jasmine.Spy;
+  let spyOnVerifyUserAttribute: jasmine.Spy;
+  let spyOnRespond: jasmine.Spy;
+  let spyOnRespondWithError: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnValidate = spyOn(apig, 'validate')
+      .and.callThrough();
+    spyOnVerifyUserAttribute = spyOn(cognito, 'verifyUserAttribute')
+      .and.returnValue(fakeResolve());
+    spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    spyOnRespondWithError = spyOn(apig, 'respondWithError')
+      .and.callFake((callback: Callback) => callback());
+  });
+
+  it('calls apig.validate() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnValidate).toHaveBeenCalledWith(fakeRequest(), 'POST', '/users/{user_id}/verification');
+      expect(spyOnValidate).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls CognitoIdentityServiceProvider.verifyUserAttribute() once with correct parameters', (done: Callback) => {
+    testMethod(() => {
+      expect(spyOnVerifyUserAttribute).toHaveBeenCalledWith({
+        AccessToken: fakeToken,
+        AttributeName: 'email',
+        Code: fakeVerificationCode,
+      });
+      expect(spyOnVerifyUserAttribute).toHaveBeenCalledTimes(1);
+      done();
+    });
+  });
+
+  it('calls apig.respond() once with correct parameters', (done: Callback) => {
+    const callback = () => {
+      expect(spyOnRespond).toHaveBeenCalledWith(callback, fakeRequest());
+      expect(spyOnRespond).toHaveBeenCalledTimes(1);
+      done();
+    };
+    testMethod(callback);
+  });
+
+  describe('calls apig.respondWithError() immediately with the error if', () => {
+    let err: Error | ApiError | jasmine.ObjectContaining<{ code: number }>;
+
+    const testError = (after: Callback, done: Callback, validated = true) => {
+      const callback = () => {
+        expect(spyOnRespondWithError).toHaveBeenCalledWith(callback, fakeRequest(validated), err);
+        expect(spyOnRespondWithError).toHaveBeenCalledTimes(1);
+        after();
+        done();
+      };
+      testMethod(callback);
+    };
+
+    it('apig.validate() responds with an error', (done: Callback) => {
+      err = new ApiError('validate()');
+      spyOnValidate.and.returnValue(Promise.reject(err));
+      testError(() => {
+        expect(spyOnVerifyUserAttribute).not.toHaveBeenCalled();
+      }, done, false);
+    });
+
+    describe('CognitoIdentityServiceProvider.verifyUserAttribute() responds with', () => {
+      it('a generic error', () => {
+        err = Error('CognitoIdentityServiceProvider.verifyUserAttribute()');
+        spyOnVerifyUserAttribute.and.returnValue(fakeReject(err));
+      });
+      it('CodeMismatchException', () => {
+        err = jasmine.objectContaining({ code: 403 });
+        spyOnVerifyUserAttribute.and.returnValue(fakeReject(new ApiError(
+          'CognitoIdentityServiceProvider.verifyUserAttribute()', undefined, 'CodeMismatchException'
+        )));
+      });
+      it('ExpiredCodeException', () => {
+        err = jasmine.objectContaining({ code: 403 });
+        spyOnVerifyUserAttribute.and.returnValue(fakeReject(new ApiError(
+          'CognitoIdentityServiceProvider.verifyUserAttribute()', undefined, 'ExpiredCodeException'
+        )));
+      });
+      it('UserNotFoundException', () => {
+        err = jasmine.objectContaining({ code: 404 });
+        spyOnVerifyUserAttribute.and.returnValue(fakeReject(new ApiError(
+          'CognitoIdentityServiceProvider.verifyUserAttribute()', undefined, 'UserNotFoundException'
+        )));
+      });
+      afterEach((done: Callback) => {
+        testError(() => {
+          expect(spyOnRespond).not.toHaveBeenCalled();
+        }, done);
+      });
     });
 
     it('apig.respond() throws an error', (done: Callback) => {

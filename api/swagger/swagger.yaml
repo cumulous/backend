@@ -292,7 +292,7 @@ paths:
           default:
             statusCode: 200
             responseParameters:
-              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PATCH'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
               method.response.header.Access-Control-Allow-Credentials: "'true'"
@@ -317,6 +317,85 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-GetUser/invocations
+    patch:
+      summary: Update details about a user
+      description: |
+        Updates user attribute(s), such as their email and/or name.
+
+        **This operation may only be invoked by a user on themselves.**
+
+        Certain updates (currently, only for email) also trigger
+        verification with a code, which should be submitted through
+        [POST /users/{user_id}/verification](#verifyUserAttribute).
+      operationId: updateUser
+      security:
+        - member_token: []
+      tags:
+        - Users
+      parameters:
+        - $ref: '#/parameters/UserId'
+        - $ref: '#/parameters/UserUpdateRequest'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Updated details of the user
+          schema:
+            $ref: '#/definitions/UserUpdateResponse'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-UpdateUser/invocations
+  /users/{user_id}/verification:
+    options:
+      tags:
+        - Users
+      parameters:
+        - $ref: '#/parameters/UserId'
+      responses:
+        200:
+          description: HTTP options
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+            Access-Control-Allow-Credentials:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
+              method.response.header.Access-Control-Allow-Credentials: "'true'"
+    post:
+      summary: Verify a user attribute
+      description: |
+        Verifies an update to a user attribute with a temporary code
+      operationId: verifyUserAttribute
+      security:
+        - member_token: []
+      tags:
+        - Users
+      parameters:
+        - $ref: '#/parameters/UserId'
+        - $ref: '#/parameters/UserAttributeVerificationRequest'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Attribute verified succesfully
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-VerifyUserAttribute/invocations
   /clients:
     options:
       tags:
@@ -1128,6 +1207,22 @@ definitions:
     description: Unique identifier for a user
     type: string
     format: uuid
+  UserVerifiedAttributeType:
+    type: string
+    enum:
+      - email
+  UserAttributeVerificationCode:
+    type: string
+    pattern: ^\S{1,2048}$
+  UserUpdateResponse:
+    additionalProperties: false
+    properties:
+      id:
+        $ref: '#/definitions/UserId'
+      email:
+        $ref: '#/definitions/Email'
+      name:
+        $ref: '#/definitions/IdentityName'
   Client:
     required:
       - id
@@ -1593,6 +1688,29 @@ parameters:
     required: true
     type: string
     format: uuid
+  UserUpdateRequest:
+    in: body
+    name: UserUpdateRequest
+    description: Properties of the user to be updated
+    required: true
+    schema:
+      additionalProperties: false
+      properties:
+        email:
+          $ref: '#/definitions/Email'
+        name:
+          $ref: '#/definitions/IdentityName'
+  UserAttributeVerificationRequest:
+    in: body
+    name: UserAttributeVerificationRequest
+    required: true
+    schema:
+      additionalProperties: false
+      properties:
+        attribute:
+          $ref: '#/definitions/UserVerifiedAttributeType'
+        code:
+          $ref: '#/definitions/UserAttributeVerificationCode'
   ClientCreationRequest:
     in: body
     name: ClientCreationRequest

@@ -237,6 +237,64 @@ export const getUser = (request: Request, context: any, callback: Callback) => {
     });
 };
 
+export const updateUser = (request: Request, context: any, callback: Callback) => {
+  validate(request, 'PATCH', '/users/{user_id}')
+    .then(() => request.requestContext.authorizer.accessToken)
+    .then(accessToken => updateUserAttributes(accessToken, request.body)
+      .then(data => (!data.CodeDeliveryDetailsList && request.body.email) ?
+        getAttributeVerificationCode(accessToken, 'email') : {}
+      )
+    )
+    .then(() => respond(callback, request, Object.assign({
+      id: request.pathParameters.user_id,
+    }, request.body)))
+    .catch(err => {
+      if (err.code === 'AliasExistsException') {
+        err = new ApiError('Conflict', ['User with this email already exists'], 409);
+      } else if (err.code === 'UserNotFoundException') {
+        err = new ApiError('Not Found', ['User not found'], 404);
+      }
+      respondWithError(callback, request, err);
+    });
+};
+
+const updateUserAttributes = (accessToken: string, attributes: Dict<string>) => {
+  return cognito.updateUserAttributes({
+    AccessToken: accessToken,
+    UserAttributes: Object.keys(attributes).map(attribute => ({
+      Name: attribute,
+      Value: attributes[attribute],
+    })),
+  }).promise();
+};
+
+const getAttributeVerificationCode = (accessToken: string, attribute: string) => {
+  return cognito.getUserAttributeVerificationCode({
+    AccessToken: accessToken,
+    AttributeName: attribute,
+  }).promise();
+};
+
+export const verifyUserAttribute = (request: Request, context: any, callback: Callback) => {
+  validate(request, 'POST', '/users/{user_id}/verification')
+    .then(() => cognito.verifyUserAttribute({
+      AccessToken: request.requestContext.authorizer.accessToken,
+      AttributeName: request.body.attribute,
+      Code: request.body.code,
+    }).promise())
+    .then(() => respond(callback, request))
+    .catch(err => {
+      if (err.code === 'CodeMismatchException') {
+        err = new ApiError('Forbidden', ["Provided code doesn't match expected value"], 403);
+      } else if (err.code === 'ExpiredCodeException') {
+        err = new ApiError('Forbidden', ["Provided code has expired"], 403);
+      } else if (err.code === 'UserNotFoundException') {
+        err = new ApiError('Not Found', ["User not found"], 404);
+      }
+      respondWithError(callback, request, err);
+    });
+};
+
 export const createClient = (request: Request, context: any, callback: Callback) => {
   validate(request, 'POST', '/clients')
     .then(() => createUserPoolClient(request.body.email, request.body.name))
