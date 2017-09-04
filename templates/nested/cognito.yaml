@@ -610,11 +610,15 @@ Resources:
             "ClientName": "web",
             "AllowedOAuthFlowsUserPoolClient": true,
             "AllowedOAuthFlows": [ "implicit" ],
-            "AllowedOAuthScopes": [ "${ResourceServer.Scope}" ],
+            "AllowedOAuthScopes": [
+              "${ResourceServer.Scope}",
+              "aws.cognito.signin.user.admin"
+            ],
             "CallbackURLs": [ "https://${WebDomain}/login" ],
             "LogoutURLs": [ "https://${WebDomain}/login" ],
             "SupportedIdentityProviders": [ ${Providers} ],
-            "ReadAttributes": [ "email", "name" ]
+            "ReadAttributes": [ "email", "name" ],
+            "WriteAttributes": [ "email", "name" ]
           }
         - Providers: !If
           - AuthProvidersEmpty

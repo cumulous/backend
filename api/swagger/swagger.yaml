@@ -1927,5 +1927,5 @@ securityDefinitions:
       type: token
       authorizerUri: ${API_LAMBDA_PREFIX}-Authorizer/invocations
       authorizerCredentials: ${AUTHORIZER_INVOCATION_ROLE_ARN}
-      identityValidationExpression: '^[\w-]{50,150}\.[\w-]{300,500}\.[\w-]{300,400}$'
+      identityValidationExpression: '^[\w-]{50,150}\.[\w-]{400,600}\.[\w-]{300,400}$'
       authorizerResultTtlInSeconds: 60
