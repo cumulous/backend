@@ -57,6 +57,10 @@ Resources:
             },
             "VerificationMessageTemplate": {
               "DefaultEmailOption": "CONFIRM_WITH_LINK",
+              "EmailMessage": "
+                Your verification code for <a href=https://${WebDomain}>${WebDomain}</a>
+                is: {####}
+              ",
               "EmailMessageByLink": "
                 Please verify your email address for <a href=https://${WebDomain}>${WebDomain}</a>
                 by following this link: {##Verify Email##}
