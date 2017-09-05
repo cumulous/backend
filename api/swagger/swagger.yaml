@@ -22,8 +22,6 @@ paths:
               type: string
             Access-Control-Allow-Origin:
               type: string
-            Vary:
-              type: string
       x-amazon-apigateway-integration:
         type: mock
         requestTemplates:
@@ -36,7 +34,6 @@ paths:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
-              method.response.header.Vary: "'Accept-Encoding'"
     get:
       summary: Retrieve the API spec
       description: Returns the current specification of this API.
@@ -494,8 +491,6 @@ paths:
               type: string
             Access-Control-Allow-Origin:
               type: string
-            Vary:
-              type: string
       x-amazon-apigateway-integration:
         type: mock
         requestTemplates:
@@ -508,7 +503,6 @@ paths:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,GET'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
-              method.response.header.Vary: "'Accept-Encoding'"
     post:
       summary: Create a dataset
       description: |
@@ -573,8 +567,6 @@ paths:
               type: string
             Access-Control-Allow-Origin:
               type: string
-            Vary:
-              type: string
       x-amazon-apigateway-integration:
         type: mock
         requestTemplates:
@@ -587,7 +579,6 @@ paths:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,GET,PATCH,DELETE'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
-              method.response.header.Vary: "'Accept-Encoding'"
     get:
       summary: Get properties of a dataset
       description: |
@@ -670,8 +661,6 @@ paths:
               type: string
             Access-Control-Allow-Origin:
               type: string
-            Vary:
-              type: string
       x-amazon-apigateway-integration:
         type: mock
         requestTemplates:
@@ -684,7 +673,6 @@ paths:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
-              method.response.header.Vary: "'Accept-Encoding'"
     post:
       summary: Request credentials for dataset access
       description: |
@@ -723,8 +711,6 @@ paths:
               type: string
             Access-Control-Allow-Origin:
               type: string
-            Vary:
-              type: string
       x-amazon-apigateway-integration:
         type: mock
         requestTemplates:
@@ -737,7 +723,6 @@ paths:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,PUT'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
-              method.response.header.Vary: "'Accept-Encoding'"
     put:
       summary: Set dataset storage options
       description: |
@@ -780,8 +765,6 @@ paths:
               type: string
             Access-Control-Allow-Origin:
               type: string
-            Vary:
-              type: string
       x-amazon-apigateway-integration:
         type: mock
         requestTemplates:
@@ -794,7 +777,6 @@ paths:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
-              method.response.header.Vary: "'Accept-Encoding'"
     post:
       summary: Create a pipeline
       description: |
@@ -830,8 +812,6 @@ paths:
               type: string
             Access-Control-Allow-Origin:
               type: string
-            Vary:
-              type: string
       x-amazon-apigateway-integration:
         type: mock
         requestTemplates:
@@ -844,7 +824,6 @@ paths:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,GET'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
-              method.response.header.Vary: "'Accept-Encoding'"
     post:
       summary: Create an analysis
       description: |
@@ -914,8 +893,6 @@ paths:
               type: string
             Access-Control-Allow-Origin:
               type: string
-            Vary:
-              type: string
       x-amazon-apigateway-integration:
         type: mock
         requestTemplates:
@@ -928,7 +905,6 @@ paths:
               method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,DELETE'"
               method.response.header.Access-Control-Allow-Headers: "'Authorization'"
               method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
-              method.response.header.Vary: "'Accept-Encoding'"
     post:
       summary: Execute analysis
       description: |
