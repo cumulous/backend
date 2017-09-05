@@ -438,7 +438,6 @@ describe('respond()', () => {
   });
   const commonHeaders = () => ({
     'Access-Control-Allow-Origin': `https://${fakeWebDomain}`,
-    'Access-Control-Allow-Credentials': 'true',
     'Vary': 'Accept-Encoding',
   });
   const fakeBody = () => ({ fake: 'value' });

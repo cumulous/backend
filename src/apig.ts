@@ -182,7 +182,6 @@ export const respond = (callback: Callback, request: Request,
       statusCode,
       headers: Object.assign({
         'Access-Control-Allow-Origin': `https://${process.env[envNames.webDomain]}`,
-        'Access-Control-Allow-Credentials': 'true',
         'Vary': 'Accept-Encoding',
       }, headers),
       body,
