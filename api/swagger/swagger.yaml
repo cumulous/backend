@@ -994,9 +994,14 @@ definitions:
       - active
       - removed
   ListOfProjects:
-    type: object
+    required:
+      - offset
+      - items
+    additionalProperties: false
     properties:
-      projects:
+      offset:
+        $ref: '#/definitions/PaginationOffset'
+      items:
         type: array
         items:
           $ref: '#/definitions/Project'
@@ -1231,10 +1236,10 @@ definitions:
     minLength: 3
     maxLength: 63
   ListOfDatasets:
-    type: object
     required:
       - offset
       - items
+    additionalProperties: false
     properties:
       offset:
         $ref: '#/definitions/PaginationOffset'
@@ -1445,10 +1450,10 @@ definitions:
     description: Cause of analysis failure, if any
     type: string
   ListOfAnalyses:
-    type: object
     required:
       - offset
       - items
+    additionalProperties: false
     properties:
       offset:
         $ref: '#/definitions/PaginationOffset'
