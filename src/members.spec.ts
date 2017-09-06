@@ -127,6 +127,7 @@ describe('getPolicy()', () => {
             Resource: [
               fakeBaseArn + '/GET/',
               fakeBaseArn + '/POST/projects',
+              fakeBaseArn + '/GET/projects',
               fakeBaseArn + '/POST/users',
               fakeBaseArn + '/GET/users',
               fakeBaseArn + '/GET/users/*',

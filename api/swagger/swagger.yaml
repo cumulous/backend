@@ -131,7 +131,7 @@ paths:
       x-amazon-apigateway-integration:
         type: aws_proxy
         httpMethod: POST
-        uri: ${API_LAMBDA_PREFIX}-GetProjects/invocations
+        uri: ${API_LAMBDA_PREFIX}-ListProjects/invocations
   /projects/{project_id}/members:
     options:
       tags:

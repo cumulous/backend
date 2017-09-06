@@ -52,6 +52,7 @@ export const getPolicy = (principalId: string, methodArn: string): Promise<Polic
             Resource: [
               'GET    /',
               'POST   /projects',
+              'GET    /projects',
               'POST   /users',
               'GET    /users',
               'GET    /users/*',

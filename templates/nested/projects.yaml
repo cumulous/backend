@@ -15,7 +15,13 @@ Parameters:
     Type: String
   ApiStage:
     Type: String
+  SearchDomain:
+    Type: String
   SearchUploadDocumentsFunction:
+    Type: String
+  SearchQueryEndpoint:
+    Type: String
+  SearchStackSuffix:
     Type: String
 
 Mappings:
@@ -111,6 +117,55 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn:
         !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/POST/projects
+
+  ListProjects:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${BackendStack}-ListProjects
+      Handler: projects.list
+      Timeout: 30
+      Environment:
+        Variables:
+          SEARCH_QUERY_ENDPOINT: !Ref SearchQueryEndpoint
+          SEARCH_STACK_SUFFIX: !Ref SearchStackSuffix
+          WEB_DOMAIN: !Ref WebDomain
+      Runtime: nodejs6.10
+      Code:
+        S3Bucket: !Ref ArtifactsBucket
+        S3Key: !Ref LambdaPackage
+      Role: !GetAtt ListProjectsRole.Arn
+
+  ListProjectsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: ListProjectsRole
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudsearch:search
+                Resource:
+                  - !Sub arn:aws:cloudsearch:${AWS::Region}:${AWS::AccountId}:domain/${SearchDomain}
+
+  ListProjectsPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ListProjects
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn:
+        !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/${ApiStage}/GET/projects
 
 Outputs:
   Table:

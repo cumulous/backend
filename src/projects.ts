@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 import { Request, respond, respondWithError, validate } from './apig';
 import { dynamodb, s3 } from './aws';
 import { envNames } from './env';
+import { query } from './search';
 import { Callback } from './types';
 
 export const create = (request: Request, context: any, callback: Callback) => {
@@ -57,4 +58,8 @@ const setAnalyticsConfig = (accountId: string, bucketName: string, projectId: st
       },
     },
   }).promise();
+};
+
+export const list = (request: Request, context: any, callback: Callback) => {
+  query(request, '/projects', ['status'], callback);
 };

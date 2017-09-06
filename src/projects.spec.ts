@@ -5,8 +5,9 @@ import * as apig from './apig';
 import { ajv, ApiError } from './apig';
 import { dynamodb, s3 } from './aws';
 import { envNames } from './env';
-import { create } from './projects';
+import { create, list } from './projects';
 import { fakeReject, fakeResolve } from './fixtures/support';
+import * as search from './search';
 import { AWSError, Callback } from './types';
 
 const fakeAccountId = '123456789012';
@@ -191,5 +192,31 @@ describe('projects.create()', () => {
       spyOnRespond.and.throwError(err.message);
       testError(() => {}, done);
     });
+  });
+});
+
+describe('projects.list()', () => {
+  const fakeRequest = () => ({
+    queryStringParameters: {
+      status: 'active',
+    },
+  });
+
+  let spyOnSearchQuery: jasmine.Spy;
+
+  beforeEach(() => {
+    spyOnSearchQuery = spyOn(search, 'query')
+      .and.callFake((request: Request, resource: string,
+                    terms: string[] = [], callback: Callback) => callback());
+  });
+
+  it('calls search.query() once with correct parameters', (done: Callback) => {
+    const callback = () => {
+      expect(spyOnSearchQuery).toHaveBeenCalledWith(
+        fakeRequest(), '/projects', ['status'], callback);
+      expect(spyOnSearchQuery).toHaveBeenCalledTimes(1);
+      done();
+    };
+    list(fakeRequest(), null, callback);
   });
 });

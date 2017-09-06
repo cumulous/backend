@@ -100,7 +100,10 @@ Resources:
         WebDomain: !Ref WebDomain
         ApiId: !GetAtt Api.Outputs.ApiId
         ApiStage: !GetAtt Api.Outputs.ApiStage
+        SearchDomain: !Ref SearchDomain
         SearchUploadDocumentsFunction: !GetAtt Search.Outputs.UploadDocumentsFunction
+        SearchQueryEndpoint: !GetAtt Search.Outputs.QueryEndpoint
+        SearchStackSuffix: !GetAtt Search.Outputs.StackSuffix
 
   Members:
     Type: AWS::CloudFormation::Stack
