@@ -120,6 +120,8 @@ paths:
         - $ref: '#/parameters/ProjectsQueryIsMember'
         - $ref: '#/parameters/ProjectsQueryIsHidden'
         - $ref: '#/parameters/ProjectsQueryStatus'
+        - $ref: '#/parameters/QueryDescriptionContains'
+        - $ref: '#/parameters/QuerySort'
         - $ref: '#/parameters/QueryPaginationOffset'
         - $ref: '#/parameters/QueryPaginationLimit'
         - $ref: '#/parameters/CompressionRequest'
