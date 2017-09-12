@@ -53,6 +53,7 @@ export const getPolicy = (principalId: string, methodArn: string): Promise<Polic
               'GET    /',
               'POST   /projects',
               'GET    /projects',
+              'PATCH  /projects/{project_id}',
               'POST   /users',
               'GET    /users',
               'GET    /users/*',

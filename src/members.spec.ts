@@ -128,6 +128,7 @@ describe('getPolicy()', () => {
               fakeBaseArn + '/GET/',
               fakeBaseArn + '/POST/projects',
               fakeBaseArn + '/GET/projects',
+              fakeBaseArn + '/PATCH/projects/{project_id}',
               fakeBaseArn + '/POST/users',
               fakeBaseArn + '/GET/users',
               fakeBaseArn + '/GET/users/*',
