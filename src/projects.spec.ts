@@ -5,7 +5,7 @@ import * as apig from './apig';
 import { ajv, ApiError } from './apig';
 import { dynamodb, s3 } from './aws';
 import { envNames } from './env';
-import { create, list } from './projects';
+import { create, list, update } from './projects';
 import { fakeReject, fakeResolve } from './fixtures/support';
 import * as search from './search';
 import { AWSError, Callback } from './types';
@@ -218,5 +218,196 @@ describe('projects.list()', () => {
       done();
     };
     list(fakeRequest(), null, callback);
+  });
+});
+
+describe('projects.update()', () => {
+  const fakeBody = (name: string, description: string) => {
+    const body = { name, description };
+    if (name === null) {
+      delete body.name;
+    }
+    if (description === null) {
+      delete body.description;
+    }
+    return body;
+  };
+
+  const fakeRequest = (name: string, description: string, validated = true) => {
+    const body = fakeBody(name, description);
+    return {
+      body: validated ? body : stringify(body),
+      pathParameters: {
+        project_id: fakeProjectId,
+      },
+    };
+  };
+
+  const fakeProject = () => ({
+    id: fakeProjectId,
+    name: fakeProjectName,
+    description: fakeProjectDescription,
+    created_at: fakeDate,
+    created_by: fakeMemberId,
+    status: 'active',
+  });
+
+  let spyOnValidate: jasmine.Spy;
+  let spyOnDynamoDbUpdate: jasmine.Spy;
+  let spyOnRespond: jasmine.Spy;
+  let spyOnRespondWithError: jasmine.Spy;
+
+  const testMethod = (callback: Callback, name = fakeProjectName, description = fakeProjectDescription) =>
+    update(fakeRequest(name, description, false), null, callback);
+
+  beforeEach(() => {
+    process.env[envNames.projectsTable] = fakeProjectsTable;
+
+    spyOnValidate = spyOn(apig, 'validate')
+      .and.callThrough();
+    spyOnDynamoDbUpdate = spyOn(dynamodb, 'update')
+      .and.returnValue(fakeResolve({ Attributes: fakeProject() }));
+    spyOnRespond = spyOn(apig, 'respond')
+      .and.callFake((callback: Callback) => callback());
+    spyOnRespondWithError = spyOn(apig, 'respondWithError')
+      .and.callFake((callback: Callback) => callback());
+  });
+
+
+  it('calls apig.validate() once with correct parameters', (done: Callback) => {
+    spyOnValidate.and.returnValue(Promise.resolve());
+    testMethod(() => {
+      expect(spyOnValidate).toHaveBeenCalledWith(
+        fakeRequest(fakeProjectName, fakeProjectDescription, false), 'PATCH', '/projects/{project_id}');
+      expect(spyOnValidate).toHaveBeenCalledTimes(1);
+      expect(ajv.errors).toBeFalsy();
+      done();
+    });
+  });
+
+  describe('calls dynamodb.update() once with correct parameters if', () => {
+    it('both "name" and "description" are specified', (done: Callback) => {
+      testMethod(() => {
+        expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
+          TableName: fakeProjectsTable,
+          Key: {
+            id: fakeProjectId,
+          },
+          UpdateExpression: 'set #n = :n, #d = :d',
+          ExpressionAttributeNames: {
+            '#n': 'name',
+            '#d': 'description',
+          },
+          ExpressionAttributeValues: {
+            ':n': fakeProjectName,
+            ':d': fakeProjectDescription,
+          },
+        });
+        expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
+        done();
+      });
+    });
+    it('only "name" is specified', (done: Callback) => {
+      testMethod(() => {
+        expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
+          TableName: fakeProjectsTable,
+          Key: {
+            id: fakeProjectId,
+          },
+          UpdateExpression: 'set #n = :n',
+          ExpressionAttributeNames: {
+            '#n': 'name',
+          },
+          ExpressionAttributeValues: {
+            ':n': fakeProjectName,
+          },
+        });
+        expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
+        done();
+      }, fakeProjectName, null);
+    });
+    it('only "description" is specified', (done: Callback) => {
+      testMethod(() => {
+        expect(spyOnDynamoDbUpdate).toHaveBeenCalledWith({
+          TableName: fakeProjectsTable,
+          Key: {
+            id: fakeProjectId,
+          },
+          UpdateExpression: 'set #d = :d',
+          ExpressionAttributeNames: {
+            '#d': 'description',
+          },
+          ExpressionAttributeValues: {
+            ':d': fakeProjectDescription,
+          },
+        });
+        expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
+        done();
+      }, null, fakeProjectDescription);
+    });
+  });
+
+  it('calls apig.respond() once with correct parameters', (done: Callback) => {
+    const callback = () => {
+      expect(spyOnRespond).toHaveBeenCalledWith(callback,
+        fakeRequest(fakeProjectName, fakeProjectDescription), fakeProject());
+      expect(ajv.validate('spec#/definitions/Project', fakeProject())).toBe(true);
+      expect(spyOnRespond).toHaveBeenCalledTimes(1);
+      done();
+    };
+    testMethod(callback);
+  });
+
+  describe('calls apig.respondWithError() immediately with the error if', () => {
+    let err: Error | ApiError | jasmine.ObjectContaining<{ code: number }>;
+    let name: string;
+    let description: string;
+
+    const testError = (after: Callback, done: Callback, validated = true) => {
+      const callback = () => {
+        expect(spyOnRespondWithError).toHaveBeenCalledWith(callback,
+          fakeRequest(name, description, validated), err);
+        expect(spyOnRespondWithError).toHaveBeenCalledTimes(1);
+        after();
+        done();
+      };
+      testMethod(callback, name, description);
+    };
+
+    beforeEach(() => {
+      name = fakeProjectName;
+      description = fakeProjectDescription;
+    });
+
+    it('apig.validate() responds with an error', (done: Callback) => {
+      err = new ApiError('validate()');
+      spyOnValidate.and.returnValue(Promise.reject(err));
+      testError(() => {
+        expect(spyOnDynamoDbUpdate).not.toHaveBeenCalled();
+      }, done, false);
+    });
+
+    it('request is empty', (done: Callback) => {
+      err = jasmine.objectContaining({ code: 400 });
+      name = null;
+      description = null;
+      testError(() => {
+        expect(spyOnDynamoDbUpdate).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('dynamodb.update() responds with an error', (done: Callback) => {
+      err = Error('dynamodb.update()');
+      spyOnDynamoDbUpdate.and.returnValue(fakeReject(err));
+      testError(() => {
+        expect(spyOnRespond).not.toHaveBeenCalled();
+      }, done);
+    });
+
+    it('apig.respond() throws an error', (done: Callback) => {
+      err = Error('apig.respond()');
+      spyOnRespond.and.throwError(err.message);
+      testError(() => {}, done);
+    });
   });
 });

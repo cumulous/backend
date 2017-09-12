@@ -134,6 +134,56 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri: ${API_LAMBDA_PREFIX}-ListProjects/invocations
+  /projects/{project_id}:
+    options:
+      tags:
+        - Projects
+      parameters:
+        - $ref: '#/parameters/ProjectId'
+      responses:
+        200:
+          description: HTTP options
+          headers:
+            Access-Control-Allow-Methods:
+              type: string
+            Access-Control-Allow-Headers:
+              type: string
+            Access-Control-Allow-Origin:
+              type: string
+      x-amazon-apigateway-integration:
+        type: mock
+        requestTemplates:
+          application/json: '{"statusCode": 200}'
+        contentHandling: CONVERT_TO_TEXT
+        responses:
+          default:
+            statusCode: 200
+            responseParameters:
+              method.response.header.Access-Control-Allow-Methods: "'OPTIONS,POST,GET'"
+              method.response.header.Access-Control-Allow-Headers: "'Authorization'"
+              method.response.header.Access-Control-Allow-Origin: stageVariables.CorsOrigin
+    patch:
+      summary: Update a project
+      description: |
+        Updates modifiable project properties.
+      operationId: updateProject
+      security:
+        - member_token: []
+      tags:
+        - Projects
+      parameters:
+        - $ref: '#/parameters/ProjectId'
+        - $ref: '#/parameters/ProjectUpdateRequest'
+        - $ref: '#/parameters/CompressionRequest'
+      responses:
+        200:
+          description: Properties of the updated project
+          schema:
+            $ref: '#/definitions/Project'
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri: ${API_LAMBDA_PREFIX}-UpdateProject/invocations
   /projects/{project_id}/members:
     options:
       tags:
@@ -1566,6 +1616,18 @@ parameters:
     schema:
       required:
         - name
+      additionalProperties: false
+      properties:
+        name:
+          $ref: '#/definitions/ProjectName'
+        description:
+          $ref: '#/definitions/Description'
+  ProjectUpdateRequest:
+    in: body
+    name: ProjectUpdateRequest
+    description: Properties of the project to be updated
+    required: true
+    schema:
       additionalProperties: false
       properties:
         name:
