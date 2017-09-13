@@ -93,6 +93,7 @@ export const update = (request: Request, context: any, callback: Callback) => {
         UpdateExpression: 'set ' + updateExpression.join(', '),
         ExpressionAttributeNames: attributeNames,
         ExpressionAttributeValues: attributeValues,
+        ReturnValues: 'ALL_NEW',
       }).promise();
     })
     .then(data => respond(callback, request, data.Attributes))

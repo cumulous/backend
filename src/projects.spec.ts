@@ -302,6 +302,7 @@ describe('projects.update()', () => {
             ':n': fakeProjectName,
             ':d': fakeProjectDescription,
           },
+          ReturnValues: 'ALL_NEW',
         });
         expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
         done();
@@ -321,6 +322,7 @@ describe('projects.update()', () => {
           ExpressionAttributeValues: {
             ':n': fakeProjectName,
           },
+          ReturnValues: 'ALL_NEW',
         });
         expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
         done();
@@ -340,6 +342,7 @@ describe('projects.update()', () => {
           ExpressionAttributeValues: {
             ':d': fakeProjectDescription,
           },
+          ReturnValues: 'ALL_NEW',
         });
         expect(spyOnDynamoDbUpdate).toHaveBeenCalledTimes(1);
         done();
