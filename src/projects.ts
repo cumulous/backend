@@ -82,7 +82,7 @@ export const update = (request: Request, context: any, callback: Callback) => {
         attributeValues[':d'] = request.body.description;
       }
       if (updateExpression.length < 1) {
-        throw new ApiError('Invalid request', ['body must contain "name" and/or "description"'], 400);
+        throw new ApiError('Invalid request', ["body must contain 'name' and/or 'description'"], 400);
       }
 
       return dynamodb.update({
