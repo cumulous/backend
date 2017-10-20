@@ -19,7 +19,7 @@ jobs:
       - run: |
           pip >/dev/null ||
           python <(curl -s https://bootstrap.pypa.io/get-pip.py) --no-wheel --user
-      - run pip install --upgrade --user yamllint
+      - run: pip install --upgrade --user yamllint
 
       - save_cache:
           paths:
