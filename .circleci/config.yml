@@ -2,24 +2,42 @@ version: 2
 jobs:
   build:
     docker:
-      - image: node:6-alpine
+      - image: circleci/node:6
     working_directory: ~/repo
 
     steps:
       - checkout
+
+      # pip
+
       - restore_cache:
           keys:
-          - v1-dependencies-{{ checksum "package.json" }}
-          - v1-dependencies-
+          - pip
+
+      - run: apt-get install python-dev python-pip
+      - run: sudo pip install --upgrade pathspec pyyaml yamllint
+
+      - save_cache:
+          paths:
+            - /usr/local/lib/python2.7/dist-packages
+          key: pip
+
+      - run: npm run lint:templates
+
+      # npm
+
+      - restore_cache:
+          keys:
+          - npm-{{ checksum "package.json" }}
+          - npm
 
       - run: npm install
+
       - save_cache:
           paths:
             - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+          key: npm-{{ checksum "package.json" }}
 
-      - run: pip install yamllint
-      - run: npm run lint:templates
       - run: npm run test:unit:once
 
       - run: bash <(curl -s https://codecov.io/bash)
