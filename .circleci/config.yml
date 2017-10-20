@@ -14,7 +14,7 @@ jobs:
           keys:
           - pip
 
-      - run: apt-get install python-dev python-pip
+      - run: sudo apt-get install python-dev python-pip
       - run: sudo pip install --upgrade pathspec pyyaml yamllint
 
       - save_cache:
