@@ -16,7 +16,7 @@ const paths = {
   bin: 'bin',
   conf: () => ['src/**/*.json', paths.templates + '/*.json'],
   coverage: 'coverage',
-  backend: 'backend.yaml',
+  report: () => paths.coverage + '/coverage.json',
   src: 'src/**/!(*.spec).ts',
   specs: 'src/*.spec.ts',
   templates: 'templates',
@@ -64,10 +64,11 @@ gulp.task('compile', () => {
 const remapCoverageFiles = () => {
   const reports: { [key: string]: string } = {
     'html': paths.coverage,
+    'lcovonly': paths.coverage + '/lcov.info',
   };
   watching || (reports['text-summary'] = null);
   return failed || gulp
-    .src(paths.coverage + '/coverage-final.json')
+    .src(paths.report())
     .pipe(remapIstanbul({
       reports,
     }));
@@ -98,7 +99,10 @@ gulp.task('test', ['coverage'], () => {
     .on('error', handleError)
     .pipe(istanbul.writeReports({
       dir: paths.coverage,
-      reporters: ['json', 'lcovonly'],
+      reporters: ['json'],
+      reportOpts: {
+        json: { file: paths.report() },
+      },
       coverageVariable: coverageVariable,
     }))
     .on('end', remapCoverageFiles);
