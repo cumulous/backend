@@ -98,7 +98,7 @@ gulp.task('test', ['coverage'], () => {
     .on('error', handleError)
     .pipe(istanbul.writeReports({
       dir: paths.coverage,
-      reporters: ['json'],
+      reporters: ['json', 'lcovonly'],
       coverageVariable: coverageVariable,
     }))
     .on('end', remapCoverageFiles);
