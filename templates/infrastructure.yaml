@@ -1,18 +1,28 @@
 Parameters:
-  BackendRepo:
-    Description: "Name of CodeCommit repository for the backend (*)"
+  GitHubOwner:
+    Description: "Username or organization that hosts repositories on GitHub (*)"
     Type: String
-    AllowedPattern: ^[\w.-]{1,100}$
+    AllowedPattern: ^[\w-]{1,39}$
+    Default: cumulous
+  GitHubToken:
+    Description: "Personal access token for GitHub (*)"
+    Type: String
+    AllowedPattern: ^[0-9a-f]{40}$
+    NoEcho: True
+  BackendRepo:
+    Description: "Name of GitHub repository for the backend (*)"
+    Type: String
+    AllowedPattern: ^[\w-]{1,100}$
     Default: backend
   FrontendRepo:
-    Description: "Name of CodeCommit repository for the frontend (*)"
+    Description: "Name of GitHub repository for the frontend (*)"
     Type: String
-    AllowedPattern: ^[\w.-]{1,100}$
-    Default: frontend
+    AllowedPattern: ^[\w-]{1,100}$
+    Default: web
   AppsRepo:
-    Description: "Name of CodeCommit repository for analysis apps (packaged through Docker) (*)"
+    Description: "Name of GitHub repository for analysis apps (packaged through Docker) (*)"
     Type: String
-    AllowedPattern: ^[\w.-]{1,100}$
+    AllowedPattern: ^[\w-]{1,100}$
     Default: apps
   StackAdmin:
     Description: "IAM user whom to allow to administer this stack, including encryption keys (*)"
@@ -102,6 +112,8 @@ Metadata:
         Label:
           default: "Repositories"
         Parameters:
+          - GitHubOwner
+          - GitHubToken
           - BackendRepo
           - FrontendRepo
           - AppsRepo
@@ -303,12 +315,14 @@ Resources:
             - Name: Source
               ActionTypeId:
                 Category: Source
-                Owner: AWS
-                Provider: CodeCommit
+                Owner: ThirdParty
+                Provider: GitHub
                 Version: 1
               Configuration:
-                RepositoryName: !Ref BackendRepo
-                BranchName: master
+                Owner: !Ref GitHubOwner
+                Repo: !Ref BackendRepo
+                Branch: master
+                OAuthToken: !Ref GitHubToken
               OutputArtifacts:
                 - Name: Source
         -
@@ -616,15 +630,6 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Effect: Allow
-                Action:
-                  - codecommit:GetBranch
-                  - codecommit:GetCommit
-                  - codecommit:UploadArchive
-                  - codecommit:GetUploadArchiveStatus
-                  - codecommit:CancelUploadArchive
-                Resource:
-                  - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${BackendRepo}
               - Effect: Allow
                 Action:
                   - s3:GetObject
@@ -1009,12 +1014,14 @@ Resources:
             - Name: Source
               ActionTypeId:
                 Category: Source
-                Owner: AWS
-                Provider: CodeCommit
+                Owner: ThirdParty
+                Provider: GitHub
                 Version: 1
               Configuration:
-                RepositoryName: !Ref AppsRepo
-                BranchName: master
+                Owner: !Ref GitHubOwner
+                Repo: !Ref AppsRepo
+                Branch: master
+                OAuthToken: !Ref GitHubToken
               OutputArtifacts:
                 - Name: Source
         -
@@ -1112,15 +1119,6 @@ Resources:
             Statement:
               - Effect: Allow
                 Action:
-                  - codecommit:GetBranch
-                  - codecommit:GetCommit
-                  - codecommit:UploadArchive
-                  - codecommit:GetUploadArchiveStatus
-                  - codecommit:CancelUploadArchive
-                Resource:
-                  - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${AppsRepo}
-              - Effect: Allow
-                Action:
                   - s3:GetObject
                   - s3:PutObject
                 Resource:
@@ -1209,12 +1207,14 @@ Resources:
             - Name: Source
               ActionTypeId:
                 Category: Source
-                Owner: AWS
-                Provider: CodeCommit
+                Owner: ThirdParty
+                Provider: GitHub
                 Version: 1
               Configuration:
-                RepositoryName: !Ref FrontendRepo
-                BranchName: master
+                Owner: !Ref GitHubOwner
+                Repo: !Ref FrontendRepo
+                Branch: master
+                OAuthToken: !Ref GitHubToken
               OutputArtifacts:
                 - Name: Source
         -
@@ -1322,15 +1322,6 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              - Effect: Allow
-                Action:
-                  - codecommit:GetBranch
-                  - codecommit:GetCommit
-                  - codecommit:UploadArchive
-                  - codecommit:GetUploadArchiveStatus
-                  - codecommit:CancelUploadArchive
-                Resource:
-                  - !Sub arn:aws:codecommit:${AWS::Region}:${AWS::AccountId}:${FrontendRepo}
               - Effect: Allow
                 Action:
                   - s3:GetObject
