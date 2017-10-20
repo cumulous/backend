@@ -12,7 +12,7 @@ jobs:
 
       - restore_cache:
           keys:
-          - pip
+          - pip-
 
       - run: sudo apt-get install libpython-dev
       - run: echo 'export PATH=$HOME/.local/bin:$PATH' >> $BASH_ENV
@@ -20,11 +20,12 @@ jobs:
           pip >/dev/null ||
           python <(curl -s https://bootstrap.pypa.io/get-pip.py) --no-wheel --user
       - run: pip install --upgrade --user yamllint
+      - run: ls .local/lib/python2.7/site-packages/ > pip_checksum
 
       - save_cache:
           paths:
             - ../.local
-          key: pip
+          key: pip-{{ checksum "pip_checksum" }}
 
       # npm
 
@@ -33,7 +34,7 @@ jobs:
       - restore_cache:
           keys:
           - npm-{{ checksum "package.json" }}
-          - npm
+          - npm-
 
       - run: npm install
 
