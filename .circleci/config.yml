@@ -10,9 +10,9 @@ jobs:
 
       # pip
 
-      - restore_cache:
-          keys:
-          - pip
+      # - restore_cache:
+      #     keys:
+      #     - pip
 
       - run: sudo apt-get install libpython-dev
       - run: echo 'export PATH=$HOME/.local/bin:$PATH' >> $BASH_ENV
