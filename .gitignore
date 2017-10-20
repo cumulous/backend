@@ -1,7 +1,7 @@
 app/
 bin/
+coverage/
 node_modules/
-reports/
 tmp/
 .c9/
 

@@ -15,8 +15,7 @@ const paths = {
   api: 'api/swagger/swagger.yaml',
   bin: 'bin',
   conf: () => ['src/**/*.json', paths.templates + '/*.json'],
-  coverage: () => paths.reports + '/coverage',
-  reports: 'reports',
+  coverage: 'coverage',
   backend: 'backend.yaml',
   src: 'src/**/!(*.spec).ts',
   specs: 'src/*.spec.ts',
@@ -64,13 +63,13 @@ gulp.task('compile', () => {
 
 const remapCoverageFiles = () => {
   const reports: { [key: string]: string } = {
-    'html': paths.coverage(),
+    'html': paths.coverage,
   };
   watching || (reports['text-summary'] = null);
   return failed || gulp
-    .src(paths.coverage() + '/coverage-final.json')
+    .src(paths.coverage + '/coverage-final.json')
     .pipe(remapIstanbul({
-      reports: reports,
+      reports,
     }));
 };
 
@@ -98,7 +97,7 @@ gulp.task('test', ['coverage'], () => {
     }))
     .on('error', handleError)
     .pipe(istanbul.writeReports({
-      dir: paths.coverage(),
+      dir: paths.coverage,
       reporters: ['json'],
       coverageVariable: coverageVariable,
     }))

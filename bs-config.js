@@ -1,10 +1,10 @@
 module.exports = {
   port: process.env['REPORTS_PORT'] || 8080,
   files: [
-    'reports/**/*.html',
+    'coverage/**/*.html',
   ],
   server: {
-    baseDir: "reports/coverage",
+    baseDir: "coverage",
   },
   snippetOptions: {
     rule: {
