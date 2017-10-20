@@ -1,8 +1,4 @@
 {
-  "version": "1.0.0",
-  "description": "A serverless backend for managing AWS Batch jobs and data on S3",
-  "author": "Denis Loginov <dloginov@mit.edu>",
-  "license": "UNLICENSED",
   "private": true,
   "scripts": {
     "build": "run-s 'rm -- app/*' tsc copy:configs build:modules clean:app",
