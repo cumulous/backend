@@ -14,17 +14,21 @@ jobs:
           keys:
           - pip
 
-      - run: sudo apt-get install python-dev python-pip
-      - run: sudo pip install --upgrade pathspec pyyaml yamllint
+      - run: sudo apt-get install libpython-dev
+      - run: echo 'export PATH=$HOME/.local/bin:$PATH' >> $BASH_ENV
+      - run: |
+          pip >/dev/null ||
+          python <(curl -s https://bootstrap.pypa.io/get-pip.py) --no-wheel --user
+      - run pip install --upgrade --user yamllint
 
       - save_cache:
           paths:
-            - /usr/local/lib/python2.7/dist-packages
+            - ../.local
           key: pip
 
-      - run: npm run lint:templates
-
       # npm
+
+      - run: npm run lint:templates
 
       - restore_cache:
           keys:
