@@ -16,7 +16,6 @@ const paths = {
   bin: 'bin',
   conf: () => ['src/**/*.json', paths.templates + '/*.json'],
   coverage: 'coverage',
-  report: () => paths.coverage + '/coverage.json',
   src: 'src/**/!(*.spec).ts',
   specs: 'src/*.spec.ts',
   templates: 'templates',
@@ -68,7 +67,7 @@ const remapCoverageFiles = () => {
   };
   watching || (reports['text-summary'] = null);
   return failed || gulp
-    .src(paths.report())
+    .src(paths.coverage + '/coverage-final.json')
     .pipe(remapIstanbul({
       reports,
     }));
@@ -100,9 +99,6 @@ gulp.task('test', ['coverage'], () => {
     .pipe(istanbul.writeReports({
       dir: paths.coverage,
       reporters: ['json'],
-      reportOpts: {
-        json: { file: paths.report() },
-      },
       coverageVariable: coverageVariable,
     }))
     .on('end', remapCoverageFiles);
